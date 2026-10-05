@@ -22,16 +22,19 @@ public class UsuarioDAO {
     private static final Logger LOGGER = Logger.getLogger(UsuarioDAO.class.getName());
 
     /**
-     * Busca un usuario por su correo electrónico con PreparedStatement (Anti SQLi).
+     * Busca un usuario por su correo electrónico o por su DNI (en caso de paciente) con PreparedStatement (Anti SQLi).
      */
-    public Usuario buscarPorEmail(String email) {
-        String sql = "SELECT id_usuario, nombres, apellidos, email, password_hash, rol, fecha_registro, activo " +
-                     "FROM usuario WHERE email = ? AND activo = 1";
+    public Usuario buscarPorEmailODni(String identificador) {
+        String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.password_hash, u.rol, u.fecha_registro, u.activo " +
+                     "FROM usuario u " +
+                     "LEFT JOIN paciente p ON u.id_usuario = p.id_usuario " +
+                     "WHERE (u.email = ? OR p.dni = ?) AND u.activo = 1";
         
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
-            stmt.setString(1, email);
+            stmt.setString(1, identificador);
+            stmt.setString(2, identificador);
 
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
@@ -49,7 +52,7 @@ public class UsuarioDAO {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al buscar usuario por email en DAO: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al buscar usuario por email/dni en DAO: " + e.getMessage(), e);
         }
         return null;
     }

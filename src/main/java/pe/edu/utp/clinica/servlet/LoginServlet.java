@@ -14,13 +14,11 @@ import java.io.IOException;
 import java.util.UUID;
 
 /**
- * Servlet de Autenticación e Inicio de Sesión (HU001).
- * Implementa Controles de Seguridad Obligatorios:
- * - Protección CSRF mediante Token por sesión
- * - Invalidador de Sesión previniendo Session Fixation
- * - Cookie de Sesión segura (HttpOnly y SameSite)
+ * Servlet de Autenticación con 2 Portales Separados (HU001):
+ * - /login o /login/paciente: Portal de Pacientes (Login con DNI o Correo)
+ * - /login/personal: Portal Institucional (Login exclusivo para Médicos, Personal Administrativo y Admins)
  */
-@WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/logout"})
+@WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/login/paciente", "/login/personal", "/logout"})
 public class LoginServlet extends HttpServlet {
 
     private AuthService authService;
@@ -49,12 +47,20 @@ public class LoginServlet extends HttpServlet {
             session.setAttribute("csrfToken", UUID.randomUUID().toString());
         }
 
-        request.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(request, response);
+        // Determinar qué portal mostrar según la URL
+        if ("/login/personal".equals(path)) {
+            request.setAttribute("tipoPortal", "PERSONAL");
+            request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
+        } else {
+            request.setAttribute("tipoPortal", "PACIENTE");
+            request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
+        }
     }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
+        String path = request.getServletPath();
         
         // 1. Validar Token CSRF (HU020 / RNF-04)
         String requestCsrfToken = request.getParameter("csrfToken");
@@ -64,14 +70,32 @@ public class LoginServlet extends HttpServlet {
         }
 
         // 2. Sanitizar entradas (HU018)
-        String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
+        String identificador = SecurityUtil.sanitizeInput(request.getParameter("identificador"));
         String password = request.getParameter("password");
         String ipOrigen = request.getRemoteAddr();
 
-        // 3. Ejecutar Autenticación en Capa de Negocio
-        Usuario usuario = authService.autenticar(email, password, ipOrigen);
+        // 3. Ejecutar Autenticación en Capa de Negocio (por DNI o Correo)
+        Usuario usuario = authService.autenticar(identificador, password, ipOrigen);
 
         if (usuario != null) {
+            // Verificar que el rol coincida con el portal accedido
+            boolean esPortalPersonal = "/login/personal".equals(path);
+            boolean esRolPersonal = "MEDICO".equals(usuario.getRol()) || "PERSONAL_ADMINISTRATIVO".equals(usuario.getRol()) || "ADMINISTRADOR".equals(usuario.getRol());
+
+            if (esPortalPersonal && !esRolPersonal) {
+                request.setAttribute("errorMessage", "Acceso denegado: Esta cuenta de Paciente debe ingresar por el Portal de Pacientes.");
+                request.setAttribute("tipoPortal", "PERSONAL");
+                request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
+                return;
+            }
+
+            if (!esPortalPersonal && esRolPersonal) {
+                request.setAttribute("errorMessage", "Acceso denegado: El personal médico y administrativo debe ingresar por el Portal Institucional.");
+                request.setAttribute("tipoPortal", "PACIENTE");
+                request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
+                return;
+            }
+
             // Regenerar ID de Sesión para evitar Session Fixation Attack
             session.invalidate();
             HttpSession newSession = request.getSession(true);
@@ -89,8 +113,6 @@ public class LoginServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/medico/agenda");
                     break;
                 case "PERSONAL_ADMINISTRATIVO":
-                    response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-                    break;
                 case "ADMINISTRADOR":
                     response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                     break;
@@ -99,9 +121,15 @@ public class LoginServlet extends HttpServlet {
             }
         } else {
             request.setAttribute("errorMessage", "Credenciales incorrectas o cuenta bloqueada por 15 minutos debido a intentos fallidos.");
-            // Regenerar nuevo CSRF token tras intento fallido
             request.getSession(true).setAttribute("csrfToken", UUID.randomUUID().toString());
-            request.getRequestDispatcher("/WEB-INF/views/login.jsp").forward(request, response);
+            
+            if ("/login/personal".equals(path)) {
+                request.setAttribute("tipoPortal", "PERSONAL");
+                request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
+            } else {
+                request.setAttribute("tipoPortal", "PACIENTE");
+                request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
+            }
         }
     }
 }

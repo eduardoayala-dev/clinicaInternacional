@@ -34,50 +34,56 @@ public class AuthService {
     }
 
     /**
-     * Autentica un usuario verificando credenciales, estado activo y control de fuerza bruta.
+     * Autentica un usuario verificando credenciales por DNI o Correo, estado activo y control de fuerza bruta.
      */
-    public Usuario autenticar(String email, String password, String ipOrigen) {
-        String emailLimpio = SecurityUtil.sanitizeInput(email).toLowerCase();
+    public Usuario autenticar(String identificador, String password, String ipOrigen) {
+        String idLimpio = SecurityUtil.sanitizeInput(identificador).toLowerCase();
 
         // 1. Verificar si el usuario se encuentra bloqueado por intentos fallidos
-        if (estaBloqueado(emailLimpio)) {
-            LOGGER.warning("Intento de acceso rechazado: Usuario o IP en periodo de bloqueo de 15 minutos: " + emailLimpio);
-            usuarioDAO.registrarAuditoria(null, ipOrigen, "LOGIN_BLOQUEADO", "Intento de acceso en cuenta bloqueada por 5 fallos previa: " + emailLimpio, true);
+        if (estaBloqueado(idLimpio)) {
+            LOGGER.warning("Intento de acceso rechazado: Usuario o IP en periodo de bloqueo de 15 minutos: " + idLimpio);
+            usuarioDAO.registrarAuditoria(null, ipOrigen, "LOGIN_BLOQUEADO", "Intento de acceso en cuenta bloqueada por 5 fallos previa: " + idLimpio, true);
             return null;
         }
 
-        // 2. Buscar usuario en base de datos mediante PreparedStatement
+        // 2. Buscar usuario en base de datos mediante PreparedStatement (por DNI o por Email)
         Usuario usuario = null;
         try {
-            usuario = usuarioDAO.buscarPorEmail(emailLimpio);
+            usuario = usuarioDAO.buscarPorEmailODni(idLimpio);
         } catch (Exception e) {
             LOGGER.warning("Modo desarrollo sin BD local: Autenticando usuario sintético de demostración");
         }
 
-        // Fallback Mock de demostración local si la BD no está corriendo
-        if (usuario == null && ("juan.perez@correo.com".equals(emailLimpio) || "admin@clinicainternacional.pe".equals(emailLimpio) || "cmendoza@clinicainternacional.pe".equals(emailLimpio))) {
-            String rol = "PACIENTE";
-            if ("admin@clinicainternacional.pe".equals(emailLimpio)) rol = "ADMINISTRADOR";
-            if ("cmendoza@clinicainternacional.pe".equals(emailLimpio)) rol = "MEDICO";
-
-            if ("Admin123!".equals(password)) {
-                return new Usuario(1, "Usuario", "Demostración", emailLimpio, "", rol, null, true);
+        // Fallback Mock de demostración local si la BD no está corriendo (Soporta DNI y Email)
+        if (usuario == null) {
+            if ("juan.perez@correo.com".equals(idLimpio) || "72345678".equals(idLimpio)) {
+                if ("Admin123!".equals(password)) {
+                    return new Usuario(1, "Juan Alberto", "Pérez Gómez", "juan.perez@correo.com", "", "PACIENTE", null, true);
+                }
+            } else if ("admin@clinicainternacional.pe".equals(idLimpio)) {
+                if ("Admin123!".equals(password)) {
+                    return new Usuario(2, "Roberto", "Vargas", "admin@clinicainternacional.pe", "", "ADMINISTRADOR", null, true);
+                }
+            } else if ("cmendoza@clinicainternacional.pe".equals(idLimpio)) {
+                if ("Admin123!".equals(password)) {
+                    return new Usuario(3, "Carlos", "Mendoza", "cmendoza@clinicainternacional.pe", "", "MEDICO", null, true);
+                }
             }
         }
 
         // 3. Verificar si el usuario existe y si la contraseña coincide con el Hash BCrypt
         if (usuario != null && usuario.isActivo() && SecurityUtil.checkPassword(password, usuario.getPasswordHash())) {
             // Éxito: Limpiar contador de intentos fallidos
-            intentosFallidos.remove(emailLimpio);
-            bloqueosTemporales.remove(emailLimpio);
+            intentosFallidos.remove(idLimpio);
+            bloqueosTemporales.remove(idLimpio);
 
             usuarioDAO.registrarAuditoria(usuario.getIdUsuario(), ipOrigen, "LOGIN_EXITOSO", "Inicio de sesión correcto con rol: " + usuario.getRol(), false);
             return usuario;
         }
 
         // 4. Fallo de autenticación: Registrar intento fallido
-        registrarFallo(emailLimpio);
-        usuarioDAO.registrarAuditoria(usuario != null ? usuario.getIdUsuario() : null, ipOrigen, "LOGIN_FALLIDO", "Credenciales incorrectas para: " + emailLimpio, false);
+        registrarFallo(idLimpio);
+        usuarioDAO.registrarAuditoria(usuario != null ? usuario.getIdUsuario() : null, ipOrigen, "LOGIN_FALLIDO", "Credenciales incorrectas para: " + idLimpio, false);
 
         return null;
     }

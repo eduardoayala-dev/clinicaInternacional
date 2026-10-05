@@ -20,8 +20,8 @@ public class AuthServiceTest {
     public void setUp() {
         usuarioDAOFicticio = new UsuarioDAO() {
             @Override
-            public Usuario buscarPorEmail(String email) {
-                if ("paciente@test.com".equals(email)) {
+            public Usuario buscarPorEmailODni(String identificador) {
+                if ("paciente@test.com".equals(identificador)) {
                     return new Usuario(
                             1,
                             "Juan",
