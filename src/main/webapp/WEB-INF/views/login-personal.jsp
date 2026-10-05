@@ -9,7 +9,7 @@
     <!-- Fuentes Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
     <!-- Lucide Icons SVG sin emojis -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -19,7 +19,7 @@
             --bg-right: #ffffff;
             --text-dark: #0f172a;
             --text-muted: #64748b;
-            --brand-blue: #0284c7;
+            --brand-cyan: #38bdf8;
         }
 
         * {
@@ -52,7 +52,9 @@
         /* SECCIÓN IZQUIERDA CORPORATIVA PERSONAL (62% ANCHO) */
         .hero-section {
             flex: 1.6;
-            background: linear-gradient(135deg, var(--slate-dark-start) 0%, var(--slate-dark-end) 100%);
+            background: radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.1) 0%, transparent 45%),
+                        radial-gradient(circle at 85% 80%, rgba(30, 41, 59, 0.5) 0%, transparent 50%),
+                        linear-gradient(135deg, var(--slate-dark-start) 0%, var(--slate-dark-end) 100%);
             color: #ffffff;
             display: flex;
             justify-content: center;
@@ -61,58 +63,72 @@
             overflow: hidden;
         }
 
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -120px;
+            right: -120px;
+            width: 450px;
+            height: 450px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.02);
+            pointer-events: none;
+        }
+
         .hero-inner {
             width: 100%;
-            max-width: 680px;
-            padding: 50px 40px;
+            max-width: 720px;
+            padding: 50px 48px;
             height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
+            z-index: 2;
         }
 
+        /* LOGO PROMINENTE Y MAS GRANDE */
         .hero-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .hero-brand img {
-            height: 38px;
+            height: 58px;
             width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
         }
 
-        .hero-brand span {
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: 0.8px;
+        .brand-text-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-text-main {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
+            color: #ffffff;
+            line-height: 1.1;
         }
 
-        .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.08);
-            backdrop-filter: blur(10px);
-            padding: 7px 16px;
-            border-radius: 20px;
-            font-size: 12.5px;
-            margin-top: 25px;
-            width: fit-content;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .dot-green {
-            width: 8px;
-            height: 8px;
-            background-color: #38bdf8;
-            border-radius: 50%;
+        .brand-text-sub {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--brand-cyan);
+            margin-top: 2px;
         }
 
         .hero-middle {
             margin: auto 0;
-            padding: 20px 0;
+            padding: 30px 0;
         }
 
         .hero-title {
@@ -120,15 +136,76 @@
             font-size: 46px;
             font-weight: 700;
             line-height: 1.15;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
+            color: #ffffff;
         }
 
         .hero-desc {
-            font-size: 15.5px;
-            color: rgba(255, 255, 255, 0.85);
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.82);
             line-height: 1.6;
-            max-width: 540px;
-            margin-bottom: 40px;
+            max-width: 580px;
+            margin-bottom: 32px;
+        }
+
+        /* TARJETAS DE MODULOS DEL SISTEMA INTERNO */
+        .modules-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .module-card-glass {
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.09);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .module-icon-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(56, 189, 248, 0.15);
+            color: var(--brand-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .module-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .module-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.65);
+            line-height: 1.4;
+        }
+
+        .hero-footer-trust {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.6);
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .trust-icon {
+            width: 16px;
+            height: 16px;
+            stroke: var(--brand-cyan);
         }
 
         /* SECCIÓN DERECHA FORMULARIO INSTITUCIONAL (38% ANCHO) */
@@ -149,17 +226,25 @@
 
         .portal-switch {
             text-align: right;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
         .portal-switch a {
             color: #475569;
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background-color: #f1f5f9;
+            transition: all 0.2s ease;
+        }
+
+        .portal-switch a:hover {
+            background-color: #e2e8f0;
         }
 
         .form-header {
@@ -168,14 +253,16 @@
 
         .form-header h2 {
             font-size: 28px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-dark);
             margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
 
         .form-header p {
             font-size: 14px;
             color: var(--text-muted);
+            line-height: 1.4;
         }
 
         .alert-error {
@@ -192,7 +279,7 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .form-group label {
@@ -211,10 +298,10 @@
 
         .input-icon-wrapper input {
             width: 100%;
-            padding: 13px 14px 13px 42px;
+            padding: 14px 14px 14px 44px;
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 14.5px;
             background-color: #ffffff;
             color: var(--text-dark);
             transition: all 0.2s ease;
@@ -223,15 +310,15 @@
         .input-icon-wrapper input:focus {
             outline: none;
             border-color: #0f172a;
-            box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.1);
+            box-shadow: 0 0 0 4px rgba(15, 23, 42, 0.12);
         }
 
         .input-icon {
             position: absolute;
             left: 14px;
             color: #94a3b8;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             pointer-events: none;
         }
 
@@ -243,10 +330,11 @@
             border-radius: 10px;
             color: #ffffff;
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: background-color 0.2s ease;
             margin-top: 10px;
+            box-shadow: 0 4px 12px rgba(15, 23, 42, 0.2);
         }
 
         .btn-primary:hover {
@@ -264,27 +352,72 @@
 
 <div class="login-wrapper">
 
-    <!-- HERO PERSONAL INSTITUCIONAL -->
+    <!-- HERO PERSONAL INSTITUCIONAL (SECCIÓN IZQUIERDA ENRIQUECIDA) -->
     <div class="hero-section">
         <div class="hero-inner">
+            <!-- LOGO MAS GRANDE Y DESTACADO -->
             <div class="hero-brand">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional">
-                <span>CLINICA INTERNACIONAL</span>
-            </div>
-
-            <div class="badge-status">
-                <span class="dot-green"></span>
-                Acceso Exclusivo Autorizado
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+                <div class="brand-text-wrapper">
+                    <span class="brand-text-main">CLÍNICA INTERNACIONAL</span>
+                    <span class="brand-text-sub">SISTEMA INSTITUCIONAL</span>
+                </div>
             </div>
 
             <div class="hero-middle">
                 <h1 class="hero-title">Sistema Interno de<br>Gestión y Control.</h1>
                 <p class="hero-desc">
-                    Módulo de administración operativa, agenda médica de especialistas y control de reasignación inteligente de cupos.
+                    Módulo unificado para médicos especialistas, personal administrativo y admisiones para la gestión de agendas, triaje y control operativo.
                 </p>
+
+                <!-- TARJETAS DE MODULOS DEL SISTEMA -->
+                <div class="modules-grid">
+                    <div class="module-card-glass">
+                        <div class="module-icon-box">
+                            <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="module-title">Agenda Médica</div>
+                            <div class="module-desc">Programación y gestión de citas de especialistas en tiempo real.</div>
+                        </div>
+                    </div>
+
+                    <div class="module-card-glass">
+                        <div class="module-icon-box">
+                            <i data-lucide="refresh-cw" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="module-title">Reasignación de Cupos</div>
+                            <div class="module-desc">Control automatizado de citas canceladas y lista de espera.</div>
+                        </div>
+                    </div>
+
+                    <div class="module-card-glass">
+                        <div class="module-icon-box">
+                            <i data-lucide="users" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="module-title">Admisión & Pacientes</div>
+                            <div class="module-desc">Registro y validación de identidad para ingreso a consultorio.</div>
+                        </div>
+                    </div>
+
+                    <div class="module-card-glass">
+                        <div class="module-icon-box">
+                            <i data-lucide="shield-alert" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="module-title">Auditoría de Seguridad</div>
+                            <div class="module-desc">Trazabilidad completa de accesos y prevención de amenazas.</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <div></div>
+            <div class="hero-footer-trust">
+                <i data-lucide="lock" class="trust-icon"></i>
+                <span>Red Privada Corporativa &bull; Acceso Restringido a Personal Autorizado</span>
+            </div>
         </div>
     </div>
 
@@ -293,14 +426,14 @@
         <div class="form-inner">
             <div class="portal-switch">
                 <a href="${pageContext.request.contextPath}/login/paciente">
-                    <i data-lucide="user" style="width: 14px; height: 14px;"></i>
+                    <i data-lucide="user" style="width: 15px; height: 15px;"></i>
                     <span>Ir al Portal de Pacientes</span>
                 </a>
             </div>
 
             <div class="form-header">
                 <h2>Acceso Personal</h2>
-                <p>Médicos, Admisión y Administradores de Sistema.</p>
+                <p>Ingreso exclusivo para Médicos, Admisión y Administradores de Sistema.</p>
             </div>
 
             <c:if test="${not empty errorMessage}">

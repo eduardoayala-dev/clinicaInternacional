@@ -9,16 +9,17 @@
     <!-- Fuentes Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
     <!-- Lucide Icons SVG sin emojis -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --blue-hero-start: #005bb5;
-            --blue-hero-end: #003e80;
+            --blue-hero-start: #0052cc;
+            --blue-hero-end: #002b70;
             --bg-right: #f8fafc;
             --text-dark: #0f172a;
             --text-muted: #64748b;
+            --accent-cyan: #38bdf8;
         }
 
         * {
@@ -51,7 +52,9 @@
         /* SECCIÓN IZQUIERDA INFORMACIÓN PACIENTES (62% ANCHO) */
         .hero-section {
             flex: 1.6;
-            background: linear-gradient(135deg, var(--blue-hero-start) 0%, var(--blue-hero-end) 100%);
+            background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 40%),
+                        radial-gradient(circle at 80% 80%, rgba(0, 82, 204, 0.3) 0%, transparent 50%),
+                        linear-gradient(135deg, var(--blue-hero-start) 0%, var(--blue-hero-end) 100%);
             color: #ffffff;
             display: flex;
             justify-content: center;
@@ -60,93 +63,186 @@
             overflow: hidden;
         }
 
+        /* Círculos decorativos de fondo */
+        .hero-section::before {
+            content: '';
+            position: absolute;
+            top: -100px;
+            right: -100px;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.03);
+            pointer-events: none;
+        }
+
+        .hero-section::after {
+            content: '';
+            position: absolute;
+            bottom: -150px;
+            left: -100px;
+            width: 500px;
+            height: 500px;
+            border-radius: 50%;
+            background: rgba(56, 189, 248, 0.04);
+            pointer-events: none;
+        }
+
         .hero-inner {
             width: 100%;
-            max-width: 680px;
-            padding: 50px 40px;
+            max-width: 720px;
+            padding: 50px 48px;
             height: 100vh;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
+            position: relative;
+            z-index: 2;
         }
 
+        /* LOGO PROMINENTE Y MAS GRANDE */
         .hero-brand {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .hero-brand img {
-            height: 38px;
+            height: 58px;
             width: auto;
+            object-fit: contain;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
         }
 
-        .hero-brand span {
-            font-size: 15px;
-            font-weight: 700;
-            letter-spacing: 0.8px;
+        .brand-text-wrapper {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .brand-text-main {
+            font-size: 20px;
+            font-weight: 800;
+            letter-spacing: 1.2px;
             text-transform: uppercase;
+            color: #ffffff;
+            line-height: 1.1;
         }
 
-        .badge-status {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.12);
-            backdrop-filter: blur(10px);
-            padding: 7px 16px;
-            border-radius: 20px;
-            font-size: 12.5px;
-            margin-top: 25px;
-            width: fit-content;
-        }
-
-        .dot-green {
-            width: 8px;
-            height: 8px;
-            background-color: #10b981;
-            border-radius: 50%;
+        .brand-text-sub {
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+            color: var(--accent-cyan);
+            margin-top: 2px;
         }
 
         .hero-middle {
             margin: auto 0;
-            padding: 20px 0;
+            padding: 30px 0;
         }
 
         .hero-title {
             font-family: 'Playfair Display', serif;
-            font-size: 48px;
+            font-size: 46px;
             font-weight: 700;
             line-height: 1.15;
-            margin-bottom: 18px;
+            margin-bottom: 20px;
+            color: #ffffff;
         }
 
         .hero-title em {
             font-style: italic;
             font-weight: 400;
+            color: #93c5fd;
         }
 
         .hero-desc {
-            font-size: 15.5px;
+            font-size: 16px;
             color: rgba(255, 255, 255, 0.88);
             line-height: 1.6;
-            max-width: 540px;
-            margin-bottom: 40px;
+            max-width: 580px;
+            margin-bottom: 32px;
+        }
+
+        /* TARJETAS DE CARACTERISTICAS Y SERVICIOS INTEGRADOS EN HERO */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .feature-card-glass {
+            background: rgba(255, 255, 255, 0.07);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 14px;
+        }
+
+        .feature-icon-box {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background: rgba(56, 189, 248, 0.2);
+            color: var(--accent-cyan);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        .feature-title {
+            font-size: 13.5px;
+            font-weight: 700;
+            color: #ffffff;
+            margin-bottom: 4px;
+        }
+
+        .feature-desc {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.4;
         }
 
         .stats-grid {
             display: flex;
-            gap: 50px;
+            gap: 40px;
+            padding-top: 20px;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
         }
 
         .stat-item h3 {
-            font-size: 32px;
-            font-weight: 700;
+            font-size: 30px;
+            font-weight: 800;
+            color: #ffffff;
         }
 
         .stat-item p {
-            font-size: 13px;
+            font-size: 12.5px;
+            color: rgba(255, 255, 255, 0.75);
+            font-weight: 500;
+        }
+
+        /* CERTIFICACION DE SEGURIDAD */
+        .hero-footer-trust {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 12px;
             color: rgba(255, 255, 255, 0.7);
+        }
+
+        .trust-icon {
+            width: 16px;
+            height: 16px;
+            stroke: var(--accent-cyan);
         }
 
         /* SECCIÓN DERECHA FORMULARIO PACIENTE (38% ANCHO) */
@@ -167,17 +263,25 @@
 
         .portal-switch {
             text-align: right;
-            margin-bottom: 25px;
+            margin-bottom: 30px;
         }
 
         .portal-switch a {
             color: #0284c7;
-            font-size: 12.5px;
+            font-size: 13px;
             font-weight: 600;
             text-decoration: none;
             display: inline-flex;
             align-items: center;
             gap: 6px;
+            padding: 6px 12px;
+            border-radius: 8px;
+            background-color: #e0f2fe;
+            transition: all 0.2s ease;
+        }
+
+        .portal-switch a:hover {
+            background-color: #bae6fd;
         }
 
         .form-header {
@@ -186,14 +290,16 @@
 
         .form-header h2 {
             font-size: 28px;
-            font-weight: 700;
+            font-weight: 800;
             color: var(--text-dark);
             margin-bottom: 8px;
+            letter-spacing: -0.5px;
         }
 
         .form-header p {
             font-size: 14px;
             color: var(--text-muted);
+            line-height: 1.4;
         }
 
         .alert-error {
@@ -210,7 +316,7 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 22px;
         }
 
         .form-group label {
@@ -229,10 +335,10 @@
 
         .input-icon-wrapper input {
             width: 100%;
-            padding: 13px 14px 13px 42px;
+            padding: 14px 14px 14px 44px;
             border: 1px solid #cbd5e1;
             border-radius: 10px;
-            font-size: 14px;
+            font-size: 14.5px;
             background-color: #ffffff;
             color: var(--text-dark);
             transition: all 0.2s ease;
@@ -240,36 +346,37 @@
 
         .input-icon-wrapper input:focus {
             outline: none;
-            border-color: #0066cc;
-            box-shadow: 0 0 0 4px rgba(0, 102, 204, 0.1);
+            border-color: var(--blue-hero-start);
+            box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.12);
         }
 
         .input-icon {
             position: absolute;
             left: 14px;
             color: #94a3b8;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             pointer-events: none;
         }
 
         .btn-primary {
             width: 100%;
             padding: 14px;
-            background-color: #0284c7;
+            background-color: var(--blue-hero-start);
             border: none;
             border-radius: 10px;
             color: #ffffff;
             font-size: 15px;
-            font-weight: 600;
+            font-weight: 700;
             cursor: pointer;
             transition: background-color 0.2s ease;
             margin-top: 10px;
             margin-bottom: 25px;
+            box-shadow: 0 4px 12px rgba(0, 82, 204, 0.25);
         }
 
         .btn-primary:hover {
-            background-color: #0369a1;
+            background-color: #0041a8;
         }
 
         .register-footer {
@@ -279,9 +386,13 @@
         }
 
         .register-footer a {
-            color: #0284c7;
-            font-weight: 600;
+            color: var(--blue-hero-start);
+            font-weight: 700;
             text-decoration: none;
+        }
+
+        .register-footer a:hover {
+            text-decoration: underline;
         }
 
         @media (max-width: 960px) {
@@ -295,60 +406,104 @@
 
 <div class="login-wrapper">
 
-    <!-- HERO PACIENTES -->
+    <!-- HERO PACIENTES (SECCIÓN IZQUIERDA CON LENGUAJE VISUAL RICO) -->
     <div class="hero-section">
         <div class="hero-inner">
+            <!-- LOGO MAS GRANDE Y DESTACADO -->
             <div class="hero-brand">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional">
-                <span>CLINICA INTERNACIONAL</span>
-            </div>
-
-            <div class="badge-status">
-                <span class="dot-green"></span>
-                Portal del Paciente Activo
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+                <div class="brand-text-wrapper">
+                    <span class="brand-text-main">CLÍNICA INTERNACIONAL</span>
+                    <span class="brand-text-sub">PORTAL DE PACIENTES</span>
+                </div>
             </div>
 
             <div class="hero-middle">
-                <h1 class="hero-title">Tu salud,<br><em>gestionada</em><br>con precisión.</h1>
+                <h1 class="hero-title">Tu salud,<br><em>gestionada</em><br>con máxima precisión.</h1>
                 <p class="hero-desc">
-                    Programa citas médicas, consulta la disponibilidad de consultorios y accede a tu historial de atención en línea.
+                    Accede a tu portal clínico para agendar citas presenciales o virtuales, consultar disponibilidad de especialistas y revisar tu historial de atención en tiempo real.
                 </p>
+
+                <!-- DETALLES Y CARACTERISTICAS VISUALES -->
+                <div class="features-grid">
+                    <div class="feature-card-glass">
+                        <div class="feature-icon-box">
+                            <i data-lucide="calendar-check" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="feature-title">Reserva de Citas 24/7</div>
+                            <div class="feature-desc">Elige médico, sede y horario de preferencia al instante.</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card-glass">
+                        <div class="feature-icon-box">
+                            <i data-lucide="zap" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="feature-title">Reasignación Inteligente</div>
+                            <div class="feature-desc">Alertas automáticas de cupos liberados por cancelación.</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card-glass">
+                        <div class="feature-icon-box">
+                            <i data-lucide="file-text" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="feature-title">Historial Clínico Seguro</div>
+                            <div class="feature-desc">Acceso confidencial a órdenes médicas y resultados.</div>
+                        </div>
+                    </div>
+
+                    <div class="feature-card-glass">
+                        <div class="feature-icon-box">
+                            <i data-lucide="video" style="width: 20px; height: 20px;"></i>
+                        </div>
+                        <div>
+                            <div class="feature-title">Telemedicina en Vivo</div>
+                            <div class="feature-desc">Consultas virtuales con especialistas desde cualquier lugar.</div>
+                        </div>
+                    </div>
+                </div>
 
                 <div class="stats-grid">
                     <div class="stat-item">
                         <h3>400+</h3>
-                        <p>Especialistas</p>
+                        <p>Médicos Especialistas</p>
                     </div>
                     <div class="stat-item">
-                        <h3>40 esp.</h3>
-                        <p>Especialidades</p>
+                        <h3>40</h3>
+                        <p>Especialidades Clínicas</p>
                     </div>
                     <div class="stat-item">
-                        <h3>24/7</h3>
-                        <p>Reserva en Línea</p>
+                        <h3>100%</h3>
+                        <p>Plataforma Segura</p>
                     </div>
                 </div>
             </div>
 
-            <div class="testimonial-card">
-                <p>"La reserva de citas y la reasignación de cupos liberados me permitieron conseguir atención médica el mismo día."</p>
+            <!-- GARANTIA DE PRIVACIDAD -->
+            <div class="hero-footer-trust">
+                <i data-lucide="shield-check" class="trust-icon"></i>
+                <span>Acreditación Internacional JCI &bull; Protección de Datos según Ley N° 29733</span>
             </div>
         </div>
     </div>
 
-    <!-- FORMULARIO PACIENTE -->
+    <!-- FORMULARIO PACIENTE (EXCLUSIVAMENTE CON DNI) -->
     <div class="form-section">
         <div class="form-inner">
             <div class="portal-switch">
                 <a href="${pageContext.request.contextPath}/login/personal">
-                    <i data-lucide="shield" style="width: 14px; height: 14px;"></i>
+                    <i data-lucide="shield" style="width: 15px; height: 15px;"></i>
                     <span>Acceso Personal Médico / Admisión</span>
                 </a>
             </div>
 
             <div class="form-header">
                 <h2>Portal del Paciente</h2>
-                <p>Ingresa con tu DNI o Correo electrónico registrado.</p>
+                <p>Ingresa con tu número de DNI para acceder a tus citas y servicios.</p>
             </div>
 
             <c:if test="${not empty errorMessage}">
@@ -362,10 +517,10 @@
                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}" />
 
                 <div class="form-group">
-                    <label for="identificador">DNI o Correo electrónico</label>
+                    <label for="identificador">Número de DNI</label>
                     <div class="input-icon-wrapper">
-                        <i data-lucide="user" class="input-icon"></i>
-                        <input type="text" id="identificador" name="identificador" required placeholder="72345678 o correo@ejemplo.com">
+                        <i data-lucide="id-card" class="input-icon"></i>
+                        <input type="text" id="identificador" name="identificador" required maxlength="8" pattern="[0-9]{8}" inputmode="numeric" placeholder="Ingrese su DNI (8 dígitos)">
                     </div>
                 </div>
 
