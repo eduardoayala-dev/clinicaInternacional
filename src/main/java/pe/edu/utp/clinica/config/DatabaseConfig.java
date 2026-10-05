@@ -51,7 +51,7 @@ public class DatabaseConfig {
             dataSource = new HikariDataSource(config);
             LOGGER.info("Pool de conexiones HikariCP inicializado correctamente.");
         } catch (Exception e) {
-            LOGGER.log(Level.SEVERE, "Error al inicializar el pool de conexiones HikariCP: " + e.getMessage(), e);
+            LOGGER.log(Level.WARNING, "Base de datos local no conectada aún. La aplicación web iniciará en modo mock/demo: " + e.getMessage());
         }
     }
 

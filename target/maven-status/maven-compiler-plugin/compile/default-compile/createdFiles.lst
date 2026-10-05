@@ -1,0 +1,7 @@
+pe\edu\utp\clinica\util\SecurityUtil.class
+pe\edu\utp\clinica\service\AuthService.class
+pe\edu\utp\clinica\servlet\LoginServlet.class
+pe\edu\utp\clinica\filter\AuthFilter.class
+pe\edu\utp\clinica\model\Usuario.class
+pe\edu\utp\clinica\dao\UsuarioDAO.class
+pe\edu\utp\clinica\config\DatabaseConfig.class
