@@ -313,9 +313,24 @@
                                     <fmt:parseDate value="${u.fechaRegistro}" pattern="yyyy-MM-dd'T'HH:mm:ss" var="parsedDate" type="both" />
                                     <fmt:formatDate pattern="dd/MM/yyyy HH:mm" value="${parsedDate}" />
                                 </td>
-                                <td>
+                                <td style="display: flex; gap: 8px;">
                                     <button class="btn-action" title="Editar"><i data-lucide="edit" style="width: 16px;"></i></button>
-                                    <button class="btn-action" title="Desactivar"><i data-lucide="ban" style="width: 16px;"></i></button>
+                                    <c:if test="${u.activo}">
+                                        <form action="${pageContext.request.contextPath}/admin/usuarios" method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="cambiarEstado">
+                                            <input type="hidden" name="idUsuario" value="${u.idUsuario}">
+                                            <input type="hidden" name="estado" value="false">
+                                            <button type="submit" class="btn-action" title="Desactivar" style="color: var(--danger); border-color: var(--danger);"><i data-lucide="ban" style="width: 16px;"></i></button>
+                                        </form>
+                                    </c:if>
+                                    <c:if test="${not u.activo}">
+                                        <form action="${pageContext.request.contextPath}/admin/usuarios" method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="cambiarEstado">
+                                            <input type="hidden" name="idUsuario" value="${u.idUsuario}">
+                                            <input type="hidden" name="estado" value="true">
+                                            <button type="submit" class="btn-action" title="Activar" style="color: #10b981; border-color: #10b981;"><i data-lucide="check-circle" style="width: 16px;"></i></button>
+                                        </form>
+                                    </c:if>
                                 </td>
                             </tr>
                         </c:forEach>

@@ -100,6 +100,21 @@ public class UsuariosServlet extends HttpServlet {
             return;
         }
 
+        String action = request.getParameter("action");
+        if ("cambiarEstado".equals(action)) {
+            int idUsuario = Integer.parseInt(request.getParameter("idUsuario"));
+            boolean nuevoEstado = Boolean.parseBoolean(request.getParameter("estado"));
+            
+            boolean exito = usuarioDAO.cambiarEstadoUsuario(idUsuario, nuevoEstado);
+            if (exito) {
+                Integer adminId = (Integer) session.getAttribute("usuarioId");
+                usuarioDAO.registrarAuditoria(adminId, request.getRemoteAddr(), "CAMBIO_ESTADO", 
+                    "Usuario ID " + idUsuario + " cambiado a activo=" + nuevoEstado, false);
+            }
+            response.sendRedirect(request.getContextPath() + "/admin/usuarios");
+            return;
+        }
+
         String nombres = request.getParameter("nombres");
         String apellidos = request.getParameter("apellidos");
         String email = request.getParameter("email");

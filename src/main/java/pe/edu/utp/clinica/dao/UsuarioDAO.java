@@ -239,6 +239,21 @@ public class UsuarioDAO {
         }
     }
 
+    public boolean cambiarEstadoUsuario(int idUsuario, boolean activo) {
+        String sql = "UPDATE usuario SET activo = ? WHERE id_usuario = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+             
+            stmt.setBoolean(1, activo);
+            stmt.setInt(2, idUsuario);
+            return stmt.executeUpdate() > 0;
+            
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al cambiar estado de usuario: " + e.getMessage(), e);
+            return false;
+        }
+    }
+
     public java.util.List<Usuario> obtenerTodos() {
         java.util.List<Usuario> lista = new java.util.ArrayList<>();
         String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +
