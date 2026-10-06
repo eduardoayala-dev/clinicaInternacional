@@ -8,18 +8,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.logging.Logger;
 
-/**
- * Capa de Lógica de Negocio (Service) para Autenticación.
- * Implementa la prevención de Ataques de Fuerza Bruta y Validación estricta por Rol (HU001, HU018, HU020).
- * Criterios de Aceptación: Bloqueo por 15 minutos tras 5 intentos fallidos consecutivos.
- */
 public class AuthService {
 
     private static final Logger LOGGER = Logger.getLogger(AuthService.class.getName());
     private static final int MAX_INTENTOS = 5;
-    private static final long TIEMPO_BLOQUEO_MS = 15 * 60 * 1000; // 15 minutos
+    private static final long TIEMPO_BLOQUEO_MS = 15 * 60 * 1000;
 
-    // Estructuras en memoria para seguimiento de intentos y bloqueos temporales por IP/Email
     private static final Map<String, Integer> intentosFallidos = new ConcurrentHashMap<>();
     private static final Map<String, Long> bloqueosTemporales = new ConcurrentHashMap<>();
 
@@ -33,28 +27,22 @@ public class AuthService {
         this.usuarioDAO = usuarioDAO;
     }
 
-    /**
-     * Autentica un usuario verificando credenciales por DNI o Correo, estado activo y control de fuerza bruta.
-     */
     public Usuario autenticar(String identificador, String password, String ipOrigen) {
         String idLimpio = SecurityUtil.sanitizeInput(identificador).toLowerCase();
 
-        // 1. Verificar si el usuario se encuentra bloqueado por intentos fallidos
         if (estaBloqueado(idLimpio)) {
-            LOGGER.warning("Intento de acceso rechazado: Usuario o IP en periodo de bloqueo de 15 minutos: " + idLimpio);
-            usuarioDAO.registrarAuditoria(null, ipOrigen, "LOGIN_BLOQUEADO", "Intento de acceso en cuenta bloqueada por 5 fallos previa: " + idLimpio, true);
+            LOGGER.warning("Intento de acceso rechazado: Usuario o IP bloqueada temporalmente: " + idLimpio);
+            usuarioDAO.registrarAuditoria(null, ipOrigen, "LOGIN_BLOQUEADO", "Intento de acceso en cuenta bloqueada: " + idLimpio, true);
             return null;
         }
 
-        // 2. Buscar usuario en base de datos mediante PreparedStatement (por DNI o por Email)
         Usuario usuario = null;
         try {
             usuario = usuarioDAO.buscarPorEmailODni(idLimpio);
         } catch (Exception e) {
-            LOGGER.warning("Modo desarrollo sin BD local: Autenticando usuario sintético de demostración");
+            LOGGER.warning("Autenticando usuario sintético de demostración local");
         }
 
-        // Fallback Mock de demostración local si la BD no está corriendo (Soporta DNI y Email)
         if (usuario == null) {
             if ("juan.perez@correo.com".equals(idLimpio) || "72345678".equals(idLimpio)) {
                 if ("Admin123!".equals(password)) {
@@ -71,9 +59,7 @@ public class AuthService {
             }
         }
 
-        // 3. Verificar si el usuario existe y si la contraseña coincide con el Hash BCrypt
         if (usuario != null && usuario.isActivo() && SecurityUtil.checkPassword(password, usuario.getPasswordHash())) {
-            // Éxito: Limpiar contador de intentos fallidos
             intentosFallidos.remove(idLimpio);
             bloqueosTemporales.remove(idLimpio);
 
@@ -81,7 +67,6 @@ public class AuthService {
             return usuario;
         }
 
-        // 4. Fallo de autenticación: Registrar intento fallido
         registrarFallo(idLimpio);
         usuarioDAO.registrarAuditoria(usuario != null ? usuario.getIdUsuario() : null, ipOrigen, "LOGIN_FALLIDO", "Credenciales incorrectas para: " + idLimpio, false);
 
@@ -94,7 +79,6 @@ public class AuthService {
             return false;
         }
         if (System.currentTimeMillis() > tiempoBloqueo) {
-            // El tiempo de bloqueo expiró, remover del mapa
             bloqueosTemporales.remove(key);
             intentosFallidos.remove(key);
             return false;
@@ -108,7 +92,7 @@ public class AuthService {
 
         if (intentos >= MAX_INTENTOS) {
             bloqueosTemporales.put(key, System.currentTimeMillis() + TIEMPO_BLOQUEO_MS);
-            LOGGER.warning("CUENTA BLOQUEADA TEMPORALMENTE por 5 intentos fallidos consecutivo: " + key);
+            LOGGER.warning("Cuenta bloqueada por rebasar el límite de intentos fallidos: " + key);
         }
     }
 }

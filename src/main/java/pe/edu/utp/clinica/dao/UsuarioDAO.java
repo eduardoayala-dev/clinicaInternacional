@@ -11,19 +11,10 @@ import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Data Access Object (DAO) para Usuario.
- * CUMPLE AL 100% CON REGLA OBLIGATORIA ANTI-SQL-INJECTION:
- * El 100% de las consultas utilizan exclusivamente PreparedStatement parametrizados.
- * NINGUNA consulta concatena texto directo del usuario.
- */
 public class UsuarioDAO {
 
     private static final Logger LOGGER = Logger.getLogger(UsuarioDAO.class.getName());
 
-    /**
-     * Busca un usuario por su correo electrónico o por su DNI (en caso de paciente) con PreparedStatement (Anti SQLi).
-     */
     public Usuario buscarPorEmailODni(String identificador) {
         String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.password_hash, u.rol, u.fecha_registro, u.activo " +
                      "FROM usuario u " +
@@ -52,14 +43,11 @@ public class UsuarioDAO {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al buscar usuario por email/dni en DAO: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al buscar usuario: " + e.getMessage(), e);
         }
         return null;
     }
 
-    /**
-     * Inserta un nuevo usuario con PreparedStatement (HU002).
-     */
     public int crearUsuario(Usuario u) {
         String sql = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
         
@@ -82,14 +70,11 @@ public class UsuarioDAO {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al crear usuario en DAO: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al crear usuario: " + e.getMessage(), e);
         }
         return -1;
     }
 
-    /**
-     * Registra intento de acceso o evento de seguridad en la tabla auditoria_seguridad (HU021 / RNF-05).
-     */
     public void registrarAuditoria(Integer idUsuario, String ip, String evento, String descripcion, boolean sospechoso) {
         String sql = "INSERT INTO auditoria_seguridad (id_usuario, ip_origen, evento, descripcion, sospechoso) VALUES (?, ?, ?, ?, ?)";
         
@@ -108,7 +93,7 @@ public class UsuarioDAO {
 
             stmt.executeUpdate();
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al registrar auditoría de seguridad: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al registrar auditoría: " + e.getMessage(), e);
         }
     }
 }

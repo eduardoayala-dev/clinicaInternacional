@@ -1,0 +1,15 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Ejecutar Servidor Web Clinica (Jetty)",
+      "type": "shell",
+      "command": "& \"C:\\Program Files\\Apache NetBeans\\java\\maven\\bin\\mvn.cmd\" jetty:run",
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": []
+    }
+  ]
+}

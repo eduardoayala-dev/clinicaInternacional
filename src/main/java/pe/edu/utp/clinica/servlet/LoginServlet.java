@@ -13,11 +13,6 @@ import pe.edu.utp.clinica.util.SecurityUtil;
 import java.io.IOException;
 import java.util.UUID;
 
-/**
- * Servlet de Autenticación con 2 Portales Separados (HU001):
- * - /login o /login/paciente: Portal de Pacientes (Login con DNI o Correo)
- * - /login/personal: Portal Institucional (Login exclusivo para Médicos, Personal Administrativo y Admins)
- */
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/login/paciente", "/login/personal", "/logout"})
 public class LoginServlet extends HttpServlet {
 
@@ -41,13 +36,11 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
-        // Generar Token CSRF para el formulario de Login
         HttpSession session = request.getSession(true);
         if (session.getAttribute("csrfToken") == null) {
             session.setAttribute("csrfToken", UUID.randomUUID().toString());
         }
 
-        // Determinar qué portal mostrar según la URL
         if ("/login/personal".equals(path)) {
             request.setAttribute("tipoPortal", "PERSONAL");
             request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
@@ -61,24 +54,20 @@ public class LoginServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         String path = request.getServletPath();
-        
-        // 1. Validar Token CSRF (HU020 / RNF-04)
+
         String requestCsrfToken = request.getParameter("csrfToken");
         if (session == null || requestCsrfToken == null || !requestCsrfToken.equals(session.getAttribute("csrfToken"))) {
             response.sendError(HttpServletResponse.SC_FORBIDDEN, "Petición rechazada: Token CSRF inválido.");
             return;
         }
 
-        // 2. Sanitizar entradas (HU018)
         String identificador = SecurityUtil.sanitizeInput(request.getParameter("identificador"));
         String password = request.getParameter("password");
         String ipOrigen = request.getRemoteAddr();
 
-        // 3. Ejecutar Autenticación en Capa de Negocio (por DNI o Correo)
         Usuario usuario = authService.autenticar(identificador, password, ipOrigen);
 
         if (usuario != null) {
-            // Verificar que el rol coincida con el portal accedido
             boolean esPortalPersonal = "/login/personal".equals(path);
             boolean esRolPersonal = "MEDICO".equals(usuario.getRol()) || "PERSONAL_ADMINISTRATIVO".equals(usuario.getRol()) || "ADMINISTRADOR".equals(usuario.getRol());
 
@@ -96,15 +85,13 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            // Regenerar ID de Sesión para evitar Session Fixation Attack
             session.invalidate();
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("usuarioLogueado", usuario);
             newSession.setAttribute("rol", usuario.getRol());
             newSession.setAttribute("nombreUsuario", usuario.getNombreCompleto());
-            newSession.setMaxInactiveInterval(30 * 60); // Expira tras 30 min de inactividad
+            newSession.setMaxInactiveInterval(30 * 60);
 
-            // Redirección por Rol (CA-1)
             switch (usuario.getRol()) {
                 case "PACIENTE":
                     response.sendRedirect(request.getContextPath() + "/paciente/dashboard");
