@@ -489,10 +489,10 @@
                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}" />
 
                 <div class="form-group">
-                    <label for="identificador">Número de DNI</label>
+                    <label for="identificador">Documento de Identidad (DNI / CE)</label>
                     <div class="input-icon-wrapper">
                         <i data-lucide="id-card" class="input-icon"></i>
-                        <input type="text" id="identificador" name="identificador" required maxlength="8" pattern="[0-9]{8}" inputmode="numeric" placeholder="72345678">
+                        <input type="text" id="identificador" name="identificador" required maxlength="15" pattern="[A-Za-z0-9]+" placeholder="Ej. 72345678 o 001234567">
                     </div>
                 </div>
 

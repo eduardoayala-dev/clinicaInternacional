@@ -297,12 +297,12 @@ INSERT INTO especialidad (nombre, descripcion, estado) VALUES
 ('Medicina Interna', 'Atención del adulto y enfermedades complejas', 'ACTIVO');
 
 INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES
-('Roberto', 'Vargas', 'admin@clinicainternacional.pe', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'ADMINISTRADOR', 1),
-('Marina', 'Salvatierra', 'personal@clinicainternacional.pe', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'PERSONAL_ADMINISTRATIVO', 1),
-('Carlos', 'Mendoza', 'cmendoza@clinicainternacional.pe', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'MEDICO', 1),
-('Elena', 'Rostova', 'erostova@clinicainternacional.pe', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'MEDICO', 1),
-('Juan Alberto', 'Pérez Gómez', 'juan.perez@correo.com', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'PACIENTE', 1),
-('Jhenifer', 'Monterroso', 'jmonterroso@gmail.com', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'PACIENTE', 1);
+('Roberto', 'Vargas', 'admin@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'ADMINISTRADOR', 1),
+('Marina', 'Salvatierra', 'personal@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PERSONAL_ADMINISTRATIVO', 1),
+('Carlos', 'Mendoza', 'cmendoza@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+('Elena', 'Rostova', 'erostova@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+('Juan Alberto', 'Pérez Gómez', 'juan.perez@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+('Jhenifer', 'Monterroso', 'jmonterroso@gmail.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1);
 
 INSERT INTO administrador (id_usuario, estado) VALUES (1, 'ACTIVO');
 INSERT INTO personal_administrativo (id_usuario, id_sede, codigo_empleado, cargo) VALUES (2, 1, 'ADM-001', 'Coordinador de Admisión');
