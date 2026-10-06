@@ -279,7 +279,18 @@
                     </thead>
                     <tbody id="userTableBody">
                         <c:forEach var="u" items="${listaUsuarios}">
-                            <tr class="user-row" data-rol="${u.rol}" data-estado="${u.activo ? '1' : '0'}">
+                            <tr class="user-row" 
+                                data-id="${u.idUsuario}"
+                                data-nombres="${u.nombres}"
+                                data-apellidos="${u.apellidos}"
+                                data-email="${u.email}"
+                                data-rol="${u.rol}" 
+                                data-estado="${u.activo ? '1' : '0'}"
+                                data-cmp="${u.cmp}"
+                                data-idespecialidad="${u.idEspecialidad}"
+                                data-idsede="${u.idSede}"
+                                data-cargo="${u.cargo}"
+                                data-codigo="${u.codigoEmpleado}">
                                 <td>
                                     <div style="font-weight: 500; color: var(--text-main);">
                                         ${u.nombres} ${u.apellidos}
@@ -314,7 +325,7 @@
                                     <fmt:formatDate pattern="dd/MM/yyyy HH:mm" value="${parsedDate}" />
                                 </td>
                                 <td style="display: flex; gap: 8px;">
-                                    <button class="btn-action" title="Editar"><i data-lucide="edit" style="width: 16px;"></i></button>
+                                    <button class="btn-action" title="Editar" onclick="abrirModalEdicion(this)"><i data-lucide="edit" style="width: 16px;"></i></button>
                                     <c:if test="${u.activo}">
                                         <form action="${pageContext.request.contextPath}/admin/usuarios" method="POST" style="display:inline;">
                                             <input type="hidden" name="action" value="cambiarEstado">
@@ -352,24 +363,26 @@
     <div class="modal-overlay" id="modalUsuario">
         <div class="modal-content">
             <div class="modal-header">
-                <h3 class="modal-title">Registrar Nuevo Personal</h3>
+                <h3 class="modal-title" id="modalTitle">Registrar Nuevo Personal</h3>
                 <button class="btn-close" onclick="cerrarModal()"><i data-lucide="x"></i></button>
             </div>
-            <form action="${pageContext.request.contextPath}/admin/usuarios" method="POST">
+            <form action="${pageContext.request.contextPath}/admin/usuarios" method="POST" id="formUsuario">
+                <input type="hidden" name="action" id="formAction" value="registrar">
+                <input type="hidden" name="idUsuario" id="formIdUsuario" value="">
                 <div class="modal-body">
                     <div style="display: flex; gap: 16px;">
                         <div class="form-group" style="flex: 1;">
                             <label class="form-label">Nombres</label>
-                            <input type="text" name="nombres" class="form-control" required>
+                            <input type="text" name="nombres" id="inputNombres" class="form-control" required>
                         </div>
                         <div class="form-group" style="flex: 1;">
                             <label class="form-label">Apellidos</label>
-                            <input type="text" name="apellidos" class="form-control" required>
+                            <input type="text" name="apellidos" id="inputApellidos" class="form-control" required>
                         </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Correo Electrónico (Corporativo)</label>
-                        <input type="email" name="email" class="form-control" required>
+                        <input type="email" name="email" id="inputEmail" class="form-control" required>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Rol del Sistema</label>
@@ -442,10 +455,10 @@
                             </div>
                         </div>
                     </div>
-                    <div class="form-group">
+                    <div class="form-group" id="groupPassword">
                         <label class="form-label">Contraseña Temporal</label>
-                        <input type="password" name="password" class="form-control" required>
-                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;">
+                        <input type="password" name="password" id="inputPassword" class="form-control" required>
+                        <small style="color: var(--text-muted); font-size: 11px; margin-top: 4px; display: block;" id="textPassword">
                             El usuario deberá cambiar esta contraseña en su primer inicio de sesión.
                         </small>
                     </div>
@@ -488,6 +501,53 @@
         }
 
         function abrirModal() {
+            document.getElementById('formUsuario').reset();
+            document.getElementById('modalTitle').innerText = 'Registrar Nuevo Personal';
+            document.getElementById('formAction').value = 'registrar';
+            document.getElementById('formIdUsuario').value = '';
+            document.getElementById('groupPassword').style.display = 'block';
+            document.getElementById('inputPassword').required = true;
+            document.getElementById('btnGuardar').innerText = 'Guardar Registro';
+            document.getElementById('rolSelect').disabled = false;
+            toggleCamposDinamicos();
+            modal.classList.add('active');
+        }
+
+        function abrirModalEdicion(btn) {
+            const tr = btn.closest('tr');
+            
+            document.getElementById('modalTitle').innerText = 'Editar Personal';
+            document.getElementById('formAction').value = 'editar';
+            document.getElementById('formIdUsuario').value = tr.dataset.id;
+            
+            document.getElementById('inputNombres').value = tr.dataset.nombres;
+            document.getElementById('inputApellidos').value = tr.dataset.apellidos;
+            document.getElementById('inputEmail').value = tr.dataset.email;
+            
+            const rol = tr.dataset.rol;
+            document.getElementById('rolSelect').value = rol;
+            document.getElementById('rolSelect').disabled = true; // No permitimos cambiar rol por ahora
+            // Un truco para que el submit envíe el rol aunque esté disabled, crearemos un hidden luego o lo habilitamos antes del submit.
+            // Mejor lo dejamos habilitado pero con advertencia visual, o solo le ponemos estilo read-only:
+            document.getElementById('rolSelect').disabled = false;
+            document.getElementById('rolSelect').style.pointerEvents = 'none';
+            document.getElementById('rolSelect').style.backgroundColor = '#f1f5f9';
+
+            toggleCamposDinamicos();
+
+            if (rol === 'MEDICO') {
+                document.getElementById('inputCmp').value = tr.dataset.cmp || '';
+                document.getElementById('inputEspecialidad').value = tr.dataset.idespecialidad || '';
+                document.getElementById('inputSedeMedico').value = tr.dataset.idsede || '';
+            } else if (rol === 'PERSONAL_ADMINISTRATIVO') {
+                document.getElementById('inputCargo').value = tr.dataset.cargo || '';
+                document.getElementById('inputSedePersonal').value = tr.dataset.idsede || '';
+            }
+            
+            document.getElementById('groupPassword').style.display = 'none';
+            document.getElementById('inputPassword').required = false;
+            document.getElementById('btnGuardar').innerText = 'Guardar Cambios';
+
             modal.classList.add('active');
         }
 

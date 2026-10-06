@@ -18,6 +18,8 @@ public class Usuario implements Serializable {
     private String especialidad;
     private String codigoEmpleado;
     private String cargo;
+    private Integer idEspecialidad;
+    private Integer idSede;
 
     public Usuario() {
     }
@@ -112,4 +114,10 @@ public class Usuario implements Serializable {
 
     public String getCargo() { return cargo; }
     public void setCargo(String cargo) { this.cargo = cargo; }
+
+    public Integer getIdEspecialidad() { return idEspecialidad; }
+    public void setIdEspecialidad(Integer idEspecialidad) { this.idEspecialidad = idEspecialidad; }
+
+    public Integer getIdSede() { return idSede; }
+    public void setIdSede(Integer idSede) { this.idSede = idSede; }
 }

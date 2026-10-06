@@ -239,6 +239,56 @@ public class UsuarioDAO {
         }
     }
 
+    public boolean actualizarPersonal(Usuario u, String cmp, Integer idEspecialidad, Integer idSede, String cargo) {
+        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ?, email = ? WHERE id_usuario = ?";
+        String sqlMedico = "UPDATE medico SET cmp = ?, id_especialidad = ?, id_sede = ? WHERE id_usuario = ?";
+        String sqlPersonal = "UPDATE personal_administrativo SET id_sede = ?, cargo = ? WHERE id_usuario = ?";
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
+                stmtU.setString(1, u.getNombres());
+                stmtU.setString(2, u.getApellidos());
+                stmtU.setString(3, u.getEmail());
+                stmtU.setInt(4, u.getIdUsuario());
+                stmtU.executeUpdate();
+            }
+
+            if ("MEDICO".equals(u.getRol())) {
+                try (PreparedStatement stmtM = conn.prepareStatement(sqlMedico)) {
+                    stmtM.setString(1, cmp);
+                    stmtM.setInt(2, idEspecialidad);
+                    stmtM.setInt(3, idSede);
+                    stmtM.setInt(4, u.getIdUsuario());
+                    stmtM.executeUpdate();
+                }
+            } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
+                try (PreparedStatement stmtP = conn.prepareStatement(sqlPersonal)) {
+                    stmtP.setInt(1, idSede);
+                    stmtP.setString(2, cargo);
+                    stmtP.setInt(3, u.getIdUsuario());
+                    stmtP.executeUpdate();
+                }
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) {}
+            }
+            LOGGER.log(Level.SEVERE, "Error al actualizar personal: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+            }
+        }
+    }
+
     public boolean cambiarEstadoUsuario(int idUsuario, boolean activo) {
         String sql = "UPDATE usuario SET activo = ? WHERE id_usuario = ?";
         try (Connection conn = DatabaseConfig.getConnection();
@@ -257,7 +307,8 @@ public class UsuarioDAO {
     public java.util.List<Usuario> obtenerTodos() {
         java.util.List<Usuario> lista = new java.util.ArrayList<>();
         String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +
-                     "m.cmp, e.nombre AS especialidad, pa.codigo_empleado, pa.cargo " +
+                     "m.cmp, m.id_especialidad, m.id_sede AS id_sede_medico, e.nombre AS especialidad, " +
+                     "pa.codigo_empleado, pa.cargo, pa.id_sede AS id_sede_personal " +
                      "FROM usuario u " +
                      "LEFT JOIN medico m ON u.id_usuario = m.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
@@ -284,6 +335,13 @@ public class UsuarioDAO {
                 u.setEspecialidad(rs.getString("especialidad"));
                 u.setCodigoEmpleado(rs.getString("codigo_empleado"));
                 u.setCargo(rs.getString("cargo"));
+                
+                if ("MEDICO".equals(u.getRol())) {
+                    u.setIdEspecialidad(rs.getInt("id_especialidad"));
+                    u.setIdSede(rs.getInt("id_sede_medico"));
+                } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
+                    u.setIdSede(rs.getInt("id_sede_personal"));
+                }
                 
                 lista.add(u);
             }

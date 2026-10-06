@@ -119,17 +119,12 @@ public class UsuariosServlet extends HttpServlet {
         String apellidos = request.getParameter("apellidos");
         String email = request.getParameter("email");
         String rol = request.getParameter("rol");
-        String passwordRaw = request.getParameter("password");
-
-        String passwordHash = BCrypt.hashpw(passwordRaw, BCrypt.gensalt(12));
 
         Usuario u = new Usuario();
         u.setNombres(nombres);
         u.setApellidos(apellidos);
         u.setEmail(email);
         u.setRol(rol);
-        u.setPasswordHash(passwordHash);
-        u.setActivo(true);
 
         String cmp = null;
         Integer idEspecialidad = null;
@@ -147,6 +142,25 @@ public class UsuariosServlet extends HttpServlet {
             String sedeStr = request.getParameter("id_sede_personal");
             if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
         }
+
+        if ("editar".equals(action)) {
+            u.setIdUsuario(Integer.parseInt(request.getParameter("idUsuario")));
+            boolean exitoEdit = usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
+            if (exitoEdit) {
+                Integer adminId = (Integer) session.getAttribute("usuarioId");
+                usuarioDAO.registrarAuditoria(adminId, request.getRemoteAddr(), "EDICION_USUARIO", 
+                    "Usuario ID " + u.getIdUsuario() + " editado", false);
+                response.sendRedirect(request.getContextPath() + "/admin/usuarios?success=true");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/admin/usuarios?error=true");
+            }
+            return;
+        }
+
+        String passwordRaw = request.getParameter("password");
+        String passwordHash = BCrypt.hashpw(passwordRaw, BCrypt.gensalt(12));
+        u.setPasswordHash(passwordHash);
+        u.setActivo(true);
 
         boolean exito = usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
 
