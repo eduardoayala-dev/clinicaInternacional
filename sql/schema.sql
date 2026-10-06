@@ -1,6 +1,7 @@
 -- =============================================================================
 -- ESQUEMA DE BASE DE DATOS - CLÍNICA INTERNACIONAL (MySQL 8.0)
 -- Requisitos: HU003, RNF-01, RNF-02, RNF-03, RNF-04, RNF-05
+-- Total 17 Tablas Relacionales (3FN)
 -- =============================================================================
 
 CREATE DATABASE IF NOT EXISTS clinica_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
@@ -16,6 +17,7 @@ DROP TABLE IF EXISTS lista_espera;
 DROP TABLE IF EXISTS cita;
 DROP TABLE IF EXISTS disponibilidad;
 DROP TABLE IF EXISTS motivo_consulta;
+DROP TABLE IF EXISTS medico_especialidad;
 DROP TABLE IF EXISTS medico;
 DROP TABLE IF EXISTS personal_administrativo;
 DROP TABLE IF EXISTS paciente;
@@ -100,7 +102,19 @@ CREATE TABLE medico (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 6. TABLA: personal_administrativo
+-- 6. TABLA: medico_especialidad (Múltiples Especialidades / Subespecialidades)
+-- -----------------------------------------------------------------------------
+CREATE TABLE medico_especialidad (
+    id_medico_especialidad INT AUTO_INCREMENT PRIMARY KEY,
+    id_medico INT NOT NULL,
+    id_especialidad INT NOT NULL,
+    es_principal TINYINT(1) DEFAULT 1,
+    CONSTRAINT fk_medespec_medico FOREIGN KEY (id_medico) REFERENCES medico(id_medico) ON DELETE CASCADE,
+    CONSTRAINT fk_medespec_especialidad FOREIGN KEY (id_especialidad) REFERENCES especialidad(id_especialidad) ON DELETE CASCADE
+) ENGINE=InnoDB;
+
+-- -----------------------------------------------------------------------------
+-- 7. TABLA: personal_administrativo
 -- -----------------------------------------------------------------------------
 CREATE TABLE personal_administrativo (
     id_personal INT AUTO_INCREMENT PRIMARY KEY,
@@ -113,7 +127,7 @@ CREATE TABLE personal_administrativo (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 7. TABLA: administrador
+-- 8. TABLA: administrador
 -- -----------------------------------------------------------------------------
 CREATE TABLE administrador (
     id_administrador INT AUTO_INCREMENT PRIMARY KEY,
@@ -123,7 +137,7 @@ CREATE TABLE administrador (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 8. TABLA: motivo_consulta
+-- 9. TABLA: motivo_consulta
 -- -----------------------------------------------------------------------------
 CREATE TABLE motivo_consulta (
     id_motivo INT AUTO_INCREMENT PRIMARY KEY,
@@ -134,7 +148,7 @@ CREATE TABLE motivo_consulta (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 9. TABLA: disponibilidad (Horarios publicables)
+-- 10. TABLA: disponibilidad (Horarios publicables)
 -- -----------------------------------------------------------------------------
 CREATE TABLE disponibilidad (
     id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,
@@ -151,7 +165,7 @@ CREATE TABLE disponibilidad (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 10. TABLA: cita
+-- 11. TABLA: cita
 -- -----------------------------------------------------------------------------
 CREATE TABLE cita (
     id_cita INT AUTO_INCREMENT PRIMARY KEY,
@@ -175,7 +189,7 @@ CREATE TABLE cita (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 11. TABLA: lista_espera (Módulo de Reasignación Inteligente)
+-- 12. TABLA: lista_espera (Módulo de Reasignación Inteligente)
 -- -----------------------------------------------------------------------------
 CREATE TABLE lista_espera (
     id_lista_espera INT AUTO_INCREMENT PRIMARY KEY,
@@ -195,7 +209,7 @@ CREATE TABLE lista_espera (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 12. TABLA: reasignacion_inteligente (Ofertas de Cupos Liberados)
+-- 13. TABLA: reasignacion_inteligente (Ofertas de Cupos Liberados)
 -- -----------------------------------------------------------------------------
 CREATE TABLE reasignacion_inteligente (
     id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,
@@ -212,7 +226,7 @@ CREATE TABLE reasignacion_inteligente (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 13. TABLA: notificacion
+-- 14. TABLA: notificacion
 -- -----------------------------------------------------------------------------
 CREATE TABLE notificacion (
     id_notificacion INT AUTO_INCREMENT PRIMARY KEY,
@@ -229,7 +243,7 @@ CREATE TABLE notificacion (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 14. TABLA: historial_asistencia
+-- 15. TABLA: historial_asistencia
 -- -----------------------------------------------------------------------------
 CREATE TABLE historial_asistencia (
     id_historial INT AUTO_INCREMENT PRIMARY KEY,
@@ -243,7 +257,7 @@ CREATE TABLE historial_asistencia (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 15. TABLA: priorizacion_config (Parámetros Operativos del Algoritmo)
+-- 16. TABLA: priorizacion_config (Parámetros Operativos del Algoritmo)
 -- -----------------------------------------------------------------------------
 CREATE TABLE priorizacion_config (
     id_config INT AUTO_INCREMENT PRIMARY KEY,
@@ -258,7 +272,7 @@ CREATE TABLE priorizacion_config (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
--- 16. TABLA: auditoria_seguridad (Audit Logs para RNF-05)
+-- 17. TABLA: auditoria_seguridad (Audit Logs para RNF-05)
 -- -----------------------------------------------------------------------------
 CREATE TABLE auditoria_seguridad (
     id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
@@ -290,7 +304,6 @@ INSERT INTO especialidad (nombre, descripcion, estado) VALUES
 ('Medicina Interna', 'Atención del adulto y enfermedades complejas', 'ACTIVO');
 
 -- 3. Insertar Usuarios Sintéticos
--- Passwords: Admin123! (hash ficticio sintético para desarrollo)
 INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES
 ('Roberto', 'Vargas', 'admin@clinicainternacional.pe', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'ADMINISTRADOR', 1),
 ('Marina', 'Salvatierra', 'personal@clinicainternacional.pe', '$2a$10$e80x6uJt7p41Z1c7xL2k8.5jW9hQ1wY0xZ2aB3c4d5e6f7g8h9i0j', 'PERSONAL_ADMINISTRATIVO', 1),
@@ -306,8 +319,12 @@ INSERT INTO personal_administrativo (id_usuario, id_sede, codigo_empleado, cargo
 (2, 1, 'ADM-001', 'Coordinador de Admisión');
 
 INSERT INTO medico (id_usuario, cmp, id_especialidad, id_sede, estado) VALUES 
-(3, 'CMP-45211', 1, 1, 'ACTIVO'), -- Dr. Carlos Mendoza - Cardiología Norte
-(4, 'CMP-45892', 2, 2, 'ACTIVO'); -- Dra. Elena Rostova - Dermatología Centro
+(3, 'CMP-45211', 1, 1, 'ACTIVO'),
+(4, 'CMP-45892', 2, 2, 'ACTIVO');
+
+INSERT INTO medico_especialidad (id_medico, id_especialidad, es_principal) VALUES
+(1, 1, 1),
+(2, 2, 1);
 
 INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES 
 (5, '72345678', '1988-05-14', '987654321', 'Av. Las Flores 123, Los Olivos'),
@@ -319,4 +336,3 @@ INSERT INTO priorizacion_config (nombre, criterio, peso, nivel, prioridad_activa
 ('Sede Requerida', 'SEDE', 1.0, 'ALTA', 1, 15, 1),
 ('Prioridad Clínica', 'PRIORIDAD_CLINICA', 1.0, 'ALTA', 1, 15, 1),
 ('Tiempo en Lista de Espera', 'FIFO', 1.0, 'MEDIA', 1, 15, 1);
-
