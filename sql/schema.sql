@@ -281,6 +281,20 @@ CREATE TABLE reporte (
     CONSTRAINT fk_reporte_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario)
 ) ENGINE=InnoDB;
 
+-- -----------------------------------------------------------------------------
+-- 18. CLASE/TABLA: auditoria_seguridad (Para registro de eventos de log en AuthService)
+-- -----------------------------------------------------------------------------
+CREATE TABLE auditoria_seguridad (
+    id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
+    id_usuario INT,
+    ip_origen VARCHAR(45) NOT NULL,
+    evento VARCHAR(100) NOT NULL,
+    descripcion TEXT,
+    sospechoso TINYINT(1) DEFAULT 0,
+    fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_auditoria_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE SET NULL
+) ENGINE=InnoDB;
+
 -- =============================================================================
 -- DATOS SINTÉTICOS DE PRUEBA INITIAL SEED
 -- =============================================================================

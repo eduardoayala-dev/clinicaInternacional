@@ -107,7 +107,8 @@ public class LoginServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/login?error=rol_invalido");
             }
         } else {
-            request.setAttribute("errorMessage", "Credenciales incorrectas o cuenta bloqueada por 15 minutos debido a intentos fallidos.");
+            String errorMsg = authService.getLockoutMessage(identificador);
+            request.setAttribute("errorMessage", errorMsg);
             request.getSession(true).setAttribute("csrfToken", UUID.randomUUID().toString());
             
             if ("/login/personal".equals(path)) {

@@ -96,4 +96,79 @@ public class UsuarioDAO {
             LOGGER.log(Level.SEVERE, "Error al registrar auditoría: " + e.getMessage(), e);
         }
     }
+    public boolean existeDocumentoOCorreo(String documento, String email) {
+        String sql = "SELECT 1 FROM usuario u LEFT JOIN paciente p ON u.id_usuario = p.id_usuario WHERE u.email = ? OR p.dni = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email);
+            stmt.setString(2, documento);
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al verificar existencia de documento o correo: " + e.getMessage(), e);
+        }
+        return false;
+    }
+
+    public boolean crearCuentaPaciente(Usuario u, pe.edu.utp.clinica.model.Paciente p) {
+        String sqlUsuario = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
+        String sqlPaciente = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, ?, ?, ?)";
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmtUsuario = conn.prepareStatement(sqlUsuario, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                stmtUsuario.setString(1, u.getNombres());
+                stmtUsuario.setString(2, u.getApellidos());
+                stmtUsuario.setString(3, u.getEmail());
+                stmtUsuario.setString(4, u.getPasswordHash());
+                stmtUsuario.setString(5, u.getRol());
+                stmtUsuario.setBoolean(6, u.isActivo());
+                stmtUsuario.executeUpdate();
+
+                try (ResultSet rs = stmtUsuario.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        int userId = rs.getInt(1);
+                        p.setUsuarioId(userId);
+                    } else {
+                        throw new SQLException("No se pudo obtener el ID del usuario insertado.");
+                    }
+                }
+            }
+
+            try (PreparedStatement stmtPaciente = conn.prepareStatement(sqlPaciente)) {
+                stmtPaciente.setInt(1, p.getUsuarioId());
+                stmtPaciente.setString(2, p.getDni());
+                stmtPaciente.setDate(3, java.sql.Date.valueOf(p.getFechaNacimiento()));
+                stmtPaciente.setString(4, p.getTelefono());
+                stmtPaciente.setString(5, p.getDireccion());
+                stmtPaciente.executeUpdate();
+            }
+
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try {
+                    conn.rollback();
+                } catch (SQLException ex) {
+                    LOGGER.log(Level.SEVERE, "Error al hacer rollback: " + ex.getMessage(), ex);
+                }
+            }
+            LOGGER.log(Level.SEVERE, "Error al crear cuenta de paciente: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) {
+                try {
+                    conn.setAutoCommit(true);
+                    conn.close();
+                } catch (SQLException e) {
+                    LOGGER.log(Level.SEVERE, "Error al restaurar autoCommit/cerrar: " + e.getMessage(), e);
+                }
+            }
+        }
+    }
 }

@@ -95,4 +95,43 @@ public class AuthService {
             LOGGER.warning("Cuenta bloqueada por rebasar el límite de intentos fallidos: " + key);
         }
     }
+
+    public boolean existeDocumentoOCorreo(String documento, String email) {
+        return usuarioDAO.existeDocumentoOCorreo(documento, email);
+    }
+
+    public boolean registrarPaciente(Usuario usuario, pe.edu.utp.clinica.model.Paciente paciente) {
+        if (existeDocumentoOCorreo(paciente.getDni(), usuario.getEmail())) {
+            return false;
+        }
+        
+        // Cifrado de contraseña con BCrypt antes de guardar
+        usuario.setPasswordHash(SecurityUtil.hashPassword(usuario.getPasswordHash()));
+        usuario.setRol("PACIENTE");
+        usuario.setActivo(true);
+        
+        return usuarioDAO.crearCuentaPaciente(usuario, paciente);
+    }
+
+    public String getLockoutMessage(String identificador) {
+        if (identificador == null) return "Credenciales incorrectas.";
+        String idLimpio = SecurityUtil.sanitizeInput(identificador).toLowerCase();
+        
+        Long tiempoBloqueo = bloqueosTemporales.get(idLimpio);
+        if (tiempoBloqueo != null) {
+            long rest = tiempoBloqueo - System.currentTimeMillis();
+            if (rest > 0) {
+                long minutes = rest / 60000;
+                return "Acceso restringido por múltiples intentos fallidos. Intente de nuevo en " + (minutes + 1) + " minutos.";
+            }
+        }
+        
+        int intentos = intentosFallidos.getOrDefault(idLimpio, 0);
+        if (intentos > 0 && intentos < MAX_INTENTOS) {
+            if (intentos >= 2) {
+                return "Credenciales incorrectas. Le quedan " + (MAX_INTENTOS - intentos) + " intentos antes de bloquear la cuenta.";
+            }
+        }
+        return "Credenciales incorrectas.";
+    }
 }
