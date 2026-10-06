@@ -9,17 +9,18 @@
     <!-- Fuentes Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,500;1,600;1,700&display=swap" rel="stylesheet">
     <!-- Lucide Icons SVG sin emojis -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --blue-hero-start: #0052cc;
-            --blue-hero-end: #002b70;
+            --blue-hero-bg: #00509e;
+            --blue-hero-dark: #00366b;
             --bg-right: #f8fafc;
             --text-dark: #0f172a;
             --text-muted: #64748b;
-            --accent-cyan: #38bdf8;
+            --primary-btn: #0077c8;
+            --primary-btn-hover: #005fa0;
         }
 
         * {
@@ -40,7 +41,7 @@
         body {
             display: flex;
             min-height: 100vh;
-            background: linear-gradient(to right, var(--blue-hero-start) 62%, var(--bg-right) 38%);
+            background: linear-gradient(to right, var(--blue-hero-bg) 62%, var(--bg-right) 38%);
         }
 
         .login-wrapper {
@@ -49,12 +50,10 @@
             min-height: 100vh;
         }
 
-        /* SECCIÓN IZQUIERDA INFORMACIÓN PACIENTES (62% ANCHO) */
+        /* SECCIÓN IZQUIERDA EXACTA SEGÚN MOCKUP PACIENTES (62% ANCHO) */
         .hero-section {
             flex: 1.6;
-            background: radial-gradient(circle at 20% 20%, rgba(56, 189, 248, 0.15) 0%, transparent 40%),
-                        radial-gradient(circle at 80% 80%, rgba(0, 82, 204, 0.3) 0%, transparent 50%),
-                        linear-gradient(135deg, var(--blue-hero-start) 0%, var(--blue-hero-end) 100%);
+            background: linear-gradient(135deg, #00509e 0%, #00376e 100%);
             color: #ffffff;
             display: flex;
             justify-content: center;
@@ -63,35 +62,21 @@
             overflow: hidden;
         }
 
-        /* Círculos decorativos de fondo */
-        .hero-section::before {
-            content: '';
+        /* Patron de circulos vectoriales decorativos exactamente como la referencia */
+        .bg-circles-svg {
             position: absolute;
-            top: -100px;
-            right: -100px;
-            width: 400px;
-            height: 400px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.03);
+            top: 0;
+            right: 0;
+            width: 100%;
+            height: 100%;
             pointer-events: none;
-        }
-
-        .hero-section::after {
-            content: '';
-            position: absolute;
-            bottom: -150px;
-            left: -100px;
-            width: 500px;
-            height: 500px;
-            border-radius: 50%;
-            background: rgba(56, 189, 248, 0.04);
-            pointer-events: none;
+            opacity: 0.18;
         }
 
         .hero-inner {
             width: 100%;
             max-width: 720px;
-            padding: 50px 48px;
+            padding: 48px 48px;
             height: 100vh;
             display: flex;
             flex-direction: column;
@@ -100,152 +85,153 @@
             z-index: 2;
         }
 
-        /* LOGO PROMINENTE Y MAS GRANDE */
+        /* TOP HEADER ROW: LOGO + IDIOMA */
+        .hero-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
         .hero-brand {
             display: flex;
             align-items: center;
-            gap: 16px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+            gap: 14px;
         }
 
         .hero-brand img {
-            height: 58px;
+            height: 52px;
             width: auto;
             object-fit: contain;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
         }
 
-        .brand-text-wrapper {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .brand-text-main {
-            font-size: 20px;
+        .brand-title {
+            font-size: 21px;
             font-weight: 800;
             letter-spacing: 1.2px;
             text-transform: uppercase;
             color: #ffffff;
-            line-height: 1.1;
         }
 
-        .brand-text-sub {
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--accent-cyan);
-            margin-top: 2px;
+        .lang-selector-pill {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(255, 255, 255, 0.12);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 600;
+            color: #ffffff;
+            cursor: pointer;
+            backdrop-filter: blur(8px);
         }
 
         .hero-middle {
             margin: auto 0;
-            padding: 30px 0;
+            padding: 20px 0;
         }
 
         .hero-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 46px;
-            font-weight: 700;
-            line-height: 1.15;
+            font-size: 52px;
+            font-weight: 800;
+            line-height: 1.12;
             margin-bottom: 20px;
             color: #ffffff;
+            letter-spacing: -0.5px;
         }
 
         .hero-title em {
+            font-family: 'Playfair Display', serif;
             font-style: italic;
-            font-weight: 400;
-            color: #93c5fd;
+            font-weight: 500;
+            color: #ffffff;
         }
 
         .hero-desc {
-            font-size: 16px;
+            font-size: 16.5px;
             color: rgba(255, 255, 255, 0.88);
             line-height: 1.6;
-            max-width: 580px;
-            margin-bottom: 32px;
+            max-width: 560px;
+            margin-bottom: 40px;
         }
 
-        /* TARJETAS DE CARACTERISTICAS Y SERVICIOS INTEGRADOS EN HERO */
-        .features-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .feature-card-glass {
-            background: rgba(255, 255, 255, 0.07);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.14);
-            border-radius: 12px;
-            padding: 16px;
+        /* ESTRUCTURA DE ESTADISTICAS */
+        .stats-row {
             display: flex;
-            align-items: flex-start;
-            gap: 14px;
-        }
-
-        .feature-icon-box {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            background: rgba(56, 189, 248, 0.2);
-            color: var(--accent-cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .feature-title {
-            font-size: 13.5px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 4px;
-        }
-
-        .feature-desc {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.72);
-            line-height: 1.4;
-        }
-
-        .stats-grid {
-            display: flex;
-            gap: 40px;
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            gap: 48px;
+            margin-bottom: 36px;
         }
 
         .stat-item h3 {
-            font-size: 30px;
+            font-size: 34px;
             font-weight: 800;
             color: #ffffff;
+            line-height: 1;
+            margin-bottom: 6px;
         }
 
         .stat-item p {
-            font-size: 12.5px;
+            font-size: 13.5px;
             color: rgba(255, 255, 255, 0.75);
             font-weight: 500;
         }
 
-        /* CERTIFICACION DE SEGURIDAD */
-        .hero-footer-trust {
+        /* TARJETA DE TESTIMONIAL DEL MOCKUP */
+        .testimonial-card {
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            border-radius: 16px;
+            padding: 24px;
+            backdrop-filter: blur(10px);
+        }
+
+        .testimonial-text {
+            font-size: 14.5px;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.95);
+            margin-bottom: 16px;
+            font-weight: 400;
+        }
+
+        .testimonial-user {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: 12px;
+        }
+
+        .user-avatar-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #0284c7;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            font-size: 14px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .user-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .user-name {
+            font-size: 14px;
+            font-weight: 700;
+            color: #ffffff;
+        }
+
+        .user-role {
             font-size: 12px;
-            color: rgba(255, 255, 255, 0.7);
+            color: rgba(255, 255, 255, 0.65);
         }
 
-        .trust-icon {
-            width: 16px;
-            height: 16px;
-            stroke: var(--accent-cyan);
-        }
-
-        /* SECCIÓN DERECHA FORMULARIO PACIENTE (38% ANCHO) */
+        /* SECCIÓN DERECHA FORMULARIO PACIENTES (38% ANCHO) */
         .form-section {
             flex: 1;
             background-color: var(--bg-right);
@@ -346,8 +332,8 @@
 
         .input-icon-wrapper input:focus {
             outline: none;
-            border-color: var(--blue-hero-start);
-            box-shadow: 0 0 0 4px rgba(0, 82, 204, 0.12);
+            border-color: var(--primary-btn);
+            box-shadow: 0 0 0 4px rgba(0, 119, 200, 0.12);
         }
 
         .input-icon {
@@ -362,7 +348,7 @@
         .btn-primary {
             width: 100%;
             padding: 14px;
-            background-color: var(--blue-hero-start);
+            background-color: var(--primary-btn);
             border: none;
             border-radius: 10px;
             color: #ffffff;
@@ -372,11 +358,11 @@
             transition: background-color 0.2s ease;
             margin-top: 10px;
             margin-bottom: 25px;
-            box-shadow: 0 4px 12px rgba(0, 82, 204, 0.25);
+            box-shadow: 0 4px 12px rgba(0, 119, 200, 0.25);
         }
 
         .btn-primary:hover {
-            background-color: #0041a8;
+            background-color: var(--primary-btn-hover);
         }
 
         .register-footer {
@@ -386,7 +372,7 @@
         }
 
         .register-footer a {
-            color: var(--blue-hero-start);
+            color: var(--primary-btn);
             font-weight: 700;
             text-decoration: none;
         }
@@ -406,88 +392,74 @@
 
 <div class="login-wrapper">
 
-    <!-- HERO PACIENTES (SECCIÓN IZQUIERDA CON LENGUAJE VISUAL RICO) -->
+    <!-- HERO PACIENTES (SECCIÓN IZQUIERDA REPLICANDO EL MOCKUP EXACTO) -->
     <div class="hero-section">
+        <!-- SVG DE CIRCULOS DE FONDO -->
+        <svg class="bg-circles-svg" viewBox="0 0 800 800" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="700" cy="400" r="350" stroke="white" stroke-width="1.5"/>
+            <circle cx="700" cy="400" r="220" stroke="white" stroke-width="1.5"/>
+            <circle cx="200" cy="650" r="400" stroke="white" stroke-width="1"/>
+        </svg>
+
         <div class="hero-inner">
-            <!-- LOGO MAS GRANDE Y DESTACADO -->
-            <div class="hero-brand">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-                <div class="brand-text-wrapper">
-                    <span class="brand-text-main">CLÍNICA INTERNACIONAL</span>
-                    <span class="brand-text-sub">PORTAL DE PACIENTES</span>
+            <!-- HEADER CON LOGO Y SELECTOR DE IDIOMA -->
+            <div class="hero-top-row">
+                <div class="hero-brand">
+                    <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+                    <span class="brand-title">CLINICA INTERNACIONAL</span>
+                </div>
+
+                <div class="lang-selector-pill">
+                    <i data-lucide="globe" style="width: 15px; height: 15px;"></i>
+                    <span>ES</span>
+                    <i data-lucide="chevron-down" style="width: 13px; height: 13px;"></i>
                 </div>
             </div>
 
+            <!-- CONTENIDO CENTRAL DEL MOCKUP -->
             <div class="hero-middle">
-                <h1 class="hero-title">Tu salud,<br><em>gestionada</em><br>con máxima precisión.</h1>
+                <h1 class="hero-title">
+                    Tu salud,<br>
+                    <em>gestionada</em><br>
+                    con precisión.
+                </h1>
+
                 <p class="hero-desc">
-                    Accede a tu portal clínico para agendar citas presenciales o virtuales, consultar disponibilidad de especialistas y revisar tu historial de atención en tiempo real.
+                    Programa citas, accede a tu historial clínico y mantén comunicación directa con tus especialistas desde un solo lugar.
                 </p>
 
-                <!-- DETALLES Y CARACTERISTICAS VISUALES -->
-                <div class="features-grid">
-                    <div class="feature-card-glass">
-                        <div class="feature-icon-box">
-                            <i data-lucide="calendar-check" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="feature-title">Reserva de Citas 24/7</div>
-                            <div class="feature-desc">Elige médico, sede y horario de preferencia al instante.</div>
-                        </div>
-                    </div>
-
-                    <div class="feature-card-glass">
-                        <div class="feature-icon-box">
-                            <i data-lucide="zap" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="feature-title">Reasignación Inteligente</div>
-                            <div class="feature-desc">Alertas automáticas de cupos liberados por cancelación.</div>
-                        </div>
-                    </div>
-
-                    <div class="feature-card-glass">
-                        <div class="feature-icon-box">
-                            <i data-lucide="file-text" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="feature-title">Historial Clínico Seguro</div>
-                            <div class="feature-desc">Acceso confidencial a órdenes médicas y resultados.</div>
-                        </div>
-                    </div>
-
-                    <div class="feature-card-glass">
-                        <div class="feature-icon-box">
-                            <i data-lucide="video" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="feature-title">Telemedicina en Vivo</div>
-                            <div class="feature-desc">Consultas virtuales con especialistas desde cualquier lugar.</div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="stats-grid">
+                <!-- FILA DE ESTADISTICAS -->
+                <div class="stats-row">
                     <div class="stat-item">
                         <h3>400+</h3>
-                        <p>Médicos Especialistas</p>
+                        <p>Especialistas</p>
                     </div>
                     <div class="stat-item">
-                        <h3>40</h3>
-                        <p>Especialidades Clínicas</p>
+                        <h3>40 esp.</h3>
+                        <p>Especialidades</p>
                     </div>
                     <div class="stat-item">
-                        <h3>100%</h3>
-                        <p>Plataforma Segura</p>
+                        <h3>24/7</h3>
+                        <p>Atención</p>
+                    </div>
+                </div>
+
+                <!-- TARJETA DE TESTIMONIAL DE PACIENTE -->
+                <div class="testimonial-card">
+                    <p class="testimonial-text">
+                        "El sistema de la Clínica Internacional transformó cómo gestiono mis citas, tengo todo coordinado con mis especialistas."
+                    </p>
+                    <div class="testimonial-user">
+                        <div class="user-avatar-circle">DA</div>
+                        <div class="user-info">
+                            <span class="user-name">Diana Arévalo</span>
+                            <span class="user-role">Paciente desde 2024</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
-            <!-- GARANTIA DE PRIVACIDAD -->
-            <div class="hero-footer-trust">
-                <i data-lucide="shield-check" class="trust-icon"></i>
-                <span>Acreditación Internacional JCI &bull; Protección de Datos según Ley N° 29733</span>
-            </div>
+            <div></div>
         </div>
     </div>
 
@@ -503,7 +475,7 @@
 
             <div class="form-header">
                 <h2>Portal del Paciente</h2>
-                <p>Ingresa con tu número de DNI para acceder a tus citas y servicios.</p>
+                <p>Ingresa con tu DNI para acceder a tus citas y servicios.</p>
             </div>
 
             <c:if test="${not empty errorMessage}">
@@ -520,7 +492,7 @@
                     <label for="identificador">Número de DNI</label>
                     <div class="input-icon-wrapper">
                         <i data-lucide="id-card" class="input-icon"></i>
-                        <input type="text" id="identificador" name="identificador" required maxlength="8" pattern="[0-9]{8}" inputmode="numeric" placeholder="Ingrese su DNI (8 dígitos)">
+                        <input type="text" id="identificador" name="identificador" required maxlength="8" pattern="[0-9]{8}" inputmode="numeric" placeholder="72345678">
                     </div>
                 </div>
 
