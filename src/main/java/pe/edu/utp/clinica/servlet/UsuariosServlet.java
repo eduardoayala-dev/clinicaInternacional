@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.dao.UsuarioDAO;
 import pe.edu.utp.clinica.model.Usuario;
+import org.mindrot.jbcrypt.BCrypt;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -87,5 +88,57 @@ public class UsuariosServlet extends HttpServlet {
         request.setAttribute("countTotal", listaUsuarios.size());
 
         request.getRequestDispatcher("/WEB-INF/views/admin/usuarios.jsp").forward(request, response);
+    }
+
+    @Override
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        request.setCharacterEncoding("UTF-8");
+        
+        HttpSession session = request.getSession(false);
+        if (session == null || session.getAttribute("usuarioLogueado") == null || !"ADMINISTRADOR".equals(session.getAttribute("rol"))) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
+
+        String nombres = request.getParameter("nombres");
+        String apellidos = request.getParameter("apellidos");
+        String email = request.getParameter("email");
+        String rol = request.getParameter("rol");
+        String passwordRaw = request.getParameter("password");
+
+        String passwordHash = BCrypt.hashpw(passwordRaw, BCrypt.gensalt(12));
+
+        Usuario u = new Usuario();
+        u.setNombres(nombres);
+        u.setApellidos(apellidos);
+        u.setEmail(email);
+        u.setRol(rol);
+        u.setPasswordHash(passwordHash);
+        u.setActivo(true);
+
+        String cmp = null;
+        Integer idEspecialidad = null;
+        Integer idSede = null;
+        String cargo = null;
+
+        if ("MEDICO".equals(rol)) {
+            cmp = request.getParameter("cmp");
+            String espStr = request.getParameter("id_especialidad");
+            if (espStr != null && !espStr.isEmpty()) idEspecialidad = Integer.parseInt(espStr);
+            String sedeStr = request.getParameter("id_sede_medico");
+            if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
+        } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
+            cargo = request.getParameter("cargo");
+            String sedeStr = request.getParameter("id_sede_personal");
+            if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
+        }
+
+        boolean exito = usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
+
+        if (exito) {
+            response.sendRedirect(request.getContextPath() + "/admin/usuarios?success=true");
+        } else {
+            response.sendRedirect(request.getContextPath() + "/admin/usuarios?error=true");
+        }
     }
 }

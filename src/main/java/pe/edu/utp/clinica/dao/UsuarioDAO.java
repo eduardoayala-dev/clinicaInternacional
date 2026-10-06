@@ -172,6 +172,73 @@ public class UsuarioDAO {
         }
     }
 
+    public boolean registrarPersonal(Usuario u, String cmp, Integer idEspecialidad, Integer idSede, String cargo) {
+        String sqlUsuario = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
+        String sqlMedico = "INSERT INTO medico (id_usuario, cmp, id_especialidad, id_sede, estado) VALUES (?, ?, ?, ?, 'ACTIVO')";
+        String sqlPersonal = "INSERT INTO personal_administrativo (id_usuario, id_sede, codigo_empleado, cargo) VALUES (?, ?, ?, ?)";
+        String sqlAdmin = "INSERT INTO administrador (id_usuario, estado) VALUES (?, 'ACTIVO')";
+
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+
+            try (PreparedStatement stmtUsuario = conn.prepareStatement(sqlUsuario, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                stmtUsuario.setString(1, u.getNombres());
+                stmtUsuario.setString(2, u.getApellidos());
+                stmtUsuario.setString(3, u.getEmail());
+                stmtUsuario.setString(4, u.getPasswordHash());
+                stmtUsuario.setString(5, u.getRol());
+                stmtUsuario.setBoolean(6, u.isActivo());
+                stmtUsuario.executeUpdate();
+
+                try (ResultSet rs = stmtUsuario.getGeneratedKeys()) {
+                    if (rs.next()) {
+                        int userId = rs.getInt(1);
+                        
+                        if ("MEDICO".equals(u.getRol())) {
+                            try (PreparedStatement stmtM = conn.prepareStatement(sqlMedico)) {
+                                stmtM.setInt(1, userId);
+                                stmtM.setString(2, cmp);
+                                stmtM.setInt(3, idEspecialidad);
+                                stmtM.setInt(4, idSede);
+                                stmtM.executeUpdate();
+                            }
+                        } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
+                            String codGenerado = "ADM-" + String.format("%03d", userId);
+                            try (PreparedStatement stmtP = conn.prepareStatement(sqlPersonal)) {
+                                stmtP.setInt(1, userId);
+                                stmtP.setInt(2, idSede);
+                                stmtP.setString(3, codGenerado);
+                                stmtP.setString(4, cargo);
+                                stmtP.executeUpdate();
+                            }
+                        } else if ("ADMINISTRADOR".equals(u.getRol())) {
+                            try (PreparedStatement stmtA = conn.prepareStatement(sqlAdmin)) {
+                                stmtA.setInt(1, userId);
+                                stmtA.executeUpdate();
+                            }
+                        }
+                    } else {
+                        throw new SQLException("No se pudo obtener el ID del usuario insertado.");
+                    }
+                }
+            }
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) {}
+            }
+            LOGGER.log(Level.SEVERE, "Error al registrar personal: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+            }
+        }
+    }
+
     public java.util.List<Usuario> obtenerTodos() {
         java.util.List<Usuario> lista = new java.util.ArrayList<>();
         String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +

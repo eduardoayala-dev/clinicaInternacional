@@ -250,14 +250,14 @@
 
             <!-- SEARCH AND FILTERS -->
             <div class="search-bar">
-                <input type="text" class="form-control" placeholder="Buscar por nombre, correo o identificador...">
-                <select class="form-control">
+                <input type="text" id="filterSearch" class="form-control" placeholder="Buscar por nombre, correo o identificador..." onkeyup="filtrarTabla()">
+                <select id="filterRol" class="form-control" onchange="filtrarTabla()">
                     <option value="">Todos los Roles</option>
                     <option value="MEDICO">Médicos</option>
                     <option value="PERSONAL_ADMINISTRATIVO">Personal Administrativo</option>
                     <option value="PACIENTE">Pacientes</option>
                 </select>
-                <select class="form-control">
+                <select id="filterEstado" class="form-control" onchange="filtrarTabla()">
                     <option value="">Todos los Estados</option>
                     <option value="1">Activos</option>
                     <option value="0">Inactivos</option>
@@ -277,9 +277,9 @@
                             <th>Acciones</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="userTableBody">
                         <c:forEach var="u" items="${listaUsuarios}">
-                            <tr>
+                            <tr class="user-row" data-rol="${u.rol}" data-estado="${u.activo ? '1' : '0'}">
                                 <td>
                                     <div style="font-weight: 500; color: var(--text-main);">
                                         ${u.nombres} ${u.apellidos}
@@ -447,6 +447,30 @@
         lucide.createIcons();
 
         const modal = document.getElementById('modalUsuario');
+
+        function filtrarTabla() {
+            const search = document.getElementById('filterSearch').value.toLowerCase();
+            const rol = document.getElementById('filterRol').value;
+            const estado = document.getElementById('filterEstado').value;
+            
+            const rows = document.querySelectorAll('#userTableBody .user-row');
+            
+            rows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                const rowRol = row.getAttribute('data-rol');
+                const rowEstado = row.getAttribute('data-estado');
+                
+                const matchSearch = search === "" || text.includes(search);
+                const matchRol = rol === "" || rowRol === rol;
+                const matchEstado = estado === "" || rowEstado === estado;
+                
+                if (matchSearch && matchRol && matchEstado) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
 
         function abrirModal() {
             modal.classList.add('active');
