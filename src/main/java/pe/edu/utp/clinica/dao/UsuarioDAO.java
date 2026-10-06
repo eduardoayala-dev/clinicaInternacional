@@ -171,4 +171,43 @@ public class UsuarioDAO {
             }
         }
     }
+
+    public java.util.List<Usuario> obtenerTodos() {
+        java.util.List<Usuario> lista = new java.util.ArrayList<>();
+        String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +
+                     "m.cmp, e.nombre AS especialidad, pa.codigo_empleado, pa.cargo " +
+                     "FROM usuario u " +
+                     "LEFT JOIN medico m ON u.id_usuario = m.id_usuario " +
+                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+                     "LEFT JOIN personal_administrativo pa ON u.id_usuario = pa.id_usuario " +
+                     "ORDER BY u.id_usuario DESC";
+        
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+            
+            while (rs.next()) {
+                Timestamp ts = rs.getTimestamp("fecha_registro");
+                Usuario u = new Usuario(
+                        rs.getInt("id_usuario"),
+                        rs.getString("nombres"),
+                        rs.getString("apellidos"),
+                        rs.getString("email"),
+                        "", // No mandar el hash a la vista por seguridad
+                        rs.getString("rol"),
+                        ts != null ? ts.toLocalDateTime() : null,
+                        rs.getBoolean("activo")
+                );
+                u.setCmp(rs.getString("cmp"));
+                u.setEspecialidad(rs.getString("especialidad"));
+                u.setCodigoEmpleado(rs.getString("codigo_empleado"));
+                u.setCargo(rs.getString("cargo"));
+                
+                lista.add(u);
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al listar usuarios: " + e.getMessage(), e);
+        }
+        return lista;
+    }
 }

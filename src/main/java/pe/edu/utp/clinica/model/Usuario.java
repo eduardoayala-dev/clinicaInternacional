@@ -13,6 +13,12 @@ public class Usuario implements Serializable {
     private LocalDateTime fechaRegistro;
     private boolean activo;
 
+    // Transient UI Fields (from JOINs)
+    private String cmp;
+    private String especialidad;
+    private String codigoEmpleado;
+    private String cargo;
+
     public Usuario() {
     }
 
@@ -94,4 +100,16 @@ public class Usuario implements Serializable {
     public String getNombreCompleto() {
         return (nombres != null ? nombres : "") + " " + (apellidos != null ? apellidos : "");
     }
+
+    public String getCmp() { return cmp; }
+    public void setCmp(String cmp) { this.cmp = cmp; }
+
+    public String getEspecialidad() { return especialidad; }
+    public void setEspecialidad(String especialidad) { this.especialidad = especialidad; }
+
+    public String getCodigoEmpleado() { return codigoEmpleado; }
+    public void setCodigoEmpleado(String codigoEmpleado) { this.codigoEmpleado = codigoEmpleado; }
+
+    public String getCargo() { return cargo; }
+    public void setCargo(String cargo) { this.cargo = cargo; }
 }

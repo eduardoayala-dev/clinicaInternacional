@@ -36,6 +36,21 @@ public class LoginServlet extends HttpServlet {
             return;
         }
 
+        HttpSession existingSession = request.getSession(false);
+        if (existingSession != null && existingSession.getAttribute("usuarioLogueado") != null) {
+            String rol = (String) existingSession.getAttribute("rol");
+            if ("ADMINISTRADOR".equals(rol) || "PERSONAL_ADMINISTRATIVO".equals(rol)) {
+                response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                return;
+            } else if ("MEDICO".equals(rol)) {
+                response.sendRedirect(request.getContextPath() + "/medico/agenda");
+                return;
+            } else if ("PACIENTE".equals(rol)) {
+                response.sendRedirect(request.getContextPath() + "/paciente/dashboard");
+                return;
+            }
+        }
+
         HttpSession session = request.getSession(true);
         if (session.getAttribute("csrfToken") == null) {
             session.setAttribute("csrfToken", UUID.randomUUID().toString());
