@@ -8,6 +8,16 @@
     }
     if (nombreMedico == null) nombreMedico = "Dr. Carlos Mendoza";
 
+    String inicialesMedico = "CM";
+    if (nombreMedico != null && !nombreMedico.trim().isEmpty()) {
+        String[] partes = nombreMedico.replace("Dr.", "").replace("Dra.", "").trim().split("\\s+");
+        if (partes.length >= 2) {
+            inicialesMedico = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
+        } else {
+            inicialesMedico = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
+        }
+    }
+
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     int idCita = request.getAttribute("idCita") != null ? (Integer) request.getAttribute("idCita") : 1;
 %>
@@ -23,368 +33,296 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #0f172a;
-            --primary-accent: #2563eb;
-            --bg-page: #f8fafc;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-page: #f0f8ff;
             --bg-card: #ffffff;
-            --border-dark: #0f172a;
-            --border-light: #cbd5e1;
             --text-dark: #0f172a;
-            --text-muted: #64748b;
+            --text-gray: #64748b;
+            --text-light: #94a3b8;
+            --border-light: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --sidebar-width: 260px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-page); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
-
-        .top-header {
-            background: #ffffff; border-bottom: 2px solid var(--border-dark); padding: 12px 24px;
-            display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700;
-        }
-        .top-header-left { display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .top-header-right { display: flex; align-items: center; gap: 16px; }
-        .user-tag { background: #f1f5f9; padding: 6px 14px; border: 1px solid var(--border-dark); border-radius: 4px; font-size: 12px; }
-        .btn-logout {
-            background: #ffffff; border: 1px solid var(--border-dark); color: var(--text-dark); padding: 6px 14px;
-            border-radius: 4px; text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 6px;
-            font-size: 12px; transition: all 0.2s;
-        }
-        .btn-logout:hover { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
-
-        .app-container { display: flex; flex: 1; }
+        body { background-color: var(--bg-page); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
 
         .sidebar {
-            width: 240px; background: #ffffff; border-right: 2px solid var(--border-dark); padding: 16px;
-            display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+            width: var(--sidebar-width); background-color: var(--bg-card); border-right: 1px solid var(--border-light);
+            display: flex; flex-direction: column; padding: 24px 20px; flex-shrink: 0; z-index: 10;
         }
-        .sidebar-item {
-            padding: 12px 14px; border: 1px solid var(--border-dark); border-radius: 4px; color: var(--text-dark);
-            text-decoration: none; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-            transition: all 0.2s; display: flex; align-items: center; justify-content: space-between;
+        .brand-container { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 8px; }
+        .brand-container img { height: 36px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: var(--radius-md);
+            color: var(--text-gray); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;
         }
-        .sidebar-item:hover { background: #f1f5f9; }
-        .sidebar-item.active { background: var(--border-dark); color: #ffffff; }
+        .nav-item:hover { background-color: #f8fafc; color: var(--text-dark); }
+        .nav-item.active { background-color: #eff6ff; color: var(--primary); font-weight: 600; }
+        .user-profile-bottom {
+            margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 16px 8px 8px 8px;
+            border-top: 1px solid var(--border-light); cursor: pointer; text-decoration: none;
+        }
+        .avatar-initials {
+            display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600;
+            color: var(--primary); background-color: #eff6ff; width: 36px; height: 36px; font-size: 13px; flex-shrink: 0;
+        }
+        .user-name-sm { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
+        .user-role-sm { font-size: 11px; color: var(--text-gray); }
 
-        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; }
+        .main-content { flex: 1; padding: 32px 40px; overflow-y: auto; }
+        
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .header-title { font-size: 26px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.5px; }
+        .header-subtitle { font-size: 14px; color: var(--text-gray); }
+
+        .btn-bell {
+            width: 44px; height: 44px; border-radius: 12px; background: #ffffff; border: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: center; color: var(--text-gray); position: relative;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
 
         .alert-success {
-            background: #dcfce7; color: #166534; border: 2px solid #166534; padding: 12px 16px;
-            border-radius: 6px; font-weight: 700; margin-bottom: 20px; font-size: 13px; display: flex; align-items: center; gap: 8px;
+            background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 14px 18px;
+            border-radius: var(--radius-md); font-weight: 600; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 10px;
         }
 
-        /* EXPEDIENTE BAR */
-        .expediente-bar {
-            background: #ffffff; border: 2px solid var(--border-dark); border-radius: 6px; padding: 10px 16px;
-            margin-bottom: 12px; font-size: 13px; font-weight: 800; text-transform: uppercase;
+        /* CARD CONTAINERS */
+        .card-box {
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            padding: 28px; margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .card-box-title { font-size: 16px; font-weight: 700; color: var(--text-dark); margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+
+        /* GRID PATIENT & APPOINTMENT INFO */
+        .patient-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        .info-group { margin-bottom: 14px; }
+        .info-label { font-size: 12px; font-weight: 600; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+        .info-val {
+            font-size: 14px; font-weight: 600; color: var(--text-dark); padding: 10px 14px; background: #f8fafc;
+            border-radius: var(--radius-md); border: 1px solid var(--border-light);
         }
 
-        .op-msg-box {
-            background: #ffffff; border: 2px solid var(--border-dark); border-radius: 6px; padding: 12px 16px;
-            margin-bottom: 20px; font-size: 12px; display: flex; align-items: center; gap: 12px;
-        }
-        .op-msg-tag { background: #0f172a; color: #ffffff; padding: 4px 8px; font-weight: 800; font-size: 11px; border-radius: 3px; }
-
-        /* SECTION BOX */
-        .sec-box {
-            background: #ffffff; border: 2px solid var(--border-dark); border-radius: 6px; margin-bottom: 20px; overflow: hidden;
-        }
-        .sec-head {
-            background: #f1f5f9; border-bottom: 2px solid var(--border-dark); padding: 12px 20px;
-            display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 800; text-transform: uppercase;
-        }
-
-        .sec-body { padding: 20px; }
-
-        /* SECTION 1 GRID */
-        .sec1-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
-        .sec1-col-title { font-size: 12px; font-weight: 800; text-transform: uppercase; color: var(--text-dark); margin-bottom: 12px; display: flex; justify-content: space-between; }
-
-        .info-row { margin-bottom: 10px; }
-        .info-label { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 3px; }
-        .info-value-box {
-            background: #f8fafc; border: 1px solid var(--border-dark); padding: 8px 12px; border-radius: 4px;
-            font-size: 13px; font-weight: 700; color: var(--text-dark);
-        }
-
-        /* SECTION 2 CONTROL */
-        .notice-box {
-            background: #f8fafc; border: 1px solid var(--border-dark); padding: 10px 14px; border-radius: 4px;
-            font-size: 12px; font-weight: 700; color: var(--text-muted); margin-bottom: 16px; text-transform: uppercase;
-        }
+        /* ATTENDANCE BUTTONS */
         .attendance-group { display: flex; gap: 16px; margin-bottom: 16px; }
-        .btn-attendance {
-            flex: 1; padding: 14px; border: 2px solid var(--border-dark); border-radius: 6px; background: #ffffff;
-            font-size: 13px; font-weight: 800; cursor: pointer; text-align: center; text-transform: uppercase; transition: all 0.2s;
+        .btn-att-pill {
+            flex: 1; padding: 14px; border-radius: 30px; border: 1px solid var(--border-light); background: #f8fafc;
+            font-size: 14px; font-weight: 600; color: var(--text-gray); cursor: pointer; transition: all 0.2s; text-align: center;
         }
-        .btn-attendance.selected { background: #0f172a; color: #ffffff; }
+        .btn-att-pill.selected { background: var(--primary); color: #ffffff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
 
-        .status-confirmed-box {
-            background: #ffffff; border: 2px solid var(--border-dark); padding: 12px 16px; border-radius: 6px;
-            font-size: 12px; font-weight: 800; text-transform: uppercase; text-align: center;
+        .attendance-confirmed-badge {
+            background: #dcfce7; color: #166534; padding: 12px 18px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600; text-align: center;
         }
 
-        /* SECTION 3 PRIORITY */
-        .priority-options { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
+        /* PRIORITY CARDS */
+        .priority-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 20px; }
         .priority-card {
-            border: 2px solid var(--border-dark); border-radius: 6px; padding: 14px; cursor: pointer;
+            border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 16px; cursor: pointer;
             background: #ffffff; transition: all 0.2s;
         }
-        .priority-card.selected { background: #f1f5f9; border-width: 3px; }
-        .priority-title { font-size: 13px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; }
-        .priority-sub { font-size: 11px; color: var(--text-muted); font-weight: 600; }
-
-        .date-picker-row { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-        .date-input { padding: 8px 12px; border: 1px solid var(--border-dark); border-radius: 4px; font-weight: 700; font-size: 13px; }
+        .priority-card:hover { border-color: var(--primary); }
+        .priority-card.selected { background: var(--primary-light); border-color: var(--primary); }
+        .priority-card-title { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; }
+        .priority-card.selected .priority-card-title { color: var(--primary); }
+        .priority-card-sub { font-size: 12px; color: var(--text-gray); }
 
         textarea {
-            width: 100%; height: 80px; padding: 10px 14px; border: 1px solid var(--border-dark); border-radius: 4px;
-            font-size: 13px; font-weight: 600; outline: none; margin-top: 6px; font-family: 'Inter', sans-serif;
+            width: 100%; height: 90px; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-light);
+            font-size: 14px; outline: none; transition: all 0.2s; background: #ffffff; font-family: 'Inter', sans-serif;
         }
+        textarea:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
 
-        /* FOOTER ACTIONS */
-        .form-foot { display: flex; justify-content: flex-end; gap: 12px; padding: 16px 20px; background: #f8fafc; border-top: 2px solid var(--border-dark); }
         .btn-save-record {
-            background: #0f172a; color: #ffffff; border: 2px solid var(--border-dark); padding: 12px 24px;
-            font-size: 13px; font-weight: 800; border-radius: 4px; cursor: pointer; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px;
+            background: var(--primary); color: #ffffff; border: none; padding: 14px 32px; border-radius: 30px;
+            font-size: 15px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.2);
+            display: inline-flex; align-items: center; gap: 8px;
         }
-        .btn-save-record:hover { background: #2563eb; border-color: #2563eb; }
-        .btn-reset {
-            background: #ffffff; color: var(--text-dark); border: 1px solid var(--border-dark); padding: 12px 20px;
-            font-size: 13px; font-weight: 800; border-radius: 4px; cursor: pointer; text-transform: uppercase;
-        }
+        .btn-save-record:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+        @media(max-width:900px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .patient-grid, .priority-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <!-- TOP HEADER -->
-    <header class="top-header">
-        <div class="top-header-left">
-            <i data-lucide="activity" style="width: 18px;"></i>
-            PORTAL DEL MÉDICO — CLÍNICA INTERNACIONAL
+    <aside class="sidebar">
+        <div class="brand-container">
+            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
         </div>
-        <div class="top-header-right">
-            <span class="user-tag"><%= nombreMedico %> | ROL: MÉDICO</span>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout">
-                <i data-lucide="log-out" style="width: 14px;"></i> CERRAR SESIÓN
+        <nav class="nav-menu">
+            <a href="${pageContext.request.contextPath}/medico/inicio" class="nav-item">
+                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+            </a>
+            <a href="${pageContext.request.contextPath}/medico/agenda" class="nav-item">
+                <i data-lucide="calendar" style="width: 18px;"></i> Mi Agenda
+            </a>
+            <a href="${pageContext.request.contextPath}/medico/atencion" class="nav-item active">
+                <i data-lucide="stethoscope" style="width: 18px;"></i> Atención Paciente
+            </a>
+            <a href="${pageContext.request.contextPath}/medico/perfil" class="nav-item">
+                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
+            </a>
+        </nav>
+        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
+            <div class="avatar-initials"><%= inicialesMedico %></div>
+            <div style="flex: 1;">
+                <div class="user-name-sm"><%= nombreMedico %></div>
+                <div class="user-role-sm">Médico Especialista</div>
+            </div>
+            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
+        </a>
+    </aside>
+
+    <main class="main-content">
+        <div class="header-row">
+            <div>
+                <h1 class="header-title">Atención de Pacientes — Cita #CIT-2026-9482</h1>
+                <p class="header-subtitle">Registro asistencial y evolución clínica de la consulta ambulatoria activa.</p>
+            </div>
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+                <i data-lucide="bell" style="width: 20px;"></i>
             </a>
         </div>
-    </header>
 
-    <div class="app-container">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <a href="${pageContext.request.contextPath}/medico/inicio" class="sidebar-item">
-                0. INICIO <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/agenda" class="sidebar-item">
-                2. MI AGENDA <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/atencion" class="sidebar-item active">
-                3. ATENCIÓN PACIENTE <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/perfil" class="sidebar-item">
-                4. PERFIL <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-        </aside>
+        <% if (mensajeExito != null) { %>
+            <div class="alert-success">
+                <i data-lucide="check-circle" style="width: 20px;"></i> <%= mensajeExito %>
+            </div>
+        <% } %>
 
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
+        <form action="${pageContext.request.contextPath}/medico/atencion" method="POST">
+            <input type="hidden" name="idCita" value="<%= idCita %>">
 
-            <% if (mensajeExito != null) { %>
-                <div class="alert-success">
-                    <i data-lucide="check-circle-2" style="width: 18px;"></i> <%= mensajeExito %>
+            <!-- DATOS DE LA CITA MÉDICA -->
+            <div class="card-box">
+                <div class="card-box-title">
+                    <i data-lucide="clipboard-list" style="width: 20px; color: var(--primary);"></i> Sección 1: Datos de la Cita Médica
                 </div>
-            <% } %>
 
-            <!-- EXPEDIENTE BAR -->
-            <div class="expediente-bar">
-                EXPEDIENTE: CITA #CIT-2026-9482 &nbsp;|&nbsp; FECHA REGISTRO: 14/10/2026 09:30:14
+                <div class="patient-grid">
+                    <div>
+                        <div class="info-group">
+                            <div class="info-label">Paciente / Historia Clínica</div>
+                            <div class="info-val">Juan Alberto Pérez Gómez (HC #89281)</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">Documento y Datos</div>
+                            <div class="info-val">DNI 72345678 &nbsp;•&nbsp; 54 Años &nbsp;•&nbsp; Masculino</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">Cobertura</div>
+                            <div class="info-val">Plan EPS Regular — Aseguradora Convenio</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">Alergias Registradas</div>
+                            <div class="info-val" style="color: #166534;">Ninguna conocida</div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <div class="info-group">
+                            <div class="info-label">Fecha y Hora Programada</div>
+                            <div class="info-val">Jueves 24 de Octubre de 2026 — 09:30 AM</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">Sede y Consultorio</div>
+                            <div class="info-val">Sede Central — Consultorio 302 (Pabellón B)</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">Médico Tratante</div>
+                            <div class="info-val"><%= nombreMedico %> (Cardiología)</div>
+                        </div>
+
+                        <div class="info-group">
+                            <div class="info-label">Motivo de Consulta</div>
+                            <div class="info-val">Chequeo preventivo / Molestia torácica leve al esfuerzo</div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
-            <!-- OP MSG BOX -->
-            <div class="op-msg-box">
-                <span class="op-msg-tag">[ ! ] MENSAJE OPERATIVO SISTEMA</span>
-                <strong style="text-transform: uppercase;">ESTADO: REGISTRO OPERATIVO DE CONSULTA AMBULATORIA ACTIVA</strong>
+            <!-- CONTROL DE ASISTENCIA -->
+            <div class="card-box">
+                <div class="card-box-title">
+                    <i data-lucide="user-check" style="width: 20px; color: var(--primary);"></i> Sección 2: Control de Asistencia del Paciente
+                </div>
+
+                <div class="attendance-group">
+                    <button type="button" class="btn-att-pill selected" id="btnAsistio" onclick="selectAttendance('ASISTIO')">
+                        ✓ Marcar Asistió
+                    </button>
+                    <button type="button" class="btn-att-pill" id="btnNoAsistio" onclick="selectAttendance('NO_ASISTIO')">
+                        ✗ Marcar No Asistió
+                    </button>
+                </div>
+                <input type="hidden" name="asistencia" id="asistenciaInput" value="ASISTIO">
+
+                <div class="attendance-confirmed-badge">
+                    <i data-lucide="check" style="width: 16px; display: inline; vertical-align: middle; margin-right: 6px;"></i>
+                    Asistencia confirmada por Recepción (En consultorio)
+                </div>
             </div>
 
-            <form action="${pageContext.request.contextPath}/medico/atencion" method="POST">
-                <input type="hidden" name="idCita" value="<%= idCita %>">
-
-                <!-- SECTION 1: DATOS DE LA CITA MÉDICA -->
-                <div class="sec-box">
-                    <div class="sec-head">
-                        <span>3. ATENCIÓN DE PACIENTES — DETALLE DE CITA</span>
-                        <span style="font-size: 11px; color: var(--text-muted);">METADATOS CLÍNICOS VALIDADOS</span>
-                    </div>
-
-                    <div class="sec-body">
-                        <h3 style="font-size: 13px; font-weight: 800; text-transform: uppercase; margin-bottom: 16px; border-bottom: 2px solid var(--border-dark); padding-bottom: 6px;">
-                            SECCIÓN 1: DATOS DE LA CITA MÉDICA
-                        </h3>
-
-                        <div class="sec1-grid">
-                            <!-- IZQUIERDA: PACIENTE -->
-                            <div>
-                                <div class="sec1-col-title">
-                                    <span>INFORMACIÓN DEL PACIENTE</span>
-                                    <span style="background: #f1f5f9; padding: 2px 6px; border: 1px solid var(--border-dark); border-radius: 3px;">[ HC: #89281 ]</span>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">NOMBRE COMPLETO:</div>
-                                    <div class="info-value-box">[ Juan Alberto Pérez Gómez ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">DOCUMENTO / FICHA:</div>
-                                    <div class="info-value-box">[ DNI 72345678 ] &nbsp;|&nbsp; EDAD: [ 54 AÑOS ] &nbsp;|&nbsp; SEXO: [ MASCULINO ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">TELÉFONO CONTACTO:</div>
-                                    <div class="info-value-box">[ +51 987 654 321 ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">TIPO DE COBERTURA:</div>
-                                    <div class="info-value-box">[ PLAN EPS REGULAR — ASEGURADORA CONVENIO ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">ALERGIAS REGISTRADAS:</div>
-                                    <div class="info-value-box" style="color: #166534;">[ NINGUNA CONOCIDA ]</div>
-                                </div>
-                            </div>
-
-                            <!-- DERECHA: PROGRAMACIÓN -->
-                            <div>
-                                <div class="sec1-col-title">
-                                    <span>DETALLES DE PROGRAMACIÓN</span>
-                                    <span style="background: #0f172a; color: #ffffff; padding: 2px 6px; border-radius: 3px;">[ BLOQUE REGULAR ]</span>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">FECHA Y HORA:</div>
-                                    <div class="info-value-box">[ JUEVES 24 DE OCTUBRE DE 2026 — 09:30 AM ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">SEDE Y CONSULTORIO:</div>
-                                    <div class="info-value-box">[ SEDE CENTRAL — CONSULTORIO 302 (PABELLÓN B) ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">MÉDICO TRATANTE:</div>
-                                    <div class="info-value-box">[ <%= nombreMedico %> — CARDIOLOGÍA ]</div>
-                                </div>
-
-                                <div class="info-row">
-                                    <div class="info-label">MOTIVO DE CONSULTA:</div>
-                                    <div class="info-value-box">[ CHEQUEO PREVENTIVO / MOLESTIA TORÁCICA LEVE AL ESFUERZO ]</div>
-                                </div>
-
-                                <div style="display: flex; gap: 12px; margin-top: 10px;">
-                                    <div style="flex: 1;" class="info-label">CANAL: [ WEB PACIENTES ]</div>
-                                    <div style="flex: 1;" class="info-label">TICKET: [ TK-08918-B ]</div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+            <!-- REGISTRO DE PRIORIDAD CLÍNICA -->
+            <div class="card-box">
+                <div class="card-box-title">
+                    <i data-lucide="activity" style="width: 20px; color: var(--primary);"></i> Sección 3: Registro de Prioridad Clínica y Próxima Atención
                 </div>
 
-                <!-- SECTION 2: CONTROL DE ASISTENCIA DEL PACIENTE -->
-                <div class="sec-box">
-                    <div class="sec-head">
-                        <span>SECCIÓN 2: CONTROL DE ASISTENCIA DEL PACIENTE</span>
-                        <span style="font-size: 11px; color: var(--text-muted);">CONTROL OPERATIVO REQUERIDO</span>
-                    </div>
-                    <div class="sec-body">
-                        <div class="notice-box">
-                            [ AVISO CLÍNICO-ADMINISTRATIVO: Marque el estado de comparecencia del paciente para habilitar la facturación y cierre de turno ]
-                        </div>
-
-                        <div class="attendance-group">
-                            <button type="button" class="btn-attendance selected" id="btnAsistio" onclick="selectAttendance('ASISTIO')">
-                                [ (X) MARCAR ASISTIÓ ]
-                            </button>
-                            <button type="button" class="btn-attendance" id="btnNoAsistio" onclick="selectAttendance('NO_ASISTIO')">
-                                [ ( ) MARCAR NO ASISTIÓ ]
-                            </button>
-                        </div>
-                        <input type="hidden" name="asistencia" id="asistenciaInput" value="ASISTIO">
-
-                        <div class="status-confirmed-box">
-                            <i data-lucide="check" style="width: 14px; display: inline; vertical-align: middle;"></i>
-                            ESTADO ACTUAL: ASISTENCIA CONFIRMADA POR RECEPCIÓN — EN CONSULTORIO
-                        </div>
-                    </div>
+                <div style="font-size: 13px; font-weight: 600; color: var(--text-dark); margin-bottom: 12px;">
+                    Nivel de Prioridad Clínica para Citas Posteriores:
                 </div>
 
-                <!-- SECTION 3: REGISTRO DE PRIORIDAD CLÍNICA Y PRÓXIMA ATENCIÓN -->
-                <div class="sec-box">
-                    <div class="sec-head">
-                        <span>SECCIÓN 3: REGISTRO DE PRIORIDAD CLÍNICA Y PRÓXIMA ATENCIÓN</span>
-                        <span style="font-size: 11px; color: var(--text-muted);">PLAN DE SEGUIMIENTO</span>
+                <div class="priority-grid">
+                    <div class="priority-card" onclick="selectPriority(this, 'ALTA')">
+                        <div class="priority-card-title">Prioridad Alta</div>
+                        <div class="priority-card-sub">Seguimiento urgente o derivación prioritaria</div>
                     </div>
 
-                    <div class="sec-body">
-                        <div style="font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; color: var(--text-dark);">
-                            NIVEL DE PRIORIDAD CLÍNICA: * (Seleccione la criticidad o periodicidad para citas posteriores)
-                        </div>
-
-                        <div class="priority-options">
-                            <div class="priority-card" onclick="selectPriority(this, 'ALTA')">
-                                <div class="priority-title">[ ] ALTA</div>
-                                <div class="priority-sub">Requiere seguimiento urgente o derivación prioritaria</div>
-                            </div>
-
-                            <div class="priority-card selected" onclick="selectPriority(this, 'MEDIA')">
-                                <div class="priority-title">[X] MEDIA — SELECCIONADA</div>
-                                <div class="priority-sub">Control estándar según evolución clínica</div>
-                            </div>
-
-                            <div class="priority-card" onclick="selectPriority(this, 'BAJA')">
-                                <div class="priority-title">[ ] BAJA</div>
-                                <div class="priority-sub">Control de rutina / preventivo anual</div>
-                            </div>
-                        </div>
-                        <input type="hidden" name="prioridad" id="prioridadInput" value="MEDIA">
-
-                        <div style="margin-top: 20px;">
-                            <label style="font-size: 11px; font-weight: 800; text-transform: uppercase; display: block; margin-bottom: 6px;">
-                                FECHA RECOMENDADA DE PRÓXIMA ATENCIÓN: *
-                            </label>
-                            <div class="date-picker-row">
-                                <input type="date" class="date-input" value="2026-11-04">
-                                <span style="background: #f1f5f9; padding: 6px 12px; border: 1px solid var(--border-dark); border-radius: 4px; font-size: 11px; font-weight: 800; text-transform: uppercase;">
-                                    RECOMENDADO: EN 15 DÍAS
-                                </span>
-                            </div>
-                        </div>
-
-                        <div style="margin-top: 16px;">
-                            <label style="font-size: 11px; font-weight: 800; text-transform: uppercase; display: flex; justify-content: space-between;">
-                                <span>INDICACIÓN BREVE DE CONTINUIDAD (TEXTO LIBRE):</span>
-                                <span style="color: var(--text-muted);">[ LÍMITE: 250 CARACTERES ]</span>
-                            </label>
-                            <textarea name="indicaciones" placeholder="Ingrese las observaciones clínicas y plan de continuidad...">Control con resultados de ecocardiograma y perfil lipídico completo</textarea>
-                            <div style="font-size: 10px; color: var(--text-muted); margin-top: 4px; font-weight: 700;">
-                                [ NOTA: Este texto se adjunta automáticamente a la orden médica y recordatorio SMS del paciente ]
-                            </div>
-                        </div>
+                    <div class="priority-card selected" onclick="selectPriority(this, 'MEDIA')">
+                        <div class="priority-card-title">Prioridad Media</div>
+                        <div class="priority-card-sub">Control estándar según evolución clínica</div>
                     </div>
 
-                    <div class="form-foot">
-                        <button type="reset" class="btn-reset">[ RESTABLECER ]</button>
-                        <button type="submit" class="btn-save-record">
-                            <i data-lucide="save" style="width: 16px;"></i> [ GUARDAR REGISTRO DE ATENCIÓN ]
-                        </button>
+                    <div class="priority-card" onclick="selectPriority(this, 'BAJA')">
+                        <div class="priority-card-title">Prioridad Baja</div>
+                        <div class="priority-card-sub">Control de rutina o preventivo anual</div>
                     </div>
                 </div>
+                <input type="hidden" name="prioridad" id="prioridadInput" value="MEDIA">
 
-            </form>
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 6px;">
+                        Fecha Recomendada de Próxima Atención
+                    </label>
+                    <input type="date" value="2026-11-04" style="padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-light); font-size: 14px;">
+                </div>
 
-        </main>
-    </div>
+                <div style="margin-bottom: 24px;">
+                    <label style="font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 6px;">
+                        Indicaciones de Continuidad (Observaciones Clínicas)
+                    </label>
+                    <textarea name="indicaciones" placeholder="Ingrese las observaciones clínicas y plan de continuidad...">Control con resultados de ecocardiograma y perfil lipídico completo</textarea>
+                </div>
+
+                <div style="text-align: right;">
+                    <button type="submit" class="btn-save-record">
+                        <i data-lucide="check" style="width: 18px;"></i> Guardar Registro de Atención
+                    </button>
+                </div>
+            </div>
+        </form>
+    </main>
 
     <script>
         lucide.createIcons();
@@ -401,12 +339,8 @@
         }
 
         function selectPriority(card, val) {
-            document.querySelectorAll('.priority-card').forEach(c => {
-                c.classList.remove('selected');
-                c.querySelector('.priority-title').textContent = c.querySelector('.priority-title').textContent.replace('[X]', '[ ]');
-            });
+            document.querySelectorAll('.priority-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
-            card.querySelector('.priority-title').textContent = card.querySelector('.priority-title').textContent.replace('[ ]', '[X]');
             document.getElementById('prioridadInput').value = val;
         }
     </script>

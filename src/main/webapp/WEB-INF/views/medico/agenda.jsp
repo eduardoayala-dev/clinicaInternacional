@@ -10,334 +10,332 @@
     }
     if (nombreMedico == null) nombreMedico = "Dr. Carlos Mendoza";
 
-    List<Map<String, Object>> agenda = (List<Map<String, Object>>) request.getAttribute("agenda");
+    String inicialesMedico = "CM";
+    if (nombreMedico != null && !nombreMedico.trim().isEmpty()) {
+        String[] partes = nombreMedico.replace("Dr.", "").replace("Dra.", "").trim().split("\\s+");
+        if (partes.length >= 2) {
+            inicialesMedico = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
+        } else {
+            inicialesMedico = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
+        }
+    }
 %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mi Agenda de Citas - Portal del Médico | Clínica Internacional</title>
+    <title>Mi Agenda - Portal del Médico | Clínica Internacional</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #0f172a;
-            --primary-accent: #2563eb;
-            --bg-page: #f8fafc;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-page: #f0f8ff;
             --bg-card: #ffffff;
-            --border-dark: #0f172a;
-            --border-light: #cbd5e1;
             --text-dark: #0f172a;
-            --text-muted: #64748b;
+            --text-gray: #64748b;
+            --text-light: #94a3b8;
+            --border-light: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --sidebar-width: 260px;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-        body { background-color: var(--bg-page); color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
-
-        .top-header {
-            background: #ffffff; border-bottom: 2px solid var(--border-dark); padding: 12px 24px;
-            display: flex; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 700;
-        }
-        .top-header-left { display: flex; align-items: center; gap: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        .top-header-right { display: flex; align-items: center; gap: 16px; }
-        .user-tag { background: #f1f5f9; padding: 6px 14px; border: 1px solid var(--border-dark); border-radius: 4px; font-size: 12px; }
-        .btn-logout {
-            background: #ffffff; border: 1px solid var(--border-dark); color: var(--text-dark); padding: 6px 14px;
-            border-radius: 4px; text-decoration: none; font-weight: 700; display: flex; align-items: center; gap: 6px;
-            font-size: 12px; transition: all 0.2s;
-        }
-        .btn-logout:hover { background: #fee2e2; border-color: #ef4444; color: #b91c1c; }
-
-        .app-container { display: flex; flex: 1; }
+        body { background-color: var(--bg-page); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
 
         .sidebar {
-            width: 240px; background: #ffffff; border-right: 2px solid var(--border-dark); padding: 16px;
-            display: flex; flex-direction: column; gap: 8px; flex-shrink: 0;
+            width: var(--sidebar-width); background-color: var(--bg-card); border-right: 1px solid var(--border-light);
+            display: flex; flex-direction: column; padding: 24px 20px; flex-shrink: 0; z-index: 10;
         }
-        .sidebar-item {
-            padding: 12px 14px; border: 1px solid var(--border-dark); border-radius: 4px; color: var(--text-dark);
-            text-decoration: none; font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
-            transition: all 0.2s; display: flex; align-items: center; justify-content: space-between;
+        .brand-container { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 8px; }
+        .brand-container img { height: 36px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+        .nav-item {
+            display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: var(--radius-md);
+            color: var(--text-gray); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;
         }
-        .sidebar-item:hover { background: #f1f5f9; }
-        .sidebar-item.active { background: var(--border-dark); color: #ffffff; }
-
-        .main-content { flex: 1; padding: 24px 32px; overflow-y: auto; }
-
-        /* STATUS BANNER */
-        .status-banner {
-            background: #ffffff; border: 2px solid var(--border-dark); border-radius: 6px; padding: 10px 16px;
-            margin-bottom: 20px; font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+        .nav-item:hover { background-color: #f8fafc; color: var(--text-dark); }
+        .nav-item.active { background-color: #eff6ff; color: var(--primary); font-weight: 600; }
+        .user-profile-bottom {
+            margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 16px 8px 8px 8px;
+            border-top: 1px solid var(--border-light); cursor: pointer; text-decoration: none;
         }
-
-        /* HEADER SECTION */
-        .header-box {
-            display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;
+        .avatar-initials {
+            display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600;
+            color: var(--primary); background-color: #eff6ff; width: 36px; height: 36px; font-size: 13px; flex-shrink: 0;
         }
-        .header-title { font-size: 22px; font-weight: 800; text-transform: uppercase; letter-spacing: -0.5px; }
-        .header-tag { background: #ffffff; border: 2px solid var(--border-dark); padding: 6px 12px; font-size: 12px; font-weight: 800; text-transform: uppercase; }
+        .user-name-sm { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
+        .user-role-sm { font-size: 11px; color: var(--text-gray); }
 
-        /* PARAMETERS FILTER CARD */
+        .main-content { flex: 1; padding: 32px 40px; overflow-y: auto; }
+        
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .header-title { font-size: 26px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.5px; }
+        .header-subtitle { font-size: 14px; color: var(--text-gray); }
+
+        .btn-bell {
+            width: 44px; height: 44px; border-radius: 12px; background: #ffffff; border: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: center; color: var(--text-gray); position: relative;
+            text-decoration: none; transition: all 0.2s;
+        }
+        .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
+
+        /* FILTER CARD */
         .filter-card {
-            background: #ffffff; border: 2px solid var(--border-dark); border-radius: 6px; padding: 16px 20px; margin-bottom: 20px;
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
         }
-        .filter-card-title { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-muted); margin-bottom: 12px; display: flex; justify-content: space-between; }
-        .filter-grid { display: grid; grid-template-columns: 2fr 1.5fr 3fr 2fr; gap: 16px; align-items: flex-end; }
-        .form-group label { display: block; font-size: 11px; font-weight: 800; text-transform: uppercase; margin-bottom: 4px; color: var(--text-dark); }
+        .filter-grid { display: grid; grid-template-columns: 2fr 1.5fr 3fr 2fr; gap: 20px; align-items: flex-end; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; }
         .form-group select, .form-group input {
-            width: 100%; padding: 8px 12px; border: 1px solid var(--border-dark); border-radius: 4px;
-            font-size: 13px; font-weight: 600; outline: none; background: #ffffff;
+            width: 100%; padding: 12px 16px; border-radius: var(--radius-md); border: 1px solid var(--border-light);
+            font-size: 14px; color: var(--text-dark); outline: none; background: #ffffff; transition: all 0.2s;
+        }
+        .form-group select:focus, .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(37,99,235,0.1); }
+
+        .view-pill-group { display: flex; background: #f1f5f9; padding: 4px; border-radius: 30px; border: 1px solid var(--border-light); }
+        .btn-view-pill {
+            flex: 1; padding: 8px 16px; border: none; background: transparent; font-size: 13px; font-weight: 600;
+            color: var(--text-gray); border-radius: 20px; cursor: pointer; transition: all 0.2s; text-align: center;
+        }
+        .btn-view-pill.active { background: #ffffff; color: var(--primary); box-shadow: 0 2px 6px rgba(0,0,0,0.06); }
+
+        /* SUMMARY BANNER */
+        .summary-banner {
+            background: var(--primary-light); border: 1px solid #bfdbfe; border-radius: var(--radius-lg);
+            padding: 16px 24px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 14px; color: #1e40af; font-weight: 600;
         }
 
-        .view-mode-group { display: flex; border: 1px solid var(--border-dark); border-radius: 4px; overflow: hidden; }
-        .btn-view-mode { flex: 1; padding: 8px 0; border: none; background: #ffffff; font-size: 11px; font-weight: 800; cursor: pointer; text-align: center; }
-        .btn-view-mode.active { background: var(--border-dark); color: #ffffff; }
-
-        /* SUMMARY BAR */
-        .summary-bar {
-            background: #f1f5f9; border: 2px solid var(--border-dark); border-bottom: none; border-radius: 6px 6px 0 0;
-            padding: 12px 18px; display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: 800; text-transform: uppercase;
+        /* TABLE CARD */
+        .table-card {
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02); margin-bottom: 24px;
         }
-
-        /* TABLE */
-        .table-box { background: #ffffff; border: 2px solid var(--border-dark); border-radius: 0 0 6px 6px; overflow: hidden; margin-bottom: 20px; }
         table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background: #f8fafc; border-bottom: 2px solid var(--border-dark); padding: 12px 16px; font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--text-dark); }
-        td { border-bottom: 1px solid #e2e8f0; padding: 12px 16px; font-size: 13px; font-weight: 500; vertical-align: middle; }
+        th { background: #f8fafc; padding: 16px 20px; font-size: 12px; font-weight: 600; color: var(--text-gray); border-bottom: 1px solid var(--border-light); }
+        td { padding: 16px 20px; font-size: 14px; color: var(--text-dark); border-bottom: 1px solid var(--border-light); vertical-align: middle; }
         tr:last-child td { border-bottom: none; }
         tr:hover { background: #f8fafc; }
 
-        .time-slot { font-weight: 800; font-size: 12px; white-space: nowrap; }
-        .patient-name { font-weight: 700; color: var(--text-dark); }
-        .sub-tag { font-size: 10px; background: #0f172a; color: #ffffff; padding: 2px 6px; border-radius: 2px; margin-left: 6px; font-weight: 800; }
+        .badge-status { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; display: inline-block; }
+        .badge-atendido { background: #f1f5f9; color: #475569; }
+        .badge-espera { background: #dcfce7; color: #166534; }
+        .badge-confirmada { background: #eff6ff; color: #2563eb; }
 
-        .badge-status { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 800; border: 1px solid var(--border-dark); }
-        .badge-atendido { background: #e2e8f0; color: #475569; }
-        .badge-espera { background: #0f172a; color: #ffffff; }
-        .badge-confirmada { background: #ffffff; color: #0f172a; }
-
-        .btn-open {
-            padding: 6px 14px; border-radius: 4px; font-size: 11px; font-weight: 800; border: 1px solid var(--border-dark);
-            background: #ffffff; color: var(--text-dark); text-decoration: none; display: inline-block; transition: all 0.2s; text-transform: uppercase;
+        .btn-open-tbl {
+            padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-decoration: none;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; background: var(--primary-light); color: var(--primary);
         }
-        .btn-open.active { background: #0f172a; color: #ffffff; }
-        .btn-open:hover { background: #f1f5f9; }
+        .btn-open-tbl:hover { background: var(--primary); color: #ffffff; }
 
         /* FOOTER ACTIONS */
         .footer-action-bar {
-            background: #ffffff; border: 2px solid var(--border-dark); border-radius: 6px; padding: 12px 18px;
-            display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+            display: flex; justify-content: space-between; align-items: center;
         }
-        .btn-foot {
-            background: #ffffff; border: 1px solid var(--border-dark); padding: 8px 14px; font-size: 12px; font-weight: 800;
-            border-radius: 4px; cursor: pointer; text-transform: uppercase; display: inline-flex; align-items: center; gap: 6px; transition: all 0.2s;
+        .btn-action-foot {
+            background: #ffffff; border: 1px solid var(--border-light); padding: 12px 20px; border-radius: 30px;
+            font-size: 13px; font-weight: 600; color: var(--text-dark); cursor: pointer; transition: all 0.2s;
+            display: inline-flex; align-items: center; gap: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.02);
         }
-        .btn-foot:hover { background: #f1f5f9; }
+        .btn-action-foot:hover { background: #f8fafc; transform: translateY(-1px); }
 
-        .pagination { display: flex; align-items: center; gap: 8px; font-weight: 800; font-size: 11px; text-transform: uppercase; }
-        .btn-page { padding: 4px 10px; border: 1px solid var(--border-dark); border-radius: 4px; background: #ffffff; cursor: pointer; }
+        @media(max-width:900px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .filter-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <!-- TOP HEADER -->
-    <header class="top-header">
-        <div class="top-header-left">
-            <i data-lucide="activity" style="width: 18px;"></i>
-            PORTAL DEL MÉDICO — CLÍNICA INTERNACIONAL
+    <aside class="sidebar">
+        <div class="brand-container">
+            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
         </div>
-        <div class="top-header-right">
-            <span class="user-tag"><%= nombreMedico %> | ROL: MÉDICO</span>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout">
-                <i data-lucide="log-out" style="width: 14px;"></i> CERRAR SESIÓN
+        <nav class="nav-menu">
+            <a href="${pageContext.request.contextPath}/medico/inicio" class="nav-item">
+                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+            </a>
+            <a href="${pageContext.request.contextPath}/medico/agenda" class="nav-item active">
+                <i data-lucide="calendar" style="width: 18px;"></i> Mi Agenda
+            </a>
+            <a href="${pageContext.request.contextPath}/medico/atencion" class="nav-item">
+                <i data-lucide="stethoscope" style="width: 18px;"></i> Atención Paciente
+            </a>
+            <a href="${pageContext.request.contextPath}/medico/perfil" class="nav-item">
+                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
+            </a>
+        </nav>
+        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
+            <div class="avatar-initials"><%= inicialesMedico %></div>
+            <div style="flex: 1;">
+                <div class="user-name-sm"><%= nombreMedico %></div>
+                <div class="user-role-sm">Médico Especialista</div>
+            </div>
+            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
+        </a>
+    </aside>
+
+    <main class="main-content">
+        <div class="header-row">
+            <div>
+                <h1 class="header-title">Mi Agenda de Citas Médicas</h1>
+                <p class="header-subtitle">Gestión diaria de consultas ambulatorias y control de turnos asignados.</p>
+            </div>
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+                <i data-lucide="bell" style="width: 20px;"></i>
             </a>
         </div>
-    </header>
 
-    <div class="app-container">
-        <!-- SIDEBAR -->
-        <aside class="sidebar">
-            <a href="${pageContext.request.contextPath}/medico/inicio" class="sidebar-item">
-                0. INICIO <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/agenda" class="sidebar-item active">
-                2. MI AGENDA <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/atencion" class="sidebar-item">
-                3. ATENCIÓN PACIENTE <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/perfil" class="sidebar-item">
-                4. PERFIL <i data-lucide="chevron-right" style="width: 16px;"></i>
-            </a>
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-
-            <!-- STATUS BANNER -->
-            <div class="status-banner">
-                [ ! ] ESTADO: AGENDA REGULAR OPERATIVA — 3 TURNOS HOY / PRÓXIMAS FECHAS ACTIVAS
-            </div>
-
-            <!-- HEADER SECTION -->
-            <div class="header-box">
-                <h1 class="header-title">2. MI AGENDA DE CITAS MÉDICAS — HOY</h1>
-                <span class="header-tag">CONTROL AMBULATORIO // MATRIZ DIARIA</span>
-            </div>
-
-            <!-- PARAMETERS FILTER CARD -->
-            <div class="filter-card">
-                <div class="filter-card-title">
-                    <span>SELECCIÓN DE PARÁMETROS OPERATIVOS</span>
-                    <span>FILTROS DISPONIBLES: 4</span>
+        <!-- FILTER CARD -->
+        <div class="filter-card">
+            <div class="filter-grid">
+                <div class="form-group">
+                    <label>Sede Clínica</label>
+                    <select id="sedeSelect">
+                        <option selected>Sede Central — San Isidro</option>
+                        <option>Sede San Borja</option>
+                        <option>Sede Surco / Miraflores</option>
+                    </select>
                 </div>
-                <div class="filter-grid">
-                    <div class="form-group">
-                        <label>SEDE CLÍNICA: *</label>
-                        <select id="sedeSelect">
-                            <option selected>Sede Central — San Isidro</option>
-                            <option>Sede San Borja</option>
-                            <option>Sede Surco / Miraflores</option>
-                        </select>
-                    </div>
 
-                    <div class="form-group">
-                        <label>FECHA DE CONSULTA: *</label>
-                        <input type="date" value="2026-10-14">
-                    </div>
+                <div class="form-group">
+                    <label>Fecha de Consulta</label>
+                    <input type="date" value="2026-10-14">
+                </div>
 
-                    <div class="form-group">
-                        <label>BUSCAR PACIENTE O N° CITA:</label>
-                        <input type="text" placeholder="ej. Pérez, 72345678">
-                    </div>
+                <div class="form-group">
+                    <label>Buscar Paciente o N° Cita</label>
+                    <input type="text" placeholder="Ej: Pérez o DNI 72345678">
+                </div>
 
-                    <div class="form-group">
-                        <label>MODO DE VISTA:</label>
-                        <div class="view-mode-group">
-                            <button class="btn-view-mode active">DÍA</button>
-                            <button class="btn-view-mode">SEM</button>
-                            <button class="btn-view-mode">MES</button>
-                        </div>
+                <div class="form-group">
+                    <label>Modo de Vista</label>
+                    <div class="view-pill-group">
+                        <button class="btn-view-pill active">Día</button>
+                        <button class="btn-view-pill">Semana</button>
+                        <button class="btn-view-pill">Mes</button>
                     </div>
                 </div>
             </div>
+        </div>
 
-            <!-- SUMMARY BAR -->
-            <div class="summary-bar">
-                <div><i data-lucide="map-pin" style="width: 14px; display: inline; vertical-align: middle;"></i> SEDE CENTRAL // PABELLÓN B - CONSULTORIO 302 // FECHA: 14 DE OCTUBRE DE 2026</div>
-                <div>TOTAL ASIGNADOS: 6 &nbsp;|&nbsp; ATENDIDOS: 1 &nbsp;|&nbsp; EN ESPERA: 1 &nbsp;|&nbsp; PENDIENTES: 4</div>
+        <!-- SUMMARY BANNER -->
+        <div class="summary-banner">
+            <div>
+                <i data-lucide="map-pin" style="width: 16px; display: inline; vertical-align: middle; margin-right: 6px;"></i>
+                Sede Central — Consultorio 302 (Pabellón B) &nbsp;•&nbsp; 14 de Octubre de 2026
             </div>
-
-            <!-- TABLE BOX -->
-            <div class="table-box">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>HORA</th>
-                            <th>PACIENTE</th>
-                            <th>N° DOCUMENTO</th>
-                            <th>MOTIVO DE CONSULTA</th>
-                            <th>TIPO / ORIGEN</th>
-                            <th>ESTADO</th>
-                            <th style="text-align: right;">ACCIÓN</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td class="time-slot">09:00 - 09:20</td>
-                            <td class="patient-name">Juan Alberto Pérez Gómez</td>
-                            <td>DNI 72345678</td>
-                            <td>Chequeo preventivo / Dolor torácico</td>
-                            <td>Reserva Web</td>
-                            <td><span class="badge-status badge-atendido">ATENDIDO</span></td>
-                            <td style="text-align: right;">
-                                <a href="${pageContext.request.contextPath}/medico/atencion?idCita=1" class="btn-open">ABRIR</a>
-                            </td>
-                        </tr>
-                        <tr style="background: #eff6ff;">
-                            <td class="time-slot" style="color: #2563eb;">09:30 - 09:50</td>
-                            <td class="patient-name" style="color: #2563eb;">
-                                María Elena Ramos <span class="sub-tag">[ TURNO ACTUAL EN SALA ]</span>
-                            </td>
-                            <td>DNI 44102931</td>
-                            <td>Evaluación postoperatoria</td>
-                            <td>Reserva Web</td>
-                            <td><span class="badge-status badge-espera">EN ESPERA</span></td>
-                            <td style="text-align: right;">
-                                <a href="${pageContext.request.contextPath}/medico/atencion?idCita=2" class="btn-open active">ABRIR</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="time-slot">10:00 - 10:20</td>
-                            <td class="patient-name">Carlos Fernando Soto</td>
-                            <td>DNI 10928374</td>
-                            <td>Control de arritmia</td>
-                            <td>Lista de espera</td>
-                            <td><span class="badge-status badge-confirmada">CONFIRMADA</span></td>
-                            <td style="text-align: right;">
-                                <a href="${pageContext.request.contextPath}/medico/atencion?idCita=3" class="btn-open">ABRIR</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="time-slot">10:30 - 10:50</td>
-                            <td class="patient-name">Lucía Alejandra Vega</td>
-                            <td>DNI 55829104</td>
-                            <td>Lectura de holter</td>
-                            <td>Reserva Web</td>
-                            <td><span class="badge-status badge-confirmada">CONFIRMADA</span></td>
-                            <td style="text-align: right;">
-                                <a href="${pageContext.request.contextPath}/medico/atencion?idCita=4" class="btn-open">ABRIR</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="time-slot">11:00 - 11:20</td>
-                            <td class="patient-name">Roberto Mario Castro</td>
-                            <td>DNI 06291823</td>
-                            <td>Evaluación prequirúrgica</td>
-                            <td>Cupo recuperado</td>
-                            <td><span class="badge-status badge-confirmada">CONFIRMADA</span></td>
-                            <td style="text-align: right;">
-                                <a href="${pageContext.request.contextPath}/medico/atencion?idCita=5" class="btn-open">ABRIR</a>
-                            </td>
-                        </tr>
-                        <tr>
-                            <td class="time-slot">11:30 - 11:50</td>
-                            <td class="patient-name">Patricia Elena Domínguez</td>
-                            <td>DNI 32918231</td>
-                            <td>Hipertensión arterial control</td>
-                            <td>Reserva Web</td>
-                            <td><span class="badge-status badge-confirmada">CONFIRMADA</span></td>
-                            <td style="text-align: right;">
-                                <a href="${pageContext.request.contextPath}/medico/atencion?idCita=6" class="btn-open">ABRIR</a>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+            <div>
+                Total Asignados: 6 &nbsp;•&nbsp; Atendidos: 1 &nbsp;•&nbsp; En Espera: 1 &nbsp;•&nbsp; Pendientes: 4
             </div>
+        </div>
 
-            <!-- FOOTER ACTION BAR -->
-            <div class="footer-action-bar">
-                <div style="display: flex; gap: 12px;">
-                    <button class="btn-foot" onclick="alert('Exportando agenda en PDF/Texto...');">
-                        <i data-lucide="download" style="width: 14px;"></i> EXPORTAR AGENDA EN LISTADO PDF/TEXTO
-                    </button>
-                    <button class="btn-foot" onclick="window.print();">
-                        <i data-lucide="printer" style="width: 14px;"></i> IMPRIMIR HOJA DE TRABAJO
-                    </button>
-                </div>
-                <div class="pagination">
-                    <span>MOSTRANDO 6 DE 6 CITAS</span>
-                    <button class="btn-page">ANTERIOR</button>
-                    <span>PÁGINA 1 DE 1</span>
-                    <button class="btn-page">SIGUIENTE</button>
-                </div>
+        <!-- TABLE CARD -->
+        <div class="table-card">
+            <table>
+                <thead>
+                    <tr>
+                        <th>HORA</th>
+                        <th>PACIENTE</th>
+                        <th>DOCUMENTO</th>
+                        <th>MOTIVO DE CONSULTA</th>
+                        <th>TIPO / ORIGEN</th>
+                        <th>ESTADO</th>
+                        <th style="text-align: right;">ACCIÓN</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="font-weight: 700;">09:00 - 09:20</td>
+                        <td style="font-weight: 600;">Juan Alberto Pérez Gómez</td>
+                        <td style="color: var(--text-gray);">DNI 72345678</td>
+                        <td>Chequeo preventivo / Dolor torácico</td>
+                        <td>Reserva Web</td>
+                        <td><span class="badge-status badge-atendido">Atendido</span></td>
+                        <td style="text-align: right;">
+                            <a href="${pageContext.request.contextPath}/medico/atencion?idCita=1" class="btn-open-tbl">Abrir</a>
+                        </td>
+                    </tr>
+                    <tr style="background: #eff6ff;">
+                        <td style="font-weight: 700; color: var(--primary);">09:30 - 09:50</td>
+                        <td style="font-weight: 700; color: var(--primary);">
+                            María Elena Ramos <span style="font-size: 11px; background: var(--primary); color: #ffffff; padding: 2px 8px; border-radius: 10px; margin-left: 6px;">Turno Actual</span>
+                        </td>
+                        <td style="color: var(--text-gray);">DNI 44102931</td>
+                        <td>Evaluación postoperatoria</td>
+                        <td>Reserva Web</td>
+                        <td><span class="badge-status badge-espera">• En Espera</span></td>
+                        <td style="text-align: right;">
+                            <a href="${pageContext.request.contextPath}/medico/atencion?idCita=2" class="btn-open-tbl" style="background: var(--primary); color: #ffffff;">Atender</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700;">10:00 - 10:20</td>
+                        <td style="font-weight: 600;">Carlos Fernando Soto</td>
+                        <td style="color: var(--text-gray);">DNI 10928374</td>
+                        <td>Control de arritmia</td>
+                        <td>Lista de Espera</td>
+                        <td><span class="badge-status badge-confirmada">Confirmada</span></td>
+                        <td style="text-align: right;">
+                            <a href="${pageContext.request.contextPath}/medico/atencion?idCita=3" class="btn-open-tbl">Abrir</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700;">10:30 - 10:50</td>
+                        <td style="font-weight: 600;">Lucía Alejandra Vega</td>
+                        <td style="color: var(--text-gray);">DNI 55829104</td>
+                        <td>Lectura de holter</td>
+                        <td>Reserva Web</td>
+                        <td><span class="badge-status badge-confirmada">Confirmada</span></td>
+                        <td style="text-align: right;">
+                            <a href="${pageContext.request.contextPath}/medico/atencion?idCita=4" class="btn-open-tbl">Abrir</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700;">11:00 - 11:20</td>
+                        <td style="font-weight: 600;">Roberto Mario Castro</td>
+                        <td style="color: var(--text-gray);">DNI 06291823</td>
+                        <td>Evaluación prequirúrgica</td>
+                        <td>Cupo Recuperado</td>
+                        <td><span class="badge-status badge-confirmada">Confirmada</span></td>
+                        <td style="text-align: right;">
+                            <a href="${pageContext.request.contextPath}/medico/atencion?idCita=5" class="btn-open-tbl">Abrir</a>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="font-weight: 700;">11:30 - 11:50</td>
+                        <td style="font-weight: 600;">Patricia Elena Domínguez</td>
+                        <td style="color: var(--text-gray);">DNI 32918231</td>
+                        <td>Hipertensión arterial control</td>
+                        <td>Reserva Web</td>
+                        <td><span class="badge-status badge-confirmada">Confirmada</span></td>
+                        <td style="text-align: right;">
+                            <a href="${pageContext.request.contextPath}/medico/atencion?idCita=6" class="btn-open-tbl">Abrir</a>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- FOOTER ACTIONS -->
+        <div class="footer-action-bar">
+            <div style="display: flex; gap: 12px;">
+                <button class="btn-action-foot" onclick="alert('Exportando agenda en PDF/Texto...');">
+                    <i data-lucide="download" style="width: 16px;"></i> Exportar Agenda (PDF)
+                </button>
+                <button class="btn-action-foot" onclick="window.print();">
+                    <i data-lucide="printer" style="width: 16px;"></i> Imprimir Hoja de Trabajo
+                </button>
             </div>
-
-        </main>
-    </div>
+            <div style="font-size: 13px; color: var(--text-gray); font-weight: 500;">
+                Mostrando 6 de 6 citas para la jornada
+            </div>
+        </div>
+    </main>
 
     <script>
         lucide.createIcons();
