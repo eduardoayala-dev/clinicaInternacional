@@ -31,10 +31,16 @@ public class ApiMedicosServlet extends HttpServlet {
         response.setCharacterEncoding("UTF-8");
 
         try {
-            int idSede = Integer.parseInt(request.getParameter("idSede"));
             int idEspecialidad = Integer.parseInt(request.getParameter("idEspecialidad"));
-
-            List<Map<String, Object>> medicos = citaDAO.obtenerMedicosDisponibles(idEspecialidad, idSede);
+            String idSedeParam = request.getParameter("idSede");
+            
+            List<Map<String, Object>> medicos;
+            if (idSedeParam != null && !idSedeParam.trim().isEmpty()) {
+                int idSede = Integer.parseInt(idSedeParam);
+                medicos = citaDAO.obtenerMedicosDisponibles(idEspecialidad, idSede);
+            } else {
+                medicos = citaDAO.obtenerMedicosPorEspecialidad(idEspecialidad);
+            }
 
             String jsonResponse = objectMapper.writeValueAsString(medicos);
             try (PrintWriter out = response.getWriter()) {

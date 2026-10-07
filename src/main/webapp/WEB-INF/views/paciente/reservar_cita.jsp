@@ -367,6 +367,63 @@
             border-radius: 50%;
         }
 
+        /* DOCTOR CARD */
+        .doctor-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 16px;
+            margin-bottom: 40px;
+        }
+
+        .doctor-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            border: 1px solid var(--border-light);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.2s;
+            background: #ffffff;
+        }
+
+        .doctor-item:hover {
+            border-color: var(--border-focus);
+            background: #f8fafc;
+        }
+
+        .doctor-item.selected {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            box-shadow: 0 0 0 1px var(--primary);
+        }
+
+        .doc-info {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .doc-avatar {
+            width: 48px; height: 48px;
+            border-radius: 50%;
+            background: #e2e8f0;
+            display: flex; align-items: center; justify-content: center;
+            font-weight: 700; color: #475569; font-size: 16px;
+        }
+
+        .doc-name {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .doc-cmp {
+            font-size: 12px;
+            color: var(--text-gray);
+        }
+
         /* BOTTOM ACTIONS */
         .actions {
             display: flex;
@@ -486,27 +543,29 @@
         <div class="wizard-container" style="margin: 0 auto;">
             
             <div class="stepper">
-                <div class="step active"><span class="step-num">1</span> Especialidad</div>
+                <div class="step active" id="stepper-1"><span class="step-num">1</span> Especialidad</div>
                 <div class="step-divider"></div>
-                <div class="step"><span class="step-num">2</span> Médico</div>
+                <div class="step" id="stepper-2"><span class="step-num">2</span> Médico</div>
                 <div class="step-divider"></div>
-                <div class="step"><span class="step-num">3</span> Fecha y hora</div>
+                <div class="step" id="stepper-3"><span class="step-num">3</span> Fecha y hora</div>
                 <div class="step-divider"></div>
-                <div class="step"><span class="step-num">4</span> Detalles</div>
+                <div class="step" id="stepper-4"><span class="step-num">4</span> Detalles</div>
                 <div class="step-divider"></div>
-                <div class="step"><span class="step-num">5</span> Confirmar</div>
+                <div class="step" id="stepper-5"><span class="step-num">5</span> Confirmar</div>
             </div>
 
             <div class="card">
-                <div class="card-header">
-                    <h2 class="card-title">Selecciona una especialidad</h2>
-                    <p class="card-subtitle">Elige el área médica de tu consulta.</p>
-                </div>
+                <!-- PASO 1: ESPECIALIDAD -->
+                <div id="step1-content">
+                    <div class="card-header">
+                        <h2 class="card-title">Selecciona una especialidad</h2>
+                        <p class="card-subtitle">Elige el área médica de tu consulta.</p>
+                    </div>
 
-                <div class="search-container">
-                    <i data-lucide="search" class="search-icon" style="width: 18px;"></i>
-                    <input type="text" class="search-input" placeholder="Buscar especialidad..." id="searchInput">
-                </div>
+                    <div class="search-container">
+                        <i data-lucide="search" class="search-icon" style="width: 18px;"></i>
+                        <input type="text" class="search-input" placeholder="Buscar especialidad..." id="searchInput">
+                    </div>
 
                 <div class="specialty-grid">
                     
@@ -576,14 +635,32 @@
                         <div class="radio-circle"></div>
                     </div>
 
-                </div>
+                    </div>
+                </div> <!-- END STEP 1 -->
+
+                <!-- PASO 2: MEDICO -->
+                <div id="step2-content" style="display: none;">
+                    <div class="card-header">
+                        <h2 class="card-title">Selecciona un médico</h2>
+                        <p class="card-subtitle">Elige al profesional de tu preferencia.</p>
+                    </div>
+
+                    <div class="search-container">
+                        <i data-lucide="search" class="search-icon" style="width: 18px;"></i>
+                        <input type="text" class="search-input" placeholder="Buscar médico..." id="searchMedicoInput">
+                    </div>
+
+                    <div class="doctor-grid" id="doctorGridContainer">
+                        <!-- Llenado por AJAX -->
+                    </div>
+                </div> <!-- END STEP 2 -->
 
                 <div class="actions">
-                    <a href="${pageContext.request.contextPath}/paciente/dashboard" class="btn-back">
+                    <button class="btn-back" id="btnBack" style="background: none; border: none; cursor: pointer;">
                         <i data-lucide="arrow-left" style="width: 16px;"></i> Cancelar
-                    </a>
+                    </button>
                     <button class="btn-continue" id="btnContinue" disabled>
-                        Continuar <i data-lucide="arrow-right" style="width: 16px;"></i>
+                        <span id="btnContinueText">Continuar</span> <i data-lucide="arrow-right" style="width: 16px;" id="btnContinueIcon"></i>
                     </button>
                 </div>
             </div>
@@ -595,35 +672,139 @@
         lucide.createIcons();
 
         let selectedEspecialidad = null;
+        let selectedMedico = null;
+        let currentStep = 1;
 
         function selectSpecialty(element, id) {
-            // Remove selected class from all
-            document.querySelectorAll('.specialty-item').forEach(item => {
-                item.classList.remove('selected');
-            });
-            
-            // Add selected to clicked
+            document.querySelectorAll('.specialty-item').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedEspecialidad = id;
 
-            // Enable continue button
             const btn = document.getElementById('btnContinue');
             btn.classList.add('active');
             btn.disabled = false;
         }
 
-        // Simulación de búsqueda
+        function selectDoctor(element, id) {
+            document.querySelectorAll('.doctor-item').forEach(item => item.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedMedico = id;
+
+            const btn = document.getElementById('btnContinue');
+            btn.classList.add('active');
+            btn.disabled = false;
+        }
+
+        // Búsqueda Especialidad
         document.getElementById('searchInput').addEventListener('input', function(e) {
             const term = e.target.value.toLowerCase();
             document.querySelectorAll('.specialty-item').forEach(item => {
                 const name = item.querySelector('.spec-name').textContent.toLowerCase();
-                if (name.includes(term)) {
-                    item.style.display = 'flex';
-                } else {
-                    item.style.display = 'none';
-                }
+                item.style.display = name.includes(term) ? 'flex' : 'none';
             });
         });
+
+        // Búsqueda Médico
+        document.getElementById('searchMedicoInput').addEventListener('input', function(e) {
+            const term = e.target.value.toLowerCase();
+            document.querySelectorAll('.doctor-item').forEach(item => {
+                const name = item.querySelector('.doc-name').textContent.toLowerCase();
+                item.style.display = name.includes(term) ? 'flex' : 'none';
+            });
+        });
+
+        // Navegación (Continuar / Atrás)
+        document.getElementById('btnContinue').addEventListener('click', function() {
+            if (currentStep === 1 && selectedEspecialidad) {
+                // Cargar doctores
+                const btnText = document.getElementById('btnContinueText');
+                const btnIcon = document.getElementById('btnContinueIcon');
+                btnText.textContent = "Cargando...";
+                btnIcon.style.display = "none";
+                this.disabled = true;
+
+                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad)
+                    .then(response => response.json())
+                    .then(data => {
+                        renderDoctors(data);
+                        // Cambiar UI
+                        document.getElementById('step1-content').style.display = 'none';
+                        document.getElementById('step2-content').style.display = 'block';
+                        document.getElementById('stepper-1').classList.remove('active');
+                        document.getElementById('stepper-2').classList.add('active');
+                        
+                        document.getElementById('btnBack').innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Atrás';
+                        
+                        btnText.textContent = "Continuar";
+                        btnIcon.style.display = "block";
+                        
+                        // Disable btn again for step 2 until a doctor is selected
+                        selectedMedico = null;
+                        this.classList.remove('active');
+                        this.disabled = true;
+                        currentStep = 2;
+                        lucide.createIcons();
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Error al cargar los médicos.");
+                        btnText.textContent = "Continuar";
+                        btnIcon.style.display = "block";
+                        this.disabled = false;
+                    });
+            } else if (currentStep === 2 && selectedMedico) {
+                // Siguiente paso (Fecha y Hora)
+                alert("Flujo de paso 3 en construcción. Medico seleccionado: " + selectedMedico);
+            }
+        });
+
+        document.getElementById('btnBack').addEventListener('click', function() {
+            if (currentStep === 2) {
+                document.getElementById('step2-content').style.display = 'none';
+                document.getElementById('step1-content').style.display = 'block';
+                document.getElementById('stepper-2').classList.remove('active');
+                document.getElementById('stepper-1').classList.add('active');
+                
+                this.innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cancelar';
+                
+                const btn = document.getElementById('btnContinue');
+                btn.classList.add('active');
+                btn.disabled = false;
+                currentStep = 1;
+            } else {
+                window.location.href = '${pageContext.request.contextPath}/paciente/dashboard';
+            }
+        });
+
+        function renderDoctors(doctors) {
+            const container = document.getElementById('doctorGridContainer');
+            container.innerHTML = '';
+
+            if (doctors.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1; text-align: center; padding: 20px;">No hay médicos disponibles para esta especialidad.</p>';
+                return;
+            }
+
+            doctors.forEach(doc => {
+                const initials = doc.nombreCompleto.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                
+                const div = document.createElement('div');
+                div.className = 'doctor-item';
+                div.onclick = function() { selectDoctor(this, doc.idMedico); };
+                
+                div.innerHTML = `
+                    <div class="doc-info">
+                        <div class="doc-avatar">${initials}</div>
+                        <div>
+                            <div class="doc-name">${doc.nombreCompleto}</div>
+                            <div class="doc-cmp">CMP: ${doc.cmp}</div>
+                        </div>
+                    </div>
+                    <div class="radio-circle"></div>
+                `;
+                container.appendChild(div);
+            });
+        }
     </script>
 </body>
 </html>

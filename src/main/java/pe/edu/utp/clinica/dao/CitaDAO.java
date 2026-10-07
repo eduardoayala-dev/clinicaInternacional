@@ -74,4 +74,28 @@ public class CitaDAO {
         return lista;
     }
 
+    public List<Map<String, Object>> obtenerMedicosPorEspecialidad(int idEspecialidad) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        String sql = "SELECT m.id_medico, u.nombres, u.apellidos, m.cmp " +
+                     "FROM medico m " +
+                     "INNER JOIN usuario u ON m.id_usuario = u.id_usuario " +
+                     "WHERE m.id_especialidad = ? AND m.estado = 'ACTIVO' AND u.activo = 1";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEspecialidad);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    map.put("nombreCompleto", rs.getString("nombres") + " " + rs.getString("apellidos"));
+                    map.put("cmp", rs.getString("cmp"));
+                    lista.add(map);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
 }
