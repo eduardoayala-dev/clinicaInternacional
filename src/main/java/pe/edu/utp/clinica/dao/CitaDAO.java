@@ -408,4 +408,70 @@ public class CitaDAO {
         }
     }
 
+    public int obtenerIdMedicoPorUsuarioId(int usuarioId) {
+        String sql = "SELECT id_medico FROM medico WHERE id_usuario = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    return rs.getInt("id_medico");
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return 1;
+    }
+
+    public List<Map<String, Object>> obtenerAgendaMedico(int idMedico) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        String sql = "SELECT c.id_cita, DATE_FORMAT(c.fecha_hora, '%H:%i') AS hora, " +
+                     "DATE_FORMAT(c.fecha_hora, '%d/%m/%Y') AS fecha, " +
+                     "u.nombres, u.apellidos, p.dni, p.telefono, c.estado, " +
+                     "e.nombre AS especialidad, s.nombre AS sede " +
+                     "FROM cita c " +
+                     "JOIN paciente p ON c.id_paciente = p.id_paciente " +
+                     "JOIN usuario u ON p.id_usuario = u.id_usuario " +
+                     "JOIN medico m ON c.id_medico = m.id_medico " +
+                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
+                     "WHERE c.id_medico = ? " +
+                     "ORDER BY c.fecha_hora ASC";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idMedico);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("idCita", rs.getInt("id_cita"));
+                    map.put("hora", rs.getString("hora"));
+                    map.put("fecha", rs.getString("fecha"));
+                    map.put("paciente", rs.getString("nombres") + " " + rs.getString("apellidos"));
+                    map.put("dni", rs.getString("dni"));
+                    map.put("telefono", rs.getString("telefono"));
+                    map.put("estado", rs.getString("estado"));
+                    map.put("especialidad", rs.getString("especialidad"));
+                    map.put("sede", rs.getString("sede"));
+                    lista.add(map);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return lista;
+    }
+
+    public boolean actualizarEstadoCita(int idCita, String nuevoEstado) {
+        String sql = "UPDATE cita SET estado = ? WHERE id_cita = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nuevoEstado);
+            ps.setInt(2, idCita);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
