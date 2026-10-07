@@ -424,6 +424,128 @@
             color: var(--text-gray);
         }
 
+        /* FECHAS Y HORARIOS (STEP 3) */
+        /* FECHAS Y HORARIOS (STEP 3) */
+        .date-container {
+            display: flex;
+            gap: 12px;
+            overflow-x: auto;
+            padding: 6px 4px 16px 4px;
+            margin-bottom: 24px;
+            scroll-behavior: smooth;
+        }
+
+        .date-container::-webkit-scrollbar {
+            height: 6px;
+        }
+        .date-container::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+        .date-container::-webkit-scrollbar-thumb {
+            background-color: #cbd5e1;
+            border-radius: 10px;
+        }
+        .date-container::-webkit-scrollbar-thumb:hover {
+            background-color: var(--primary);
+        }
+
+        .date-item {
+            flex: 0 0 auto;
+            padding: 14px 18px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            text-align: center;
+            background: #ffffff;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            min-width: 86px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            user-select: none;
+        }
+
+        .date-item:hover {
+            border-color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
+        }
+
+        .date-item.selected {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: #ffffff;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .date-weekday {
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-gray);
+            margin-bottom: 4px;
+        }
+
+        .date-num {
+            font-size: 22px;
+            font-weight: 800;
+            color: var(--text-dark);
+            line-height: 1.1;
+            margin-bottom: 4px;
+        }
+
+        .date-month {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: var(--text-gray);
+        }
+
+        .date-item.selected .date-weekday,
+        .date-item.selected .date-num,
+        .date-item.selected .date-month {
+            color: #ffffff !important;
+        }
+
+        .time-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 12px;
+        }
+
+        .time-chip {
+            padding: 12px;
+            border: 1.5px solid var(--border-light);
+            border-radius: var(--radius-md);
+            text-align: center;
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-dark);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            background: #ffffff;
+        }
+
+        .time-chip:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: var(--primary-light);
+            transform: translateY(-1px);
+        }
+
+        .time-chip.selected {
+            background: var(--primary);
+            color: #ffffff;
+            border-color: var(--primary);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
+            transform: translateY(-1px);
+        }
+
         /* BOTTOM ACTIONS */
         .actions {
             display: flex;
@@ -493,19 +615,19 @@
             <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
                 <i data-lucide="home" style="width: 18px;"></i> Inicio
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/panel" class="nav-item">
                 <i data-lucide="layout-dashboard" style="width: 18px;"></i> Panel
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/medicos" class="nav-item">
                 <i data-lucide="users" style="width: 18px;"></i> Médicos
             </a>
             <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item active">
                 <i data-lucide="calendar" style="width: 18px;"></i> Citas
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
                 <i data-lucide="clipboard-list" style="width: 18px;"></i> Historial
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/reportes" class="nav-item">
                 <i data-lucide="bar-chart-2" style="width: 18px;"></i> Reportes
             </a>
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
@@ -582,7 +704,7 @@
 
                     <div class="specialty-item" onclick="selectSpecialty(this, 2)">
                         <div class="spec-info">
-                            <div class="spec-icon-wrapper" style="color: #8b5cf6; background: #f5f3ff;"><i data-lucide="brain" style="width: 20px;"></i></div>
+                            <div class="spec-icon-wrapper"><i data-lucide="brain" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Neurología</div>
                                 <div class="spec-meta">3 médicos disponibles</div>
@@ -593,7 +715,7 @@
 
                     <div class="specialty-item" onclick="selectSpecialty(this, 3)">
                         <div class="spec-info">
-                            <div class="spec-icon-wrapper" style="color: #10b981; background: #ecfdf5;"><i data-lucide="stethoscope" style="width: 20px;"></i></div>
+                            <div class="spec-icon-wrapper"><i data-lucide="stethoscope" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Medicina General</div>
                                 <div class="spec-meta">3 médicos disponibles</div>
@@ -604,7 +726,7 @@
 
                     <div class="specialty-item" onclick="selectSpecialty(this, 4)">
                         <div class="spec-info">
-                            <div class="spec-icon-wrapper" style="color: #d97706; background: #fffbeb;"><i data-lucide="bone" style="width: 20px;"></i></div>
+                            <div class="spec-icon-wrapper"><i data-lucide="bone" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Traumatología</div>
                                 <div class="spec-meta">3 médicos disponibles</div>
@@ -615,7 +737,7 @@
 
                     <div class="specialty-item" onclick="selectSpecialty(this, 5)">
                         <div class="spec-info">
-                            <div class="spec-icon-wrapper" style="color: #ef4444; background: #fef2f2;"><i data-lucide="microscope" style="width: 20px;"></i></div>
+                            <div class="spec-icon-wrapper"><i data-lucide="microscope" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Dermatología</div>
                                 <div class="spec-meta">3 médicos disponibles</div>
@@ -626,7 +748,7 @@
 
                     <div class="specialty-item" onclick="selectSpecialty(this, 6)">
                         <div class="spec-info">
-                            <div class="spec-icon-wrapper" style="color: #ec4899; background: #fdf2f8;"><i data-lucide="baby" style="width: 20px;"></i></div>
+                            <div class="spec-icon-wrapper"><i data-lucide="baby" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Ginecología</div>
                                 <div class="spec-meta">3 médicos disponibles</div>
@@ -655,6 +777,142 @@
                     </div>
                 </div> <!-- END STEP 2 -->
 
+                <!-- PASO 3: FECHA Y HORA -->
+                <div id="step3-content" style="display: none;">
+                    <div class="card-header">
+                        <h2 class="card-title">Selecciona fecha y hora</h2>
+                        <p class="card-subtitle">Elige el día y la hora de atención de tu preferencia.</p>
+                    </div>
+
+                    <!-- BARRA ACCESIBLE DE MES Y NAVEGACION -->
+                    <div style="background: #ffffff; padding: 16px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-light); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Mes de atención</div>
+                                <div id="currentMonthYearLabel" style="font-size: 16px; font-weight: 700; color: var(--text-dark);">Octubre 2026</div>
+                            </div>
+                        </div>
+
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <!-- Selector de Mes Accesible -->
+                            <div style="display: flex; align-items: center; gap: 6px;">
+                                <label for="monthFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--text-gray);">Filtrar por mes:</label>
+                                <select id="monthFilterSelect" onchange="filterDatesByMonth(this.value)" style="padding: 8px 14px; border: 1.5px solid var(--border-light); border-radius: 20px; background: #ffffff; font-size: 13px; font-weight: 600; color: var(--text-dark); outline: none; cursor: pointer;">
+                                    <!-- Llenado dinámicamente -->
+                                </select>
+                            </div>
+
+                            <!-- Botones de Desplazamiento Lateral -->
+                            <div style="display: flex; gap: 6px;">
+                                <button type="button" onclick="scrollDates(-1)" style="width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border-light); background: #ffffff; color: var(--text-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" title="Días anteriores">
+                                    <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
+                                </button>
+                                <button type="button" onclick="scrollDates(1)" style="width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border-light); background: #ffffff; color: var(--text-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" title="Días siguientes">
+                                    <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom: 12px; font-weight: 600; color: var(--text-dark); font-size: 14px; display: flex; align-items: center; gap: 6px;">
+                        <span>Días con citas disponibles:</span>
+                    </div>
+                    <div class="date-container" id="dateContainer">
+                        <!-- Llenado por AJAX -->
+                    </div>
+
+                    <div style="margin-top: 24px; margin-bottom: 16px; font-weight: 600; color: var(--text-dark); font-size: 14px; display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="clock" style="width: 18px; color: var(--primary);"></i> Horarios de atención disponibles
+                    </div>
+                    <div class="time-grid" id="timeGridContainer">
+                        <!-- Llenado por AJAX al seleccionar un día -->
+                        <p style="color: var(--text-gray); grid-column: 1/-1;">Selecciona una fecha primero para ver los horarios.</p>
+                    </div>
+                </div> <!-- END STEP 3 -->
+
+                <!-- PASO 4: CONFIRMAR -->
+                <div id="step4-content" style="display: none;">
+                    <div class="card-header" style="margin-bottom: 24px;">
+                        <h2 class="card-title">Confirma tu Cita Médica</h2>
+                        <p class="card-subtitle">Verifica los datos seleccionados antes de agendar tu atención.</p>
+                    </div>
+
+                    <div style="background: #ffffff; padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: 0 4px 16px rgba(0,0,0,0.02); margin-bottom: 24px;">
+                        
+                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border-light);">
+                            <!-- Especialidad -->
+                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
+                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="stethoscope" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Especialidad</div>
+                                    <div id="resumenEspecialidad" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
+                                </div>
+                            </div>
+
+                            <!-- Médico -->
+                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
+                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="user-check" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Médico Tratante</div>
+                                    <div id="resumenMedico" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
+                                </div>
+                            </div>
+
+                            <!-- Fecha -->
+                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
+                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Fecha</div>
+                                    <div id="resumenFecha" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
+                                </div>
+                            </div>
+
+                            <!-- Hora -->
+                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
+                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                                    <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Hora</div>
+                                    <div id="resumenHora" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Prioridad de Atención -->
+                        <div style="background: #ffffff; padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+                            <label style="font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 8px; font-size: 14px;">
+                                Nivel de Urgencia / Prioridad de Atención:
+                            </label>
+                            <select id="urgenciaSelect" style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: #ffffff; font-size: 14px; font-weight: 500; color: var(--text-dark); outline: none; cursor: pointer; transition: all 0.2s;">
+                                <option value="BAJA">Baja - Control o chequeo de rutina (Sin dolor)</option>
+                                <option value="MEDIA">Media - Molestia persistente o dolor tolerable</option>
+                                <option value="ALTA">Alta - Sintomatología severa o prioridad clínica</option>
+                            </select>
+                            <p style="font-size: 12px; color: var(--text-gray); margin-top: 12px; display: flex; align-items: center; gap: 6px;">
+                                <i data-lucide="shield-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
+                                Tu reserva será confirmada de inmediato en el sistema de la clínica.
+                            </p>
+                        </div>
+                    </div>
+
+                    <form id="formReserva" method="POST" action="${pageContext.request.contextPath}/paciente/reservar" style="display:none;">
+                        <input type="hidden" name="idMedico" id="inputMedico">
+                        <input type="hidden" name="fecha" id="inputFecha">
+                        <input type="hidden" name="hora" id="inputHora">
+                        <input type="hidden" name="urgencia" id="inputUrgencia">
+                    </form>
+                </div> <!-- END STEP 4 -->
+
                 <div class="actions">
                     <button class="btn-back" id="btnBack" style="background: none; border: none; cursor: pointer;">
                         <i data-lucide="arrow-left" style="width: 16px;"></i> Cancelar
@@ -673,6 +931,8 @@
 
         let selectedEspecialidad = null;
         let selectedMedico = null;
+        let selectedFecha = null;
+        let selectedHora = null;
         let currentStep = 1;
 
         function selectSpecialty(element, id) {
@@ -723,7 +983,7 @@
                 btnIcon.style.display = "none";
                 this.disabled = true;
 
-                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad)
+                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad + '&_t=' + new Date().getTime())
                     .then(response => response.json())
                     .then(data => {
                         renderDoctors(data);
@@ -738,7 +998,6 @@
                         btnText.textContent = "Continuar";
                         btnIcon.style.display = "block";
                         
-                        // Disable btn again for step 2 until a doctor is selected
                         selectedMedico = null;
                         this.classList.remove('active');
                         this.disabled = true;
@@ -754,7 +1013,71 @@
                     });
             } else if (currentStep === 2 && selectedMedico) {
                 // Siguiente paso (Fecha y Hora)
-                alert("Flujo de paso 3 en construcción. Medico seleccionado: " + selectedMedico);
+                const btnText = document.getElementById('btnContinueText');
+                const btnIcon = document.getElementById('btnContinueIcon');
+                btnText.textContent = "Cargando...";
+                btnIcon.style.display = "none";
+                this.disabled = true;
+
+                fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
+                    .then(response => response.json())
+                    .then(data => {
+                        renderDates(data);
+                        document.getElementById('step2-content').style.display = 'none';
+                        document.getElementById('step3-content').style.display = 'block';
+                        document.getElementById('stepper-2').classList.remove('active');
+                        document.getElementById('stepper-3').classList.add('active');
+                        
+                        btnText.textContent = "Continuar";
+                        btnIcon.style.display = "block";
+                        
+                        selectedFecha = null;
+                        selectedHora = null;
+                        this.classList.remove('active');
+                        this.disabled = true;
+                        currentStep = 3;
+                    })
+                    .catch(err => {
+                        console.error(err);
+                        alert("Error al cargar las fechas.");
+                        btnText.textContent = "Continuar";
+                        btnIcon.style.display = "block";
+                        this.disabled = false;
+                    });
+            } else if (currentStep === 3 && selectedFecha && selectedHora) {
+                // Siguiente paso (Confirmar)
+                document.getElementById('step3-content').style.display = 'none';
+                document.getElementById('step4-content').style.display = 'block';
+                document.getElementById('stepper-3').classList.remove('active');
+                document.getElementById('stepper-4').classList.add('active');
+                
+                // Llenar resumen
+                const medicoItem = document.querySelector('.doctor-item.selected .doc-name');
+                const specItem = document.querySelector('.specialty-item.selected .spec-name');
+                document.getElementById('resumenMedico').textContent = medicoItem ? medicoItem.textContent : selectedMedico;
+                document.getElementById('resumenEspecialidad').textContent = specItem ? specItem.textContent : selectedEspecialidad;
+                document.getElementById('resumenFecha').textContent = selectedFecha;
+                document.getElementById('resumenHora').textContent = selectedHora;
+
+                const btnText = document.getElementById('btnContinueText');
+                const btnIcon = document.getElementById('btnContinueIcon');
+                btnText.textContent = "Confirmar Cita";
+                btnIcon.setAttribute('data-lucide', 'check');
+                lucide.createIcons();
+                currentStep = 4;
+
+            } else if (currentStep === 4) {
+                // Enviar formulario
+                document.getElementById('inputMedico').value = selectedMedico;
+                document.getElementById('inputFecha').value = selectedFecha;
+                document.getElementById('inputHora').value = selectedHora;
+                document.getElementById('inputUrgencia').value = document.getElementById('urgenciaSelect').value;
+                
+                const btnText = document.getElementById('btnContinueText');
+                btnText.textContent = "Procesando...";
+                this.disabled = true;
+                
+                document.getElementById('formReserva').submit();
             }
         });
 
@@ -771,6 +1094,28 @@
                 btn.classList.add('active');
                 btn.disabled = false;
                 currentStep = 1;
+            } else if (currentStep === 3) {
+                document.getElementById('step3-content').style.display = 'none';
+                document.getElementById('step2-content').style.display = 'block';
+                document.getElementById('stepper-3').classList.remove('active');
+                document.getElementById('stepper-2').classList.add('active');
+                
+                const btn = document.getElementById('btnContinue');
+                btn.classList.add('active');
+                btn.disabled = false;
+                currentStep = 2;
+            } else if (currentStep === 4) {
+                document.getElementById('step4-content').style.display = 'none';
+                document.getElementById('step3-content').style.display = 'block';
+                document.getElementById('stepper-4').classList.remove('active');
+                document.getElementById('stepper-3').classList.add('active');
+                
+                const btnText = document.getElementById('btnContinueText');
+                const btnIcon = document.getElementById('btnContinueIcon');
+                btnText.textContent = "Continuar";
+                btnIcon.setAttribute('data-lucide', 'arrow-right');
+                lucide.createIcons();
+                currentStep = 3;
             } else {
                 window.location.href = '${pageContext.request.contextPath}/paciente/dashboard';
             }
@@ -780,31 +1125,194 @@
             const container = document.getElementById('doctorGridContainer');
             container.innerHTML = '';
 
-            if (doctors.length === 0) {
+            if (!doctors || doctors.length === 0) {
                 container.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1; text-align: center; padding: 20px;">No hay médicos disponibles para esta especialidad.</p>';
                 return;
             }
 
             doctors.forEach(doc => {
-                const initials = doc.nombreCompleto.split(' ').map(n => n[0]).join('').substring(0, 2).toUpperCase();
+                let rawName = doc.nombreCompleto || doc.nombre || (doc.nombres ? (doc.nombres + ' ' + (doc.apellidos || '')) : '');
+                if (!rawName || rawName.trim() === '' || rawName.includes('null')) {
+                    rawName = "Dr. Médico Especialista";
+                }
+                const docName = rawName.trim();
+                const idMed = doc.idMedico || doc.id_medico || doc.id || 1;
+
+                const parts = docName.replace(/^Dr\.\s*|Dra\.\s*/i, '').split(' ').filter(Boolean);
+                let initials = "DR";
+                if (parts.length >= 2) {
+                    initials = (parts[0][0] + parts[1][0]).toUpperCase();
+                } else if (parts.length === 1) {
+                    initials = parts[0].substring(0, 2).toUpperCase();
+                }
                 
                 const div = document.createElement('div');
                 div.className = 'doctor-item';
-                div.onclick = function() { selectDoctor(this, doc.idMedico); };
+                div.onclick = function() { selectDoctor(this, idMed); };
                 
-                div.innerHTML = `
-                    <div class="doc-info">
-                        <div class="doc-avatar">${initials}</div>
-                        <div>
-                            <div class="doc-name">${doc.nombreCompleto}</div>
-                            <div class="doc-cmp">CMP: ${doc.cmp}</div>
-                        </div>
-                    </div>
-                    <div class="radio-circle"></div>
-                `;
+                div.innerHTML = 
+                    '<div class="doc-info">' +
+                        '<div class="doc-avatar">' + initials + '</div>' +
+                        '<div>' +
+                            '<div class="doc-name">' + docName + '</div>' +
+                            '<div class="doc-cmp" style="color: var(--primary); font-weight: 500;">Especialista Médico</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="radio-circle"></div>';
                 container.appendChild(div);
             });
+        }
+
+        let allAvailableFechas = [];
+
+        function renderDates(fechas) {
+            allAvailableFechas = fechas || [];
+            const container = document.getElementById('dateContainer');
+            container.innerHTML = '';
+            document.getElementById('timeGridContainer').innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1;">Selecciona una fecha primero para ver los horarios.</p>';
+
+            if (!fechas || fechas.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-gray);">El médico no tiene horarios publicados aún.</p>';
+                document.getElementById('currentMonthYearLabel').textContent = 'Sin fechas disponibles';
+                return;
+            }
+
+            const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
+            const mesesLargos = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
+
+            // 1. Identificar meses únicos para el selector
+            const mesesMap = {};
+            fechas.forEach(item => {
+                let fechaStr = typeof item === 'string' ? item : (item.fecha || item.toString());
+                if (!fechaStr) return;
+                const parts = fechaStr.split('T')[0].split('-');
+                if (parts.length === 3) {
+                    const key = parts[0] + '-' + parts[1]; // YYYY-MM
+                    const monthIdx = parseInt(parts[1], 10) - 1;
+                    mesesMap[key] = mesesLargos[monthIdx] + ' ' + parts[0];
+                }
+            });
+
+            const monthSelect = document.getElementById('monthFilterSelect');
+            monthSelect.innerHTML = '<option value="ALL">Todos los meses</option>';
+            Object.keys(mesesMap).forEach(key => {
+                const opt = document.createElement('option');
+                opt.value = key;
+                opt.textContent = mesesMap[key];
+                monthSelect.appendChild(opt);
+            });
+
+            // 2. Renderizar tarjetas de fecha
+            fechas.forEach((item, index) => {
+                let fechaStr = typeof item === 'string' ? item : (item.fecha || item.toString());
+                if (!fechaStr) return;
+                
+                const cleanStr = fechaStr.split('T')[0];
+                const parts = cleanStr.split('-');
+                if (parts.length !== 3) return;
+                
+                const year = parseInt(parts[0], 10);
+                const month = parseInt(parts[1], 10) - 1;
+                const day = parseInt(parts[2], 10);
+                
+                const docDate = new Date(year, month, day);
+                const dayNum = day < 10 ? '0' + day : '' + day;
+                const dayName = diasSemana[docDate.getDay()].substring(0, 3); // "Mié"
+                const monthName = mesesLargos[month]; // "Octubre"
+                
+                const div = document.createElement('div');
+                div.className = 'date-item';
+                div.setAttribute('data-month-key', parts[0] + '-' + parts[1]);
+                div.onclick = function() { selectDate(this, cleanStr, monthName + ' ' + year); };
+                
+                div.innerHTML = 
+                    '<div class="date-weekday">' + dayName + '</div>' +
+                    '<div class="date-num">' + dayNum + '</div>' +
+                    '<div class="date-month" style="font-size: 10px;">' + monthName + '</div>';
+                container.appendChild(div);
+
+                if (index === 0) {
+                    document.getElementById('currentMonthYearLabel').textContent = monthName + ' ' + year;
+                }
+            });
+        }
+
+        function filterDatesByMonth(monthKey) {
+            const items = document.querySelectorAll('#dateContainer .date-item');
+            let firstMatch = null;
+            items.forEach(item => {
+                if (monthKey === 'ALL' || item.getAttribute('data-month-key') === monthKey) {
+                    item.style.display = 'flex';
+                    if (!firstMatch) firstMatch = item;
+                } else {
+                    item.style.display = 'none';
+                }
+            });
+        }
+
+        function scrollDates(direction) {
+            const container = document.getElementById('dateContainer');
+            container.scrollBy({ left: direction * 220, behavior: 'smooth' });
+        }
+
+        function selectDate(element, fechaStr, monthLabel) {
+            document.querySelectorAll('.date-item').forEach(item => item.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedFecha = fechaStr;
+            selectedHora = null;
+
+            if (monthLabel) {
+                document.getElementById('currentMonthYearLabel').textContent = monthLabel;
+            }
+
+            const btn = document.getElementById('btnContinue');
+            btn.classList.remove('active');
+            btn.disabled = true;
+
+            const timeContainer = document.getElementById('timeGridContainer');
+            timeContainer.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1;">Cargando horas de atención...</p>';
+
+            const url = '${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&fecha=' + fechaStr + '&_t=' + new Date().getTime();
+            fetch(url)
+                .then(response => response.json())
+                .then(data => {
+                    renderTimes(data);
+                })
+                .catch(err => {
+                    console.error(err);
+                    timeContainer.innerHTML = '<p style="color: red; grid-column: 1/-1;">Error al cargar horas.</p>';
+                });
+        }
+
+        function renderTimes(horas) {
+            const container = document.getElementById('timeGridContainer');
+            container.innerHTML = '';
+
+            if (!horas || horas.length === 0) {
+                container.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1;">No hay horas disponibles para este día.</p>';
+                return;
+            }
+
+            horas.forEach(item => {
+                const horaStr = typeof item === 'string' ? item : (item.hora || item.toString());
+                const div = document.createElement('div');
+                div.className = 'time-chip';
+                div.onclick = function() { selectTime(this, horaStr); };
+                div.textContent = horaStr;
+                container.appendChild(div);
+            });
+        }
+
+        function selectTime(element, hora) {
+            document.querySelectorAll('.time-chip').forEach(item => item.classList.remove('selected'));
+            element.classList.add('selected');
+            selectedHora = hora;
+
+            const btn = document.getElementById('btnContinue');
+            btn.classList.add('active');
+            btn.disabled = false;
         }
     </script>
 </body>
 </html>
+

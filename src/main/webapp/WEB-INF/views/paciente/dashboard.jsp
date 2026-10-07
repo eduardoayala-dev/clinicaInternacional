@@ -388,19 +388,19 @@
             <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item active">
                 <i data-lucide="home" style="width: 18px;"></i> Inicio
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/panel" class="nav-item">
                 <i data-lucide="layout-dashboard" style="width: 18px;"></i> Panel
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/medicos" class="nav-item">
                 <i data-lucide="users" style="width: 18px;"></i> Médicos
             </a>
             <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
                 <i data-lucide="calendar" style="width: 18px;"></i> Citas
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
                 <i data-lucide="clipboard-list" style="width: 18px;"></i> Historial
             </a>
-            <a href="#" class="nav-item">
+            <a href="${pageContext.request.contextPath}/paciente/reportes" class="nav-item">
                 <i data-lucide="bar-chart-2" style="width: 18px;"></i> Reportes
             </a>
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">

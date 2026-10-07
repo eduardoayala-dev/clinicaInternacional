@@ -6,12 +6,20 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
 
 @WebServlet(name = "ReservarCitaServlet", urlPatterns = {"/paciente/reservar"})
 public class ReservarCitaServlet extends HttpServlet {
+
+    private CitaDAO citaDAO;
+
+    @Override
+    public void init() throws ServletException {
+        this.citaDAO = new CitaDAO();
+    }
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -23,20 +31,26 @@ public class ReservarCitaServlet extends HttpServlet {
         }
 
         try {
-            int idSede = Integer.parseInt(request.getParameter("idSede"));
-            int idEspecialidad = Integer.parseInt(request.getParameter("idEspecialidad"));
             int idMedico = Integer.parseInt(request.getParameter("idMedico"));
-            String fechaCita = request.getParameter("fechaCita"); // Format: 2026-10-15T10:30
+            String fecha = request.getParameter("fecha");
+            String hora = request.getParameter("hora");
+            String nivelUrgencia = request.getParameter("urgencia"); // ALTA, MEDIA, BAJA
 
-            // Here we would call CitaDAO.registrarCita(...)
-            // Since we haven't implemented the DB insert yet, we just redirect to dashboard with success
-            System.out.println("Cita Reservada: " + fechaCita + " Sede: " + idSede + " Esp: " + idEspecialidad + " Medico: " + idMedico);
-            
-            response.sendRedirect(request.getContextPath() + "/paciente/dashboard?reserva=success");
+            // Asumimos que idUsuario = idPaciente (En la realidad sería una consulta adicional a paciente)
+            int idPaciente = usuario.getIdUsuario();
+
+            boolean exito = citaDAO.reservarCita(idPaciente, idMedico, fecha, hora, nivelUrgencia);
+
+            if (exito) {
+                // Redirigir al dashboard con alerta de éxito
+                response.sendRedirect(request.getContextPath() + "/paciente/dashboard?reserva=ok");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/paciente/reservar_cita?error=true");
+            }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/paciente/citas?action=nueva&error=true");
+            response.sendRedirect(request.getContextPath() + "/paciente/reservar_cita?error=true");
         }
     }
 }

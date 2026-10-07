@@ -238,6 +238,10 @@
         .activity-time { font-size: 11px; color: var(--text-muted); }
         
         .text-success { color: #16a34a; font-weight: 500; }
+        
+        .badge-alto { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
+        .badge-medio { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
+        .badge-bajo { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
 
     </style>
 </head>
@@ -419,6 +423,77 @@
 
                     <a href="#" style="display:inline-block; margin-top:12px; font-size:13px; font-weight:500; color:var(--primary); text-decoration:none;">Ver todo el historial &rarr;</a>
                 </div>
+            </div>
+
+            <!-- TABLA DE INTELIGENCIA -->
+            <div class="panel" style="margin-bottom: 24px;">
+                <div class="panel-title" style="display:flex; justify-content:space-between; align-items:center;">
+                    <span>Radar de Inteligencia (Citas y Riesgos)</span>
+                </div>
+                
+                <c:if test="${not empty sessionScope.flashMessage}">
+                    <div style="background: #dcfce7; color: #166534; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 500;">
+                        <i data-lucide="check-circle" style="width: 16px; margin-bottom: -3px; margin-right: 4px;"></i>
+                        <c:out value="${sessionScope.flashMessage}" />
+                    </div>
+                    <c:remove var="flashMessage" scope="session" />
+                </c:if>
+
+                <table class="data-table">
+                    <thead>
+                        <tr>
+                            <th>ID Cita</th>
+                            <th>Paciente</th>
+                            <th>Médico</th>
+                            <th>Fecha y Hora</th>
+                            <th>Nivel Urgencia</th>
+                            <th>Predicción de Riesgo</th>
+                            <th>Acción Autónoma</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <c:forEach var="cita" items="${listaCitas}">
+                            <tr>
+                                <td>#<c:out value="${cita.idCita}"/></td>
+                                <td style="font-weight: 500; color: var(--text-main);"><c:out value="${cita.paciente}"/></td>
+                                <td>Dr. <c:out value="${cita.medico}"/></td>
+                                <td><c:out value="${cita.fechaHora}"/></td>
+                                
+                                <td>
+                                    <span class="badge ${cita.nivelUrgencia == 'ALTA' ? 'badge-alto' : (cita.nivelUrgencia == 'MEDIA' ? 'badge-medio' : 'badge-bajo')}">
+                                        <c:out value="${cita.nivelUrgencia}"/>
+                                    </span>
+                                </td>
+                                
+                                <td>
+                                    <span class="badge ${cita.riesgoCancelacion == 'ALTO' ? 'badge-alto' : (cita.riesgoCancelacion == 'MEDIO' ? 'badge-medio' : 'badge-bajo')}">
+                                        <i data-lucide="activity" style="width: 12px;"></i> <c:out value="${cita.riesgoCancelacion}"/>
+                                    </span>
+                                </td>
+
+                                <td>
+                                    <c:choose>
+                                        <c:when test="${cita.riesgoCancelacion == 'ALTO' || cita.estado == 'CANCELADA'}">
+                                            <form method="POST" action="${pageContext.request.contextPath}/admin/dashboard" style="margin:0;">
+                                                <input type="hidden" name="action" value="reasignar">
+                                                <input type="hidden" name="idCita" value="${cita.idCita}">
+                                                <button type="submit" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
+                                                    <i data-lucide="zap" style="width: 14px;"></i> Reasignar IA
+                                                </button>
+                                            </form>
+                                        </c:when>
+                                        <c:otherwise>
+                                            <span style="color: var(--text-muted); font-size: 12px;">Operación Normal</span>
+                                        </c:otherwise>
+                                    </c:choose>
+                                </td>
+                            </tr>
+                        </c:forEach>
+                        <c:if test="${empty listaCitas}">
+                            <tr><td colspan="7" style="text-align:center; padding: 20px;">No hay citas registradas en el sistema.</td></tr>
+                        </c:if>
+                    </tbody>
+                </table>
             </div>
 
         </main>
