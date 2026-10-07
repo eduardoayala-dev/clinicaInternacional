@@ -55,8 +55,14 @@ public class SysAdminServlet extends HttpServlet {
 
         switch (path) {
             case "/sysadmin/usuarios":
-                List<Usuario> listaUsuarios = usuarioDAO.obtenerTodos();
-                request.setAttribute("listaUsuarios", listaUsuarios);
+                List<Usuario> todos = usuarioDAO.obtenerTodos();
+                List<Usuario> personal = new ArrayList<>();
+                for (Usuario u : todos) {
+                    if (!"PACIENTE".equals(u.getRol())) {
+                        personal.add(u);
+                    }
+                }
+                request.setAttribute("listaUsuarios", personal);
                 cargarSedesYEspecialidades(request);
                 request.getRequestDispatcher("/WEB-INF/views/sysadmin/usuarios.jsp").forward(request, response);
                 break;
@@ -90,6 +96,68 @@ public class SysAdminServlet extends HttpServlet {
         }
 
         String action = request.getParameter("action");
+
+        if ("cambiarEstado".equals(action)) {
+            try {
+                int idUsuario = Integer.parseInt(request.getParameter("idUsuario"));
+                boolean nuevoEstado = Boolean.parseBoolean(request.getParameter("estado"));
+                boolean exito = usuarioDAO.cambiarEstadoUsuario(idUsuario, nuevoEstado);
+                if (exito) {
+                    session.setAttribute("flashMessage", "Estado del usuario actualizado correctamente.");
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");
+            return;
+        }
+
+        if ("registrar".equals(action) || "editar".equals(action)) {
+            String nombres = request.getParameter("nombres");
+            String apellidos = request.getParameter("apellidos");
+            String email = request.getParameter("email");
+            String rol = request.getParameter("rol");
+
+            Usuario u = new Usuario();
+            u.setNombres(nombres);
+            u.setApellidos(apellidos);
+            u.setEmail(email);
+            u.setRol(rol);
+
+            String cmp = null;
+            Integer idEspecialidad = null;
+            Integer idSede = null;
+            String cargo = null;
+
+            if ("MEDICO".equals(rol)) {
+                cmp = request.getParameter("cmp");
+                String espStr = request.getParameter("id_especialidad");
+                if (espStr != null && !espStr.isEmpty()) idEspecialidad = Integer.parseInt(espStr);
+                String sedeStr = request.getParameter("id_sede_medico");
+                if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
+            } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
+                cargo = request.getParameter("cargo");
+                String sedeStr = request.getParameter("id_sede_personal");
+                if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
+            }
+
+            if ("editar".equals(action)) {
+                u.setIdUsuario(Integer.parseInt(request.getParameter("idUsuario")));
+                usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
+                session.setAttribute("flashMessage", "Usuario actualizado correctamente.");
+            } else {
+                String passwordRaw = request.getParameter("password");
+                if (passwordRaw == null || passwordRaw.trim().isEmpty()) passwordRaw = "Password123!";
+                u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(passwordRaw, org.mindrot.jbcrypt.BCrypt.gensalt()));
+                u.setActivo(true);
+                usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
+                session.setAttribute("flashMessage", "Nuevo usuario creado exitosamente.");
+            }
+
+            response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");
+            return;
+        }
+
         if ("guardarPriorizacion".equals(action)) {
             session.setAttribute("flashMessage", "Parámetros de priorización y tiempo límite de respuesta actualizados correctamente.");
             response.sendRedirect(request.getContextPath() + "/sysadmin/priorizacion");
