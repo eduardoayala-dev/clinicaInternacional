@@ -141,19 +141,15 @@
         .badge-activo { background: #dcfce7; color: #166534; }
         .badge-inactivo { background: #fee2e2; color: #991b1b; }
 
-        /* BOTONES EXACTOS COMO EL DISEÑO DE LA CAPTURA DEL USUARIO */
-        .btn-action-pill {
-            padding: 6px 14px; border-radius: 20px; font-size: 13px; font-weight: 600; text-decoration: none;
-            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer;
+        /* ICON BUTTONS LIMPIOS Y SENCILLOS */
+        .btn-icon {
+            background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md);
+            width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
+            color: var(--text-muted); cursor: pointer; transition: all 0.2s; outline: none;
         }
-        .btn-edit-pill { background: #eff6ff; color: #2563eb; }
-        .btn-edit-pill:hover { background: #2563eb; color: #ffffff; }
-
-        .btn-disable-pill { background: #fef2f2; color: #ef4444; }
-        .btn-disable-pill:hover { background: #ef4444; color: #ffffff; }
-
-        .btn-enable-pill { background: #ecfdf5; color: #10b981; }
-        .btn-enable-pill:hover { background: #10b981; color: #ffffff; }
+        .btn-icon:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+        .btn-icon-disable:hover { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
+        .btn-icon-enable:hover { background: #ecfdf5; color: #10b981; border-color: #6ee7b7; }
 
         /* MODAL STYLING */
         .modal-overlay {
@@ -320,21 +316,21 @@
                                 <% } %>
                             </td>
                             <td style="display: flex; gap: 8px;">
-                                <button class="btn-action-pill btn-edit-pill" onclick="editarUsuario('<%= u.getIdUsuario() %>', '<%= u.getNombres() %>', '<%= u.getApellidos() %>', '<%= u.getEmail() %>', '<%= u.getRol() %>')">
-                                    <i data-lucide="edit-2" style="width: 14px;"></i> Editar
+                                <button class="btn-icon" title="Editar usuario" onclick="editarUsuario('<%= u.getIdUsuario() %>', '<%= u.getNombres() %>', '<%= u.getApellidos() %>', '<%= u.getEmail() %>', '<%= u.getRol() %>')">
+                                    <i data-lucide="edit-2" style="width: 16px;"></i>
                                 </button>
                                 <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST" style="margin: 0;">
                                     <input type="hidden" name="action" value="cambiarEstado">
                                     <input type="hidden" name="idUsuario" value="<%= u.getIdUsuario() %>">
                                     <% if (u.isActivo()) { %>
                                         <input type="hidden" name="estado" value="false">
-                                        <button type="submit" class="btn-action-pill btn-disable-pill" title="Inhabilitar cuenta">
-                                            <i data-lucide="user-x" style="width: 14px;"></i> Inhabilitar
+                                        <button type="submit" class="btn-icon btn-icon-disable" title="Deshabilitar usuario">
+                                            <i data-lucide="user-x" style="width: 16px;"></i>
                                         </button>
                                     <% } else { %>
                                         <input type="hidden" name="estado" value="true">
-                                        <button type="submit" class="btn-action-pill btn-enable-pill" title="Habilitar cuenta">
-                                            <i data-lucide="user-check" style="width: 14px;"></i> Habilitar
+                                        <button type="submit" class="btn-icon btn-icon-enable" title="Habilitar usuario">
+                                            <i data-lucide="user-check" style="width: 16px;"></i>
                                         </button>
                                     <% } %>
                                 </form>
@@ -421,10 +417,14 @@
                         <div class="clinical-box-title"><i data-lucide="briefcase" style="width: 14px; vertical-align: middle;"></i> Información de Admisión / Recepción</div>
                         <div class="form-grid" style="margin-bottom: 0;">
                             <div class="form-group">
+                                <label>Código de Empleado</label>
+                                <input type="text" value="Autogenerado por el sistema (Ej. ADM-003)" disabled style="background: #f1f5f9; color: var(--text-muted); font-style: italic;">
+                            </div>
+                            <div class="form-group">
                                 <label>Cargo / Área *</label>
                                 <input type="text" name="cargo" id="modalCargo" placeholder="Ej. Admisión - Ventanilla 2">
                             </div>
-                            <div class="form-group">
+                            <div class="form-group full">
                                 <label>Sede Asignada *</label>
                                 <select name="id_sede_personal" id="modalSedePersonal">
                                     <option value="">Seleccione sede...</option>
@@ -437,8 +437,8 @@
                     </div>
 
                     <div class="form-group full" id="passwordGroup">
-                        <label>Contraseña</label>
-                        <input type="password" name="password" id="modalPassword" placeholder="Contraseña de acceso inicial">
+                        <label>Contraseña Inicial</label>
+                        <input type="password" name="password" id="modalPassword" placeholder="Contraseña de acceso para nuevo usuario">
                     </div>
                 </div>
 
