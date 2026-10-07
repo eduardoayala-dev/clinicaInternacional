@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard", "/admin/inicio"})
+@WebServlet(name = "AdminDashboardServlet", urlPatterns = { "/admin/dashboard" })
 public class AdminDashboardServlet extends HttpServlet {
 
     private CitaDAO citaDAO;
@@ -24,7 +24,8 @@ public class AdminDashboardServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
             response.sendRedirect(request.getContextPath() + "/login/personal?error=acceso_denegado");
@@ -36,17 +37,16 @@ public class AdminDashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/login/personal?error=rol_invalido");
             return;
         }
-        
+
         List<Map<String, Object>> citas = citaDAO.obtenerCitasConRiesgo();
         request.setAttribute("listaCitas", citas);
-        request.setAttribute("usuario", usuario);
-        request.setAttribute("nombrePersonal", usuario.getNombres() + " " + usuario.getApellidos());
-        
+
         request.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(request, response);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
         String action = request.getParameter("action");
         if ("reasignar".equals(action)) {
             try {

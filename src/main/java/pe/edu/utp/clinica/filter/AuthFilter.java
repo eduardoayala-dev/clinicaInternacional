@@ -14,7 +14,7 @@ import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
 
-@WebFilter(filterName = "AuthFilter", urlPatterns = {"/paciente/*", "/medico/*", "/admin/*"})
+@WebFilter(filterName = "AuthFilter", urlPatterns = {"/paciente/*", "/medico/*", "/admin/*", "/sysadmin/*"})
 public class AuthFilter implements Filter {
 
     @Override
@@ -51,6 +51,11 @@ public class AuthFilter implements Filter {
 
         if (uri.contains("/admin/") && !"ADMINISTRADOR".equals(rol) && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
             res.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso no autorizado al módulo Administrativo.");
+            return;
+        }
+
+        if (uri.contains("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
+            res.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso no autorizado al módulo de Administrador del Sistema.");
             return;
         }
 

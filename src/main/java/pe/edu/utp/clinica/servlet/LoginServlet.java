@@ -39,7 +39,10 @@ public class LoginServlet extends HttpServlet {
         HttpSession existingSession = request.getSession(false);
         if (existingSession != null && existingSession.getAttribute("usuarioLogueado") != null) {
             String rol = (String) existingSession.getAttribute("rol");
-            if ("ADMINISTRADOR".equals(rol) || "PERSONAL_ADMINISTRATIVO".equals(rol)) {
+            if ("ADMINISTRADOR".equals(rol)) {
+                response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
+                return;
+            } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
                 response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 return;
             } else if ("MEDICO".equals(rol)) {
@@ -115,8 +118,10 @@ public class LoginServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/medico/agenda");
                     break;
                 case "PERSONAL_ADMINISTRATIVO":
-                case "ADMINISTRADOR":
                     response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                    break;
+                case "ADMINISTRADOR":
+                    response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
                     break;
                 default:
                     response.sendRedirect(request.getContextPath() + "/login?error=rol_invalido");
