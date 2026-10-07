@@ -24,7 +24,7 @@ import java.util.Map;
  */
 import pe.edu.utp.clinica.dao.CitaDAO;
 
-@WebServlet(name = "PacienteDashboardServlet", urlPatterns = {"/paciente/dashboard", "/paciente/citas", "/paciente/lista-espera", "/paciente/notificaciones", "/paciente/perfil"})
+@WebServlet(name = "PacienteDashboardServlet", urlPatterns = {"/paciente/dashboard", "/paciente/citas", "/paciente/lista-espera"})
 public class PacienteDashboardServlet extends HttpServlet {
 
     private CitaDAO citaDAO;

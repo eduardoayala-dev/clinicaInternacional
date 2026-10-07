@@ -350,4 +350,61 @@ public class UsuarioDAO {
         }
         return lista;
     }
+
+    public pe.edu.utp.clinica.model.Paciente obtenerPacientePorUsuarioId(int usuarioId) {
+        String sql = "SELECT id_paciente, id_usuario, dni, fecha_nacimiento, telefono, direccion FROM paciente WHERE id_usuario = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, usuarioId);
+            try (ResultSet rs = stmt.executeQuery()) {
+                if (rs.next()) {
+                    java.sql.Date fechaNac = rs.getDate("fecha_nacimiento");
+                    return new pe.edu.utp.clinica.model.Paciente(
+                        rs.getInt("id_paciente"),
+                        rs.getInt("id_usuario"),
+                        rs.getString("dni"),
+                        fechaNac != null ? fechaNac.toLocalDate() : null,
+                        rs.getString("telefono"),
+                        rs.getString("direccion")
+                    );
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al obtener paciente por usuarioId: " + e.getMessage(), e);
+        }
+        return null;
+    }
+
+    public boolean actualizarContactoPaciente(int idUsuario, String email, String telefono, String direccion) {
+        String sqlUsuario = "UPDATE usuario SET email = ? WHERE id_usuario = ?";
+        String sqlPaciente = "UPDATE paciente SET telefono = ?, direccion = ? WHERE id_usuario = ?";
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
+                stmtU.setString(1, email);
+                stmtU.setInt(2, idUsuario);
+                stmtU.executeUpdate();
+            }
+            try (PreparedStatement stmtP = conn.prepareStatement(sqlPaciente)) {
+                stmtP.setString(1, telefono);
+                stmtP.setString(2, direccion);
+                stmtP.setInt(3, idUsuario);
+                stmtP.executeUpdate();
+            }
+            conn.commit();
+            return true;
+        } catch (SQLException e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) {}
+            }
+            LOGGER.log(Level.SEVERE, "Error al actualizar contacto del paciente: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+            }
+        }
+    }
 }
