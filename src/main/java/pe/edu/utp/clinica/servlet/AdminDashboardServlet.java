@@ -13,7 +13,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 
-@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard"})
+@WebServlet(name = "AdminDashboardServlet", urlPatterns = {"/admin/dashboard", "/admin/inicio"})
 public class AdminDashboardServlet extends HttpServlet {
 
     private CitaDAO citaDAO;
@@ -39,6 +39,8 @@ public class AdminDashboardServlet extends HttpServlet {
         
         List<Map<String, Object>> citas = citaDAO.obtenerCitasConRiesgo();
         request.setAttribute("listaCitas", citas);
+        request.setAttribute("usuario", usuario);
+        request.setAttribute("nombrePersonal", usuario.getNombres() + " " + usuario.getApellidos());
         
         request.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(request, response);
     }

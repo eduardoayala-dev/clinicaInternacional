@@ -1,503 +1,365 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
+<%
+    Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+    String nombrePersonal = (String) request.getAttribute("nombrePersonal");
+    if (nombrePersonal == null && usuario != null) {
+        nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
+    }
+    if (nombrePersonal == null) nombrePersonal = "Lic. Marina Salvatierra";
+
+    String iniciales = "MS";
+    if (nombrePersonal != null && !nombrePersonal.trim().isEmpty()) {
+        String[] partes = nombrePersonal.trim().split("\\s+");
+        if (partes.length >= 2) {
+            iniciales = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
+        } else {
+            iniciales = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
+        }
+    }
+
+    List<Map<String, Object>> listaCitas = (List<Map<String, Object>>) request.getAttribute("listaCitas");
+    String flashMessage = (String) session.getAttribute("flashMessage");
+    if (flashMessage != null) {
+        session.removeAttribute("flashMessage");
+    }
+%>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Administrador - Clínica Internacional</title>
+    <title>Tablero de Control Operativo - Clínica Internacional</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            /* Paleta Cohesiva "Clean Medical" */
-            --primary: #2563eb;         /* Azul médico corporativo (botones, acentos) */
-            --primary-light: #eff6ff;   /* Fondo muy suave para elementos activos */
-            
-            --bg-body: #f8fafc;         /* Fondo general ligerísimamente gris para contraste */
-            --bg-surface: #ffffff;      /* Tarjetas, sidebar y topbar blancos */
-            
-            --text-main: #0f172a;       /* Texto principal oscuro */
-            --text-muted: #64748b;      /* Texto secundario gris */
-            --border-light: #e2e8f0;    /* Bordes sutiles */
-            
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.05), 0 2px 4px -2px rgb(0 0 0 / 0.05);
-            
-            --radius-md: 8px;
-            --radius-lg: 12px;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --primary-light: #eff6ff;
+            --bg-page: #f0f8ff;
+            --bg-card: #ffffff;
+            --text-dark: #0f172a;
+            --text-gray: #64748b;
+            --text-light: #94a3b8;
+            --border-light: #e2e8f0;
+            --radius-lg: 16px;
+            --radius-md: 12px;
+            --sidebar-width: 260px;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        
-        body { 
-            display: flex; 
-            flex-direction: column;
-            height: 100vh; 
-            background-color: var(--bg-body); 
-            overflow: hidden; 
-            color: var(--text-main); 
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
+        body { background-color: var(--bg-page); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
 
-        /* HEADER SUPERIOR (TOPBAR) */
-        .topbar {
-            height: 64px;
-            flex-shrink: 0;
-            background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-light);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 32px;
-            z-index: 10;
-        }
-
-        .topbar-brand {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            font-weight: 700;
-            color: var(--text-main);
-            letter-spacing: -0.5px;
-            font-size: 16px;
-        }
-        .topbar-brand img { height: 44px; }
-
-        .topbar-right {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-        }
-        .user-info { display: flex; flex-direction: column; align-items: flex-end; }
-        .user-name { font-weight: 600; font-size: 13px; color: var(--text-main); }
-        .user-role { font-size: 11px; color: var(--text-muted); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        .user-avatar {
-            width: 36px; height: 36px;
-            border-radius: 50%;
-            background-color: var(--primary-light);
-            color: var(--primary);
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .btn-logout {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            padding: 8px 12px;
-            border-radius: var(--radius-md);
-            font-size: 13px;
-            font-weight: 500;
-            color: var(--text-muted);
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        .btn-logout:hover { color: #ef4444; background: #fef2f2; }
-
-        /* CONTENEDOR INFERIOR */
-        .app-body {
-            display: flex;
-            height: calc(100vh - 64px);
-            overflow: hidden;
-        }
-
-        /* SIDEBAR BLANCO */
         .sidebar {
-            width: 260px;
-            background-color: var(--bg-surface);
-            border-right: 1px solid var(--border-light);
-            padding: 24px 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-            flex-shrink: 0;
-            overflow-y: auto;
+            width: var(--sidebar-width); background-color: var(--bg-card); border-right: 1px solid var(--border-light);
+            display: flex; flex-direction: column; padding: 24px 20px; flex-shrink: 0; z-index: 10;
         }
-
+        .brand-container { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 8px; }
+        .brand-container img { height: 36px; }
+        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
         .nav-item {
-            padding: 12px 16px;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            color: var(--text-muted);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            border-radius: var(--radius-md);
-            transition: all 0.2s ease;
+            display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: var(--radius-md);
+            color: var(--text-gray); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;
         }
+        .nav-item:hover { background-color: #f8fafc; color: var(--text-dark); }
+        .nav-item.active { background-color: #eff6ff; color: var(--primary); font-weight: 600; }
+        .user-profile-bottom {
+            margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 16px 8px 8px 8px;
+            border-top: 1px solid var(--border-light); cursor: pointer; text-decoration: none;
+        }
+        .avatar-initials {
+            display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600;
+            color: var(--primary); background-color: #eff6ff; width: 36px; height: 36px; font-size: 13px; flex-shrink: 0;
+        }
+        .user-name-sm { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
+        .user-role-sm { font-size: 11px; color: var(--text-gray); }
 
-        .nav-item:hover {
-            background-color: var(--bg-body);
-            color: var(--text-main);
-        }
-
-        .nav-item.active {
-            background-color: var(--primary-light);
-            color: var(--primary);
-            font-weight: 600;
-        }
-        .nav-item.active svg { color: var(--primary); }
-
-        /* ÁREA PRINCIPAL */
-        .main-content {
-            flex: 1;
-            height: 100%;
-            overflow-y: auto;
-            padding: 32px 40px;
-        }
-
-        /* HEADER DE SECCIÓN */
-        .page-header { margin-bottom: 24px; }
-        .page-title {
-            font-size: 24px;
-            font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 6px;
-            letter-spacing: -0.5px;
-        }
-        .page-subtitle { font-size: 14px; color: var(--text-muted); }
-
-        /* KPIS GRID */
-        .kpi-grid {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-        .kpi-card {
-            background: var(--bg-surface);
-            border-radius: var(--radius-lg);
-            padding: 20px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-light);
-        }
-        .kpi-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-        .kpi-title { font-size: 13px; font-weight: 500; color: var(--text-muted); }
-        .kpi-icon { color: var(--primary); }
-        .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); line-height: 1; margin-bottom: 8px; letter-spacing: -0.5px; }
-        .kpi-desc { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
-
-        /* SECCIONES SECUNDARIAS (GRID 2 COLUMNAS) */
-        .content-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 20px;
-            margin-bottom: 24px;
-        }
-
-        .panel {
-            background: var(--bg-surface);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: var(--shadow-sm);
-            border: 1px solid var(--border-light);
-        }
-
-        .panel-title {
-            font-size: 16px;
-            font-weight: 600;
-            color: var(--text-main);
-            margin-bottom: 20px;
-        }
-
-        /* TABLA */
-        .data-table { width: 100%; border-collapse: separate; border-spacing: 0; }
-        .data-table th, .data-table td { padding: 12px 0; text-align: left; border-bottom: 1px solid var(--border-light); font-size: 13px; }
-        .data-table th { font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; padding-bottom: 8px; letter-spacing: 0.5px; }
-        .data-table tr:last-child td { border-bottom: none; }
+        .main-content { flex: 1; padding: 32px 40px; overflow-y: auto; }
         
-        .badge { padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; }
-        .badge-online { background: #dcfce7; color: #166534; }
-        .badge-indicator { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
-        
-        /* BARRA DE PROGRESO */
-        .progress-container { width: 100px; }
-        .progress-header { display: flex; justify-content: space-between; font-size: 11px; font-weight: 500; margin-bottom: 4px; color: var(--text-main); }
-        .progress-bar { width: 100%; height: 4px; background: var(--bg-body); border-radius: 2px; overflow: hidden; }
-        .progress-fill { height: 100%; background: var(--primary); border-radius: 2px; }
+        .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
+        .header-title { font-size: 26px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.5px; }
+        .header-subtitle { font-size: 14px; color: var(--text-gray); }
 
-        /* AUDITORIA Y ACTIVIDAD */
-        .activity-item {
-            display: flex;
-            gap: 12px;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-            border-bottom: 1px solid var(--border-light);
+        .btn-bell {
+            width: 44px; height: 44px; border-radius: 12px; background: #ffffff; border: 1px solid var(--border-light);
+            display: flex; align-items: center; justify-content: center; color: var(--text-gray); position: relative;
+            text-decoration: none; transition: all 0.2s;
         }
-        .activity-item:last-child { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
-        .activity-icon {
-            width: 32px; height: 32px; border-radius: 50%;
-            background: var(--bg-body); color: var(--text-muted);
-            display: flex; align-items: center; justify-content: center; flex-shrink: 0;
-        }
-        .activity-content p { font-size: 13px; color: var(--text-main); line-height: 1.4; margin-bottom: 2px; }
-        .activity-content p strong { font-weight: 600; }
-        .activity-time { font-size: 11px; color: var(--text-muted); }
-        
-        .text-success { color: #16a34a; font-weight: 500; }
-        
-        .badge-alto { background: #fef2f2; color: #dc2626; border: 1px solid #fecaca; }
-        .badge-medio { background: #fffbeb; color: #d97706; border: 1px solid #fde68a; }
-        .badge-bajo { background: #f0fdf4; color: #16a34a; border: 1px solid #bbf7d0; }
+        .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
 
+        /* ALERT BANNER */
+        .flash-alert {
+            background: #dcfce7; color: #15803d; border: 1px solid #bbf7d0; padding: 14px 18px;
+            border-radius: var(--radius-md); font-weight: 600; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 10px;
+        }
+
+        /* STATS GRID */
+        .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+        .stat-card {
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column; justify-content: space-between;
+        }
+        .stat-card-title { font-size: 12px; font-weight: 600; color: var(--text-gray); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-card-num { font-size: 28px; font-weight: 700; color: var(--text-dark); margin: 10px 0 4px 0; letter-spacing: -0.5px; }
+        .stat-card-sub { font-size: 12px; color: var(--text-gray); font-weight: 500; }
+
+        /* MAIN GRID (TABLE + LIVE FEED) */
+        .grid-2col { display: grid; grid-template-columns: 1fr 300px; gap: 24px; margin-bottom: 24px; }
+
+        /* TABLE CARD */
+        .card-box {
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
+        }
+        .card-box-header {
+            padding: 20px 24px; border-bottom: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;
+        }
+        .card-box-title { font-size: 16px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
+
+        table { width: 100%; border-collapse: collapse; text-align: left; }
+        th { background: #f8fafc; padding: 14px 18px; font-size: 12px; font-weight: 600; color: var(--text-gray); border-bottom: 1px solid var(--border-light); }
+        td { padding: 14px 18px; font-size: 13px; color: var(--text-dark); border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+        tr:last-child td { border-bottom: none; }
+        tr:hover { background: #f8fafc; }
+
+        .badge-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
+        .badge-espera { background: #dcfce7; color: #166534; }
+        .badge-admision { background: #eff6ff; color: #2563eb; }
+        .badge-pendiente { background: #fef3c7; color: #92400e; }
+        .badge-confirmada { background: #f1f5f9; color: #475569; }
+
+        .btn-tbl-action {
+            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer;
+        }
+        .btn-tbl-primary { background: var(--primary); color: #ffffff; box-shadow: 0 2px 6px rgba(37,99,235,0.2); }
+        .btn-tbl-primary:hover { background: var(--primary-hover); }
+        .btn-tbl-sec { background: var(--primary-light); color: var(--primary); }
+        .btn-tbl-sec:hover { background: var(--primary); color: #ffffff; }
+
+        /* LIVE LOG FEED CARD */
+        .live-feed-card {
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; flex-direction: column;
+        }
+        .live-feed-head { font-size: 14px; font-weight: 700; color: var(--text-dark); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
+        .live-tag { font-size: 10px; background: #ef4444; color: #ffffff; padding: 2px 8px; border-radius: 10px; font-weight: 700; text-transform: uppercase; }
+
+        .feed-item { padding: 12px 0; border-bottom: 1px solid var(--border-light); font-size: 12px; }
+        .feed-item:last-child { border-bottom: none; }
+        .feed-time { font-weight: 700; color: var(--primary); margin-bottom: 2px; }
+        .feed-desc { color: var(--text-gray); line-height: 1.4; }
+
+        /* QUICK ACTIONS BAR */
+        .quick-actions-card {
+            background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
+            padding: 20px 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.02); display: flex; justify-content: space-between; align-items: center;
+        }
+        .quick-actions-title { font-size: 14px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
+        .btn-quick {
+            padding: 12px 24px; border-radius: 30px; font-size: 13px; font-weight: 600; text-decoration: none;
+            transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-light); cursor: pointer;
+        }
+        .btn-quick-primary { background: var(--primary); color: #ffffff; border-color: var(--primary); box-shadow: 0 4px 12px rgba(37,99,235,0.2); }
+        .btn-quick-primary:hover { background: var(--primary-hover); }
+        .btn-quick-sec { background: #ffffff; color: var(--text-dark); }
+        .btn-quick-sec:hover { background: #f8fafc; }
+
+        @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .stats-grid { grid-template-columns: repeat(2, 1fr); } .grid-2col { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
 
-    <header class="topbar">
-        <div class="topbar-brand">
+    <aside class="sidebar">
+        <div class="brand-container">
             <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
         </div>
-        <div class="topbar-right">
-            <div class="user-info">
-                <span class="user-name"><c:out value="${sessionScope.nombreUsuario}" default="Roberto Vargas" /></span>
-                <span class="user-role">Administrador del Sistema</span>
-            </div>
-            <div class="user-avatar">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-            </div>
-            <div style="width: 1px; height: 24px; background: var(--border-light); margin: 0 4px;"></div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout">
-                <i data-lucide="log-out" style="width: 16px; height: 16px;"></i>
-                Salir
-            </a>
-        </div>
-    </header>
-
-    <div class="app-body">
-        <aside class="sidebar">
+        <nav class="nav-menu">
             <a href="${pageContext.request.contextPath}/admin/dashboard" class="nav-item active">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i>
-                Inicio
+                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio / Tablero
+            </a>
+            <a href="${pageContext.request.contextPath}/admin/medicos" class="nav-item">
+                <i data-lucide="stethoscope" style="width: 18px;"></i> Padrón Médicos
             </a>
             <a href="${pageContext.request.contextPath}/admin/usuarios" class="nav-item">
-                <i data-lucide="users" style="width: 18px;"></i>
-                Usuarios y Roles
+                <i data-lucide="users" style="width: 18px;"></i> Gestión Usuarios
             </a>
-            <a href="#" class="nav-item">
-                <i data-lucide="building-2" style="width: 18px;"></i>
-                Gestión de Sedes
+            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="nav-item">
+                <i data-lucide="refresh-cw" style="width: 18px;"></i> Reasignaciones
             </a>
-            <a href="#" class="nav-item">
-                <i data-lucide="sliders-horizontal" style="width: 18px;"></i>
-                Config. Priorización
-            </a>
-            <a href="#" class="nav-item">
-                <i data-lucide="pie-chart" style="width: 18px;"></i>
-                Métricas
-            </a>
-            
-            <a href="${pageContext.request.contextPath}/admin/perfil" class="nav-item" style="margin-top: auto; border-top: 1px solid var(--border-light); border-radius: 0; padding-top: 16px;">
-                <i data-lucide="user-cog" style="width: 18px;"></i>
-                Mi Perfil
-            </a>
-        </aside>
+        </nav>
+        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
+            <div class="avatar-initials"><%= iniciales %></div>
+            <div style="flex: 1;">
+                <div class="user-name-sm"><%= nombrePersonal %></div>
+                <div class="user-role-sm">Personal Administrativo</div>
+            </div>
+            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
+        </a>
+    </aside>
 
-        <main class="main-content">
-            <div class="page-header">
-                <h1 class="page-title">Vista General</h1>
-                <p class="page-subtitle">Monitoreo en tiempo real de infraestructura, usuarios y rendimiento.</p>
+    <main class="main-content">
+        <div class="header-row">
+            <div>
+                <h1 class="header-title">Tablero de Control Operativo Diario</h1>
+                <p class="header-subtitle">Supervisión inmediata de citas, disponibilidad y reasignaciones del motor inteligente.</p>
+            </div>
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+                <i data-lucide="bell" style="width: 20px;"></i>
+            </a>
+        </div>
+
+        <% if (flashMessage != null) { %>
+            <div class="flash-alert">
+                <i data-lucide="check-circle" style="width: 20px;"></i> <%= flashMessage %>
+            </div>
+        <% } %>
+
+        <!-- STATS GRID -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-card-title">Citas del Día</div>
+                <div class="stat-card-num">420</div>
+                <div class="stat-card-sub">310 Confirmadas &nbsp;•&nbsp; 65 En Espera</div>
             </div>
 
-            <div class="kpi-grid">
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <span class="kpi-title">Usuarios Activos</span>
-                        <div class="kpi-icon"><i data-lucide="users" style="width:20px; height:20px;"></i></div>
-                    </div>
-                    <div class="kpi-value">1,420</div>
-                    <div class="kpi-desc">1,250 Pacientes • 120 Médicos<br>48 Personal • 2 Admins</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <span class="kpi-title">Sedes Operativas</span>
-                        <div class="kpi-icon"><i data-lucide="building" style="width:20px; height:20px;"></i></div>
-                    </div>
-                    <div class="kpi-value">4</div>
-                    <div class="kpi-desc">Norte, Central, Sur, Este<br>98 consultorios habilitados</div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <span class="kpi-title">Citas Mensuales</span>
-                        <div class="kpi-icon"><i data-lucide="calendar" style="width:20px; height:20px;"></i></div>
-                    </div>
-                    <div class="kpi-value">8,640</div>
-                    <div class="kpi-desc">89.2% Cumplimiento asistencial<br><span class="text-success">+4.8% vs. mes anterior</span></div>
-                </div>
-                <div class="kpi-card">
-                    <div class="kpi-header">
-                        <span class="kpi-title">Motor de Reasignación</span>
-                        <div class="kpi-icon"><i data-lucide="activity" style="width:20px; height:20px;"></i></div>
-                    </div>
-                    <div class="kpi-value">74.5%</div>
-                    <div class="kpi-desc">Recuperados este mes<br>1,095 cupos salvados</div>
-                </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Cancelaciones</div>
+                <div class="stat-card-num">38</div>
+                <div class="stat-card-sub">28 Notificadas &nbsp;•&nbsp; 10 Inmediatas</div>
             </div>
 
-            <div class="content-grid">
-                <!-- PANEL IZQUIERDO -->
-                <div class="panel">
-                    <div class="panel-title">Estado de Red por Sede</div>
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Sede</th>
-                                <th>Estado</th>
-                                <th>Ocupación</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <tr>
-                                <td>
-                                    <div style="font-weight:500; color:var(--text-main);">Sede Central</div>
-                                    <div style="font-size:11px; color:var(--text-muted);">Metropolitano</div>
-                                </td>
-                                <td><span class="badge badge-online"><div class="badge-indicator"></div> Sincronizado</span></td>
-                                <td>
-                                    <div class="progress-container">
-                                        <div class="progress-header"><span></span><span>92.4%</span></div>
-                                        <div class="progress-bar"><div class="progress-fill" style="width:92.4%;"></div></div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div style="font-weight:500; color:var(--text-main);">Sede Norte</div>
-                                    <div style="font-size:11px; color:var(--text-muted);">Valle</div>
-                                </td>
-                                <td><span class="badge badge-online"><div class="badge-indicator"></div> Sincronizado</span></td>
-                                <td>
-                                    <div class="progress-container">
-                                        <div class="progress-header"><span></span><span>88.1%</span></div>
-                                        <div class="progress-bar"><div class="progress-fill" style="width:88.1%;"></div></div>
-                                    </div>
-                                </td>
-                            </tr>
-                            <tr>
-                                <td>
-                                    <div style="font-weight:500; color:var(--text-main);">Sede Sur</div>
-                                    <div style="font-size:11px; color:var(--text-muted);">Parque Industrial</div>
-                                </td>
-                                <td><span class="badge badge-online"><div class="badge-indicator"></div> Sincronizado</span></td>
-                                <td>
-                                    <div class="progress-container">
-                                        <div class="progress-header"><span></span><span>79.5%</span></div>
-                                        <div class="progress-bar"><div class="progress-fill" style="width:79.5%;"></div></div>
-                                    </div>
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- PANEL DERECHO: ACTIVIDAD RECIENTE -->
-                <div class="panel">
-                    <div class="panel-title">Auditoría Reciente</div>
-                    
-                    <div class="activity-item">
-                        <div class="activity-icon" style="background:#dcfce7; color:#166534;"><i data-lucide="settings" style="width:16px;"></i></div>
-                        <div class="activity-content">
-                            <p><strong>Roberto Vargas</strong> ajustó tiempo de espera en Sede Central.</p>
-                            <span class="activity-time">Hoy, 10:14 AM</span>
-                        </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-icon" style="background:#eff6ff; color:#2563eb;"><i data-lucide="user-plus" style="width:16px;"></i></div>
-                        <div class="activity-content">
-                            <p><strong>Roberto Vargas</strong> creó el perfil médico para Dr. Carlos Mendoza.</p>
-                            <span class="activity-time">Ayer, 17:40 PM</span>
-                        </div>
-                    </div>
-
-                    <div class="activity-item">
-                        <div class="activity-icon" style="background:#fef2f2; color:#dc2626;"><i data-lucide="user-minus" style="width:16px;"></i></div>
-                        <div class="activity-content">
-                            <p><strong>Sistema</strong> revocó acceso a OP-4491 por expiración de contrato.</p>
-                            <span class="activity-time">Ayer, 14:02 PM</span>
-                        </div>
-                    </div>
-
-                    <a href="#" style="display:inline-block; margin-top:12px; font-size:13px; font-weight:500; color:var(--primary); text-decoration:none;">Ver todo el historial &rarr;</a>
-                </div>
+            <div class="stat-card">
+                <div class="stat-card-title">Cupos Disponibles Red</div>
+                <div class="stat-card-num">74</div>
+                <div class="stat-card-sub">52 Regulares &nbsp;•&nbsp; 22 En Oferta</div>
             </div>
 
-            <!-- TABLA DE INTELIGENCIA -->
-            <div class="panel" style="margin-bottom: 24px;">
-                <div class="panel-title" style="display:flex; justify-content:space-between; align-items:center;">
-                    <span>Radar de Inteligencia (Citas y Riesgos)</span>
-                </div>
-                
-                <c:if test="${not empty sessionScope.flashMessage}">
-                    <div style="background: #dcfce7; color: #166534; padding: 12px; border-radius: 8px; margin-bottom: 16px; font-size: 14px; font-weight: 500;">
-                        <i data-lucide="check-circle" style="width: 16px; margin-bottom: -3px; margin-right: 4px;"></i>
-                        <c:out value="${sessionScope.flashMessage}" />
-                    </div>
-                    <c:remove var="flashMessage" scope="session" />
-                </c:if>
+            <div class="stat-card">
+                <div class="stat-card-title">Reasignaciones Pendientes</div>
+                <div class="stat-card-num" style="color: var(--primary);">12</div>
+                <div class="stat-card-sub">8 En Ventana 15m &nbsp;•&nbsp; 4 Manuales</div>
+            </div>
+        </div>
 
-                <table class="data-table">
+        <!-- MAIN 2COL GRID -->
+        <div class="grid-2col">
+            <!-- LEFT TABLE CARD -->
+            <div class="card-box">
+                <div class="card-box-header">
+                    <div class="card-box-title">
+                        <i data-lucide="clock" style="width: 18px; color: var(--primary);"></i> Citas de Atención Prioritaria en Ventanilla
+                    </div>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="text" placeholder="Buscar DNI o Paciente..." style="padding: 8px 14px; border-radius: 20px; border: 1px solid var(--border-light); font-size: 12px; outline: none;">
+                    </div>
+                </div>
+
+                <table>
                     <thead>
                         <tr>
-                            <th>ID Cita</th>
-                            <th>Paciente</th>
-                            <th>Médico</th>
-                            <th>Fecha y Hora</th>
-                            <th>Nivel Urgencia</th>
-                            <th>Predicción de Riesgo</th>
-                            <th>Acción Autónoma</th>
+                            <th>HORA</th>
+                            <th>PACIENTE</th>
+                            <th>SEDE / CONSULTORIO</th>
+                            <th>MÉDICO</th>
+                            <th>ESTADO</th>
+                            <th style="text-align: right;">ACCIÓN</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <c:forEach var="cita" items="${listaCitas}">
-                            <tr>
-                                <td>#<c:out value="${cita.idCita}"/></td>
-                                <td style="font-weight: 500; color: var(--text-main);"><c:out value="${cita.paciente}"/></td>
-                                <td>Dr. <c:out value="${cita.medico}"/></td>
-                                <td><c:out value="${cita.fechaHora}"/></td>
-                                
-                                <td>
-                                    <span class="badge ${cita.nivelUrgencia == 'ALTA' ? 'badge-alto' : (cita.nivelUrgencia == 'MEDIA' ? 'badge-medio' : 'badge-bajo')}">
-                                        <c:out value="${cita.nivelUrgencia}"/>
-                                    </span>
-                                </td>
-                                
-                                <td>
-                                    <span class="badge ${cita.riesgoCancelacion == 'ALTO' ? 'badge-alto' : (cita.riesgoCancelacion == 'MEDIO' ? 'badge-medio' : 'badge-bajo')}">
-                                        <i data-lucide="activity" style="width: 12px;"></i> <c:out value="${cita.riesgoCancelacion}"/>
-                                    </span>
-                                </td>
-
-                                <td>
-                                    <c:choose>
-                                        <c:when test="${cita.riesgoCancelacion == 'ALTO' || cita.estado == 'CANCELADA'}">
-                                            <form method="POST" action="${pageContext.request.contextPath}/admin/dashboard" style="margin:0;">
-                                                <input type="hidden" name="action" value="reasignar">
-                                                <input type="hidden" name="idCita" value="${cita.idCita}">
-                                                <button type="submit" style="background: var(--primary); color: white; border: none; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: 600; cursor: pointer; display: flex; align-items: center; gap: 4px;">
-                                                    <i data-lucide="zap" style="width: 14px;"></i> Reasignar IA
-                                                </button>
-                                            </form>
-                                        </c:when>
-                                        <c:otherwise>
-                                            <span style="color: var(--text-muted); font-size: 12px;">Operación Normal</span>
-                                        </c:otherwise>
-                                    </c:choose>
-                                </td>
-                            </tr>
-                        </c:forEach>
-                        <c:if test="${empty listaCitas}">
-                            <tr><td colspan="7" style="text-align:center; padding: 20px;">No hay citas registradas en el sistema.</td></tr>
-                        </c:if>
+                        <tr>
+                            <td style="font-weight: 700;">08:30 AM</td>
+                            <td style="font-weight: 600;">Jorge Valdivia N. <br><span style="font-size: 11px; color: var(--text-gray);">DNI 18492837</span></td>
+                            <td>Sede Central (Cons. 302)</td>
+                            <td>Dr. Carlos Mendoza</td>
+                            <td><span class="badge-status badge-espera">En Espera</span></td>
+                            <td style="text-align: right;">
+                                <button class="btn-tbl-action btn-tbl-primary" onclick="alert('Paciente llamado a consultorio')">Llamar</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">08:45 AM</td>
+                            <td style="font-weight: 600;">Sofía Rivas C. <br><span style="font-size: 11px; color: var(--text-gray);">DNI 72910482</span></td>
+                            <td>Sede Central (Cons. 104)</td>
+                            <td>Dra. Elena Rostova</td>
+                            <td><span class="badge-status badge-admision">Admisión</span></td>
+                            <td style="text-align: right;">
+                                <button class="btn-tbl-action btn-tbl-sec" onclick="alert('Asistencia confirmada')">Confirmar</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">09:00 AM</td>
+                            <td style="font-weight: 600;">Juan Carlos Peña <br><span style="font-size: 11px; color: var(--text-gray);">DNI 09482711</span></td>
+                            <td>Sede Norte (Cons. 210)</td>
+                            <td>Dr. Fernando Solís</td>
+                            <td><span class="badge-status badge-pendiente">Pendiente</span></td>
+                            <td style="text-align: right;">
+                                <button class="btn-tbl-action btn-tbl-sec" onclick="alert('Registrando admisión')">Admitir</button>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td style="font-weight: 700;">09:15 AM</td>
+                            <td style="font-weight: 600;">Rosa Martínez P. <br><span style="font-size: 11px; color: var(--text-gray);">DNI 41928301</span></td>
+                            <td>Sede Sur (Cons. 012)</td>
+                            <td>Dr. Roberto Salas</td>
+                            <td><span class="badge-status badge-confirmada">Confirmada</span></td>
+                            <td style="text-align: right;">
+                                <button class="btn-tbl-action btn-tbl-sec" onclick="alert('Abriendo ficha del paciente')">Ver Ficha</button>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
 
-        </main>
-    </div>
+            <!-- RIGHT LIVE FEED -->
+            <div class="live-feed-card">
+                <div class="live-feed-head">
+                    <span>Operaciones Registradas</span>
+                    <span class="live-tag">• Live</span>
+                </div>
+
+                <div class="feed-item">
+                    <div class="feed-time">08:24 AM</div>
+                    <div class="feed-desc">Admisión manual registrada para paciente P-8030 en Sede Central.</div>
+                </div>
+
+                <div class="feed-item">
+                    <div class="feed-time">08:19 AM</div>
+                    <div class="feed-desc">Notificación enviada por liberación de cupo en Medicina General (Dr. Silva).</div>
+                </div>
+
+                <div class="feed-item">
+                    <div class="feed-time">08:12 AM</div>
+                    <div class="feed-desc">Paciente llamado a consultorio 302 (Paciente P-1092).</div>
+                </div>
+
+                <div class="feed-item">
+                    <div class="feed-time">08:05 AM</div>
+                    <div class="feed-desc">Apertura de turno de mañana en Sede Central completada sin observaciones.</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- QUICK ACTIONS BAR -->
+        <div class="quick-actions-card">
+            <div class="quick-actions-title">
+                <i data-lucide="zap" style="width: 18px; color: var(--primary);"></i> Acciones Rápida Operativas
+            </div>
+            <div style="display: flex; gap: 12px;">
+                <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="btn-quick btn-quick-primary">
+                    <i data-lucide="plus-circle" style="width: 16px;"></i> Registrar Cita Manual en Ventanilla
+                </a>
+                <a href="${pageContext.request.contextPath}/admin/usuarios" class="btn-quick btn-quick-sec">
+                    <i data-lucide="user-plus" style="width: 16px;"></i> Registrar Nuevo Paciente en Padrón
+                </a>
+            </div>
+        </div>
+    </main>
 
     <script>
         lucide.createIcons();
