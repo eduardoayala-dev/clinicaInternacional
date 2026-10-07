@@ -465,7 +465,7 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn-secondary" onclick="cerrarModal()">Cancelar</button>
-                    <button type="submit" class="btn-primary">Guardar Registro</button>
+                    <button type="submit" class="btn-primary" id="btnGuardar">Guardar Registro</button>
                 </div>
             </form>
         </div>
