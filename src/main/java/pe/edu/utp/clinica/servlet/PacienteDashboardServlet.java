@@ -22,8 +22,17 @@ import java.util.Map;
  * (Alertas de cupo anticipado, Próxima cita, Estado en Lista de Espera)
  * con la estética visual y controles de la maqueta de la Clínica Internacional.
  */
+import pe.edu.utp.clinica.dao.CitaDAO;
+
 @WebServlet(name = "PacienteDashboardServlet", urlPatterns = {"/paciente/dashboard", "/paciente/citas", "/paciente/lista-espera", "/paciente/notificaciones", "/paciente/perfil"})
 public class PacienteDashboardServlet extends HttpServlet {
+
+    private CitaDAO citaDAO;
+
+    @Override
+    public void init() throws ServletException {
+        this.citaDAO = new CitaDAO();
+    }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
@@ -33,6 +42,17 @@ public class PacienteDashboardServlet extends HttpServlet {
         // Fallback de usuario paciente si la sesión fue iniciada
         String nombrePaciente = (usuario != null) ? usuario.getNombreCompleto() : "Juan Alberto Pérez";
         String emailPaciente = (usuario != null) ? usuario.getEmail() : "juan.perez@correo.com";
+
+        String action = request.getParameter("action");
+        String path = request.getServletPath();
+        
+        if ("nueva".equals(action) || "/paciente/citas".equals(path)) {
+            request.setAttribute("listaEspecialidades", citaDAO.obtenerEspecialidades());
+            request.setAttribute("listaSedes", citaDAO.obtenerSedes());
+            request.setAttribute("nombrePaciente", nombrePaciente);
+            request.getRequestDispatcher("/WEB-INF/views/paciente/reservar_cita.jsp").forward(request, response);
+            return;
+        }
 
         // 1. Datos de Alerta de Cupo Anticipado Recuperado (Wireframe - Banner superior)
         Map<String, String> ofertaAnticipada = new HashMap<>();
