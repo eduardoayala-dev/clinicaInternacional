@@ -72,9 +72,9 @@ public class MedicoAtencionServlet extends HttpServlet {
         }
 
         String nuevoEstado = "NO_ASISTIO".equals(estadoAsistencia) ? "NO_ASISTIO" : "ATENDIDO";
-        citaDAO.actualizarEstadoCita(idCita, nuevoEstado);
+        citaDAO.actualizarAtencionMedica(idCita, nuevoEstado, prioridad, indicaciones);
 
-        request.setAttribute("mensajeExito", "¡Registro de atención médica guardado correctamente en la Historia Clínica!");
+        request.setAttribute("mensajeExito", "¡Registro de atención médica guardado correctamente!");
         doGet(request, response);
     }
 }

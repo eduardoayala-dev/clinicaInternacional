@@ -474,4 +474,18 @@ public class CitaDAO {
             return false;
         }
     }
+
+    public boolean actualizarAtencionMedica(int idCita, String nuevoEstado, String prioridad, String indicaciones) {
+        String sql = "UPDATE cita SET estado = ?, nivel_urgencia = ? WHERE id_cita = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nuevoEstado);
+            ps.setString(2, prioridad != null && !prioridad.isEmpty() ? prioridad : "MEDIA");
+            ps.setInt(3, idCita);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }
