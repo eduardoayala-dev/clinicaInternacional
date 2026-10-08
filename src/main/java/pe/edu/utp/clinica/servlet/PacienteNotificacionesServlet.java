@@ -10,7 +10,6 @@ import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
