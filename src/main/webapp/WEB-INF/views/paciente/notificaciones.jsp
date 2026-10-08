@@ -1,12 +1,31 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
-    if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
+    if (nombrePaciente == null && usuario != null) {
+        nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
+    }
+    if (nombrePaciente == null) nombrePaciente = "Paciente Registrado";
 
-    String inicialesPaciente = "EA";
-    if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO = new pe.edu.utp.clinica.dao.CitaDAO();
+
+    List<Map<String, Object>> listaNotificaciones = (List<Map<String, Object>>) request.getAttribute("listaNotificaciones");
+    if (usuario != null && listaNotificaciones == null) {
+        listaNotificaciones = citaDAO.obtenerNotificacionesUsuario(usuario.getIdUsuario());
+    }
+
+    int unreadCount = 0;
+    if (usuario != null) {
+        unreadCount = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
+    }
+    boolean tieneNotificacionesSinLeer = unreadCount > 0;
+    int totalNotif = listaNotificaciones != null ? listaNotificaciones.size() : 0;
+
+    String inicialesPaciente = "P";
+    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
@@ -80,7 +99,7 @@
             text-decoration: none; transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
+        .btn-bell.has-unread::after {
             content: ''; position: absolute; top: 10px; right: 12px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #ffffff;
         }
 
@@ -96,6 +115,10 @@
             background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
             padding: 20px 24px; margin-bottom: 16px; box-shadow: 0 4px 16px rgba(0,0,0,0.02); display: flex; gap: 16px;
         }
+        .notif-card.unread-bg {
+            border-left: 4px solid var(--primary);
+            background: #fafcff;
+        }
         .notif-icon {
             width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
         }
@@ -108,7 +131,7 @@
         .notif-body { flex: 1; }
         .notif-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; }
         .notif-title { font-size: 15px; font-weight: 700; color: var(--text-dark); display: flex; align-items: center; gap: 8px; }
-        .notif-dot { width: 6px; height: 6px; background: #2563eb; border-radius: 50%; }
+        .notif-dot { width: 8px; height: 8px; background: #2563eb; border-radius: 50%; display: inline-block; }
         .notif-time { font-size: 12px; color: var(--text-gray); }
 
         .notif-desc { font-size: 13px; color: var(--text-gray); margin-bottom: 12px; line-height: 1.4; }
@@ -172,97 +195,114 @@
         <div class="header-row">
             <div>
                 <h1 class="header-title">Notificaciones</h1>
-                <p class="header-subtitle">3 notificaciones sin leer.</p>
+                <p class="header-subtitle"><%= unreadCount %> <%= unreadCount == 1 ? "notificación sin leer" : "notificaciones sin leer" %> (<%= totalNotif %> en total).</p>
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
-                <a href="#" style="font-size: 13px; color: var(--primary); font-weight: 600; text-decoration: none;">Marcar todo como leído</a>
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+                <% if (tieneNotificacionesSinLeer) { %>
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones?action=marcarLeidas" style="font-size: 13px; color: var(--primary); font-weight: 600; text-decoration: none;">Marcar todo como leído</a>
+                <% } else { %>
+                <span style="font-size: 13px; color: var(--text-light); font-weight: 500;">Todo leído</span>
+                <% } %>
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotificacionesSinLeer ? "has-unread" : "" %>" title="Alertas">
                     <i data-lucide="bell" style="width: 20px;"></i>
                 </a>
             </div>
         </div>
 
         <div class="cat-pills">
-            <button class="cat-btn active">Todas <span style="background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 11px;">3</span></button>
-            <button class="cat-btn">Citas</button>
-            <button class="cat-btn">Resultados</button>
-            <button class="cat-btn">Medicamentos</button>
-            <button class="cat-btn">Sistema</button>
+            <button class="cat-btn active" data-cat="Todas">Todas <span style="background: var(--primary); color: #fff; padding: 2px 6px; border-radius: 10px; font-size: 11px;"><%= totalNotif %></span></button>
+            <button class="cat-btn" data-cat="Citas">Citas</button>
+            <button class="cat-btn" data-cat="Resultados">Resultados</button>
+            <button class="cat-btn" data-cat="Medicamentos">Medicamentos</button>
+            <button class="cat-btn" data-cat="Sistema">Sistema</button>
         </div>
 
-        <!-- 1. Cita -->
-        <div class="notif-card">
-            <div class="notif-icon icon-blue"><i data-lucide="calendar"></i></div>
+        <% if (listaNotificaciones != null && !listaNotificaciones.isEmpty()) {
+            for (Map<String, Object> n : listaNotificaciones) {
+                String tipo = String.valueOf(n.get("tipo"));
+                String mensaje = (String) n.get("mensaje");
+                Object fechaObj = n.get("fecha_envio");
+                String fechaStr = fechaObj != null ? fechaObj.toString() : "";
+                Object leidaObj = n.get("leida");
+                boolean isLeida = false;
+                if (leidaObj instanceof Boolean) {
+                    isLeida = (Boolean) leidaObj;
+                } else if (leidaObj instanceof Number) {
+                    isLeida = ((Number) leidaObj).intValue() == 1;
+                }
+
+                String iconName = "bell";
+                String iconClass = "icon-blue";
+                String catAttr = "Sistema";
+                String titleText = "Notificación del Sistema";
+                if ("CITAS".equalsIgnoreCase(tipo) || tipo.contains("CITA")) {
+                    iconName = "calendar";
+                    iconClass = "icon-blue";
+                    catAttr = "Citas";
+                    titleText = "Confirmación de Cita";
+                } else if ("RESULTADOS".equalsIgnoreCase(tipo)) {
+                    iconName = "file-text";
+                    iconClass = "icon-purple";
+                    catAttr = "Resultados";
+                    titleText = "Resultado Médico";
+                } else if ("MEDICAMENTOS".equalsIgnoreCase(tipo)) {
+                    iconName = "pill";
+                    iconClass = "icon-green";
+                    catAttr = "Medicamentos";
+                    titleText = "Recordatorio de Medicamento";
+                } else {
+                    iconName = "info";
+                    iconClass = "icon-gray";
+                    catAttr = "Sistema";
+                    titleText = "Aviso del Sistema";
+                }
+        %>
+        <div class="notif-card <%= !isLeida ? "unread-bg" : "" %>" data-tipo="<%= catAttr %>">
+            <div class="notif-icon <%= iconClass %>"><i data-lucide="<%= iconName %>"></i></div>
             <div class="notif-body">
                 <div class="notif-head">
-                    <div class="notif-title">Recordatorio de cita <span class="notif-dot"></span></div>
-                    <div class="notif-time">Hace 30 min</div>
+                    <div class="notif-title">
+                        <%= titleText %>
+                        <% if (!isLeida) { %>
+                        <span class="notif-dot" title="Sin leer"></span>
+                        <% } %>
+                    </div>
+                    <div class="notif-time"><%= fechaStr %></div>
                 </div>
-                <div class="notif-desc">Tienes una cita con Dra. María Rodríguez mañana, Lun 11 Ago a las 15:00 en Sede Central.</div>
+                <div class="notif-desc"><%= mensaje %></div>
                 <div class="notif-actions">
-                    <button class="btn-act-primary">Confirmar</button>
-                    <button class="btn-act-sec">Reagendar</button>
+                    <a href="${pageContext.request.contextPath}/paciente/dashboard" class="btn-act-primary">Ver mis citas</a>
                 </div>
             </div>
         </div>
-
-        <!-- 2. Resultado -->
-        <div class="notif-card">
-            <div class="notif-icon icon-purple"><i data-lucide="file-text"></i></div>
-            <div class="notif-body">
-                <div class="notif-head">
-                    <div class="notif-title">Resultado disponible <span class="notif-dot"></span></div>
-                    <div class="notif-time">Hace 2h</div>
-                </div>
-                <div class="notif-desc">Tu análisis de sangre del 4 de agosto ya está disponible en tu historial. El especialista recomienda revisarlo.</div>
-                <div class="notif-actions">
-                    <button class="btn-act-primary" style="background: #9333ea;">Ver resultado</button>
-                </div>
-            </div>
+        <%  }
+        } else { %>
+        <div style="background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light); padding: 56px 24px; text-align: center; color: var(--text-gray);">
+            <i data-lucide="bell-off" style="width: 44px; height: 44px; stroke-width: 1.5; margin-bottom: 12px; color: #94a3b8;"></i>
+            <div style="font-size: 16px; font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">No tienes notificaciones o alertas pendientes</div>
+            <div style="font-size: 13px;">Las confirmaciones de tus citas y recordatorios clínicos aparecerán aquí automáticamente.</div>
         </div>
-
-        <!-- 3. Medicamento -->
-        <div class="notif-card">
-            <div class="notif-icon icon-red"><i data-lucide="pill"></i></div>
-            <div class="notif-body">
-                <div class="notif-head">
-                    <div class="notif-title">Stock bajo de medicamento <span class="notif-dot"></span></div>
-                    <div class="notif-time">Hace 5h</div>
-                </div>
-                <div class="notif-desc">Te quedan 8 días de Atenolol 50mg. Solicita la renovación de tu receta antes de que se agote.</div>
-                <div class="notif-actions">
-                    <button class="btn-act-primary" style="background: #ef4444;">Solicitar receta</button>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. Perfil -->
-        <div class="notif-card">
-            <div class="notif-icon icon-green"><i data-lucide="check-circle"></i></div>
-            <div class="notif-body">
-                <div class="notif-head">
-                    <div class="notif-title">Perfil actualizado</div>
-                    <div class="notif-time">Ayer</div>
-                </div>
-                <div class="notif-desc">Tu información de contacto y datos de seguro médico han sido actualizados exitosamente.</div>
-            </div>
-        </div>
-
-        <!-- 5. Cita completada -->
-        <div class="notif-card">
-            <div class="notif-icon icon-gray"><i data-lucide="check"></i></div>
-            <div class="notif-body">
-                <div class="notif-head">
-                    <div class="notif-title">Cita completada</div>
-                    <div class="notif-time">Hace 2 días</div>
-                </div>
-                <div class="notif-desc">Tu consulta con Dr. Jorge Herrera fue marcada como completada. ¿Cómo fue tu experiencia?</div>
-            </div>
-        </div>
+        <% } %>
     </main>
 
     <script>
         lucide.createIcons();
+
+        document.querySelectorAll('.cat-btn').forEach(btn => {
+            btn.addEventListener('click', function() {
+                document.querySelectorAll('.cat-btn').forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+                const cat = this.getAttribute('data-cat');
+                document.querySelectorAll('.notif-card').forEach(card => {
+                    if (!cat || cat === 'Todas' || card.getAttribute('data-tipo') === cat) {
+                        card.style.display = 'flex';
+                    } else {
+                        card.style.display = 'none';
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>
+

@@ -1,12 +1,19 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
-    if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
+    if (nombrePaciente == null && usuario != null) {
+        nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
+    }
+    if (nombrePaciente == null) nombrePaciente = "Paciente Registrado";
 
-    String inicialesPaciente = "EA";
-    if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
+    List<Map<String, Object>> historialCitas = (List<Map<String, Object>>) request.getAttribute("historialCitas");
+
+    String inicialesPaciente = "P";
+    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
@@ -14,6 +21,9 @@
             inicialesPaciente = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
         }
     }
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -74,7 +84,7 @@
             text-decoration: none; transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
+        .btn-bell.has-unread::after {
             content: ''; position: absolute; top: 10px; right: 12px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #ffffff;
         }
 
@@ -181,7 +191,7 @@
                 <h1 class="header-title">Historial Médico</h1>
                 <p class="header-subtitle">Registro completo de tus consultas y estudios clínicos.</p>
             </div>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>" title="Alertas">
                 <i data-lucide="bell" style="width: 20px;"></i>
             </a>
         </div>
@@ -212,66 +222,35 @@
                     </tr>
                 </thead>
                 <tbody id="historialTbody">
-                    <tr data-tipo="Consulta">
-                        <td style="color: var(--text-gray); font-size: 13px;">4 Ago 2026</td>
+                    <% if (historialCitas != null && !historialCitas.isEmpty()) {
+                        for (Map<String, Object> h : historialCitas) {
+                            String f = (String) h.get("fecha");
+                            String med = (String) h.get("medico");
+                            String esp = (String) h.get("especialidad");
+                            String diag = (String) h.get("diagnostico");
+                            String tipo = (String) h.get("tipo");
+                            String est = (String) h.get("estado");
+                    %>
+                    <tr data-tipo="<%= tipo %>">
+                        <td style="color: var(--text-gray); font-size: 13px;"><%= f %></td>
                         <td>
-                            <div class="doc-name">Dra. María Rodríguez</div>
-                            <div class="doc-spec">Medicina General</div>
+                            <div class="doc-name"><%= med %></div>
+                            <div class="doc-spec"><%= esp %></div>
                         </td>
-                        <td style="font-weight: 500;">Chequeo general preventivo</td>
-                        <td><span class="type-chip">Consulta</span></td>
-                        <td><span class="badge badge-normal">Normal</span></td>
+                        <td style="font-weight: 500;"><%= diag %></td>
+                        <td><span class="type-chip"><%= tipo %></span></td>
+                        <td><span class="badge badge-normal"><%= est != null ? est : "Completada" %></span></td>
                     </tr>
-                    <tr data-tipo="Consulta">
-                        <td style="color: var(--text-gray); font-size: 13px;">23 Jul 2026</td>
-                        <td>
-                            <div class="doc-name">Dr. Jorge Herrera</div>
-                            <div class="doc-spec">Traumatología</div>
+                    <%  }
+                    } else { %>
+                    <tr>
+                        <td colspan="5" style="text-align: center; padding: 48px; color: var(--text-gray);">
+                            <i data-lucide="clipboard-x" style="width: 36px; height: 36px; stroke-width: 1.5; margin-bottom: 8px; color: #94a3b8;"></i>
+                            <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">No cuentas con historial médico registrado</div>
+                            <div style="font-size: 13px;">Tus consultas y exámenes completados aparecerán aquí automáticamente.</div>
                         </td>
-                        <td style="font-weight: 500;">Lumbalgia leve por sobreesfuerzo</td>
-                        <td><span class="type-chip">Consulta</span></td>
-                        <td><span class="badge badge-seguimiento">Seguimiento</span></td>
                     </tr>
-                    <tr data-tipo="Análisis">
-                        <td style="color: var(--text-gray); font-size: 13px;">14 Jun 2026</td>
-                        <td>
-                            <div class="doc-name">Dr. Carlos Mendoza</div>
-                            <div class="doc-spec">Cardiología</div>
-                        </td>
-                        <td style="font-weight: 500;">Panel CBC completo y Electrocardiograma</td>
-                        <td><span class="type-chip">Análisis</span></td>
-                        <td><span class="badge badge-normal">Normal</span></td>
-                    </tr>
-                    <tr data-tipo="Diagnóstico">
-                        <td style="color: var(--text-gray); font-size: 13px;">3 Abr 2026</td>
-                        <td>
-                            <div class="doc-name">Dr. Alejandro Vargas</div>
-                            <div class="doc-spec">Neurología</div>
-                        </td>
-                        <td style="font-weight: 500;">Cefalea tensional por estrés laboral</td>
-                        <td><span class="type-chip">Diagnóstico</span></td>
-                        <td><span class="badge badge-normal">Normal</span></td>
-                    </tr>
-                    <tr data-tipo="Análisis">
-                        <td style="color: var(--text-gray); font-size: 13px;">28 Feb 2026</td>
-                        <td>
-                            <div class="doc-name">Dra. Lucía Morales</div>
-                            <div class="doc-spec">Medicina General</div>
-                        </td>
-                        <td style="font-weight: 500;">Radiografía de tórax de control</td>
-                        <td><span class="type-chip">Análisis</span></td>
-                        <td><span class="badge badge-normal">Normal</span></td>
-                    </tr>
-                    <tr data-tipo="Análisis">
-                        <td style="color: var(--text-gray); font-size: 13px;">8 Ene 2026</td>
-                        <td>
-                            <div class="doc-name">Dr. Carlos Mendoza</div>
-                            <div class="doc-spec">Cardiología</div>
-                        </td>
-                        <td style="font-weight: 500;">Perfil lipídico y triglicéridos</td>
-                        <td><span class="type-chip">Análisis</span></td>
-                        <td><span class="badge badge-revision">Revisión</span></td>
-                    </tr>
+                    <% } %>
                 </tbody>
             </table>
         </div>

@@ -14,6 +14,9 @@
             inicialesPaciente = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
         }
     }
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -74,7 +77,7 @@
             text-decoration: none; transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
+        .btn-bell.has-unread::after {
             content: ''; position: absolute; top: 10px; right: 12px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #ffffff;
         }
 
@@ -183,7 +186,7 @@
                     <button class="time-btn active">6M</button>
                     <button class="time-btn">1A</button>
                 </div>
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>" title="Alertas">
                     <i data-lucide="bell" style="width: 20px;"></i>
                 </a>
             </div>

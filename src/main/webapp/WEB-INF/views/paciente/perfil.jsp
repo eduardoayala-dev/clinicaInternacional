@@ -33,6 +33,9 @@
 
     String mensajeExito = (String) request.getAttribute("mensajeExito");
     String mensajeError = (String) request.getAttribute("mensajeError");
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -99,6 +102,9 @@
             text-decoration: none; transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
+        .btn-bell.has-unread::after {
+            content: ''; position: absolute; top: 10px; right: 12px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #ffffff;
+        }
 
         /* ALERT BANNERS */
         .alert-banner {
@@ -219,7 +225,7 @@
                 <a href="${pageContext.request.contextPath}/paciente/dashboard" style="font-size: 13px; color: var(--text-gray); font-weight: 600; text-decoration: none; display: flex; align-items: center; gap: 4px;">
                     <i data-lucide="chevron-left" style="width: 16px;"></i> Volver
                 </a>
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>" title="Alertas">
                     <i data-lucide="bell" style="width: 20px;"></i>
                 </a>
             </div>

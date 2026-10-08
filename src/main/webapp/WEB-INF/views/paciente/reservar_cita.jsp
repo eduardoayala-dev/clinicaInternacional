@@ -1,10 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
     if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
     
+    List<Map<String, Object>> listaEspecialidades = (List<Map<String, Object>>) request.getAttribute("listaEspecialidades");
+
     // Obtener iniciales del paciente
     String inicialesPaciente = "EA";
     if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
@@ -15,6 +19,9 @@
             inicialesPaciente = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
         }
     }
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -176,7 +183,7 @@
             transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
+        .btn-bell.has-unread::after {
             content: '';
             position: absolute; top: 10px; right: 12px;
             width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
@@ -557,14 +564,21 @@
         }
 
         .btn-back {
+            background: transparent;
+            border: none;
+            outline: none;
+            cursor: pointer;
             color: var(--text-gray);
             text-decoration: none;
             font-size: 14px;
             font-weight: 600;
             display: flex; align-items: center; gap: 8px;
-            transition: color 0.2s;
+            padding: 8px 16px;
+            border-radius: 20px;
+            transition: all 0.2s;
         }
-        .btn-back:hover { color: var(--text-dark); }
+        .btn-back:hover { color: var(--text-dark); background: #f1f5f9; }
+        .btn-back:focus, .btn-back:active { outline: none; border: none; box-shadow: none; }
 
         .btn-continue {
             background: #93c5fd;
@@ -656,7 +670,7 @@
                 <p class="header-subtitle">Completa los pasos para agendar tu consulta médica.</p>
             </div>
             <div style="display: flex; align-items: center;">
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell">
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>">
                     <i data-lucide="bell" style="width: 20px;"></i>
                 </a>
             </div>
@@ -690,74 +704,45 @@
                     </div>
 
                 <div class="specialty-grid">
-                    
+                    <% if (listaEspecialidades != null && !listaEspecialidades.isEmpty()) {
+                        for (Map<String, Object> esp : listaEspecialidades) {
+                            int idEsp = (Integer) esp.get("id");
+                            String nombreEsp = (String) esp.get("nombre");
+                            int totalMed = esp.get("totalMedicos") != null ? (Integer) esp.get("totalMedicos") : 2;
+                            
+                            String icon = "stethoscope";
+                            String lower = nombreEsp.toLowerCase();
+                            if (lower.contains("cardio")) icon = "heart";
+                            else if (lower.contains("neuro")) icon = "brain";
+                            else if (lower.contains("general")) icon = "stethoscope";
+                            else if (lower.contains("trauma")) icon = "bone";
+                            else if (lower.contains("derma")) icon = "microscope";
+                            else if (lower.contains("gineco")) icon = "baby";
+                    %>
+                    <div class="specialty-item" onclick="selectSpecialty(this, <%= idEsp %>)">
+                        <div class="spec-info">
+                            <div class="spec-icon-wrapper"><i data-lucide="<%= icon %>" style="width: 20px;"></i></div>
+                            <div>
+                                <div class="spec-name"><%= nombreEsp %></div>
+                                <div class="spec-meta"><%= totalMed %> <%= totalMed == 1 ? "médico disponible" : "médicos disponibles" %></div>
+                            </div>
+                        </div>
+                        <div class="radio-circle"></div>
+                    </div>
+                    <%  }
+                    } else { %>
                     <div class="specialty-item" onclick="selectSpecialty(this, 1)">
                         <div class="spec-info">
                             <div class="spec-icon-wrapper"><i data-lucide="heart" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Cardiología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
+                                <div class="spec-meta">2 médicos disponibles</div>
                             </div>
                         </div>
                         <div class="radio-circle"></div>
                     </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 2)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="brain" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Neurología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 3)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="stethoscope" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Medicina General</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 4)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="bone" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Traumatología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 5)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="microscope" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Dermatología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 6)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="baby" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Ginecología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    </div>
+                    <% } %>
+                </div>
                 </div> <!-- END STEP 1 -->
 
                 <!-- PASO 2: MEDICO -->
@@ -930,7 +915,9 @@
         lucide.createIcons();
 
         let selectedEspecialidad = null;
+        let selectedEspecialidadNombre = "${preEspNombre}";
         let selectedMedico = null;
+        let selectedMedicoNombre = "${preMedNombre}";
         let selectedFecha = null;
         let selectedHora = null;
         let currentStep = 1;
@@ -939,6 +926,8 @@
             document.querySelectorAll('.specialty-item').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedEspecialidad = id;
+            const specElem = element.querySelector('.spec-name');
+            if (specElem) selectedEspecialidadNombre = specElem.textContent.trim();
 
             const btn = document.getElementById('btnContinue');
             btn.classList.add('active');
@@ -949,6 +938,8 @@
             document.querySelectorAll('.doctor-item').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedMedico = id;
+            const docElem = element.querySelector('.doc-name');
+            if (docElem) selectedMedicoNombre = docElem.textContent.trim();
 
             const btn = document.getElementById('btnContinue');
             btn.classList.add('active');
@@ -1052,10 +1043,22 @@
                 document.getElementById('stepper-4').classList.add('active');
                 
                 // Llenar resumen
-                const medicoItem = document.querySelector('.doctor-item.selected .doc-name');
-                const specItem = document.querySelector('.specialty-item.selected .spec-name');
-                document.getElementById('resumenMedico').textContent = medicoItem ? medicoItem.textContent : selectedMedico;
-                document.getElementById('resumenEspecialidad').textContent = specItem ? specItem.textContent : selectedEspecialidad;
+                let medName = selectedMedicoNombre;
+                if (!medName || medName === "") {
+                    const medicoItem = document.querySelector('.doctor-item.selected .doc-name');
+                    medName = medicoItem ? medicoItem.textContent.trim() : "${preMedNombre}";
+                }
+                if (!medName || medName === "" || medName.includes("null")) medName = "Dr. Médico Especialista";
+
+                let espName = selectedEspecialidadNombre;
+                if (!espName || espName === "") {
+                    const specItem = document.querySelector('.specialty-item.selected .spec-name');
+                    espName = specItem ? specItem.textContent.trim() : "${preEspNombre}";
+                }
+                if (!espName || espName === "" || espName.includes("null")) espName = "Consulta Médica";
+
+                document.getElementById('resumenMedico').textContent = medName;
+                document.getElementById('resumenEspecialidad').textContent = espName;
                 document.getElementById('resumenFecha').textContent = selectedFecha;
                 document.getElementById('resumenHora').textContent = selectedHora;
 
@@ -1100,10 +1103,25 @@
                 document.getElementById('stepper-3').classList.remove('active');
                 document.getElementById('stepper-2').classList.add('active');
                 
+                this.innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cambiar Especialidad';
+                
+                const docContainer = document.getElementById('doctorGridContainer');
+                if (!docContainer.children || docContainer.children.length === 0 || docContainer.querySelector('p')) {
+                    const espId = selectedEspecialidad || 1;
+                    docContainer.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1; text-align: center; padding: 20px;">Cargando médicos...</p>';
+                    fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + new Date().getTime())
+                        .then(r => r.json())
+                        .then(data => {
+                            renderDoctors(data);
+                            lucide.createIcons();
+                        });
+                }
+                
                 const btn = document.getElementById('btnContinue');
                 btn.classList.add('active');
                 btn.disabled = false;
                 currentStep = 2;
+                lucide.createIcons();
             } else if (currentStep === 4) {
                 document.getElementById('step4-content').style.display = 'none';
                 document.getElementById('step3-content').style.display = 'block';
@@ -1148,6 +1166,9 @@
                 
                 const div = document.createElement('div');
                 div.className = 'doctor-item';
+                if (selectedMedico && idMed === selectedMedico) {
+                    div.classList.add('selected');
+                }
                 div.onclick = function() { selectDoctor(this, idMed); };
                 
                 div.innerHTML = 
@@ -1235,6 +1256,12 @@
                     document.getElementById('currentMonthYearLabel').textContent = monthName + ' ' + year;
                 }
             });
+
+            // Auto-seleccionar primer día disponible
+            const firstDateItem = container.querySelector('.date-item');
+            if (firstDateItem) {
+                firstDateItem.click();
+            }
         }
 
         function filterDatesByMonth(monthKey) {
@@ -1301,6 +1328,12 @@
                 div.textContent = horaStr;
                 container.appendChild(div);
             });
+
+            // Auto-seleccionar primer horario disponible
+            const firstTimeChip = container.querySelector('.time-chip');
+            if (firstTimeChip) {
+                firstTimeChip.click();
+            }
         }
 
         function selectTime(element, hora) {
@@ -1312,6 +1345,48 @@
             btn.classList.add('active');
             btn.disabled = false;
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const preMed = "${preMedId}";
+            const preEsp = "${preEspId}";
+            const preMedName = "${preMedNombre}";
+            const preEspName = "${preEspNombre}";
+
+            if (preMed && preMed !== "") {
+                selectedMedico = parseInt(preMed);
+                if (preMedName && preMedName !== "" && !preMedName.includes("null")) {
+                    selectedMedicoNombre = preMedName;
+                }
+                if (preEsp && preEsp !== "") {
+                    selectedEspecialidad = parseInt(preEsp);
+                } else {
+                    selectedEspecialidad = 1;
+                }
+                if (preEspName && preEspName !== "" && !preEspName.includes("null")) {
+                    selectedEspecialidadNombre = preEspName;
+                }
+                
+                // Pre-cargar la lista de médicos de la especialidad por si el usuario hace clic en "Cambiar Médico"
+                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad + '&_t=' + new Date().getTime())
+                    .then(r => r.json())
+                    .then(data => renderDoctors(data));
+
+                fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
+                    .then(r => r.json())
+                    .then(data => {
+                        renderDates(data);
+                        document.getElementById('step1-content').style.display = 'none';
+                        document.getElementById('step2-content').style.display = 'none';
+                        document.getElementById('step3-content').style.display = 'block';
+                        document.getElementById('stepper-1').classList.remove('active');
+                        document.getElementById('stepper-2').classList.remove('active');
+                        document.getElementById('stepper-3').classList.add('active');
+                        document.getElementById('btnBack').innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cambiar Médico';
+                        currentStep = 3;
+                        lucide.createIcons();
+                    });
+            }
+        });
     </script>
 </body>
 </html>

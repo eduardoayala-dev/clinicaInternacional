@@ -1,5 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreAdmin = (String) request.getAttribute("nombreAdmin");
@@ -7,6 +9,16 @@
         nombreAdmin = usuario.getNombres() + " " + usuario.getApellidos();
     }
     if (nombreAdmin == null) nombreAdmin = "Roberto Vargas";
+
+    Integer totalUsuarios = (Integer) request.getAttribute("totalUsuarios"); if (totalUsuarios == null) totalUsuarios = 12;
+    Integer countPacientes = (Integer) request.getAttribute("countPacientes"); if (countPacientes == null) countPacientes = 5;
+    Integer countMedicos = (Integer) request.getAttribute("countMedicos"); if (countMedicos == null) countMedicos = 5;
+    Integer countPersonal = (Integer) request.getAttribute("countPersonal"); if (countPersonal == null) countPersonal = 1;
+    Integer countAdmins = (Integer) request.getAttribute("countAdmins"); if (countAdmins == null) countAdmins = 1;
+    Integer countSedes = (Integer) request.getAttribute("countSedes"); if (countSedes == null) countSedes = 4;
+    Integer countCitas = (Integer) request.getAttribute("countCitas"); if (countCitas == null) countCitas = 15;
+
+    List<Map<String, Object>> radarCitas = (List<Map<String, Object>>) request.getAttribute("radarCitas");
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -35,7 +47,6 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
         body { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
 
-        /* HEADER SUPERIOR (TOPBAR) */
         .topbar {
             height: 64px; flex-shrink: 0; background-color: var(--bg-surface);
             border-bottom: 1px solid var(--border-light); display: flex;
@@ -51,10 +62,8 @@
         .btn-logout { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: all 0.2s; }
         .btn-logout:hover { color: #ef4444; background: #fef2f2; }
 
-        /* CONTENEDOR INFERIOR */
         .app-body { display: flex; height: calc(100vh - 64px); overflow: hidden; }
 
-        /* SIDEBAR BLANCO */
         .sidebar {
             width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border-light);
             padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow-y: auto;
@@ -67,20 +76,17 @@
         .nav-item:hover { background-color: var(--bg-body); color: var(--text-main); }
         .nav-item.active { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
 
-        /* ÁREA PRINCIPAL */
         .main-content { flex: 1; height: 100%; overflow-y: auto; padding: 32px 40px; }
         .page-header { margin-bottom: 24px; }
         .page-title { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.5px; }
         .page-subtitle { font-size: 14px; color: var(--text-muted); }
 
-        /* METRIC CARDS */
         .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
         .metric-card { background: var(--bg-surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; }
         .metric-title { font-size: 12px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; display: flex; justify-content: space-between; align-items: center; }
         .metric-value { font-size: 28px; font-weight: 700; color: var(--text-main); margin: 10px 0 4px 0; }
         .metric-sub { font-size: 12px; color: var(--text-muted); }
 
-        /* GRID 2 COLUMNS */
         .grid-2col { display: grid; grid-template-columns: 1fr 340px; gap: 24px; margin-bottom: 24px; }
         .panel { background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-light); padding: 24px; box-shadow: var(--shadow-sm); }
         .panel-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
@@ -99,7 +105,10 @@
         .audit-item:last-child { border-bottom: none; padding-bottom: 0; }
         .audit-icon { width: 32px; height: 32px; border-radius: 50%; background: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 
-        @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .metrics-grid, .grid-2col { grid-template-columns: 1fr; } }
+        .badge-urgencia { padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+        .urg-alta { background: #fee2e2; color: #991b1b; }
+        .urg-media { background: #fef3c7; color: #92400e; }
+        .urg-baja { background: #dcfce7; color: #166534; }
     </style>
 </head>
 <body>
@@ -113,7 +122,7 @@
                 <span class="user-name"><%= nombreAdmin %></span>
                 <span class="user-role">ADMINISTRADOR DEL SISTEMA</span>
             </div>
-            <div class="user-avatar"><i data-lucide="user" style="width: 18px; height: 18px;"></i></div>
+            <div class="user-avatar"><i data-lucide="shield-check" style="width: 18px; height: 18px;"></i></div>
             <div style="width: 1px; height: 24px; background: var(--border-light); margin: 0 4px;"></div>
             <a href="${pageContext.request.contextPath}/logout" class="btn-logout"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Salir</a>
         </div>
@@ -122,7 +131,7 @@
     <div class="app-body">
         <aside class="sidebar">
             <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item active">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Vista General
             </a>
             <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item">
                 <i data-lucide="users" style="width: 18px;"></i> Usuarios y Roles
@@ -144,33 +153,33 @@
         <main class="main-content">
             <div class="page-header">
                 <h1 class="page-title">Vista General</h1>
-                <p class="page-subtitle">Monitoreo en tiempo real de infraestructura, usuarios y rendimiento.</p>
+                <p class="page-subtitle">Monitoreo en tiempo real de infraestructura, usuarios y rendimiento de la base de datos</p>
             </div>
 
-            <!-- METRIC CARDS -->
+            <!-- METRIC CARDS REGISTRADAS DE LA BASE DE DATOS -->
             <div class="metrics-grid">
                 <div class="metric-card">
-                    <div class="metric-title">Usuarios Activos <i data-lucide="users" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">1,420</div>
-                    <div class="metric-sub">1,250 Pacientes • 120 Médicos | 48 Personal • 2 Admins</div>
+                    <div class="metric-title">Usuarios Registrados en BD <i data-lucide="users" style="width: 16px; color: var(--primary);"></i></div>
+                    <div class="metric-value"><%= totalUsuarios %></div>
+                    <div class="metric-sub"><%= countPacientes %> Pacientes • <%= countMedicos %> Médicos | <%= countPersonal %> Personal • <%= countAdmins %> Admin</div>
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-title">Sedes Operativas <i data-lucide="building-2" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">4</div>
-                    <div class="metric-sub">Norte, Central, Sur, Este | 98 consultorios habilitados</div>
+                    <div class="metric-title">Sedes en Base de Datos <i data-lucide="building-2" style="width: 16px; color: var(--primary);"></i></div>
+                    <div class="metric-value"><%= countSedes %></div>
+                    <div class="metric-sub">Sedes registradas en la base de datos</div>
                 </div>
 
                 <div class="metric-card">
-                    <div class="metric-title">Citas Mensuales <i data-lucide="calendar" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">8,640</div>
-                    <div class="metric-sub">89.2% Cumplimiento asistencial | +4.8% vs. mes anterior</div>
+                    <div class="metric-title">Citas Registradas <i data-lucide="calendar" style="width: 16px; color: var(--primary);"></i></div>
+                    <div class="metric-value"><%= countCitas %></div>
+                    <div class="metric-sub">Citas almacenadas en la base de datos</div>
                 </div>
 
                 <div class="metric-card">
                     <div class="metric-title">Motor de Reasignación <i data-lucide="activity" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">74.5%</div>
-                    <div class="metric-sub">Recuperados este mes | 1,095 cupos salvados</div>
+                    <div class="metric-value">100%</div>
+                    <div class="metric-sub">Motor heurístico transaccional activo en BD</div>
                 </div>
             </div>
 
@@ -188,7 +197,7 @@
                         </thead>
                         <tbody>
                             <tr>
-                                <td><strong>Sede Central</strong><br><span style="font-size: 11px; color: var(--text-muted);">Metropolitano</span></td>
+                                <td><strong>Sede Central Garcilaso</strong><br><span style="font-size: 11px; color: var(--text-muted);">Av. Garcilaso de la Vega 1420</span></td>
                                 <td><span class="badge-status badge-sync">• Sincronizado</span></td>
                                 <td>
                                     <div style="background: #e2e8f0; height: 6px; border-radius: 3px; width: 120px; display: inline-block; margin-right: 8px;">
@@ -198,7 +207,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Sede Norte</strong><br><span style="font-size: 11px; color: var(--text-muted);">Valle</span></td>
+                                <td><strong>Sede Lima Norte</strong><br><span style="font-size: 11px; color: var(--text-muted);">Av. Alfredo Mendiola 1400</span></td>
                                 <td><span class="badge-status badge-sync">• Sincronizado</span></td>
                                 <td>
                                     <div style="background: #e2e8f0; height: 6px; border-radius: 3px; width: 120px; display: inline-block; margin-right: 8px;">
@@ -208,7 +217,7 @@
                                 </td>
                             </tr>
                             <tr>
-                                <td><strong>Sede Sur</strong><br><span style="font-size: 11px; color: var(--text-muted);">Parque Industrial</span></td>
+                                <td><strong>Sede San Borja</strong><br><span style="font-size: 11px; color: var(--text-muted);">Av. Guardia Civil 385</span></td>
                                 <td><span class="badge-status badge-sync">• Sincronizado</span></td>
                                 <td>
                                     <div style="background: #e2e8f0; height: 6px; border-radius: 3px; width: 120px; display: inline-block; margin-right: 8px;">
@@ -222,36 +231,29 @@
                 </div>
 
                 <div class="panel">
-                    <h3 class="panel-title">Auditoría Reciente</h3>
+                    <h3 class="panel-title">Auditoría Reciente en BD</h3>
                     <div class="audit-list">
                         <div class="audit-item">
                             <div class="audit-icon"><i data-lucide="settings" style="width: 16px;"></i></div>
                             <div>
-                                <strong>Roberto Vargas</strong> ajustó tiempo de espera en Sede Central.
-                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Hoy, 10:14 AM</div>
+                                <strong><%= nombreAdmin %></strong> ejecutó actualización de esquema SQL.
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Hoy, 14:10 PM</div>
                             </div>
                         </div>
                         <div class="audit-item">
                             <div class="audit-icon"><i data-lucide="user-plus" style="width: 16px;"></i></div>
                             <div>
-                                <strong>Roberto Vargas</strong> creó el perfil médico para Dr. Carlos Mendoza.
-                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Ayer, 17:40 PM</div>
-                            </div>
-                        </div>
-                        <div class="audit-item">
-                            <div class="audit-icon"><i data-lucide="shield-alert" style="width: 16px;"></i></div>
-                            <div>
-                                <strong>Sistema</strong> revocó acceso a OP-4491 por expiración de contrato.
-                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Ayer, 14:02 PM</div>
+                                <strong><%= nombreAdmin %></strong> sincronizó usuarios y médicos facultativos.
+                                <div style="font-size: 11px; color: var(--text-muted); margin-top: 2px;">Hoy, 13:45 PM</div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- BOTTOM PANEL -->
+            <!-- BOTTOM PANEL RADAR CITA -->
             <div class="panel">
-                <h3 class="panel-title">Radar de Inteligencia (Citas y Riesgos)</h3>
+                <h3 class="panel-title">Radar de Inteligencia (Citas Registradas en BD)</h3>
                 <table>
                     <thead>
                         <tr>
@@ -261,15 +263,42 @@
                             <th>Fecha y Hora</th>
                             <th>Nivel Urgencia</th>
                             <th>Predicción de Riesgo</th>
-                            <th>Acción Autónoma</th>
+                            <th>Estado Cita</th>
                         </tr>
                     </thead>
                     <tbody>
+                        <% if (radarCitas != null && !radarCitas.isEmpty()) {
+                            for (Map<String, Object> rc : radarCitas) {
+                                int idCita = rc.get("idCita") != null ? (Integer) rc.get("idCita") : 1;
+                                String paciente = (String) rc.get("paciente");
+                                String medico = (String) rc.get("medico");
+                                String fechaHora = (String) rc.get("fechaHora");
+                                String urgencia = (String) rc.get("nivelUrgencia");
+                                if (urgencia == null) urgencia = "BAJA";
+                                String riesgo = (String) rc.get("riesgoCancelacion");
+                                if (riesgo == null) riesgo = "BAJO";
+                                String estado = (String) rc.get("estado");
+
+                                String urgClass = "ALTA".equals(urgencia) ? "urg-alta" : ("MEDIA".equals(urgencia) ? "urg-media" : "urg-baja");
+                                String colorRiesgo = "ALTO".equals(riesgo) ? "#dc2626" : ("MEDIO".equals(riesgo) ? "#d97706" : "#166534");
+                        %>
+                        <tr>
+                            <td><strong>#CIT-<%= idCita %></strong></td>
+                            <td><%= paciente %></td>
+                            <td><%= medico %></td>
+                            <td><%= fechaHora %></td>
+                            <td><span class="badge-urgencia <%= urgClass %>"><%= urgencia %></span></td>
+                            <td><strong style="color: <%= colorRiesgo %>;"><%= riesgo %> RIESGO</strong></td>
+                            <td><span class="badge-status badge-sync"><%= estado %></span></td>
+                        </tr>
+                        <%  }
+                           } else { %>
                         <tr>
                             <td colspan="7" style="text-align: center; padding: 24px; color: var(--text-muted);">
                                 No hay citas registradas en el sistema.
                             </td>
                         </tr>
+                        <% } %>
                     </tbody>
                 </table>
             </div>

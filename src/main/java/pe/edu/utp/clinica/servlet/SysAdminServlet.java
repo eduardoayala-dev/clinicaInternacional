@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.dao.UsuarioDAO;
 import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.config.DatabaseConfig;
@@ -30,10 +31,12 @@ import java.util.Map;
 public class SysAdminServlet extends HttpServlet {
 
     private UsuarioDAO usuarioDAO;
+    private CitaDAO citaDAO;
 
     @Override
     public void init() throws ServletException {
         this.usuarioDAO = new UsuarioDAO();
+        this.citaDAO = new CitaDAO();
     }
 
     @Override
@@ -82,9 +85,76 @@ public class SysAdminServlet extends HttpServlet {
             case "/sysadmin/dashboard":
             case "/sysadmin/inicio":
             default:
+                cargarMetricsSysAdmin(request);
                 request.getRequestDispatcher("/WEB-INF/views/sysadmin/dashboard.jsp").forward(request, response);
                 break;
         }
+    }
+
+    private void cargarMetricsSysAdmin(HttpServletRequest request) {
+        int totalUsuarios = 0;
+        int countPacientes = 0;
+        int countMedicos = 0;
+        int countPersonal = 0;
+        int countAdmins = 0;
+        int countSedes = 0;
+        int countCitas = 0;
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            // Count medicos directly from medico table
+            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM medico");
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) countMedicos = rs.getInt(1);
+            }
+
+            // Count pacientes directly from paciente table
+            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM paciente");
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) countPacientes = rs.getInt(1);
+            }
+
+            // Count personal directly from personal_administrativo table
+            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM personal_administrativo");
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) countPersonal = rs.getInt(1);
+            }
+
+            // Count admins directly from administrador table
+            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM administrador");
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) countAdmins = rs.getInt(1);
+            }
+
+            totalUsuarios = countMedicos + countPacientes + countPersonal + countAdmins;
+
+            // Count sedes
+            String sqlSedes = "SELECT COUNT(*) FROM sede WHERE estado = 'ACTIVO'";
+            try (PreparedStatement ps = conn.prepareStatement(sqlSedes);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) countSedes = rs.getInt(1);
+            }
+
+            // Count citas
+            String sqlCitas = "SELECT COUNT(*) FROM cita";
+            try (PreparedStatement ps = conn.prepareStatement(sqlCitas);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) countCitas = rs.getInt(1);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        request.setAttribute("totalUsuarios", totalUsuarios);
+        request.setAttribute("countPacientes", countPacientes);
+        request.setAttribute("countMedicos", countMedicos);
+        request.setAttribute("countPersonal", countPersonal);
+        request.setAttribute("countAdmins", countAdmins);
+        request.setAttribute("countSedes", countSedes);
+        request.setAttribute("countCitas", countCitas);
+
+        // Fetch radar citas
+        List<Map<String, Object>> radarCitas = citaDAO.obtenerCitasConRiesgo();
+        request.setAttribute("radarCitas", radarCitas);
     }
 
     @Override
@@ -103,7 +173,7 @@ public class SysAdminServlet extends HttpServlet {
                 boolean nuevoEstado = Boolean.parseBoolean(request.getParameter("estado"));
                 boolean exito = usuarioDAO.cambiarEstadoUsuario(idUsuario, nuevoEstado);
                 if (exito) {
-                    session.setAttribute("flashMessage", "Estado del usuario actualizado correctamente.");
+                    session.setAttribute("flashMessage", "Estado del usuario #" + idUsuario + " actualizado a " + (nuevoEstado ? "ACTIVO" : "INACTIVO") + " en la Base de Datos.");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -144,14 +214,14 @@ public class SysAdminServlet extends HttpServlet {
             if ("editar".equals(action)) {
                 u.setIdUsuario(Integer.parseInt(request.getParameter("idUsuario")));
                 usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
-                session.setAttribute("flashMessage", "Usuario actualizado correctamente.");
+                session.setAttribute("flashMessage", "Usuario actualizado correctamente en la Base de Datos.");
             } else {
                 String passwordRaw = request.getParameter("password");
                 if (passwordRaw == null || passwordRaw.trim().isEmpty()) passwordRaw = "Password123!";
                 u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(passwordRaw, org.mindrot.jbcrypt.BCrypt.gensalt()));
                 u.setActivo(true);
                 usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
-                session.setAttribute("flashMessage", "Nuevo usuario creado exitosamente.");
+                session.setAttribute("flashMessage", "Nuevo usuario (" + nombres + " " + apellidos + ") guardado en la Base de Datos.");
             }
 
             response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");

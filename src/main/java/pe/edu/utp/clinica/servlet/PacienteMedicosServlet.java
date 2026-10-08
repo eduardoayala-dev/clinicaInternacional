@@ -6,9 +6,12 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "PacienteMedicosServlet", urlPatterns = {"/paciente/medicos"})
 public class PacienteMedicosServlet extends HttpServlet {
@@ -22,7 +25,11 @@ public class PacienteMedicosServlet extends HttpServlet {
         }
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        CitaDAO citaDAO = new CitaDAO();
+        List<Map<String, Object>> listaMedicos = citaDAO.obtenerTodosMedicosDetalle();
+
         request.setAttribute("nombrePaciente", usuario.getNombres() + " " + usuario.getApellidos());
+        request.setAttribute("listaMedicos", listaMedicos);
 
         request.getRequestDispatcher("/WEB-INF/views/paciente/medicos.jsp").forward(request, response);
     }

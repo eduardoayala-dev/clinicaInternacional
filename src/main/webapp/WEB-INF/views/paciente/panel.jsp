@@ -1,12 +1,17 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
-    if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
+    if (nombrePaciente == null && usuario != null) nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
+    if (nombrePaciente == null) nombrePaciente = "Paciente";
 
-    String inicialesPaciente = "EA";
-    if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
+    List<Map<String, Object>> listaActividades = (List<Map<String, Object>>) request.getAttribute("listaActividades");
+
+    String inicialesPaciente = "P";
+    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
@@ -14,6 +19,9 @@
             inicialesPaciente = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
         }
     }
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -80,7 +88,7 @@
             text-decoration: none; transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
+        .btn-bell.has-unread::after {
             content: ''; position: absolute; top: 10px; right: 12px; width: 8px; height: 8px; background: #ef4444; border-radius: 50%; border: 2px solid #ffffff;
         }
 
@@ -189,7 +197,7 @@
                 <h1 class="header-title">Panel Principal</h1>
                 <p class="header-subtitle">Vista general de tu actividad médica y estado de salud.</p>
             </div>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>" title="Alertas">
                 <i data-lucide="bell" style="width: 20px;"></i>
             </a>
         </div>
@@ -214,13 +222,13 @@
                         <div class="cal-day" style="color: #cbd5e1;">30</div>
                         <div class="cal-day">1</div><div class="cal-day">2</div><div class="cal-day">3</div><div class="cal-day">4</div>
                         
-                        <div class="cal-day has-event">5</div><div class="cal-day has-event">6</div>
-                        <div class="cal-day active">7</div>
-                        <div class="cal-day">8</div><div class="cal-day active">9</div><div class="cal-day">10</div><div class="cal-day">11</div>
+                        <div class="cal-day">5</div><div class="cal-day">6</div>
+                        <div class="cal-day">7</div>
+                        <div class="cal-day">8</div><div class="cal-day">9</div><div class="cal-day">10</div><div class="cal-day">11</div>
                         
-                        <div class="cal-day">12</div><div class="cal-day">13</div><div class="cal-day has-event">14</div><div class="cal-day">15</div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18</div>
+                        <div class="cal-day">12</div><div class="cal-day">13</div><div class="cal-day">14</div><div class="cal-day">15</div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18</div>
                         
-                        <div class="cal-day">19</div><div class="cal-day">20</div><div class="cal-day">21</div><div class="cal-day has-event">22</div><div class="cal-day">23</div><div class="cal-day">24</div><div class="cal-day">25</div>
+                        <div class="cal-day">19</div><div class="cal-day">20</div><div class="cal-day">21</div><div class="cal-day">22</div><div class="cal-day">23</div><div class="cal-day">24</div><div class="cal-day">25</div>
                         
                         <div class="cal-day">26</div><div class="cal-day">27</div><div class="cal-day">28</div><div class="cal-day">29</div><div class="cal-day">30</div><div class="cal-day">31</div>
                     </div>
@@ -232,33 +240,35 @@
                 <div class="card-box">
                     <div class="box-title">
                         <span>Próximas actividades</span>
-                        <a href="${pageContext.request.contextPath}/paciente/citas" style="font-size: 12px; color: var(--primary); text-decoration: none;">+ Agregar</a>
+                        <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva" style="font-size: 12px; color: var(--primary); text-decoration: none;">+ Agregar</a>
                     </div>
 
+                    <% if (listaActividades != null && !listaActividades.isEmpty()) {
+                        for (Map<String, Object> act : listaActividades) {
+                            String actMed = (String) act.get("medico");
+                            String actEsp = (String) act.get("especialidad");
+                            String actFh = (String) act.get("fechaHora");
+                    %>
                     <div class="activity-card act-blue">
-                        <div class="act-title">Consulta — Dr. Carlos Mendoza</div>
-                        <div class="act-sub">Cardiología · Hoy 15:00 hrs</div>
+                        <div class="act-title">Consulta — <%= actMed %></div>
+                        <div class="act-sub"><%= actEsp %> · <%= actFh %></div>
                     </div>
-
-                    <div class="activity-card act-purple">
-                        <div class="act-title">Videoconsulta — Dr. Alejandro Vargas</div>
-                        <div class="act-sub">Neurología · Mañana 10:00 hrs</div>
+                    <%  }
+                    } else { %>
+                    <div style="text-align: center; padding: 24px 12px; color: var(--text-gray); font-size: 13px;">
+                        No tienes actividades próximas programadas.
                     </div>
-
-                    <div class="activity-card act-green">
-                        <div class="act-title">Análisis de sangre completado</div>
-                        <div class="act-sub">Laboratorio Central · 17:00 hrs</div>
-                    </div>
+                    <% } %>
                 </div>
 
                 <div class="card-box">
                     <div class="box-title">
                         <span>Índice de bienestar</span>
-                        <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #dcfce7; color: #166534;">Bueno</span>
+                        <span style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #f1f5f9; color: #475569;">A la espera</span>
                     </div>
-                    <div class="score-val">78 <span style="font-size: 16px; color: var(--text-gray); font-weight: 500;">/100</span></div>
+                    <div class="score-val">-- <span style="font-size: 16px; color: var(--text-gray); font-weight: 500;">/100</span></div>
                     <div class="progress-bar">
-                        <div class="progress-fill"></div>
+                        <div class="progress-fill" style="width: 0%;"></div>
                     </div>
                 </div>
             </div>
@@ -267,48 +277,15 @@
             <div>
                 <div class="card-box">
                     <div class="box-title">Medicamentos activos</div>
-                    
-                    <div class="med-item">
-                        <div class="med-icon">💊</div>
-                        <div>
-                            <div class="med-name">Atenolol 50mg</div>
-                            <div class="med-dose">Cada 24h — mañana · 8 días rest.</div>
-                        </div>
-                    </div>
-
-                    <div class="med-item">
-                        <div class="med-icon">💊</div>
-                        <div>
-                            <div class="med-name">Omeprazol 20mg</div>
-                            <div class="med-dose">Cada 12h — mañana/noche · 22 días rest.</div>
-                        </div>
-                    </div>
-
-                    <div class="med-item">
-                        <div class="med-icon">💊</div>
-                        <div>
-                            <div class="med-name">Vitamina D3 1000UI</div>
-                            <div class="med-dose">Cada 24h — mañana · 15 días rest.</div>
-                        </div>
+                    <div style="text-align: center; padding: 20px 12px; color: var(--text-gray); font-size: 13px;">
+                        No tienes medicamentos activos registrados.
                     </div>
                 </div>
 
                 <div class="card-box">
                     <div class="box-title">Tareas pendientes</div>
-                    
-                    <div class="task-item task-high">
-                        <span>Renovar receta — Atenolol</span>
-                        <span class="badge-pill">Alta</span>
-                    </div>
-
-                    <div class="task-item task-mid">
-                        <span>Resultado de ECG pendiente</span>
-                        <span class="badge-pill">Media</span>
-                    </div>
-
-                    <div class="task-item task-low">
-                        <span>Actualizar seguro médico</span>
-                        <span class="badge-pill">Baja</span>
+                    <div style="text-align: center; padding: 20px 12px; color: var(--text-gray); font-size: 13px;">
+                        No tienes tareas pendientes por realizar.
                     </div>
                 </div>
             </div>
