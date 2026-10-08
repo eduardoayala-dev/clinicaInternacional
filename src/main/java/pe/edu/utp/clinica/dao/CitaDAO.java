@@ -571,9 +571,9 @@ public class CitaDAO {
     }
 
     public int obtenerIdPacientePorUsuarioId(int usuarioId) {
-        String sql = "SELECT id_paciente FROM paciente WHERE id_usuario = ?";
+        String sqlSelect = "SELECT id_paciente FROM paciente WHERE id_usuario = ?";
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+             PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
             ps.setInt(1, usuarioId);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
@@ -583,6 +583,23 @@ public class CitaDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
+
+        // Si el usuario no tiene registro en la tabla paciente, creamos uno por defecto para garantizar la integridad referencial
+        String sqlInsert = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, '1995-01-01', '999999999', 'Av. Javier Prado Este 1066')";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlInsert, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+            ps.setInt(1, usuarioId);
+            ps.setString(2, "DNI" + usuarioId + String.valueOf(System.currentTimeMillis() % 10000));
+            ps.executeUpdate();
+            try (ResultSet keys = ps.getGeneratedKeys()) {
+                if (keys.next()) {
+                    return keys.getInt(1);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         return usuarioId;
     }
 
