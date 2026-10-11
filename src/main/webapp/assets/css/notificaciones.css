@@ -1,0 +1,138 @@
+/* ==========================================================================
+   ALERTAS Y NOTIFICACIONES - CLÍNICA INTERNACIONAL
+   Componentes: Filtro por categorías, tarjetas de alerta y acciones
+   ========================================================================== */
+
+.cat-pills {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.cat-btn {
+    padding: 8px 18px;
+    border-radius: 20px;
+    border: 1px solid var(--border-light);
+    background: #ffffff;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-gray);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.cat-btn.active {
+    background: var(--primary-light);
+    color: var(--primary);
+    font-weight: 600;
+    border-color: var(--primary-light);
+}
+
+/* NOTIFICATION CARDS */
+.notif-card {
+    background: #ffffff;
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-light);
+    padding: 20px 24px;
+    margin-bottom: 16px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.02);
+    display: flex;
+    gap: 16px;
+    transition: all 0.2s ease;
+}
+
+.notif-card.unread-bg {
+    border-left: 4px solid var(--primary);
+    background: #fafcff;
+}
+
+.notif-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.icon-blue { background: #eff6ff; color: #2563eb; }
+.icon-purple { background: #f3e8ff; color: #9333ea; }
+.icon-red { background: #ffe4e6; color: #ef4444; }
+.icon-green { background: #dcfce7; color: #16a34a; }
+.icon-gray { background: #f1f5f9; color: #64748b; }
+
+.notif-body {
+    flex: 1;
+}
+
+.notif-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.notif-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: var(--text-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.notif-dot {
+    width: 8px;
+    height: 8px;
+    background: #2563eb;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.notif-time {
+    font-size: 12px;
+    color: var(--text-gray);
+}
+
+.notif-desc {
+    font-size: 13px;
+    color: var(--text-gray);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.notif-actions {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-act-primary {
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: var(--primary);
+    color: #ffffff;
+    border: none;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.2s;
+}
+
+.btn-act-primary:hover {
+    background: var(--primary-hover);
+}
+
+.btn-act-sec {
+    padding: 6px 16px;
+    border-radius: 20px;
+    background: #ffffff;
+    color: var(--primary);
+    border: 1px solid var(--primary);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+}
