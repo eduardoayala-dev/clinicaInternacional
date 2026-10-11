@@ -292,26 +292,56 @@ public class CitaDAO {
     /**
      * Registra la cita y aplica el Motor de Predicción
      */
-    public boolean reservarCita(int idPaciente, int idMedico, String fecha, String hora, String nivelUrgencia) {
-        String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? AND estado = 'ACTIVO' LIMIT 1"; 
+    public boolean reservarCita(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
         String sqlInsert = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, fecha_hora, estado, riesgo_cancelacion, nivel_urgencia) VALUES (?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
         
         try (Connection conn = DatabaseConfig.getConnection()) {
-            int idDisp = 1; // Fallback
-            try (PreparedStatement ps = conn.prepareStatement(sqlDisp)) {
-                ps.setInt(1, idMedico);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (rs.next()) {
-                        idDisp = rs.getInt("id_disponibilidad");
+            // 1. Obtener/Verificar un id_paciente válido en la tabla paciente
+            int idPacienteReal = 0;
+            String sqlCheckPac = "SELECT id_paciente FROM paciente WHERE id_paciente = ?";
+            try (PreparedStatement psPac = conn.prepareStatement(sqlCheckPac)) {
+                psPac.setInt(1, idPacienteParam);
+                try (ResultSet rsPac = psPac.executeQuery()) {
+                    if (rsPac.next()) {
+                        idPacienteReal = rsPac.getInt("id_paciente");
                     }
                 }
             }
+            if (idPacienteReal == 0) {
+                // Si el ID pasado fue id_usuario en lugar de id_paciente
+                idPacienteReal = obtenerIdPacientePorUsuarioId(idPacienteParam);
+            }
+
+            // 2. Obtener o crear una disponibilidad válida para la cita
+            int idDisp = 0;
+            String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? LIMIT 1";
+            try (PreparedStatement psDisp = conn.prepareStatement(sqlDisp)) {
+                psDisp.setInt(1, idMedico);
+                try (ResultSet rsDisp = psDisp.executeQuery()) {
+                    if (rsDisp.next()) {
+                        idDisp = rsDisp.getInt("id_disponibilidad");
+                    }
+                }
+            }
+            if (idDisp == 0) {
+                String sqlCrearDisp = "INSERT INTO disponibilidad (id_medico, id_sede, fecha, hora_inicio, hora_fin, estado) VALUES (?, 1, CURRENT_DATE(), '08:00:00', '18:00:00', 'PUBLICADO')";
+                try (PreparedStatement psCrear = conn.prepareStatement(sqlCrearDisp, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                    psCrear.setInt(1, idMedico);
+                    psCrear.executeUpdate();
+                    try (ResultSet keys = psCrear.getGeneratedKeys()) {
+                        if (keys.next()) {
+                            idDisp = keys.getInt(1);
+                        }
+                    }
+                }
+            }
+            if (idDisp == 0) idDisp = 1; // Fallback
             
-            String riesgo = calcularRiesgoCancelacion(idPaciente);
+            String riesgo = calcularRiesgoCancelacion(idPacienteReal);
             String fechaHoraStr = fecha + " " + hora + ":00";
             
             try (PreparedStatement ps = conn.prepareStatement(sqlInsert, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, idPaciente);
+                ps.setInt(1, idPacienteReal);
                 ps.setInt(2, idMedico);
                 ps.setInt(3, idDisp);
                 ps.setString(4, fechaHoraStr);
@@ -322,7 +352,7 @@ public class CitaDAO {
                 if (filas > 0) {
                     try (ResultSet keys = ps.getGeneratedKeys()) {
                         int idCitaNueva = keys.next() ? keys.getInt(1) : 0;
-                        int idUsuarioPaciente = obtenerIdUsuarioPorPacienteId(idPaciente);
+                        int idUsuarioPaciente = obtenerIdUsuarioPorPacienteId(idPacienteReal);
                         Map<String, Object> detMed = obtenerDetallesMedico(idMedico);
                         String nombreMed = detMed.get("nombreMedico") != null ? (String) detMed.get("nombreMedico") : "tu especialista";
                         String espMed = detMed.get("especialidad") != null ? (String) detMed.get("especialidad") : "Consulta Médica";

@@ -553,6 +553,17 @@
             transform: translateY(-1px);
         }
 
+        .time-chip.disabled {
+            background: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            border-color: #e2e8f0 !important;
+            cursor: not-allowed !important;
+            opacity: 0.55 !important;
+            pointer-events: none !important;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+
         /* BOTTOM ACTIONS */
         .actions {
             display: flex;
@@ -719,7 +730,7 @@
                             else if (lower.contains("derma")) icon = "microscope";
                             else if (lower.contains("gineco")) icon = "baby";
                     %>
-                    <div class="specialty-item" onclick="selectSpecialty(this, <%= idEsp %>)">
+                    <div class="specialty-item" onclick="selectSpecialty(this, '<%= idEsp %>')">
                         <div class="spec-info">
                             <div class="spec-icon-wrapper"><i data-lucide="<%= icon %>" style="width: 20px;"></i></div>
                             <div>
@@ -1013,7 +1024,8 @@
                 fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
                     .then(response => response.json())
                     .then(data => {
-                        renderDates(data);
+                        selectedFecha = null;
+                        selectedHora = null;
                         document.getElementById('step2-content').style.display = 'none';
                         document.getElementById('step3-content').style.display = 'block';
                         document.getElementById('stepper-2').classList.remove('active');
@@ -1022,11 +1034,11 @@
                         btnText.textContent = "Continuar";
                         btnIcon.style.display = "block";
                         
-                        selectedFecha = null;
-                        selectedHora = null;
                         this.classList.remove('active');
                         this.disabled = true;
                         currentStep = 3;
+
+                        renderDates(data);
                     })
                     .catch(err => {
                         console.error(err);
@@ -1320,23 +1332,70 @@
                 return;
             }
 
+            // Comprobar si la fecha seleccionada es el día de hoy
+            const hoy = new Date();
+            const yearHoy = hoy.getFullYear();
+            const monthHoy = (hoy.getMonth() + 1 < 10 ? '0' : '') + (hoy.getMonth() + 1);
+            const dayHoy = (hoy.getDate() < 10 ? '0' : '') + hoy.getDate();
+            const fechaHoyStr = yearHoy + '-' + monthHoy + '-' + dayHoy;
+
+            const esHoy = selectedFecha === fechaHoyStr;
+            const ahoraMinutos = hoy.getHours() * 60 + hoy.getMinutes();
+
+            let primerValido = null;
+
             horas.forEach(item => {
                 const horaStr = typeof item === 'string' ? item : (item.hora || item.toString());
                 const div = document.createElement('div');
                 div.className = 'time-chip';
-                div.onclick = function() { selectTime(this, horaStr); };
+
+                let yaTranscurrio = false;
+                if (esHoy) {
+                    const partes = horaStr.split(':');
+                    if (partes.length >= 2) {
+                        const hMin = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10);
+                        if (hMin <= ahoraMinutos) {
+                            yaTranscurrio = true;
+                        }
+                    }
+                }
+
+                if (yaTranscurrio) {
+                    div.classList.add('disabled');
+                    div.title = "Horario no disponible (ya transcurrido)";
+                } else {
+                    div.onclick = function() { selectTime(this, horaStr); };
+                    if (!primerValido) {
+                        primerValido = div;
+                    }
+                }
                 div.textContent = horaStr;
                 container.appendChild(div);
             });
 
-            // Auto-seleccionar primer horario disponible
-            const firstTimeChip = container.querySelector('.time-chip');
-            if (firstTimeChip) {
-                firstTimeChip.click();
+            // Auto-seleccionar primer horario disponible HABILITADO
+            if (primerValido) {
+                primerValido.click();
+            } else {
+                selectedHora = null;
+                const btn = document.getElementById('btnContinue');
+                btn.classList.remove('active');
+                btn.disabled = true;
+                if (esHoy) {
+                    const msg = document.createElement('p');
+                    msg.style.color = '#ef4444';
+                    msg.style.gridColumn = '1/-1';
+                    msg.style.fontSize = '13px';
+                    msg.style.marginTop = '8px';
+                    msg.style.fontWeight = '500';
+                    msg.textContent = 'No quedan turnos disponibles para el resto del día de hoy. Por favor selecciona otro día.';
+                    container.appendChild(msg);
+                }
             }
         }
 
         function selectTime(element, hora) {
+            if (element.classList.contains('disabled')) return;
             document.querySelectorAll('.time-chip').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedHora = hora;
