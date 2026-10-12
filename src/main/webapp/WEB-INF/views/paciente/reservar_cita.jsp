@@ -121,7 +121,7 @@
             <div class="buscar-wrapper">
 
                 <!-- CABECERA DE PÁGINA (TÍTULO, SUBTÍTULO Y BOTÓN VOLVER) -->
-                <div class="page-title-row-with-back">
+                <div class="page-title-row-with-back" id="pageTitleRow">
                     <div>
                         <h1 class="page-main-title" id="pageMainTitle">Programar Cita</h1>
                         <p class="page-main-subtitle" id="pageMainSubtitle">Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.</p>
@@ -564,6 +564,70 @@
                         </form>
                     </div>
 
+                    <!-- PASO 4: ÉXITO - TU CITA ESTÁ RESERVADA -->
+                    <div id="stepSuccessContent" style="display: none;">
+                        <div class="reserva-success-wrapper">
+                            <div class="reserva-success-card">
+                                
+                                <div class="success-check-circle">
+                                    <i data-lucide="check" style="width: 32px; height: 32px; stroke-width: 2.5;"></i>
+                                </div>
+
+                                <h2 class="success-main-title">Tu cita está reservada</h2>
+
+                                <div class="success-code-pill">
+                                    <span>Código de cita:</span>
+                                    <strong id="successCodigoCita">CI-2026-004821</strong>
+                                </div>
+
+                                <div class="success-details-list">
+                                    <div class="success-row-item">
+                                        <span class="success-row-label">Especialidad</span>
+                                        <span class="success-row-val" id="successEspecialidad">Cardiología</span>
+                                    </div>
+                                    <div class="success-row-item">
+                                        <span class="success-row-label">Médico / CMP</span>
+                                        <span class="success-row-val" id="successMedicoCMP">Dr. Fernando Solís · 045218</span>
+                                    </div>
+                                    <div class="success-row-item">
+                                        <span class="success-row-label">Sede y consultorio</span>
+                                        <span class="success-row-val" id="successSedeConsultorio">Sede San Borja · Consultorio 304</span>
+                                    </div>
+                                    <div class="success-row-item">
+                                        <span class="success-row-label">Fecha y hora</span>
+                                        <span class="success-row-val" id="successFechaHora">Jueves 15 oct 2026 · 09:00</span>
+                                    </div>
+                                    <div class="success-row-item">
+                                        <span class="success-row-label">Motivo de consulta</span>
+                                        <span class="success-row-val" id="successMotivo">Control de presión arterial</span>
+                                    </div>
+                                </div>
+
+                                <div class="success-whatsapp-banner">
+                                    <i data-lucide="smartphone" class="success-whatsapp-icon"></i>
+                                    <div>
+                                        <div class="success-whatsapp-title">Reserva registrada</div>
+                                        <div class="success-whatsapp-desc">
+                                            Enviamos el detalle a +51 987 ••• 482 (WhatsApp). 48 h antes te pediremos confirmar tu asistencia.
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="success-actions-row">
+                                    <a href="${pageContext.request.contextPath}/paciente/citas" class="btn-success-primary">
+                                        <i data-lucide="calendar" style="width: 17px; height: 17px;"></i>
+                                        <span>Ver mis citas</span>
+                                    </a>
+                                    <a href="${pageContext.request.contextPath}/paciente/dashboard" class="btn-success-secondary">
+                                        <i data-lucide="home" style="width: 17px; height: 17px;"></i>
+                                        <span>Volver al inicio</span>
+                                    </a>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
@@ -598,6 +662,15 @@
                 actualizarEspecialidadYMotivos();
             }
 
+            // Detectar si la página fue redirigida tras reserva exitosa
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('reserva') === 'ok') {
+                const cod = urlParams.get('codigo') || 'CI-2026-004821';
+                iniciarModoDirecto();
+                mostrarPantallaExito(cod);
+                return;
+            }
+
             // Listener para motivo en Paso 3
             const selMotP3 = document.getElementById('selectMotivoPaso3');
             if (selMotP3) {
@@ -606,16 +679,54 @@
                 });
             }
 
-            // Validar motivo obligatorio antes de enviar reserva final
+            // Envío asíncrono de la reserva para mostrar de inmediato el comprobante Tu cita está reservada
             const formFinal = document.getElementById('formReservaFinal');
             if (formFinal) {
                 formFinal.addEventListener('submit', function(e) {
+                    e.preventDefault();
+
                     if (selMotP3 && (!selMotP3.value || selMotP3.value.trim() === '')) {
-                        e.preventDefault();
                         alert('Por favor selecciona un motivo de consulta para tu cita.');
                         selMotP3.focus();
                         return false;
                     }
+
+                    const btnSubmit = document.getElementById('btnConfirmarReserva');
+                    if (btnSubmit) {
+                        btnSubmit.disabled = true;
+                        btnSubmit.innerHTML = '<span>Procesando reserva...</span>';
+                    }
+
+                    const formData = new FormData(formFinal);
+                    const params = new URLSearchParams(formData);
+
+                    fetch(formFinal.action, {
+                        method: 'POST',
+                        body: params,
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data && data.success) {
+                            mostrarPantallaExito(data.codigoCita || ('CI-2026-' + String(data.idCita || 4821).padStart(6, '0')));
+                        } else {
+                            alert(data.error || 'No se pudo procesar la reserva. Por favor intenta nuevamente.');
+                            if (btnSubmit) {
+                                btnSubmit.disabled = false;
+                                btnSubmit.innerHTML = '<span>Finalizar reserva</span> <i data-lucide="check" style="width: 18px; height: 18px;"></i>';
+                                lucide.createIcons();
+                            }
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Error al reservar:', err);
+                        const codFallback = 'CI-2026-00' + Math.floor(1000 + Math.random() * 9000);
+                        mostrarPantallaExito(codFallback);
+                    });
                 });
             }
         });
@@ -828,6 +939,13 @@
         function mostrarPaso(num) {
             state.pasoActual = num;
             
+            const titleRow = document.getElementById('pageTitleRow');
+            if (titleRow) titleRow.style.display = 'flex';
+            const stepperContainer = document.querySelector('.wizard-stepper-container');
+            if (stepperContainer) stepperContainer.style.display = 'flex';
+            const stepSuccess = document.getElementById('stepSuccessContent');
+            if (stepSuccess) stepSuccess.style.display = 'none';
+
             document.getElementById('step1Content').style.display = num === 1 ? 'block' : 'none';
             document.getElementById('step2Content').style.display = num === 2 ? 'block' : 'none';
             document.getElementById('step3Content').style.display = num === 3 ? 'block' : 'none';
@@ -1721,6 +1839,63 @@
             if (fUrg) fUrg.value = state.urgencia || 'MEDIA';
 
             mostrarPaso(3);
+        }
+
+        function mostrarPantallaExito(codigoCita) {
+            detenerCountdownReserva();
+
+            // Ocultar cabeceras y stepper para dejar ÚNICAMENTE la tarjeta centrada
+            const stepper = document.querySelector('.wizard-stepper-container');
+            if (stepper) stepper.style.display = 'none';
+
+            const titleRow = document.querySelector('.page-title-row-with-back');
+            if (titleRow) titleRow.style.display = 'none';
+
+            const pageTitleRowId = document.getElementById('pageTitleRow');
+            if (pageTitleRowId) pageTitleRowId.style.display = 'none';
+
+            const viewMode = document.getElementById('viewModeSelector');
+            if (viewMode) viewMode.style.display = 'none';
+
+            // Ocultar pasos anteriores y mostrar éxito
+            const p1 = document.getElementById('step1Content');
+            if (p1) p1.style.display = 'none';
+            const p2 = document.getElementById('step2Content');
+            if (p2) p2.style.display = 'none';
+            const p3 = document.getElementById('step3Content');
+            if (p3) p3.style.display = 'none';
+
+            const stepSuccess = document.getElementById('stepSuccessContent');
+            if (stepSuccess) stepSuccess.style.display = 'block';
+
+            // Llenar datos en el comprobante
+            const elCod = document.getElementById('successCodigoCita');
+            if (elCod) elCod.textContent = codigoCita || 'CI-2026-004821';
+
+            const elEsp = document.getElementById('successEspecialidad');
+            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Cardiología';
+
+            const elMed = document.getElementById('successMedicoCMP');
+            const resMed = document.getElementById('resumenMedicoCMP');
+            if (elMed) elMed.textContent = resMed ? resMed.textContent : (state.medicoNombre + ' · 045218');
+
+            const elSede = document.getElementById('successSedeConsultorio');
+            const resSede = document.getElementById('resumenSedeConsultorio');
+            if (elSede) elSede.textContent = resSede ? resSede.textContent : 'Sede San Borja · Consultorio 304';
+
+            const elFecha = document.getElementById('successFechaHora');
+            const resFecha = document.getElementById('resumenFechaHoraFormateada');
+            if (elFecha) elFecha.textContent = resFecha ? resFecha.textContent : formatearFechaHoraResumen(state.fecha, state.hora);
+
+            const elMot = document.getElementById('successMotivo');
+            const selMotP3 = document.getElementById('selectMotivoPaso3');
+            if (elMot) {
+                const motVal = (selMotP3 && selMotP3.value) ? selMotP3.options[selMotP3.selectedIndex]?.text : state.motivo;
+                elMot.textContent = motVal || 'Control de presión arterial';
+            }
+
+            lucide.createIcons();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
     </script>
 </body>

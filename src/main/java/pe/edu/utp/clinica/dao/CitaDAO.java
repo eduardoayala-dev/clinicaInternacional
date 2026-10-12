@@ -300,6 +300,10 @@ public class CitaDAO {
      * Registra la cita y aplica el Motor de Predicción
      */
     public boolean reservarCita(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
+        return reservarCitaConId(idPacienteParam, idMedico, fecha, hora, nivelUrgencia) > 0;
+    }
+
+    public int reservarCitaConId(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
         String sqlInsert = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, fecha_hora, estado, riesgo_cancelacion, nivel_urgencia) VALUES (?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
         
         try (Connection conn = DatabaseConfig.getConnection()) {
@@ -357,8 +361,9 @@ public class CitaDAO {
                 
                 int filas = ps.executeUpdate();
                 if (filas > 0) {
+                    int idCitaNueva = 0;
                     try (ResultSet keys = ps.getGeneratedKeys()) {
-                        int idCitaNueva = keys.next() ? keys.getInt(1) : 0;
+                        idCitaNueva = keys.next() ? keys.getInt(1) : 0;
                         int idUsuarioPaciente = obtenerIdUsuarioPorPacienteId(idPacienteReal);
                         Map<String, Object> detMed = obtenerDetallesMedico(idMedico);
                         String nombreMed = detMed.get("nombreMedico") != null ? (String) detMed.get("nombreMedico") : "tu especialista";
@@ -366,13 +371,13 @@ public class CitaDAO {
                         String msg = "¡Cita Confirmada! Tu consulta de " + espMed + " con " + nombreMed + " ha sido agendada con éxito para el " + fecha + " a las " + hora + ".";
                         crearNotificacion(idUsuarioPaciente, idCitaNueva > 0 ? idCitaNueva : null, "Citas", msg);
                     }
-                    return true;
+                    return idCitaNueva > 0 ? idCitaNueva : 1;
                 }
-                return false;
+                return 0;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return 0;
         }
     }
 

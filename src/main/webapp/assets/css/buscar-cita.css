@@ -1274,6 +1274,183 @@
     background-color: #0284c7;
 }
 
+/* ==========================================================================
+   PANTALLA DE ÉXITO DE RESERVA (COMPROBANTE DE CITA CONFIRMADA)
+   ========================================================================== */
+.reserva-success-wrapper {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 24px 0 48px 0;
+    width: 100%;
+    animation: fadeInSlide 0.35s ease-out;
+}
+
+.reserva-success-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 24px;
+    padding: 44px 48px;
+    width: 100%;
+    max-width: 640px;
+    box-shadow: 0 10px 32px rgba(0, 0, 0, 0.03);
+    text-align: center;
+}
+
+.success-check-circle {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #dcfce7;
+    color: #10b981;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+}
+
+.success-main-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: #0f172a;
+    margin-bottom: 14px;
+    font-family: inherit;
+    letter-spacing: -0.3px;
+}
+
+.success-code-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background-color: #f0f9ff;
+    border: 1px solid #e0f2fe;
+    border-radius: 20px;
+    padding: 6px 18px;
+    font-size: 13.5px;
+    color: #0369a1;
+    margin-bottom: 28px;
+}
+
+.success-code-pill strong {
+    color: #0284c7;
+    font-weight: 700;
+}
+
+.success-details-list {
+    margin-bottom: 24px;
+    text-align: left;
+}
+
+.success-row-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 13px 0;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+.success-row-item:last-child {
+    border-bottom: none;
+}
+
+.success-row-label {
+    font-size: 13.5px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.success-row-val {
+    font-size: 14px;
+    color: #0f172a;
+    font-weight: 700;
+    text-align: right;
+}
+
+.success-whatsapp-banner {
+    background-color: #dcfce7;
+    border: 1.5px solid #86efac;
+    border-radius: 14px;
+    padding: 16px 20px;
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    text-align: left;
+    margin-bottom: 28px;
+}
+
+.success-whatsapp-icon {
+    width: 22px;
+    height: 22px;
+    color: #10b981;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.success-whatsapp-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: #065f46;
+    margin-bottom: 3px;
+}
+
+.success-whatsapp-desc {
+    font-size: 13px;
+    color: #047857;
+    line-height: 1.45;
+}
+
+.success-actions-row {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.btn-success-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    background-color: #0284c7;
+    color: #ffffff;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-success-primary:hover {
+    background-color: #0369a1;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.35);
+}
+
+.btn-success-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 22px;
+    background-color: #ffffff;
+    color: #0284c7;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.btn-success-secondary:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+}
+
 /* Animaciones */
 @keyframes fadeInSlide {
     from {
