@@ -282,12 +282,12 @@
                             <div class="wiz-num">1</div>
                             <span>Buscar</span>
                         </div>
-                        <div class="wiz-line"></div>
+                        <div class="wiz-line" id="wizLine1"></div>
                         <div class="wiz-step" id="wizStep2">
                             <div class="wiz-num">2</div>
                             <span>Elegir horario</span>
                         </div>
-                        <div class="wiz-line"></div>
+                        <div class="wiz-line" id="wizLine2"></div>
                         <div class="wiz-step" id="wizStep3">
                             <div class="wiz-num">3</div>
                             <span>Confirmar</span>
@@ -462,83 +462,106 @@
 
                     </div>
 
-                    <!-- PASO 3: CONFIRMACIÓN Y RESERVA -->
+                    <!-- PASO 3: CONFIRMACIÓN Y RESERVA (FINALIZAR RESERVA) -->
                     <div id="step3Content" style="display: none;">
-                        <div class="confirmation-card">
-                            <div style="margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
-                                <h3 style="font-size: 20px; font-weight: 700; color: #1e3a8a; margin-bottom: 4px;">Confirmar Reserva de Cita</h3>
-                                <p style="font-size: 13.5px; color: #64748b;">Por favor, revisa todos los datos antes de agendar tu cita médica en la Clínica Internacional.</p>
+                        
+                        <!-- BANNER TEMPORAL DE CUPO RESERVADO (5 MINUTOS) -->
+                        <div class="reservation-hold-banner">
+                            <div class="hold-banner-icon">
+                                <i data-lucide="clock" style="width: 22px; height: 22px;"></i>
                             </div>
-
-                            <div class="confirm-details-grid">
-                                
-                                <div class="confirm-item-box">
-                                    <div class="confirm-item-icon">
-                                        <i data-lucide="stethoscope" style="width: 22px; height: 22px;"></i>
-                                    </div>
-                                    <div>
-                                        <div class="confirm-item-label">Especialidad</div>
-                                        <div class="confirm-item-val" id="resumenEspecialidad">Cardiología</div>
-                                    </div>
+                            <div>
+                                <div class="hold-banner-title">
+                                    Cupo reservado temporalmente · Tiempo para completar la reserva: <span id="reservaCountdown">05:00</span>
                                 </div>
-
-                                <div class="confirm-item-box">
-                                    <div class="confirm-item-icon">
-                                        <i data-lucide="user-check" style="width: 22px; height: 22px;"></i>
-                                    </div>
-                                    <div>
-                                        <div class="confirm-item-label">Médico Tratante</div>
-                                        <div class="confirm-item-val" id="resumenMedico">Dr. Carlos Ramos</div>
-                                    </div>
+                                <div class="hold-banner-desc">
+                                    Si no terminas a tiempo, el cupo se libera y vuelves a los resultados.
                                 </div>
-
-                                <div class="confirm-item-box">
-                                    <div class="confirm-item-icon">
-                                        <i data-lucide="building" style="width: 22px; height: 22px;"></i>
-                                    </div>
-                                    <div>
-                                        <div class="confirm-item-label">Sede y Consultorio</div>
-                                        <div class="confirm-item-val" id="resumenSede">Sede Lima - Consultorio 302</div>
-                                    </div>
-                                </div>
-
-                                <div class="confirm-item-box">
-                                    <div class="confirm-item-icon">
-                                        <i data-lucide="calendar" style="width: 22px; height: 22px;"></i>
-                                    </div>
-                                    <div>
-                                        <div class="confirm-item-label">Fecha y Hora</div>
-                                        <div class="confirm-item-val" id="resumenFechaHora">15/10/2026 - 10:30 AM</div>
-                                    </div>
-                                </div>
-
                             </div>
-
-                            <div class="clinical-notice-box">
-                                <strong>Recomendación importante:</strong> Preséntate con 15 minutos de anticipación en el módulo de recepción con tu documento de identidad (DNI o Carné de Extranjería). En caso de no poder asistir, recuerda cancelar con anticipación desde tu panel de citas.
-                            </div>
-
-                            <!-- FORMULARIO DE ENVÍO POST -->
-                            <form id="formReservaFinal" action="${pageContext.request.contextPath}/paciente/reservar" method="POST">
-                                <input type="hidden" name="idMedico" id="finalIdMedico" value="">
-                                <input type="hidden" name="fecha" id="finalFecha" value="">
-                                <input type="hidden" name="hora" id="finalHora" value="">
-                                <input type="hidden" name="urgencia" id="finalUrgencia" value="MEDIA">
-
-                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 18px; border-top: 1px solid #f1f5f9;">
-                                    <button type="button" class="btn-secondary-flat" onclick="volverAPaso2()">
-                                        <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
-                                        <span>Cambiar horario</span>
-                                    </button>
-
-                                    <button type="submit" class="btn-primary-search" id="btnConfirmarReserva">
-                                        <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
-                                        <span>Agendar y Confirmar Cita</span>
-                                    </button>
-                                </div>
-                            </form>
-
                         </div>
+
+                        <!-- FORMULARIO DE ENVÍO POST -->
+                        <form id="formReservaFinal" action="${pageContext.request.contextPath}/paciente/reservar" method="POST">
+                            <input type="hidden" name="idMedico" id="finalIdMedico" value="">
+                            <input type="hidden" name="fecha" id="finalFecha" value="">
+                            <input type="hidden" name="hora" id="finalHora" value="">
+                            <input type="hidden" name="urgencia" id="finalUrgencia" value="MEDIA">
+
+                            <!-- GRID DE DOS TARJETAS -->
+                            <div class="finalizar-reserva-grid">
+                                
+                                <!-- TARJETA IZQUIERDA: RESUMEN DE LA CITA -->
+                                <div class="finalizar-card">
+                                    <h3 class="finalizar-card-title">Resumen de la cita</h3>
+                                    <div class="resumen-filas-list">
+                                        <div class="resumen-row-item">
+                                            <span class="resumen-row-label">Especialidad</span>
+                                            <span class="resumen-row-val" id="resumenEspecialidad">Cardiología</span>
+                                        </div>
+                                        <div class="resumen-row-item">
+                                            <span class="resumen-row-label">Médico / CMP</span>
+                                            <span class="resumen-row-val" id="resumenMedicoCMP">Dr. Fernando Solís · 045218</span>
+                                        </div>
+                                        <div class="resumen-row-item">
+                                            <span class="resumen-row-label">Sede y consultorio</span>
+                                            <span class="resumen-row-val" id="resumenSedeConsultorio">Sede San Borja · Consultorio 304</span>
+                                        </div>
+                                        <div class="resumen-row-item">
+                                            <span class="resumen-row-label">Fecha y hora</span>
+                                            <span class="resumen-row-val" id="resumenFechaHoraFormateada">Jueves 15 oct 2026 · 09:00</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- TARJETA DERECHA: DATOS DE LA RESERVA -->
+                                <div class="finalizar-card">
+                                    <h3 class="finalizar-card-title">Datos de la reserva</h3>
+                                    
+                                    <div class="form-group-motivo">
+                                        <label for="selectMotivoPaso3" class="finalizar-field-label">Motivo de consulta *</label>
+                                        <div class="select-with-icon-wrap">
+                                            <select id="selectMotivoPaso3" name="motivo" class="finalizar-select-control" required>
+                                                <option value="" disabled selected>Selecciona un motivo</option>
+                                            </select>
+                                            <i data-lucide="chevron-down" class="select-chevron-icon"></i>
+                                        </div>
+                                        <div class="motivo-field-footnote">Solo se muestran los motivos de la especialidad elegida.</div>
+                                    </div>
+
+                                    <div class="notif-channels-section">
+                                        <label class="finalizar-field-label">Recibir los avisos de esta cita por:</label>
+                                        <div class="notif-channels-group">
+                                            <label class="notif-channel-card active" id="labelNotifSms">
+                                                <input type="checkbox" name="notifSms" id="checkNotifSms" checked onchange="toggleNotifChannel('sms')">
+                                                <i data-lucide="smartphone" class="notif-icon"></i>
+                                                <span class="notif-text">SMS / WhatsApp</span>
+                                            </label>
+                                            <label class="notif-channel-card" id="labelNotifEmail">
+                                                <input type="checkbox" name="notifEmail" id="checkNotifEmail" onchange="toggleNotifChannel('email')">
+                                                <i data-lucide="mail" class="notif-icon"></i>
+                                                <span class="notif-text">Correo electrónico</span>
+                                            </label>
+                                        </div>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <!-- ACCIONES INFERIORES: VOLVER A RESULTADOS / FINALIZAR RESERVA -->
+                            <div class="finalizar-actions-bar">
+                                <button type="button" class="btn-volver-resultados" onclick="volverAPaso2()">
+                                    <i data-lucide="chevron-left" style="width: 17px; height: 17px;"></i>
+                                    <span>Volver a resultados</span>
+                                </button>
+
+                                <button type="submit" class="btn-finalizar-reserva" id="btnConfirmarReserva">
+                                    <span>Finalizar reserva</span>
+                                    <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+                                </button>
+                            </div>
+
+                        </form>
                     </div>
 
                 </div>
@@ -573,6 +596,27 @@
                 }
             } else {
                 actualizarEspecialidadYMotivos();
+            }
+
+            // Listener para motivo en Paso 3
+            const selMotP3 = document.getElementById('selectMotivoPaso3');
+            if (selMotP3) {
+                selMotP3.addEventListener('change', function() {
+                    state.motivo = this.value;
+                });
+            }
+
+            // Validar motivo obligatorio antes de enviar reserva final
+            const formFinal = document.getElementById('formReservaFinal');
+            if (formFinal) {
+                formFinal.addEventListener('submit', function(e) {
+                    if (selMotP3 && (!selMotP3.value || selMotP3.value.trim() === '')) {
+                        e.preventDefault();
+                        alert('Por favor selecciona un motivo de consulta para tu cita.');
+                        selMotP3.focus();
+                        return false;
+                    }
+                });
             }
         });
 
@@ -796,10 +840,12 @@
                 if (titleEl) titleEl.textContent = 'Buscar cita';
                 if (subEl) subEl.textContent = 'Busca los horarios disponibles según tus preferencias';
                 if (btnVolver) btnVolver.style.display = 'inline-flex';
+                detenerCountdownReserva();
             } else if (num === 2) {
                 if (titleEl) titleEl.textContent = 'Resultados de citas disponibles';
                 if (subEl) subEl.textContent = 'Ordenado por horario más próximo';
                 if (btnVolver) btnVolver.style.display = 'inline-flex';
+                detenerCountdownReserva();
 
                 // Actualizar píldoras de filtros activos
                 const pillSede = document.getElementById('pillSede');
@@ -818,9 +864,10 @@
                     cargarGrillaHorarios();
                 }
             } else if (num === 3) {
-                if (titleEl) titleEl.textContent = 'Confirmar cita';
-                if (subEl) subEl.textContent = 'Revisa los detalles y confirma tu atención médica';
-                if (btnVolver) btnVolver.style.display = 'inline-flex';
+                if (titleEl) titleEl.textContent = 'Finalizar reserva';
+                if (subEl) subEl.textContent = 'Revisa los datos y finaliza antes de que termine el tiempo';
+                if (btnVolver) btnVolver.style.display = 'none';
+                iniciarCountdownReserva();
             }
 
             for (let i = 1; i <= 3; i++) {
@@ -838,6 +885,12 @@
                     if (numEl) numEl.textContent = i;
                 }
             }
+
+            const line1 = document.getElementById('wizLine1');
+            const line2 = document.getElementById('wizLine2');
+            if (line1) line1.className = num >= 2 ? 'wiz-line active' : 'wiz-line';
+            if (line2) line2.className = num >= 3 ? 'wiz-line active' : 'wiz-line';
+
             lucide.createIcons();
         }
 
@@ -1404,6 +1457,8 @@
                 const card = document.createElement('div');
                 card.className = 'doctor-schedule-card';
                 card.id = 'docScheduleCard_' + idMed;
+                card.setAttribute('data-cmp', cmp);
+                card.setAttribute('data-consultorio', consultorio);
 
                 let slotsHtml = '';
                 horas.forEach((h) => {
@@ -1457,6 +1512,12 @@
             state.medicoId = idMed;
             state.medicoNombre = nombreMed;
             state.hora = hora;
+
+            const card = document.getElementById('docScheduleCard_' + idMed);
+            if (card) {
+                state.medicoCmp = card.getAttribute('data-cmp') || '';
+                state.consultorio = card.getAttribute('data-consultorio') || '';
+            }
         }
 
         function reservarConDoctor(idMed, nombreMed) {
@@ -1481,8 +1542,143 @@
             state.medicoId = idMed;
             state.medicoNombre = nombreMed;
             state.hora = slotSeleccionado.getAttribute('data-hora') || slotSeleccionado.textContent.trim();
+            if (card) {
+                state.medicoCmp = card.getAttribute('data-cmp') || '';
+                state.consultorio = card.getAttribute('data-consultorio') || '';
+            }
 
             avanzarAPaso3();
+        }
+
+        function formatearFechaHoraResumen(fechaIso, hora) {
+            const d = parsearFechaLocal(fechaIso);
+            const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+            const diaNom = diasSemana[d.getDay()];
+            const diaNum = d.getDate();
+            const mesNom = meses[d.getMonth()];
+            const anio = d.getFullYear();
+            const horaTexto = hora ? (' · ' + hora) : '';
+            return diaNom + ' ' + diaNum + ' ' + mesNom + ' ' + anio + horaTexto;
+        }
+
+        function poblarMotivosPaso3() {
+            const selPaso3 = document.getElementById('selectMotivoPaso3');
+            if (!selPaso3) return;
+
+            selPaso3.innerHTML = '<option value="" disabled selected>Selecciona un motivo</option>';
+
+            const selMotivoPaso1 = document.getElementById('selectMotivo');
+            if (selMotivoPaso1 && selMotivoPaso1.options.length > 1) {
+                for (let i = 1; i < selMotivoPaso1.options.length; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = selMotivoPaso1.options[i].value;
+                    opt.textContent = selMotivoPaso1.options[i].text;
+                    selPaso3.appendChild(opt);
+                }
+            } else {
+                const esp = (state.especialidadNombre || '').toLowerCase();
+                let motivos = [];
+                if (esp.includes('cardio')) {
+                    motivos = [
+                        'Dolor o presión en el pecho',
+                        'Control de hipertensión arterial',
+                        'Palpitaciones o arritmias',
+                        'Evaluación de riesgo quirúrgico',
+                        'Chequeo preventivo cardiológico'
+                    ];
+                } else if (esp.includes('neuro')) {
+                    motivos = [
+                        'Dolores de cabeza o migraña recurrente',
+                        'Episodios de mareo o vértigo',
+                        'Trastornos del sueño o insomnio',
+                        'Control de neuralgia o ciática'
+                    ];
+                } else if (esp.includes('trauma')) {
+                    motivos = [
+                        'Dolor lumbar o en la columna',
+                        'Lesión en rodilla o meniscos',
+                        'Dolor en hombro o articulaciones',
+                        'Evaluación de fractura o esguince'
+                    ];
+                } else if (esp.includes('derma')) {
+                    motivos = [
+                        'Alergia, urticaria o picazón en la piel',
+                        'Revisión de lunares o manchas',
+                        'Acné o rosácea',
+                        'Caída de cabello o alopecia'
+                    ];
+                } else if (esp.includes('gastro')) {
+                    motivos = [
+                        'Dolor abdominal o cólicos',
+                        'Gastritis, acidez o reflujo',
+                        'Digestión pesada o náuseas',
+                        'Evaluación para endoscopía'
+                    ];
+                } else {
+                    motivos = [
+                        'Consulta médica general',
+                        'Chequeo médico preventivo anual',
+                        'Revisión de análisis de laboratorio',
+                        'Evaluación de fiebre o malestar general'
+                    ];
+                }
+                motivos.forEach(m => {
+                    const opt = document.createElement('option');
+                    opt.value = m;
+                    opt.textContent = m;
+                    selPaso3.appendChild(opt);
+                });
+            }
+
+            if (state.motivo) {
+                selPaso3.value = state.motivo;
+            }
+        }
+
+        function toggleNotifChannel(tipo) {
+            const chk = document.getElementById(tipo === 'sms' ? 'checkNotifSms' : 'checkNotifEmail');
+            const lbl = document.getElementById(tipo === 'sms' ? 'labelNotifSms' : 'labelNotifEmail');
+            if (!chk || !lbl) return;
+            if (chk.checked) {
+                lbl.classList.add('active');
+            } else {
+                lbl.classList.remove('active');
+            }
+        }
+
+        let countdownInterval = null;
+        let countdownRemainingSeconds = 300;
+
+        function iniciarCountdownReserva() {
+            detenerCountdownReserva();
+            countdownRemainingSeconds = 300;
+            actualizarTextoCountdown();
+            countdownInterval = setInterval(() => {
+                countdownRemainingSeconds--;
+                if (countdownRemainingSeconds <= 0) {
+                    detenerCountdownReserva();
+                    alert('El tiempo límite para completar la reserva (5 minutos) ha expirado. El cupo ha sido liberado.');
+                    volverAPaso2();
+                } else {
+                    actualizarTextoCountdown();
+                }
+            }, 1000);
+        }
+
+        function detenerCountdownReserva() {
+            if (countdownInterval) {
+                clearInterval(countdownInterval);
+                countdownInterval = null;
+            }
+        }
+
+        function actualizarTextoCountdown() {
+            const el = document.getElementById('reservaCountdown');
+            if (!el) return;
+            const mins = Math.floor(countdownRemainingSeconds / 60);
+            const secs = countdownRemainingSeconds % 60;
+            el.textContent = (mins < 10 ? '0' : '') + mins + ':' + (secs < 10 ? '0' : '') + secs;
         }
 
         function avanzarAPaso3() {
@@ -1491,10 +1687,29 @@
                 return;
             }
 
-            document.getElementById('resumenEspecialidad').textContent = state.especialidadNombre || 'Cardiología';
-            document.getElementById('resumenMedico').textContent = state.medicoNombre;
-            document.getElementById('resumenSede').textContent = (state.sedeNombre === 'Todas las sedes' ? 'Sede Central San Borja' : state.sedeNombre) + ' - Consultorio Especializado';
-            document.getElementById('resumenFechaHora').textContent = state.fecha + ' - ' + state.hora;
+            const elEsp = document.getElementById('resumenEspecialidad');
+            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Cardiología';
+
+            const elMed = document.getElementById('resumenMedicoCMP');
+            if (elMed) {
+                const rawCmp = state.medicoCmp || '045218';
+                const cmpNum = rawCmp.replace(/CMP[-:\s]*/i, '').trim();
+                elMed.textContent = state.medicoNombre + ' · ' + cmpNum;
+            }
+
+            const elSede = document.getElementById('resumenSedeConsultorio');
+            if (elSede) {
+                const sedeNom = (state.sedeNombre && state.sedeNombre !== '0' && state.sedeNombre !== 'Todas las sedes') ? state.sedeNombre : 'Sede San Borja';
+                const consNom = state.consultorio || 'Consultorio 304';
+                elSede.textContent = sedeNom + ' · ' + consNom;
+            }
+
+            const elFecha = document.getElementById('resumenFechaHoraFormateada');
+            if (elFecha) {
+                elFecha.textContent = formatearFechaHoraResumen(state.fecha, state.hora);
+            }
+
+            poblarMotivosPaso3();
 
             const fIdMed = document.getElementById('finalIdMedico');
             if (fIdMed) fIdMed.value = state.medicoId;
