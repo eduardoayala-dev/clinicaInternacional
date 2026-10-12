@@ -46,30 +46,40 @@
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="brand-text">
+                <span class="brand-title">Clínica Internacional</span>
+                <span class="brand-subtitle">Portal del paciente</span>
+            </div>
         </div>
 
         <nav class="nav-menu">
             <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item active">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i> Inicio
+                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+                <span>Inicio</span>
             </a>
-            <a href="${pageContext.request.contextPath}/paciente/reservar" class="nav-item">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i> Buscar cita
+            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
+                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+                <span>Buscar cita</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i> Mis citas
+                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+                <span>Mis citas</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i> Lista de espera
+                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+                <span>Lista de espera</span>
             </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item ${numNotifSinLeer > 0 ? 'btn-bell has-unread' : ''}">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i> Notificaciones
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
+                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+                <span>Notificaciones</span>
                 <c:if test="${numNotifSinLeer > 0}">
-                    <span class="badge-avisos-count" style="margin-left: auto;"><%= numNotifSinLeer %></span>
+                    <span class="badge-count"><%= numNotifSinLeer %></span>
                 </c:if>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i> Perfil
+                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                <span>Perfil</span>
             </a>
         </nav>
 
@@ -79,7 +89,7 @@
                 <span class="user-name"><c:out value="${nombrePaciente}" /></span>
                 <span class="user-role">Paciente</span>
             </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión" style="color: var(--text-light); text-decoration: none; margin-left: auto;">
+            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
                 <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
             </a>
         </div>
@@ -88,10 +98,10 @@
     <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
 
-        <!-- BARRA SUPERIOR CON BREADCRUMB Y BOTÓN DE AVISOS -->
-        <div class="dash-header-bar">
+        <!-- BARRA SUPERIOR (HEADER BLANCO INSTITUCIONAL) -->
+        <header class="dash-top-header">
             <nav class="breadcrumb-trail">
-                <span>Paciente</span> / <strong>Inicio</strong>
+                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Inicio</strong>
             </nav>
 
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
@@ -101,18 +111,21 @@
                     <span class="badge-avisos-count"><%= numNotifSinLeer %></span>
                 </c:if>
             </a>
-        </div>
+        </header>
 
-        <!-- ENCABEZADO DE SALUDO -->
-        <section class="greeting-section">
-            <h1 class="greeting-title">Hola, <%= primerNombre %></h1>
-            <p class="greeting-subtitle">Resumen de tus citas, ofertas y lista de espera</p>
-        </section>
+        <!-- ÁREA CON SCROLL PARA EL CONTENIDO DEL DASHBOARD -->
+        <div class="dash-scroll-container">
 
-        <!-- BANNER CONDICIONAL: OFERTA DE CUPO ANTICIPADO -->
-        <c:if test="${not empty ofertaCupo}">
-            <div class="banner-cupo-oferta">
-                <div class="banner-cupo-left">
+            <!-- ENCABEZADO DE SALUDO -->
+            <section class="greeting-section">
+                <h1 class="greeting-title">Hola, <%= primerNombre %></h1>
+                <p class="greeting-subtitle">Resumen de tus citas, ofertas y lista de espera</p>
+            </section>
+
+            <!-- BANNER CONDICIONAL: OFERTA DE CUPO ANTICIPADO -->
+            <c:if test="${not empty ofertaCupo}">
+                <div class="banner-cupo-oferta">
+                    <div class="banner-cupo-left">
                     <div class="banner-cupo-icon">
                         <i data-lucide="bell" style="width: 22px; height: 22px;"></i>
                     </div>
@@ -198,9 +211,9 @@
                         </a>
                     </c:when>
                     <c:otherwise>
-                        <a href="${pageContext.request.contextPath}/paciente/reservar" class="summary-card-link">
+                        <a href="${pageContext.request.contextPath}/paciente/citas" class="summary-card-link">
                             <span>Buscar y agendar una cita</span>
-                            <i data-lucide="arrow-right" style="width: 15px; height: 15px;"></i>
+                            <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
                         </a>
                     </c:otherwise>
                 </c:choose>
@@ -264,7 +277,7 @@
             <h2 class="quick-section-title">Acciones rápidas</h2>
             <div class="quick-actions-grid">
 
-                <a href="${pageContext.request.contextPath}/paciente/reservar" class="quick-action-card">
+                <a href="${pageContext.request.contextPath}/paciente/citas" class="quick-action-card">
                     <div class="quick-icon-wrapper">
                         <i data-lucide="search" style="width: 20px; height: 20px;"></i>
                     </div>
@@ -296,6 +309,8 @@
 
             </div>
         </section>
+
+        </div> <!-- /.dash-scroll-container -->
 
     </main>
 
