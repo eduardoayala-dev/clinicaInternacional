@@ -123,7 +123,7 @@ public class DatabaseConfig {
     private static void ejecutarSeedH2Directo(Statement stmt) {
         try {
             stmt.execute("CREATE TABLE IF NOT EXISTS usuario (id_usuario INT AUTO_INCREMENT PRIMARY KEY, nombres VARCHAR(100), apellidos VARCHAR(100), email VARCHAR(150), password_hash VARCHAR(255), rol VARCHAR(50), fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP, activo BOOLEAN DEFAULT TRUE)");
-            stmt.execute("CREATE TABLE IF NOT EXISTS paciente (id_paciente INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, dni VARCHAR(15), fecha_nacimiento DATE, telefono VARCHAR(20), direccion VARCHAR(255))");
+            stmt.execute("CREATE TABLE IF NOT EXISTS paciente (id_paciente INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, dni VARCHAR(15), fecha_nacimiento DATE, telefono VARCHAR(20), direccion VARCHAR(255), canal_aviso VARCHAR(20) DEFAULT 'WhatsApp', sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja', alergias VARCHAR(100) DEFAULT '', tipo_cobertura VARCHAR(50) DEFAULT 'EPS')");
             stmt.execute("CREATE TABLE IF NOT EXISTS medico (id_medico INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, cmp VARCHAR(20), id_especialidad INT, id_sede INT, estado VARCHAR(20))");
             stmt.execute("CREATE TABLE IF NOT EXISTS personal_administrativo (id_personal INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, id_sede INT, codigo_empleado VARCHAR(20), cargo VARCHAR(100))");
             stmt.execute("CREATE TABLE IF NOT EXISTS sede (id_sede INT AUTO_INCREMENT PRIMARY KEY, codigo VARCHAR(20), nombre VARCHAR(100), direccion VARCHAR(255), telefono VARCHAR(20), estado VARCHAR(20))");
@@ -134,6 +134,11 @@ public class DatabaseConfig {
             stmt.execute("CREATE TABLE IF NOT EXISTS notificacion (id_notificacion INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, id_cita INT, tipo VARCHAR(50), canal VARCHAR(20) DEFAULT 'PLATAFORMA', mensaje TEXT, fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP, estado_envio VARCHAR(20) DEFAULT 'ENVIADA', leida INT DEFAULT 0)");
             stmt.execute("CREATE TABLE IF NOT EXISTS auditoria_seguridad (id_auditoria INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, ip_origen VARCHAR(45), evento VARCHAR(100), descripcion TEXT, sospechoso BOOLEAN DEFAULT FALSE, fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN canal_aviso VARCHAR(20) DEFAULT 'WhatsApp'"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja'"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN alergias VARCHAR(100) DEFAULT ''"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'"); } catch (Exception ignored) {}
+
             // Inserciones iniciales
             stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (1, 'Roberto', 'Vargas', 'admin@clinicainternacional.pe', 'hash', 'ADMINISTRADOR', TRUE)");
             stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (2, 'Marina', 'Salvatierra', 'personal@clinicainternacional.pe', 'hash', 'PERSONAL_ADMINISTRATIVO', TRUE)");
@@ -141,7 +146,7 @@ public class DatabaseConfig {
             stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (4, 'Elena', 'Rostova K.', 'erostova@clinicainternacional.pe', 'hash', 'MEDICO', TRUE)");
             stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (5, 'Jorge', 'Valdivia Núñez', 'jorge.valdivia@correo.com', 'hash', 'PACIENTE', TRUE)");
             
-            stmt.execute("INSERT INTO paciente (id_paciente, id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (1, 5, '10492837', '1976-05-14', '+51 987 654 321', 'Av. Las Palmeras 450')");
+            stmt.execute("INSERT INTO paciente (id_paciente, id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (1, 5, '10492837', '1976-05-14', '+51 987 654 321', 'Av. Las Palmeras 450', 'WhatsApp', 'Sede San Borja', '', 'EPS')");
             stmt.execute("INSERT INTO medico (id_medico, id_usuario, cmp, id_especialidad, id_sede, estado) VALUES (1, 3, 'CMP 45211', 1, 1, 'ACTIVO')");
             stmt.execute("INSERT INTO medico (id_medico, id_usuario, cmp, id_especialidad, id_sede, estado) VALUES (2, 4, 'CMP 45892', 2, 2, 'ACTIVO')");
             

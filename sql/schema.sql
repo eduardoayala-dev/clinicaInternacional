@@ -57,6 +57,10 @@ CREATE TABLE paciente (
     fecha_nacimiento DATE NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     direccion VARCHAR(255) NOT NULL,
+    canal_aviso VARCHAR(20) DEFAULT 'WhatsApp',
+    sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja',
+    alergias VARCHAR(100) DEFAULT NULL,
+    tipo_cobertura VARCHAR(50) DEFAULT 'EPS',
     CONSTRAINT fk_paciente_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE,
     INDEX idx_paciente_dni (dni)
 ) ENGINE=InnoDB;
