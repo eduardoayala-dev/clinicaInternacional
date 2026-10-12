@@ -465,6 +465,48 @@ html, body {
 }
 
 /* ==========================================================================
+   VISTA DE RECUPERACIÓN DE CONTRASEÑA
+   ========================================================================== */
+.recovery-info-card {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    background-color: #f0f9ff;
+    border: 1px solid #bae6fd;
+    border-radius: var(--radius-md);
+    padding: 14px 16px;
+    margin-top: 20px;
+    margin-bottom: 24px;
+    font-size: 13.5px;
+    color: #0369a1;
+    line-height: 1.45;
+}
+
+.recovery-info-card svg,
+.recovery-info-card i {
+    color: var(--primary-blue);
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.btn-back-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--primary-blue);
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.btn-back-link:hover {
+    color: var(--primary-blue-hover);
+    text-decoration: underline;
+}
+
+/* ==========================================================================
    VISTA DE REGISTRO - ESTILO TARJETAS SECCIONADAS (01, 02, 03, 04)
    ========================================================================== */
 .reg-header-row {

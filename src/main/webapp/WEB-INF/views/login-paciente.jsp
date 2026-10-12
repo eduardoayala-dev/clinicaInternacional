@@ -119,7 +119,7 @@
 
                     <!-- Olvidó contraseña -->
                     <div class="forgot-pwd-row">
-                        <a href="javascript:void(0)" onclick="alert('Para restablecer su contraseña, por favor acérquese al módulo de admisión o llame al Call Center de Citas (01 619-6161).');" class="forgot-pwd-link">
+                        <a href="javascript:void(0)" onclick="toggleView('view-recovery')" class="forgot-pwd-link">
                             ¿Olvidó su contraseña?
                         </a>
                     </div>
@@ -144,6 +144,43 @@
                 <div class="auth-help-footer">
                     ¿Necesita ayuda? Contactar call center citas
                 </div>
+            </section>
+
+            <!-- VISTA 3: RECUPERAR CONTRASEÑA -->
+            <section id="view-recovery" class="auth-view">
+                <div class="auth-header">
+                    <h2 class="auth-title">Recuperar contraseña</h2>
+                    <p class="auth-subtitle">Ingresa el correo con el que creaste tu cuenta.</p>
+                </div>
+
+                <div id="recoverySuccessAlert" class="alert-success" style="display: none;"></div>
+
+                <form id="recoveryForm" onsubmit="handleRecoverySubmit(event)">
+                    <div class="form-group">
+                        <label class="form-label" for="recoveryEmail">Correo electrónico registrado *</label>
+                        <div class="input-box has-right-icon">
+                            <input type="email" id="recoveryEmail" name="recoveryEmail" class="form-input" required placeholder="correo@ejemplo.com">
+                            <span class="btn-toggle-eye" style="pointer-events: none;">
+                                <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn-submit-primary">
+                        Enviar enlace de recuperación
+                    </button>
+
+                    <div class="recovery-info-card">
+                        <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
+                        <span>Si el correo está registrado, te enviaremos un enlace para crear una nueva contraseña.</span>
+                    </div>
+
+                    <div style="margin-top: 16px;">
+                        <a href="javascript:void(0)" onclick="toggleView('view-login')" class="btn-back-link">
+                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Volver a iniciar sesión
+                        </a>
+                    </div>
+                </form>
             </section>
 
             <!-- VISTA 2: CREAR CUENTA DE PACIENTE -->
@@ -369,22 +406,66 @@
     }
 
     function toggleView(targetId) {
-        const loginView = document.getElementById('view-login');
-        const registerView = document.getElementById('view-register');
+        const currentView = document.querySelector('.auth-view.active');
+        const targetView = document.getElementById(targetId);
         const container = document.getElementById('mainContainer');
 
-        if (targetId === 'view-register') {
-            container.classList.add('is-registering');
-            loginView.classList.remove('active');
-            registerView.classList.add('active');
-            document.getElementById('formPane').scrollTop = 0;
-        } else {
-            container.classList.remove('is-registering');
-            registerView.classList.remove('active');
-            loginView.classList.add('active');
-            document.getElementById('formPane').scrollTop = 0;
+        if (!targetView || currentView === targetView) return;
+
+        // Transición de salida suave (fade out y leve elevación)
+        if (currentView) {
+            currentView.style.transition = 'opacity 0.16s ease-out, transform 0.16s ease-out';
+            currentView.style.opacity = '0';
+            currentView.style.transform = 'translateY(-6px)';
         }
-        lucide.createIcons();
+
+        setTimeout(() => {
+            document.querySelectorAll('.auth-view').forEach(v => {
+                v.classList.remove('active');
+                v.style.opacity = '';
+                v.style.transform = '';
+                v.style.transition = '';
+            });
+
+            if (targetId === 'view-register') {
+                container.classList.add('is-registering');
+            } else {
+                container.classList.remove('is-registering');
+            }
+
+            // Preparar target para entrada suave
+            targetView.style.opacity = '0';
+            targetView.style.transform = 'translateY(12px)';
+            targetView.classList.add('active');
+
+            // Forzar reflow del DOM
+            void targetView.offsetHeight;
+
+            // Transición de entrada suave (fade in y descenso sutil a posición normal)
+            targetView.style.transition = 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
+            targetView.style.opacity = '1';
+            targetView.style.transform = 'translateY(0)';
+
+            document.getElementById('formPane').scrollTop = 0;
+            lucide.createIcons();
+
+            setTimeout(() => {
+                targetView.style.transition = '';
+                targetView.style.opacity = '';
+                targetView.style.transform = '';
+            }, 300);
+        }, 160);
+    }
+
+    function handleRecoverySubmit(e) {
+        e.preventDefault();
+        const email = document.getElementById('recoveryEmail').value;
+        const alertBox = document.getElementById('recoverySuccessAlert');
+        if (alertBox) {
+            alertBox.style.display = 'flex';
+            alertBox.innerHTML = '<i data-lucide="check-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i> <span>Hemos enviado un correo a <strong>' + email + '</strong> con las instrucciones para restablecer su contraseña.</span>';
+            lucide.createIcons({root: alertBox});
+        }
     }
 
     function selectChannel(pillEl) {
