@@ -125,10 +125,12 @@ public class MedicoDAO {
 
     public Map<String, Object> obtenerDetallesMedico(int idMedico) {
         Map<String, Object> map = new HashMap<>();
-        String sql = "SELECT m.id_medico, u.nombres, u.apellidos, e.id_especialidad, e.nombre AS especialidad " +
+        String sql = "SELECT m.id_medico, m.cmp, u.nombres, u.apellidos, e.id_especialidad, e.nombre AS especialidad, " +
+                     "s.id_sede, s.nombre AS sede_nombre " +
                      "FROM medico m " +
                      "INNER JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
                      "WHERE m.id_medico = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -141,9 +143,12 @@ public class MedicoDAO {
                     String cleanNombre = rawNombre.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "").replaceAll("\\s+", " ").trim();
                     String nombreCompleto = "Dr. " + cleanNombre;
                     map.put("idMedico", rs.getInt("id_medico"));
+                    map.put("cmp", rs.getString("cmp"));
                     map.put("nombreMedico", nombreCompleto);
                     map.put("idEspecialidad", rs.getInt("id_especialidad"));
-                    map.put("especialidad", rs.getString("especialidad"));
+                    map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+                    map.put("idSede", rs.getInt("id_sede"));
+                    map.put("sedeNombre", rs.getString("sede_nombre") != null ? rs.getString("sede_nombre") : "Sede San Borja");
                 }
             }
         } catch (Exception e) {
