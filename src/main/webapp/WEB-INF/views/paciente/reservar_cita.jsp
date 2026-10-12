@@ -1240,7 +1240,7 @@
             const diaNum = d.getDate();
             const mesNom = meses[d.getMonth()];
             const turnoNom = turno === 'TARDE' ? 'Turno tarde' : (turno === 'MANANA' ? 'Turno mañana' : 'Turno disponible');
-            return `${diaNom} ${diaNum} ${mesNom} · ${turnoNom}`;
+            return diaNom + ' ' + diaNum + ' ' + mesNom + ' · ' + turnoNom;
         }
 
         // --- CARGA Y RENDERIZADO DE MÉDICOS Y HORARIOS ---
