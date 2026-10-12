@@ -89,9 +89,22 @@ public class RegistroPacienteServlet extends HttpServlet {
         boolean exito = authService.registrarPaciente(u, p);
 
         if (exito) {
-            response.sendRedirect(request.getContextPath() + "/login?msg=registro_exitoso");
+            jakarta.servlet.http.HttpSession oldSession = request.getSession(false);
+            if (oldSession != null) {
+                oldSession.invalidate();
+            }
+            jakarta.servlet.http.HttpSession newSession = request.getSession(true);
+            newSession.setAttribute("usuarioLogueado", u);
+            newSession.setAttribute("rol", "PACIENTE");
+            newSession.setAttribute("nombreUsuario", u.getNombreCompleto());
+            
+            String canalAviso = request.getParameter("canalAviso");
+            newSession.setAttribute("canalPreferido", (canalAviso != null && !canalAviso.isEmpty()) ? canalAviso : "WhatsApp");
+            newSession.setMaxInactiveInterval(30 * 60);
+
+            response.sendRedirect(request.getContextPath() + "/paciente/dashboard?bienvenida=1");
         } else {
-            request.getSession().setAttribute("registerError", "Ocurrió un error al crear la cuenta. Inténtelo de nuevo.");
+            request.getSession(true).setAttribute("registerError", "Ocurrió un error al crear la cuenta. Inténtelo de nuevo.");
             response.sendRedirect(request.getContextPath() + "/login?action=register");
         }
     }
