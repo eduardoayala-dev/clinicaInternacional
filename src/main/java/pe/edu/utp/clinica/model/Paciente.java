@@ -71,12 +71,13 @@ public class Paciente {
     public void setTipoCobertura(String tipoCobertura) { this.tipoCobertura = tipoCobertura; }
 
     public String getCodigoRegistro() {
-        return "PAC-" + String.format("%06d", idPaciente > 0 ? idPaciente : 184);
+        int id = idPaciente > 0 ? idPaciente : (usuarioId > 0 ? usuarioId : 0);
+        return "PAC-" + String.format("%06d", id);
     }
 
     public String getEdadCalculada() {
         if (fechaNacimiento == null) {
-            return "41 años";
+            return "--";
         }
         int anios = Period.between(fechaNacimiento, LocalDate.now()).getYears();
         return anios + " años";

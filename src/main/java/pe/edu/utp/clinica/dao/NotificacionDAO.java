@@ -96,6 +96,9 @@ public class NotificacionDAO {
     }
 
     public List<Map<String, Object>> obtenerNotificacionesUsuario(int idUsuario) {
+        if (idUsuario > 1) {
+            limpiarNotificacionesFicticias(idUsuario);
+        }
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT id_notificacion, id_cita, tipo, mensaje, fecha_envio, leida " +
                      "FROM notificacion WHERE id_usuario = ? ORDER BY fecha_envio DESC";
@@ -111,11 +114,24 @@ public class NotificacionDAO {
             e.printStackTrace();
         }
 
-        if (lista.isEmpty()) {
+        if (lista.isEmpty() && idUsuario == 1) {
             sincronizarNotificacionesIniciales(idUsuario);
             return obtenerNotificacionesUsuarioDirecto(idUsuario);
         }
         return lista;
+    }
+
+    private void limpiarNotificacionesFicticias(int idUsuario) {
+        if (idUsuario <= 1) return;
+        String sqlClean = "DELETE FROM notificacion WHERE id_usuario = ? AND id_cita IS NULL AND (" +
+                          "mensaje LIKE '%Confirma tu cita del mié 14 oct%' OR " +
+                          "mensaje LIKE '%Registro en lista de espera de Dermatología%' OR " +
+                          "mensaje LIKE '%CI-2026-004821%')";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlClean)) {
+            ps.setInt(1, idUsuario);
+            ps.executeUpdate();
+        } catch (Exception ignored) {}
     }
 
     private List<Map<String, Object>> obtenerNotificacionesUsuarioDirecto(int idUsuario) {
@@ -137,6 +153,7 @@ public class NotificacionDAO {
     }
 
     public void sincronizarNotificacionesIniciales(int idUsuario) {
+        if (idUsuario != 1) return;
         String sqlIns = "INSERT INTO notificacion (id_usuario, id_cita, tipo, canal, mensaje, fecha_envio, estado_envio, leida) VALUES (?, ?, ?, 'PLATAFORMA', ?, ?, 'ENVIADA', ?)";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlIns)) {
@@ -172,14 +189,19 @@ public class NotificacionDAO {
 
     public int contarNotificacionesSinLeer(int idUsuario) {
         if (idUsuario <= 0) return 0;
+        if (idUsuario > 1) {
+            limpiarNotificacionesFicticias(idUsuario);
+        }
         String sql = "SELECT COUNT(*) FROM notificacion WHERE id_usuario = ? AND leida = 0";
         try (Connection conn = DatabaseConfig.getConnection()) {
-            String sqlCheck = "SELECT COUNT(*) FROM notificacion WHERE id_usuario = ?";
-            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
-                psCheck.setInt(1, idUsuario);
-                try (ResultSet rsCheck = psCheck.executeQuery()) {
-                    if (rsCheck.next() && rsCheck.getInt(1) == 0) {
-                        sincronizarNotificacionesIniciales(idUsuario);
+            if (idUsuario == 1) {
+                String sqlCheck = "SELECT COUNT(*) FROM notificacion WHERE id_usuario = ?";
+                try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                    psCheck.setInt(1, idUsuario);
+                    try (ResultSet rsCheck = psCheck.executeQuery()) {
+                        if (rsCheck.next() && rsCheck.getInt(1) == 0) {
+                            sincronizarNotificacionesIniciales(idUsuario);
+                        }
                     }
                 }
             }

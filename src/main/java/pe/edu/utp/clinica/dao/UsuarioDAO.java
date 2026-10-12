@@ -113,7 +113,7 @@ public class UsuarioDAO {
 
     public boolean crearCuentaPaciente(Usuario u, pe.edu.utp.clinica.model.Paciente p) {
         String sqlUsuario = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
-        String sqlPaciente = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, ?, ?, ?)";
+        String sqlPaciente = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
 
         Connection conn = null;
         try {
@@ -132,6 +132,7 @@ public class UsuarioDAO {
                 try (ResultSet rs = stmtUsuario.getGeneratedKeys()) {
                     if (rs.next()) {
                         int userId = rs.getInt(1);
+                        u.setIdUsuario(userId);
                         p.setUsuarioId(userId);
                     } else {
                         throw new SQLException("No se pudo obtener el ID del usuario insertado.");
@@ -139,13 +140,23 @@ public class UsuarioDAO {
                 }
             }
 
-            try (PreparedStatement stmtPaciente = conn.prepareStatement(sqlPaciente)) {
+            try (PreparedStatement stmtPaciente = conn.prepareStatement(sqlPaciente, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 stmtPaciente.setInt(1, p.getUsuarioId());
                 stmtPaciente.setString(2, p.getDni());
                 stmtPaciente.setDate(3, java.sql.Date.valueOf(p.getFechaNacimiento()));
                 stmtPaciente.setString(4, p.getTelefono());
                 stmtPaciente.setString(5, p.getDireccion());
+                stmtPaciente.setString(6, p.getCanalAviso() != null ? p.getCanalAviso() : "WhatsApp");
+                stmtPaciente.setString(7, p.getSedePreferida() != null ? p.getSedePreferida() : "Sede San Borja");
+                stmtPaciente.setString(8, p.getAlergias() != null ? p.getAlergias() : "");
+                stmtPaciente.setString(9, p.getTipoCobertura() != null ? p.getTipoCobertura() : "EPS");
                 stmtPaciente.executeUpdate();
+
+                try (ResultSet rsP = stmtPaciente.getGeneratedKeys()) {
+                    if (rsP.next()) {
+                        p.setIdPaciente(rsP.getInt(1));
+                    }
+                }
             }
 
             conn.commit();

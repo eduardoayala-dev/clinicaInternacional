@@ -26,7 +26,7 @@
     }
 
     Integer numNotifSinLeer = (Integer) request.getAttribute("numNotifSinLeer");
-    if (numNotifSinLeer == null) numNotifSinLeer = 2;
+    if (numNotifSinLeer == null) numNotifSinLeer = 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
