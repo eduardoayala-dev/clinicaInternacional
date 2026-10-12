@@ -36,8 +36,8 @@ public class ReservarCitaServlet extends HttpServlet {
             String hora = request.getParameter("hora");
             String nivelUrgencia = request.getParameter("urgencia"); // ALTA, MEDIA, BAJA
 
-            // Asumimos que idUsuario = idPaciente (En la realidad sería una consulta adicional a paciente)
-            int idPaciente = usuario.getIdUsuario();
+            // Obtener el id_paciente correspondiente al id_usuario de la sesión
+            int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
 
             boolean exito = citaDAO.reservarCita(idPaciente, idMedico, fecha, hora, nivelUrgencia);
 

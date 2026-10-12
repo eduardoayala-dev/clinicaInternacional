@@ -1,10 +1,14 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="java.util.List" %>
+<%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
     if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
     
+    List<Map<String, Object>> listaEspecialidades = (List<Map<String, Object>>) request.getAttribute("listaEspecialidades");
+
     // Obtener iniciales del paciente
     String inicialesPaciente = "EA";
     if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
@@ -15,6 +19,9 @@
             inicialesPaciente = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
         }
     }
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -26,582 +33,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --primary-light: #eff6ff;
-            --bg-page: #f0f8ff;
-            --bg-card: #ffffff;
-            --text-dark: #0f172a;
-            --text-gray: #64748b;
-            --text-light: #94a3b8;
-            --border-light: #e2e8f0;
-            --border-focus: #93c5fd;
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            --sidebar-width: 260px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-
-        body {
-            background-color: var(--bg-page);
-            color: var(--text-dark);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* SIDEBAR (Identico al dashboard) */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--bg-card);
-            border-right: 1px solid var(--border-light);
-            display: flex;
-            flex-direction: column;
-            padding: 24px 20px;
-            flex-shrink: 0;
-            z-index: 10;
-        }
-
-        .brand-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 40px;
-            padding-left: 8px;
-        }
-        .brand-container img { height: 36px; }
-
-        .nav-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex: 1;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            color: var(--text-gray);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .nav-item:hover {
-            background-color: #f8fafc;
-            color: var(--text-dark);
-        }
-
-        .nav-item.active {
-            background-color: #eff6ff;
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        .user-profile-bottom {
-            margin-top: auto;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 8px 8px 8px;
-            border-top: 1px solid var(--border-light);
-            cursor: pointer;
-            text-decoration: none;
-        }
-        
-        .avatar-initials {
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; font-weight: 600; color: var(--primary);
-            background-color: #eff6ff;
-        }
-        .avatar-sm { width: 36px; height: 36px; font-size: 13px; flex-shrink: 0; }
-
-        .user-name-sm { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
-        .user-role-sm { font-size: 11px; color: var(--text-gray); }
-
-        /* MAIN CONTENT */
-        .main-content {
-            flex: 1;
-            padding: 40px 50px;
-            overflow-y: auto;
-        }
-
-        /* WIZARD CONTAINER */
-        .wizard-container {
-            width: 100%;
-            max-width: 900px;
-        }
-
-        /* HEADER */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 32px;
-            width: 100%;
-        }
-
-        .header-title { 
-            font-family: 'Inter', sans-serif;
-            font-size: 28px; 
-            font-weight: 700; 
-            color: var(--text-dark); 
-            margin-bottom: 4px; 
-            letter-spacing: -0.5px; 
-        }
-        
-        .header-subtitle { 
-            font-size: 14px; 
-            color: var(--text-gray); 
-        }
-
-        .btn-bell {
-            width: 44px; height: 44px;
-            border-radius: 12px;
-            background: #ffffff;
-            border: 1px solid var(--border-light);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-gray);
-            position: relative;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
-            content: '';
-            position: absolute; top: 10px; right: 12px;
-            width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-            border: 2px solid #ffffff;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-            transition: all 0.2s;
-        }
-        .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3); }
-
-        /* STEPPER */
-        .stepper {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 16px;
-            margin-bottom: 40px;
-            flex-wrap: wrap;
-        }
-
-        .step {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-light);
-        }
-
-        .step.active {
-            color: var(--primary);
-        }
-
-        .step-num {
-            font-size: 12px;
-        }
-
-        .step-divider {
-            height: 1px;
-            width: 40px;
-            background-color: var(--border-light);
-        }
-
-        /* MAIN CARD */
-        .card {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 40px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.02);
-        }
-
-        .card-header {
-            margin-bottom: 24px;
-        }
-
-        .card-title {
-            font-size: 20px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 6px;
-        }
-
-        .card-subtitle {
-            font-size: 14px;
-            color: var(--text-gray);
-        }
-
-        /* SEARCH INPUT */
-        .search-container {
-            position: relative;
-            margin-bottom: 32px;
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 16px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: var(--text-light);
-        }
-
-        .search-input {
-            width: 100%;
-            background: #f8fafc;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            padding: 14px 16px 14px 44px;
-            font-size: 15px;
-            color: var(--text-dark);
-            outline: none;
-            transition: all 0.2s;
-        }
-
-        .search-input:focus {
-            border-color: var(--border-focus);
-            background: #ffffff;
-            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
-        }
-
-        .search-input::placeholder { color: var(--text-light); }
-
-        /* SPECIALTIES GRID */
-        .specialty-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-            gap: 16px;
-            margin-bottom: 40px;
-        }
-
-        .specialty-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #ffffff;
-        }
-
-        .specialty-item:hover {
-            border-color: var(--border-focus);
-            background: #f8fafc;
-        }
-
-        .specialty-item.selected {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            box-shadow: 0 0 0 1px var(--primary);
-        }
-
-        .spec-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .spec-icon-wrapper {
-            width: 40px; height: 40px;
-            border-radius: 10px;
-            background: var(--primary-light);
-            color: var(--primary);
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .spec-name {
-            font-size: 15px;
-            font-weight: 600;
-            color: var(--text-dark);
-            margin-bottom: 2px;
-        }
-
-        .spec-meta {
-            font-size: 12px;
-            color: var(--text-gray);
-        }
-
-        .radio-circle {
-            width: 20px; height: 20px;
-            border-radius: 50%;
-            border: 2px solid var(--border-light);
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.2s;
-        }
-
-        .specialty-item.selected .radio-circle {
-            border-color: var(--primary);
-        }
-
-        .specialty-item.selected .radio-circle::after {
-            content: '';
-            width: 10px; height: 10px;
-            background: var(--primary);
-            border-radius: 50%;
-        }
-
-        /* DOCTOR CARD */
-        .doctor-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-            gap: 16px;
-            margin-bottom: 40px;
-        }
-
-        .doctor-item {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 20px;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-lg);
-            cursor: pointer;
-            transition: all 0.2s;
-            background: #ffffff;
-        }
-
-        .doctor-item:hover {
-            border-color: var(--border-focus);
-            background: #f8fafc;
-        }
-
-        .doctor-item.selected {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            box-shadow: 0 0 0 1px var(--primary);
-        }
-
-        .doc-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-
-        .doc-avatar {
-            width: 48px; height: 48px;
-            border-radius: 50%;
-            background: #e2e8f0;
-            display: flex; align-items: center; justify-content: center;
-            font-weight: 700; color: #475569; font-size: 16px;
-        }
-
-        .doc-name {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--text-dark);
-            margin-bottom: 4px;
-        }
-
-        .doc-cmp {
-            font-size: 12px;
-            color: var(--text-gray);
-        }
-
-        /* FECHAS Y HORARIOS (STEP 3) */
-        /* FECHAS Y HORARIOS (STEP 3) */
-        .date-container {
-            display: flex;
-            gap: 12px;
-            overflow-x: auto;
-            padding: 6px 4px 16px 4px;
-            margin-bottom: 24px;
-            scroll-behavior: smooth;
-        }
-
-        .date-container::-webkit-scrollbar {
-            height: 6px;
-        }
-        .date-container::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
-        }
-        .date-container::-webkit-scrollbar-thumb {
-            background-color: #cbd5e1;
-            border-radius: 10px;
-        }
-        .date-container::-webkit-scrollbar-thumb:hover {
-            background-color: var(--primary);
-        }
-
-        .date-item {
-            flex: 0 0 auto;
-            padding: 14px 18px;
-            border: 1.5px solid var(--border-light);
-            border-radius: var(--radius-md);
-            cursor: pointer;
-            text-align: center;
-            background: #ffffff;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            min-width: 86px;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            user-select: none;
-        }
-
-        .date-item:hover {
-            border-color: var(--primary);
-            background: var(--primary-light);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.1);
-        }
-
-        .date-item.selected {
-            border-color: var(--primary);
-            background: var(--primary);
-            color: #ffffff;
-            transform: translateY(-2px);
-            box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-        }
-
-        .date-weekday {
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-gray);
-            margin-bottom: 4px;
-        }
-
-        .date-num {
-            font-size: 22px;
-            font-weight: 800;
-            color: var(--text-dark);
-            line-height: 1.1;
-            margin-bottom: 4px;
-        }
-
-        .date-month {
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            color: var(--text-gray);
-        }
-
-        .date-item.selected .date-weekday,
-        .date-item.selected .date-num,
-        .date-item.selected .date-month {
-            color: #ffffff !important;
-        }
-
-        .time-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
-            gap: 12px;
-        }
-
-        .time-chip {
-            padding: 12px;
-            border: 1.5px solid var(--border-light);
-            border-radius: var(--radius-md);
-            text-align: center;
-            font-size: 14px;
-            font-weight: 600;
-            color: var(--text-dark);
-            cursor: pointer;
-            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            background: #ffffff;
-        }
-
-        .time-chip:hover {
-            border-color: var(--primary);
-            color: var(--primary);
-            background: var(--primary-light);
-            transform: translateY(-1px);
-        }
-
-        .time-chip.selected {
-            background: var(--primary);
-            color: #ffffff;
-            border-color: var(--primary);
-            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.25);
-            transform: translateY(-1px);
-        }
-
-        /* BOTTOM ACTIONS */
-        .actions {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-top: 24px;
-            border-top: 1px solid var(--border-light);
-            padding-top: 24px;
-        }
-
-        .btn-back {
-            color: var(--text-gray);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex; align-items: center; gap: 8px;
-            transition: color 0.2s;
-        }
-        .btn-back:hover { color: var(--text-dark); }
-
-        .btn-continue {
-            background: #93c5fd;
-            color: #ffffff;
-            border: none;
-            padding: 12px 28px;
-            border-radius: 30px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: not-allowed;
-            display: flex; align-items: center; gap: 8px;
-            transition: all 0.2s;
-        }
-
-        .btn-continue.active {
-            background: var(--primary);
-            cursor: pointer;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-        }
-
-        .btn-continue.active:hover {
-            background: var(--primary-hover);
-            transform: translateY(-1px);
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-            .card { padding: 24px; }
-            .specialty-grid { grid-template-columns: 1fr; }
-            .stepper { flex-wrap: wrap; justify-content: flex-start; gap: 8px; }
-            .step-divider { display: none; }
-            .step { margin-right: 16px; }
-            body { flex-direction: column; overflow-y: auto; }
-            .sidebar { width: 100%; height: auto; border-right: none; border-bottom: 1px solid var(--border-light); padding: 16px; }
-            .main-content { padding: 24px 16px; }
-        }
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/reservar-cita.css">
 </head>
 <body>
 
@@ -656,7 +89,7 @@
                 <p class="header-subtitle">Completa los pasos para agendar tu consulta médica.</p>
             </div>
             <div style="display: flex; align-items: center;">
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell">
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>">
                     <i data-lucide="bell" style="width: 20px;"></i>
                 </a>
             </div>
@@ -690,74 +123,45 @@
                     </div>
 
                 <div class="specialty-grid">
-                    
+                    <% if (listaEspecialidades != null && !listaEspecialidades.isEmpty()) {
+                        for (Map<String, Object> esp : listaEspecialidades) {
+                            int idEsp = (Integer) esp.get("id");
+                            String nombreEsp = (String) esp.get("nombre");
+                            int totalMed = esp.get("totalMedicos") != null ? (Integer) esp.get("totalMedicos") : 2;
+                            
+                            String icon = "stethoscope";
+                            String lower = nombreEsp.toLowerCase();
+                            if (lower.contains("cardio")) icon = "heart";
+                            else if (lower.contains("neuro")) icon = "brain";
+                            else if (lower.contains("general")) icon = "stethoscope";
+                            else if (lower.contains("trauma")) icon = "bone";
+                            else if (lower.contains("derma")) icon = "microscope";
+                            else if (lower.contains("gineco")) icon = "baby";
+                    %>
+                    <div class="specialty-item" onclick="selectSpecialty(this, '<%= idEsp %>')">
+                        <div class="spec-info">
+                            <div class="spec-icon-wrapper"><i data-lucide="<%= icon %>" style="width: 20px;"></i></div>
+                            <div>
+                                <div class="spec-name"><%= nombreEsp %></div>
+                                <div class="spec-meta"><%= totalMed %> <%= totalMed == 1 ? "médico disponible" : "médicos disponibles" %></div>
+                            </div>
+                        </div>
+                        <div class="radio-circle"></div>
+                    </div>
+                    <%  }
+                    } else { %>
                     <div class="specialty-item" onclick="selectSpecialty(this, 1)">
                         <div class="spec-info">
                             <div class="spec-icon-wrapper"><i data-lucide="heart" style="width: 20px;"></i></div>
                             <div>
                                 <div class="spec-name">Cardiología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
+                                <div class="spec-meta">2 médicos disponibles</div>
                             </div>
                         </div>
                         <div class="radio-circle"></div>
                     </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 2)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="brain" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Neurología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 3)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="stethoscope" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Medicina General</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 4)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="bone" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Traumatología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 5)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="microscope" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Dermatología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    <div class="specialty-item" onclick="selectSpecialty(this, 6)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="baby" style="width: 20px;"></i></div>
-                            <div>
-                                <div class="spec-name">Ginecología</div>
-                                <div class="spec-meta">3 médicos disponibles</div>
-                            </div>
-                        </div>
-                        <div class="radio-circle"></div>
-                    </div>
-
-                    </div>
+                    <% } %>
+                </div>
                 </div> <!-- END STEP 1 -->
 
                 <!-- PASO 2: MEDICO -->
@@ -930,7 +334,9 @@
         lucide.createIcons();
 
         let selectedEspecialidad = null;
+        let selectedEspecialidadNombre = "${preEspNombre}";
         let selectedMedico = null;
+        let selectedMedicoNombre = "${preMedNombre}";
         let selectedFecha = null;
         let selectedHora = null;
         let currentStep = 1;
@@ -939,6 +345,8 @@
             document.querySelectorAll('.specialty-item').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedEspecialidad = id;
+            const specElem = element.querySelector('.spec-name');
+            if (specElem) selectedEspecialidadNombre = specElem.textContent.trim();
 
             const btn = document.getElementById('btnContinue');
             btn.classList.add('active');
@@ -949,6 +357,8 @@
             document.querySelectorAll('.doctor-item').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedMedico = id;
+            const docElem = element.querySelector('.doc-name');
+            if (docElem) selectedMedicoNombre = docElem.textContent.trim();
 
             const btn = document.getElementById('btnContinue');
             btn.classList.add('active');
@@ -1022,7 +432,8 @@
                 fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
                     .then(response => response.json())
                     .then(data => {
-                        renderDates(data);
+                        selectedFecha = null;
+                        selectedHora = null;
                         document.getElementById('step2-content').style.display = 'none';
                         document.getElementById('step3-content').style.display = 'block';
                         document.getElementById('stepper-2').classList.remove('active');
@@ -1031,11 +442,11 @@
                         btnText.textContent = "Continuar";
                         btnIcon.style.display = "block";
                         
-                        selectedFecha = null;
-                        selectedHora = null;
                         this.classList.remove('active');
                         this.disabled = true;
                         currentStep = 3;
+
+                        renderDates(data);
                     })
                     .catch(err => {
                         console.error(err);
@@ -1052,10 +463,22 @@
                 document.getElementById('stepper-4').classList.add('active');
                 
                 // Llenar resumen
-                const medicoItem = document.querySelector('.doctor-item.selected .doc-name');
-                const specItem = document.querySelector('.specialty-item.selected .spec-name');
-                document.getElementById('resumenMedico').textContent = medicoItem ? medicoItem.textContent : selectedMedico;
-                document.getElementById('resumenEspecialidad').textContent = specItem ? specItem.textContent : selectedEspecialidad;
+                let medName = selectedMedicoNombre;
+                if (!medName || medName === "") {
+                    const medicoItem = document.querySelector('.doctor-item.selected .doc-name');
+                    medName = medicoItem ? medicoItem.textContent.trim() : "${preMedNombre}";
+                }
+                if (!medName || medName === "" || medName.includes("null")) medName = "Dr. Médico Especialista";
+
+                let espName = selectedEspecialidadNombre;
+                if (!espName || espName === "") {
+                    const specItem = document.querySelector('.specialty-item.selected .spec-name');
+                    espName = specItem ? specItem.textContent.trim() : "${preEspNombre}";
+                }
+                if (!espName || espName === "" || espName.includes("null")) espName = "Consulta Médica";
+
+                document.getElementById('resumenMedico').textContent = medName;
+                document.getElementById('resumenEspecialidad').textContent = espName;
                 document.getElementById('resumenFecha').textContent = selectedFecha;
                 document.getElementById('resumenHora').textContent = selectedHora;
 
@@ -1100,10 +523,25 @@
                 document.getElementById('stepper-3').classList.remove('active');
                 document.getElementById('stepper-2').classList.add('active');
                 
+                this.innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cambiar Especialidad';
+                
+                const docContainer = document.getElementById('doctorGridContainer');
+                if (!docContainer.children || docContainer.children.length === 0 || docContainer.querySelector('p')) {
+                    const espId = selectedEspecialidad || 1;
+                    docContainer.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1; text-align: center; padding: 20px;">Cargando médicos...</p>';
+                    fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + new Date().getTime())
+                        .then(r => r.json())
+                        .then(data => {
+                            renderDoctors(data);
+                            lucide.createIcons();
+                        });
+                }
+                
                 const btn = document.getElementById('btnContinue');
                 btn.classList.add('active');
                 btn.disabled = false;
                 currentStep = 2;
+                lucide.createIcons();
             } else if (currentStep === 4) {
                 document.getElementById('step4-content').style.display = 'none';
                 document.getElementById('step3-content').style.display = 'block';
@@ -1148,6 +586,9 @@
                 
                 const div = document.createElement('div');
                 div.className = 'doctor-item';
+                if (selectedMedico && idMed === selectedMedico) {
+                    div.classList.add('selected');
+                }
                 div.onclick = function() { selectDoctor(this, idMed); };
                 
                 div.innerHTML = 
@@ -1235,6 +676,12 @@
                     document.getElementById('currentMonthYearLabel').textContent = monthName + ' ' + year;
                 }
             });
+
+            // Auto-seleccionar primer día disponible
+            const firstDateItem = container.querySelector('.date-item');
+            if (firstDateItem) {
+                firstDateItem.click();
+            }
         }
 
         function filterDatesByMonth(monthKey) {
@@ -1293,17 +740,70 @@
                 return;
             }
 
+            // Comprobar si la fecha seleccionada es el día de hoy
+            const hoy = new Date();
+            const yearHoy = hoy.getFullYear();
+            const monthHoy = (hoy.getMonth() + 1 < 10 ? '0' : '') + (hoy.getMonth() + 1);
+            const dayHoy = (hoy.getDate() < 10 ? '0' : '') + hoy.getDate();
+            const fechaHoyStr = yearHoy + '-' + monthHoy + '-' + dayHoy;
+
+            const esHoy = selectedFecha === fechaHoyStr;
+            const ahoraMinutos = hoy.getHours() * 60 + hoy.getMinutes();
+
+            let primerValido = null;
+
             horas.forEach(item => {
                 const horaStr = typeof item === 'string' ? item : (item.hora || item.toString());
                 const div = document.createElement('div');
                 div.className = 'time-chip';
-                div.onclick = function() { selectTime(this, horaStr); };
+
+                let yaTranscurrio = false;
+                if (esHoy) {
+                    const partes = horaStr.split(':');
+                    if (partes.length >= 2) {
+                        const hMin = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10);
+                        if (hMin <= ahoraMinutos) {
+                            yaTranscurrio = true;
+                        }
+                    }
+                }
+
+                if (yaTranscurrio) {
+                    div.classList.add('disabled');
+                    div.title = "Horario no disponible (ya transcurrido)";
+                } else {
+                    div.onclick = function() { selectTime(this, horaStr); };
+                    if (!primerValido) {
+                        primerValido = div;
+                    }
+                }
                 div.textContent = horaStr;
                 container.appendChild(div);
             });
+
+            // Auto-seleccionar primer horario disponible HABILITADO
+            if (primerValido) {
+                primerValido.click();
+            } else {
+                selectedHora = null;
+                const btn = document.getElementById('btnContinue');
+                btn.classList.remove('active');
+                btn.disabled = true;
+                if (esHoy) {
+                    const msg = document.createElement('p');
+                    msg.style.color = '#ef4444';
+                    msg.style.gridColumn = '1/-1';
+                    msg.style.fontSize = '13px';
+                    msg.style.marginTop = '8px';
+                    msg.style.fontWeight = '500';
+                    msg.textContent = 'No quedan turnos disponibles para el resto del día de hoy. Por favor selecciona otro día.';
+                    container.appendChild(msg);
+                }
+            }
         }
 
         function selectTime(element, hora) {
+            if (element.classList.contains('disabled')) return;
             document.querySelectorAll('.time-chip').forEach(item => item.classList.remove('selected'));
             element.classList.add('selected');
             selectedHora = hora;
@@ -1312,6 +812,48 @@
             btn.classList.add('active');
             btn.disabled = false;
         }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            const preMed = "${preMedId}";
+            const preEsp = "${preEspId}";
+            const preMedName = "${preMedNombre}";
+            const preEspName = "${preEspNombre}";
+
+            if (preMed && preMed !== "") {
+                selectedMedico = parseInt(preMed);
+                if (preMedName && preMedName !== "" && !preMedName.includes("null")) {
+                    selectedMedicoNombre = preMedName;
+                }
+                if (preEsp && preEsp !== "") {
+                    selectedEspecialidad = parseInt(preEsp);
+                } else {
+                    selectedEspecialidad = 1;
+                }
+                if (preEspName && preEspName !== "" && !preEspName.includes("null")) {
+                    selectedEspecialidadNombre = preEspName;
+                }
+                
+                // Pre-cargar la lista de médicos de la especialidad por si el usuario hace clic en "Cambiar Médico"
+                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad + '&_t=' + new Date().getTime())
+                    .then(r => r.json())
+                    .then(data => renderDoctors(data));
+
+                fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
+                    .then(r => r.json())
+                    .then(data => {
+                        renderDates(data);
+                        document.getElementById('step1-content').style.display = 'none';
+                        document.getElementById('step2-content').style.display = 'none';
+                        document.getElementById('step3-content').style.display = 'block';
+                        document.getElementById('stepper-1').classList.remove('active');
+                        document.getElementById('stepper-2').classList.remove('active');
+                        document.getElementById('stepper-3').classList.add('active');
+                        document.getElementById('btnBack').innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cambiar Médico';
+                        currentStep = 3;
+                        lucide.createIcons();
+                    });
+            }
+        });
     </script>
 </body>
 </html>

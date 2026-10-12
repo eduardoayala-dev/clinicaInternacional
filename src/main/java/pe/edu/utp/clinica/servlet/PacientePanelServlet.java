@@ -6,9 +6,13 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "PacientePanelServlet", urlPatterns = {"/paciente/panel"})
 public class PacientePanelServlet extends HttpServlet {
@@ -22,7 +26,14 @@ public class PacientePanelServlet extends HttpServlet {
         }
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
-        request.setAttribute("nombrePaciente", usuario.getNombres() + " " + usuario.getApellidos());
+        int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
+
+        CitaDAO citaDAO = new CitaDAO();
+        int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
+        List<Map<String, Object>> listaActividades = idPaciente > 0 ? citaDAO.obtenerProximasCitasPaciente(idPaciente) : new ArrayList<>();
+
+        request.setAttribute("nombrePaciente", usuario != null ? usuario.getNombres() + " " + usuario.getApellidos() : "Paciente");
+        request.setAttribute("listaActividades", listaActividades);
 
         request.getRequestDispatcher("/WEB-INF/views/paciente/panel.jsp").forward(request, response);
     }

@@ -63,6 +63,13 @@
             <version>8.3.0</version>
         </dependency>
 
+        <!-- H2 Database Engine (Embedded Fallback DB for Instant Execution) -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <version>2.2.224</version>
+        </dependency>
+
         <!-- HikariCP Connection Pool -->
         <dependency>
             <groupId>com.zaxxer</groupId>
@@ -137,6 +144,7 @@
                 <artifactId>jetty-ee10-maven-plugin</artifactId>
                 <version>12.0.8</version>
                 <configuration>
+                    <scanIntervalSeconds>2</scanIntervalSeconds>
                     <webApp>
                         <contextPath>/</contextPath>
                     </webApp>

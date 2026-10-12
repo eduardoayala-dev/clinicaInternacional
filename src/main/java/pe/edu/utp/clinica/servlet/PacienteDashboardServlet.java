@@ -50,74 +50,59 @@ public class PacienteDashboardServlet extends HttpServlet {
             request.setAttribute("listaEspecialidades", citaDAO.obtenerEspecialidades());
             request.setAttribute("listaSedes", citaDAO.obtenerSedes());
             request.setAttribute("nombrePaciente", nombrePaciente);
+            String preMedId = request.getParameter("medicoId");
+            String preEspId = request.getParameter("especialidadId");
+            String preMedNombre = "";
+            String preEspNombre = "";
+
+            if (preMedId != null && !preMedId.trim().isEmpty()) {
+                try {
+                    int mId = Integer.parseInt(preMedId);
+                    Map<String, Object> det = citaDAO.obtenerDetallesMedico(mId);
+                    if (det != null && !det.isEmpty()) {
+                        preMedNombre = (String) det.get("nombreMedico");
+                        preEspNombre = (String) det.get("especialidad");
+                        if (preEspId == null || preEspId.trim().isEmpty()) {
+                            Object idEsp = det.get("idEspecialidad");
+                            if (idEsp != null) preEspId = String.valueOf(idEsp);
+                        }
+                    }
+                } catch (NumberFormatException e) {
+                    // Ignore parse error
+                }
+            }
+
+            request.setAttribute("preMedId", preMedId != null ? preMedId : "");
+            request.setAttribute("preEspId", preEspId != null ? preEspId : "");
+            request.setAttribute("preMedNombre", preMedNombre != null ? preMedNombre : "");
+            request.setAttribute("preEspNombre", preEspNombre != null ? preEspNombre : "");
             request.getRequestDispatcher("/WEB-INF/views/paciente/reservar_cita.jsp").forward(request, response);
             return;
         }
 
-        // 1. Datos de Alerta de Cupo Anticipado Recuperado (Wireframe - Banner superior)
-        Map<String, String> ofertaAnticipada = new HashMap<>();
-        ofertaAnticipada.put("titulo", "CUPO ANTICIPADO DISPONIBLE POR CANCELACION");
-        ofertaAnticipada.put("especialidad", "Cardiología");
-        ofertaAnticipada.put("medico", "Dr. Carlos Mendoza");
-        ofertaAnticipada.put("fechaOfrecida", "Viernes 18 de Septiembre - 10:15 AM");
-        ofertaAnticipada.put("segundosRestantes", "872"); // ~14m 32s para timer dinámico JS
-        ofertaAnticipada.put("prioridad", "PRIORIDAD ALTA");
+        int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
+        int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
 
-        // 2. Módulo 01: Próxima Cita Agendada Principal (Wireframe + Mockup)
-        Map<String, String> proximaCita = new HashMap<>();
-        proximaCita.put("id", "CIT-2026-9482");
-        proximaCita.put("fechaHora", "Jueves 24 de Setiembre de 2026 - 09:30 AM");
-        proximaCita.put("especialidad", "Cardiología");
-        proximaCita.put("medico", "Dr. Carlos Mendoza");
-        proximaCita.put("cmp", "CMP 45892");
-        proximaCita.put("ubicacion", "Sede Norte - Edificio Consultas A - Consultorio 302");
-        proximaCita.put("modalidad", "Presencial");
-        proximaCita.put("estado", "CONFIRMADA");
-        proximaCita.put("protocolo", "Presentarse 35 min antes con documento de identidad y orden médica");
+        List<Map<String, Object>> listaProximasCitas = idPaciente > 0 ? citaDAO.obtenerProximasCitasPaciente(idPaciente) : new ArrayList<>();
+        List<Map<String, Object>> medicosAsignados = idPaciente > 0 ? citaDAO.obtenerMedicosDePaciente(idPaciente) : new ArrayList<>();
+        List<Map<String, Object>> historialCitas = idPaciente > 0 ? citaDAO.obtenerHistorialPaciente(idPaciente) : new ArrayList<>();
 
-        // 3. Segunda Cita Secundaría (Mockup)
-        Map<String, String> citaSecundaria = new HashMap<>();
-        citaSecundaria.put("id", "CIT-2026-9510");
-        citaSecundaria.put("fechaHora", "Lunes 14 de Septiembre - 10:00 AM");
-        citaSecundaria.put("especialidad", "Neurología");
-        citaSecundaria.put("medico", "Dr. Marcus Okonkwo");
-        citaSecundaria.put("cmp", "CMP 51204");
-        citaSecundaria.put("ubicacion", "Telemedicina - Aula Virtual Sala 04");
-        citaSecundaria.put("modalidad", "Video");
-        citaSecundaria.put("estado", "PENDIENTE_CONFIRMACION");
+        Map<String, Object> proximaCita = !listaProximasCitas.isEmpty() ? listaProximasCitas.get(0) : null;
 
-        List<Map<String, String>> listaProximasCitas = new ArrayList<>();
-        listaProximasCitas.add(proximaCita);
-        listaProximasCitas.add(citaSecundaria);
-
-        // 4. Módulo 02: Estado de Lista de Espera (Wireframe)
-        Map<String, String> listaEspera = new HashMap<>();
-        listaEspera.put("turnoActivo", "#03");
-        listaEspera.put("especialidad", "Dermatología");
-        listaEspera.put("sede", "Sede Central");
-        listaEspera.put("rangoHorario", "08:00 a 13:00 hrs");
-        listaEspera.put("canalNotificacion", "SMS + PORTAL PACIENTE");
-        listaEspera.put("prioridadTriaje", "ESTANDAR / SEGUIMIENTO");
-        listaEspera.put("estadoRegistro", "REGISTRO ACTIVO");
-
-        // 5. Estadísticas Generales (Mockup Pills)
         Map<String, Integer> stats = new HashMap<>();
-        stats.put("proximasCitas", 2);
-        stats.put("medicosAsignados", 4);
-        stats.put("estudiosPendientes", 1);
-        stats.put("consultasTotales", 18);
+        stats.put("proximasCitas", listaProximasCitas.size());
+        stats.put("medicosAsignados", medicosAsignados.size());
+        stats.put("estudiosPendientes", 0);
+        stats.put("consultasTotales", historialCitas.size());
 
-        // 6. Auditoría y Privacidad del Paciente (HIPAA / Ley 29733 Protección Datos Personales)
         String ultimoAcceso = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
         String ipAcceso = request.getRemoteAddr();
 
-        // Enviar variables a la vista JSP
         request.setAttribute("nombrePaciente", nombrePaciente);
         request.setAttribute("emailPaciente", emailPaciente);
-        request.setAttribute("ofertaAnticipada", ofertaAnticipada);
         request.setAttribute("proximaCita", proximaCita);
         request.setAttribute("listaProximasCitas", listaProximasCitas);
-        request.setAttribute("listaEspera", listaEspera);
+        request.setAttribute("medicosAsignados", medicosAsignados);
         request.setAttribute("stats", stats);
         request.setAttribute("ultimoAcceso", ultimoAcceso);
         request.setAttribute("ipAcceso", ipAcceso);

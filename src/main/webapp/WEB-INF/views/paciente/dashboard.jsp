@@ -5,11 +5,11 @@
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
-    if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
+    if (nombrePaciente == null && usuario != null) nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
+    if (nombrePaciente == null) nombrePaciente = "Paciente";
     
-    // Obtener iniciales del paciente
-    String inicialesPaciente = "EA";
-    if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
+    String inicialesPaciente = "P";
+    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
@@ -18,9 +18,17 @@
         }
     }
     
-    Map<String, String> proximaCita = (Map<String, String>) request.getAttribute("proximaCita");
-    List<Map<String, String>> listaProximasCitas = (List<Map<String, String>>) request.getAttribute("listaProximasCitas");
+    Map<String, Object> proximaCita = (Map<String, Object>) request.getAttribute("proximaCita");
+    List<Map<String, Object>> listaProximasCitas = (List<Map<String, Object>>) request.getAttribute("listaProximasCitas");
+    List<Map<String, Object>> medicosAsignados = (List<Map<String, Object>>) request.getAttribute("medicosAsignados");
     Map<String, Integer> stats = (Map<String, Integer>) request.getAttribute("stats");
+    int numProximas = stats != null && stats.get("proximasCitas") != null ? stats.get("proximasCitas") : 0;
+    int numMedicos = stats != null && stats.get("medicosAsignados") != null ? stats.get("medicosAsignados") : 0;
+    int numEstudios = stats != null && stats.get("estudiosPendientes") != null ? stats.get("estudiosPendientes") : 0;
+    int numConsultas = stats != null && stats.get("consultasTotales") != null ? stats.get("consultasTotales") : 0;
+
+    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
+    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -163,7 +171,7 @@
             transition: all 0.2s;
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell::after {
+        .btn-bell.has-unread::after {
             content: '';
             position: absolute; top: 10px; right: 12px;
             width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
@@ -428,10 +436,10 @@
             <div>
                 <div class="header-date">Lunes, 7 de septiembre 2026</div>
                 <h1 class="header-title">Buenos días, <%= nombrePaciente.split(" ")[0] %></h1>
-                <p class="header-subtitle">Tienes <%= stats != null ? stats.get("proximasCitas") : 2 %> citas programadas esta semana.</p>
+                <p class="header-subtitle">Tienes <%= numProximas %> <%= numProximas == 1 ? "cita programada" : "citas programadas" %>.</p>
             </div>
             <div style="display: flex; align-items: center; gap: 16px;">
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell">
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>" title="Alertas">
                     <i data-lucide="bell" style="width: 20px;"></i>
                 </a>
                 <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva" class="btn-primary">
@@ -449,7 +457,7 @@
                     <i data-lucide="calendar" style="width: 18px;"></i>
                 </div>
                 <div>
-                    <div class="kpi-number"><%= stats != null ? stats.get("proximasCitas") : 2 %></div>
+                    <div class="kpi-number"><%= numProximas %></div>
                     <div class="kpi-label">Próximas citas</div>
                 </div>
             </div>
@@ -460,7 +468,7 @@
                     <i data-lucide="stethoscope" style="width: 18px;"></i>
                 </div>
                 <div>
-                    <div class="kpi-number"><%= stats != null ? stats.get("medicosAsignados") : 4 %></div>
+                    <div class="kpi-number"><%= numMedicos %></div>
                     <div class="kpi-label">Médicos asignados</div>
                 </div>
             </div>
@@ -471,7 +479,7 @@
                     <i data-lucide="microscope" style="width: 18px;"></i>
                 </div>
                 <div>
-                    <div class="kpi-number"><%= stats != null ? stats.get("estudiosPendientes") : 1 %></div>
+                    <div class="kpi-number"><%= numEstudios %></div>
                     <div class="kpi-label">Estudios pendientes</div>
                 </div>
             </div>
@@ -482,7 +490,7 @@
                     <i data-lucide="clipboard-list" style="width: 18px;"></i>
                 </div>
                 <div>
-                    <div class="kpi-number"><%= stats != null ? stats.get("consultasTotales") : 18 %></div>
+                    <div class="kpi-number"><%= numConsultas %></div>
                     <div class="kpi-label">Consultas totales</div>
                 </div>
             </div>
@@ -500,55 +508,65 @@
                         <a href="${pageContext.request.contextPath}/paciente/citas" class="link-all">Ver todas &rarr;</a>
                     </div>
                     
+                    <% if (listaProximasCitas != null && !listaProximasCitas.isEmpty()) {
+                        for (Map<String, Object> c : listaProximasCitas) {
+                            String med = (String) c.get("medico");
+                            String esp = (String) c.get("especialidad");
+                            String fh = (String) c.get("fechaHora");
+                            String mod = (String) c.get("modalidad");
+                            String inits = "DR";
+                            if (med != null && med.length() >= 4) {
+                                String clean = med.replace("Dr. ", "").replace("Dra. ", "");
+                                String[] p = clean.split(" ");
+                                inits = p.length >= 2 ? p[0].substring(0,1) + p[1].substring(0,1) : clean.substring(0, Math.min(2, clean.length()));
+                            }
+                    %>
                     <div class="appt-item">
                         <div class="appt-doc-info">
-                            <div class="avatar-initials avatar-lg">EV</div>
+                            <div class="avatar-initials avatar-lg"><%= inits.toUpperCase() %></div>
                             <div>
-                                <div class="doc-name">Dr. Elena Vargas</div>
-                                <div class="doc-spec">Cardiología</div>
+                                <div class="doc-name"><%= med %></div>
+                                <div class="doc-spec"><%= esp %></div>
                                 <div class="appt-meta">
-                                    <span><i data-lucide="calendar" style="width: 14px;"></i> Lun 07 Sept</span>
-                                    <span><i data-lucide="clock" style="width: 14px;"></i> 15:00</span>
-                                    <span class="badge-pres"><i data-lucide="map-pin" style="width: 12px;"></i> Presencial</span>
+                                    <span><i data-lucide="calendar" style="width: 14px;"></i> <%= fh %></span>
+                                    <span class="<%= "Video".equalsIgnoreCase(mod) ? "badge-video" : "badge-pres" %>">
+                                        <i data-lucide="<%= "Video".equalsIgnoreCase(mod) ? "video" : "map-pin" %>" style="width: 12px;"></i> <%= mod %>
+                                    </span>
                                 </div>
                             </div>
                         </div>
-                        <button class="btn-confirm">Confirmar</button>
+                        <button class="btn-confirm">Confirmada</button>
                     </div>
-
-                    <div class="appt-item">
-                        <div class="appt-doc-info">
-                            <div class="avatar-initials avatar-lg" style="color:#8b5cf6; background:#f5f3ff;">MO</div>
-                            <div>
-                                <div class="doc-name">Dr. Marcus Okonkwo</div>
-                                <div class="doc-spec">Neurología</div>
-                                <div class="appt-meta">
-                                    <span><i data-lucide="calendar" style="width: 14px;"></i> Lun 14 Sept</span>
-                                    <span><i data-lucide="clock" style="width: 14px;"></i> 10:00</span>
-                                    <span class="badge-video"><i data-lucide="video" style="width: 12px;"></i> Video</span>
-                                </div>
-                            </div>
-                        </div>
+                    <%  }
+                    } else { %>
+                    <div style="text-align: center; padding: 36px 20px; color: var(--text-gray);">
+                        <i data-lucide="calendar-off" style="width: 36px; height: 36px; stroke-width: 1.5; margin-bottom: 8px; color: #94a3b8;"></i>
+                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">No tienes citas programadas</div>
+                        <div style="font-size: 13px; margin-bottom: 16px;">Reserva una atención médica de forma rápida y 100% digital.</div>
+                        <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva" class="btn-primary" style="display: inline-flex; width: auto; font-size: 13px; padding: 8px 16px;">
+                            <i data-lucide="plus" style="width: 16px;"></i> Programar cita ahora
+                        </a>
                     </div>
+                    <% } %>
                 </div>
 
                 <!-- SIGNOS VITALES -->
                 <div class="section-card">
                     <div class="section-header">
                         <div class="section-title">Signos vitales recientes</div>
-                        <div style="font-size: 12px; color: var(--text-gray);">Actualizado: 7 Ago</div>
+                        <div style="font-size: 12px; color: var(--text-gray);">Sin registros recientes</div>
                     </div>
                     
                     <div class="vitals-grid">
                         <div class="vital-box" style="background: #eff6ff;">
                             <div class="vital-label">Presión arterial</div>
-                            <div class="vital-val" style="color: #1d4ed8;">118/76 <span class="vital-unit">mmHg</span></div>
-                            <div class="vital-trend" style="color: var(--primary);">+0 vs última</div>
+                            <div class="vital-val" style="color: #64748b;">--/-- <span class="vital-unit">mmHg</span></div>
+                            <div class="vital-trend" style="color: var(--text-gray);">A la espera de triaje</div>
                         </div>
                         <div class="vital-box" style="background: #f0f9ff;">
                             <div class="vital-label">Frecuencia cardíaca</div>
-                            <div class="vital-val" style="color: #0369a1;">72 <span class="vital-unit">bpm</span></div>
-                            <div class="vital-trend" style="color: var(--text-gray);">-3 vs última</div>
+                            <div class="vital-val" style="color: #64748b;">-- <span class="vital-unit">bpm</span></div>
+                            <div class="vital-trend" style="color: var(--text-gray);">A la espera de triaje</div>
                         </div>
                     </div>
                 </div>
@@ -563,21 +581,21 @@
                     </div>
                     
                     <div class="action-list">
-                        <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva" class="action-item">
+                        <a href="${pageContext.request.contextPath}/paciente/medicos" class="action-item">
                             <div class="action-left">
                                 <i data-lucide="search" class="action-icon" style="width: 18px;"></i>
                                 Buscar médico
                             </div>
                             <i data-lucide="chevron-right" style="width: 18px; color: var(--text-gray);"></i>
                         </a>
-                        <a href="#" class="action-item">
+                        <a href="${pageContext.request.contextPath}/paciente/historial" class="action-item">
                             <div class="action-left">
                                 <i data-lucide="clipboard-list" class="action-icon" style="width: 18px;"></i>
                                 Ver historial
                             </div>
                             <i data-lucide="chevron-right" style="width: 18px; color: var(--text-gray);"></i>
                         </a>
-                        <a href="#" class="action-item">
+                        <a href="${pageContext.request.contextPath}/paciente/reportes" class="action-item">
                             <div class="action-left">
                                 <i data-lucide="bar-chart-2" class="action-icon" style="width: 18px;"></i>
                                 Mis reportes
@@ -591,40 +609,32 @@
                 <div class="section-card">
                     <div class="section-header">
                         <div class="section-title">Mi equipo médico</div>
-                        <a href="#" class="link-all">Ver más</a>
+                        <a href="${pageContext.request.contextPath}/paciente/medicos" class="link-all">Ver todos</a>
                     </div>
                     
                     <div class="team-list">
+                        <% if (medicosAsignados != null && !medicosAsignados.isEmpty()) {
+                            for (Map<String, Object> m : medicosAsignados) {
+                                String nomM = (String) m.get("nombre");
+                                String espM = (String) m.get("especialidad");
+                                Integer idMedM = (Integer) m.get("idMedico");
+                        %>
                         <div class="team-item">
                             <div class="team-info">
-                                <div class="avatar-initials avatar-sm">EV</div>
+                                <div class="avatar-initials avatar-sm">DR</div>
                                 <div>
-                                    <div class="team-doc">Dr. Elena Vargas</div>
-                                    <div class="team-spec">Cardiología</div>
+                                    <div class="team-doc"><%= nomM %></div>
+                                    <div class="team-spec"><%= espM %></div>
                                 </div>
                             </div>
-                            <a href="#" class="team-link">Cita</a>
+                            <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva&medicoId=<%= idMedM %>" class="team-link">Cita</a>
                         </div>
-                        <div class="team-item">
-                            <div class="team-info">
-                                <div class="avatar-initials avatar-sm" style="color:#8b5cf6; background:#f5f3ff;">MO</div>
-                                <div>
-                                    <div class="team-doc">Dr. Marcus Okonkwo</div>
-                                    <div class="team-spec">Neurología</div>
-                                </div>
-                            </div>
-                            <a href="#" class="team-link">Cita</a>
+                        <%  }
+                        } else { %>
+                        <div style="text-align: center; padding: 20px; color: var(--text-gray); font-size: 13px;">
+                            No tienes médicos asignados aún.
                         </div>
-                        <div class="team-item">
-                            <div class="team-info">
-                                <div class="avatar-initials avatar-sm" style="color:#10b981; background:#ecfdf5;">PS</div>
-                                <div>
-                                    <div class="team-doc">Dr. Priya Sharma</div>
-                                    <div class="team-spec">Medicina Interna</div>
-                                </div>
-                            </div>
-                            <a href="#" class="team-link">Cita</a>
-                        </div>
+                        <% } %>
                     </div>
                 </div>
 
