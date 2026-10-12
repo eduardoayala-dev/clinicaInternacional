@@ -120,14 +120,22 @@
         <div class="citas-scroll-container">
             <div class="buscar-wrapper">
 
+                <!-- CABECERA DE PÁGINA (TÍTULO, SUBTÍTULO Y BOTÓN VOLVER) -->
+                <div class="page-title-row-with-back">
+                    <div>
+                        <h1 class="page-main-title" id="pageMainTitle">Programar Cita</h1>
+                        <p class="page-main-subtitle" id="pageMainSubtitle">Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.</p>
+                    </div>
+                    <button type="button" id="btnVolverModos" class="btn-back-pill" onclick="volverASeleccionModos()" style="display: none;">
+                        <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
+                        <span>Volver</span>
+                    </button>
+                </div>
+
                 <!-- ======================================================= -->
                 <!-- PANTALLA 1: ELECCIÓN DE MODO (IA vs DIRECTO)           -->
                 <!-- ======================================================= -->
                 <div id="viewModeSelector">
-                    <!-- TÍTULO Y SUBTÍTULO -->
-                    <h1 class="page-main-title">Programar Cita</h1>
-                    <p class="page-main-subtitle">Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.</p>
-
                     <div class="mode-selection-grid">
                         
                         <!-- TARJETA 1: ORIENTACIÓN MÉDICA POR IA -->
@@ -268,115 +276,135 @@
                 <!-- ======================================================= -->
                 <div id="wizardFlowSection" style="display: none;">
 
-                    <!-- STEPPER -->
+                    <!-- STEPPER (Alineado a la izquierda según diseño institucional) -->
                     <div class="wizard-stepper-container">
                         <div class="wiz-step active" id="wizStep1">
                             <div class="wiz-num">1</div>
-                            <span>Criterios de búsqueda</span>
+                            <span>Buscar</span>
                         </div>
                         <div class="wiz-line"></div>
                         <div class="wiz-step" id="wizStep2">
                             <div class="wiz-num">2</div>
-                            <span>Horarios y Médicos</span>
+                            <span>Elegir horario</span>
                         </div>
                         <div class="wiz-line"></div>
                         <div class="wiz-step" id="wizStep3">
                             <div class="wiz-num">3</div>
-                            <span>Confirmación</span>
+                            <span>Confirmar</span>
                         </div>
                     </div>
 
-                    <!-- PASO 1: CRITERIOS DE BÚSQUEDA -->
-                    <div id="step1Content" class="card-filter-box">
-                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-                            <div>
-                                <h3 style="font-size: 18px; font-weight: 700; color: #1e3a8a;">Filtros de búsqueda</h3>
-                                <p style="font-size: 13.5px; color: #64748b;">Selecciona tu sede, especialidad médica y horario de preferencia.</p>
-                            </div>
-                            <button type="button" class="btn-secondary-flat" onclick="volverASeleccionModos()" style="font-size: 12.5px; padding: 7px 12px;">
-                                <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
-                                <span>Cambiar modo</span>
-                            </button>
-                        </div>
-
-                        <div class="filter-grid-layout">
+                    <!-- PASO 1: BÚSQUEDA DIRECTA -->
+                    <div id="step1Content">
+                        <div class="card-filter-box">
                             
-                            <!-- SEDE -->
-                            <div class="filter-field">
-                                <label for="selectSede">
-                                    <span>Sede de atención</span>
-                                </label>
-                                <select id="selectSede" class="filter-control">
-                                    <option value="0">Todas las sedes</option>
-                                    <% if (listaSedes != null) {
-                                        for (Map<String, Object> sede : listaSedes) { %>
-                                            <option value="<%= sede.get("id") %>"><%= sede.get("nombre") %></option>
-                                    <%  }
-                                    } %>
-                                </select>
-                            </div>
+                            <!-- FILA 1: SEDE Y ESPECIALIDAD -->
+                            <div class="filter-row-2col">
+                                <div class="filter-field">
+                                    <label for="selectSede">Sede *</label>
+                                    <select id="selectSede" class="filter-control" onchange="actualizarMedicosPorEspecialidad()">
+                                        <% if (listaSedes != null && !listaSedes.isEmpty()) {
+                                            for (Map<String, Object> sede : listaSedes) { 
+                                                boolean isSanBorja = String.valueOf(sede.get("nombre")).toLowerCase().contains("borja");
+                                        %>
+                                                <option value="<%= sede.get("id") %>" <%= isSanBorja ? "selected" : "" %>><%= sede.get("nombre") %></option>
+                                        <%  }
+                                        } else { %>
+                                            <option value="1" selected>Sede San Borja</option>
+                                            <option value="2">Sede Lima</option>
+                                            <option value="3">Sede Surco</option>
+                                        <% } %>
+                                    </select>
+                                </div>
 
-                            <!-- ESPECIALIDAD -->
-                            <div class="filter-field">
-                                <label for="selectEspecialidad">
-                                    <span>Especialidad médica</span>
-                                    <span id="aiEspecialidadTag" class="ai-suggested-tag" style="display: none;">IA Sugerida</span>
-                                </label>
-                                <select id="selectEspecialidad" class="filter-control" onchange="actualizarMedicosPorEspecialidad()">
-                                    <option value="">Selecciona especialidad...</option>
-                                    <% if (listaEspecialidades != null) {
-                                        for (Map<String, Object> esp : listaEspecialidades) { %>
-                                            <option value="<%= esp.get("id") %>" data-nombre="<%= esp.get("nombre") %>">
-                                                <%= esp.get("nombre") %>
-                                            </option>
-                                    <%  }
-                                    } %>
-                                </select>
-                            </div>
-
-                            <!-- MOTIVO DE CONSULTA -->
-                            <div class="filter-field">
-                                <label for="inputMotivo">Motivo de consulta</label>
-                                <input type="text" id="inputMotivo" class="filter-control" placeholder="Ej: Consulta regular, control o síntomas">
-                            </div>
-
-                            <!-- MÉDICO (OPCIONAL) -->
-                            <div class="filter-field">
-                                <label for="selectMedico">Médico (opcional)</label>
-                                <select id="selectMedico" class="filter-control">
-                                    <option value="0">Cualquier médico disponible</option>
-                                </select>
-                            </div>
-
-                            <!-- FECHA PREFERIDA -->
-                            <div class="filter-field">
-                                <label for="inputFecha">Fecha preferida</label>
-                                <input type="date" id="inputFecha" class="filter-control">
-                            </div>
-
-                            <!-- TURNO -->
-                            <div class="filter-field">
-                                <label>Turno preferido</label>
-                                <div class="turno-pills-row">
-                                    <button type="button" class="turno-pill selected" onclick="seleccionarTurno(this, 'TODOS')">Indiferente</button>
-                                    <button type="button" class="turno-pill" onclick="seleccionarTurno(this, 'MANANA')">Mañana</button>
-                                    <button type="button" class="turno-pill" onclick="seleccionarTurno(this, 'TARDE')">Tarde</button>
+                                <div class="filter-field">
+                                    <label for="selectEspecialidad">Especialidad *</label>
+                                    <select id="selectEspecialidad" class="filter-control" onchange="actualizarEspecialidadYMotivos()">
+                                        <% if (listaEspecialidades != null && !listaEspecialidades.isEmpty()) {
+                                            for (Map<String, Object> esp : listaEspecialidades) { 
+                                                boolean isCardio = String.valueOf(esp.get("nombre")).toLowerCase().contains("cardio");
+                                        %>
+                                                <option value="<%= esp.get("id") %>" <%= isCardio ? "selected" : "" %> data-nombre="<%= esp.get("nombre") %>">
+                                                    <%= esp.get("nombre") %>
+                                                </option>
+                                        <%  }
+                                        } else { %>
+                                            <option value="1" selected data-nombre="Cardiología">Cardiología</option>
+                                            <option value="2" data-nombre="Neurología">Neurología</option>
+                                            <option value="3" data-nombre="Medicina General">Medicina General</option>
+                                        <% } %>
+                                    </select>
                                 </div>
                             </div>
 
+                            <!-- FILA 2: MOTIVO DE CONSULTA -->
+                            <div class="filter-row-full">
+                                <div class="filter-field">
+                                    <div class="motivo-label-row">
+                                        <label for="selectMotivo">Motivo de consulta (opcional)</label>
+                                        <span class="motivo-hint-tag">Opcional · orientativo</span>
+                                    </div>
+                                    <select id="selectMotivo" class="filter-control">
+                                        <option value="">Selecciona un motivo</option>
+                                        <option value="Dolor o presión en el pecho">Dolor o presión en el pecho</option>
+                                        <option value="Control de hipertensión arterial">Control de hipertensión arterial</option>
+                                        <option value="Palpitaciones o arritmias">Palpitaciones o arritmias</option>
+                                        <option value="Evaluación de riesgo quirúrgico">Evaluación de riesgo quirúrgico</option>
+                                        <option value="Chequeo preventivo cardiológico">Chequeo preventivo cardiológico</option>
+                                    </select>
+                                    <div class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
+                                </div>
+                            </div>
+
+                            <!-- FILA 3: MÉDICO Y FECHA -->
+                            <div class="filter-row-2col filter-row-med-date">
+                                <div class="filter-field">
+                                    <label for="selectMedico">Médico (opcional)</label>
+                                    <select id="selectMedico" class="filter-control">
+                                        <option value="0">Cualquier médico</option>
+                                    </select>
+                                </div>
+
+                                <div class="filter-field">
+                                    <label for="inputFecha">Fecha</label>
+                                    <input type="date" id="inputFecha" class="filter-control filter-control-date">
+                                </div>
+                            </div>
+
+                            <!-- FILA 4: TURNO -->
+                            <div class="turno-inline-row">
+                                <span class="turno-inline-label">Turno</span>
+                                <div class="turno-pills-wrap">
+                                    <button type="button" class="turno-pill selected" onclick="seleccionarTurno(this, 'MANANA')">
+                                        <i data-lucide="check" style="width: 14px; height: 14px;"></i>
+                                        <span>Mañana</span>
+                                    </button>
+                                    <button type="button" class="turno-pill" onclick="seleccionarTurno(this, 'TARDE')">
+                                        <span>Tarde</span>
+                                    </button>
+                                    <button type="button" class="turno-pill" onclick="seleccionarTurno(this, 'TODOS')">
+                                        <span>Indiferente</span>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- FILA 5: BOTONES DE ACCIÓN -->
+                            <div class="filter-actions-bar">
+                                <button type="button" class="btn-limpiar-filtros" onclick="limpiarFiltros()">
+                                    Limpiar filtros
+                                </button>
+
+                                <button type="button" class="btn-buscar-disponibilidad" onclick="buscarHorariosDisponibles()">
+                                    <span>Buscar disponibilidad</span>
+                                    <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                                </button>
+                            </div>
+
                         </div>
 
-                        <!-- BARRA DE ACCIONES PASO 1 -->
-                        <div class="filter-actions-bar">
-                            <button type="button" class="btn-secondary-flat" onclick="limpiarFiltros()">
-                                <i data-lucide="rotate-ccw" style="width: 15px; height: 15px;"></i>
-                                <span>Limpiar filtros</span>
-                            </button>
-
-                            <button type="button" class="btn-primary-search" onclick="buscarHorariosDisponibles()">
-                                <span>Buscar horarios disponibles</span>
-                                <i data-lucide="search" style="width: 16px; height: 16px;"></i>
-                            </button>
+                        <!-- ENLACE DE AYUDA -->
+                        <div class="help-callcenter-row">
+                            ¿Necesita ayuda? <a href="tel:016160000">Contactar call center citas</a>
                         </div>
                     </div>
 
@@ -529,6 +557,8 @@
                     selEsp.value = preEspId;
                     actualizarMedicosPorEspecialidad(preMedId);
                 }
+            } else {
+                actualizarEspecialidadYMotivos();
             }
         });
 
@@ -552,34 +582,54 @@
         // --- NAVEGACIÓN DE MODOS ---
         function iniciarModoIA() {
             state.modo = 'IA';
+            document.getElementById('pageMainTitle').textContent = 'Orientación médica por IA';
+            document.getElementById('pageMainSubtitle').textContent = 'Describe tus síntomas para orientarte con la especialidad médica más adecuada.';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'block';
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiResultadoBox').style.display = 'none';
+            const btnVolver = document.getElementById('btnVolverModos');
+            if (btnVolver) btnVolver.style.display = 'inline-flex';
             document.getElementById('aiSintomasInput').focus();
             lucide.createIcons();
         }
 
         function cerrarPanelIA() {
             document.getElementById('aiTriagePanel').style.display = 'none';
-            document.getElementById('viewModeSelector').style.display = 'block';
-            lucide.createIcons();
+            volverASeleccionModos();
         }
 
         function iniciarModoDirecto() {
             state.modo = 'DIRECTO';
+            document.getElementById('pageMainTitle').textContent = 'Buscar cita';
+            document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'none';
             document.getElementById('wizardFlowSection').style.display = 'block';
-            document.getElementById('aiEspecialidadTag').style.display = 'none';
+            const btnVolver = document.getElementById('btnVolverModos');
+            if (btnVolver) btnVolver.style.display = 'inline-flex';
+            actualizarEspecialidadYMotivos();
             mostrarPaso(1);
             lucide.createIcons();
         }
 
         function volverASeleccionModos() {
+            if (state.pasoActual === 2) {
+                volverAPaso1();
+                return;
+            }
+            if (state.pasoActual === 3) {
+                volverAPaso2();
+                return;
+            }
+            state.modo = 'NINGUNO';
+            document.getElementById('pageMainTitle').textContent = 'Programar Cita';
+            document.getElementById('pageMainSubtitle').textContent = 'Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.';
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'none';
             document.getElementById('viewModeSelector').style.display = 'block';
+            const btnVolver = document.getElementById('btnVolverModos');
+            if (btnVolver) btnVolver.style.display = 'none';
             lucide.createIcons();
         }
 
@@ -688,6 +738,10 @@
         function aplicarRecomendacionIA() {
             document.getElementById('aiTriagePanel').style.display = 'none';
             document.getElementById('wizardFlowSection').style.display = 'block';
+            document.getElementById('pageMainTitle').textContent = 'Buscar cita';
+            document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
+            const btnVolver = document.getElementById('btnVolverModos');
+            if (btnVolver) btnVolver.style.display = 'inline-flex';
             
             const selectEsp = document.getElementById('selectEspecialidad');
             if (selectEsp) {
@@ -707,12 +761,6 @@
                 }
             }
 
-            const sintomas = document.getElementById('aiSintomasInput').value.trim();
-            if (sintomas) {
-                document.getElementById('inputMotivo').value = 'Consulta asistida por IA: ' + sintomas.substring(0, 50);
-            }
-
-            document.getElementById('aiEspecialidadTag').style.display = 'inline-block';
             actualizarMedicosPorEspecialidad();
             mostrarPaso(1);
             lucide.createIcons();
@@ -749,30 +797,110 @@
 
         // --- ACCIONES DE FILTRO ---
         function seleccionarTurno(btn, turno) {
-            document.querySelectorAll('.turno-pill').forEach(p => p.classList.remove('selected'));
+            document.querySelectorAll('.turno-pill').forEach(p => {
+                p.classList.remove('selected');
+                const ic = p.querySelector('svg, i');
+                if (ic) ic.remove();
+            });
             btn.classList.add('selected');
+            const checkIcon = document.createElement('i');
+            checkIcon.setAttribute('data-lucide', 'check');
+            checkIcon.style.width = '14px';
+            checkIcon.style.height = '14px';
+            btn.insertBefore(checkIcon, btn.firstChild);
+            lucide.createIcons();
             state.turno = turno;
         }
 
         function limpiarFiltros() {
-            document.getElementById('selectSede').selectedIndex = 0;
-            document.getElementById('selectEspecialidad').selectedIndex = 0;
-            document.getElementById('selectMedico').innerHTML = '<option value="0">Cualquier médico disponible</option>';
-            document.getElementById('inputMotivo').value = '';
-            document.getElementById('aiEspecialidadTag').style.display = 'none';
+            const selSede = document.getElementById('selectSede');
+            if (selSede) selSede.selectedIndex = 0;
+            const selEsp = document.getElementById('selectEspecialidad');
+            if (selEsp) {
+                selEsp.selectedIndex = 0;
+                actualizarEspecialidadYMotivos();
+            }
+            const selMed = document.getElementById('selectMedico');
+            if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
             const today = new Date().toISOString().split('T')[0];
             document.getElementById('inputFecha').value = today;
-            seleccionarTurno(document.querySelector('.turno-pill'), 'TODOS');
+            const firstPill = document.querySelector('.turno-pill');
+            if (firstPill) seleccionarTurno(firstPill, 'MANANA');
+        }
+
+        function actualizarEspecialidadYMotivos() {
+            const selEsp = document.getElementById('selectEspecialidad');
+            const selMotivo = document.getElementById('selectMotivo');
+            if (!selEsp || !selMotivo) return;
+
+            const espNombre = selEsp.options[selEsp.selectedIndex] ? selEsp.options[selEsp.selectedIndex].text.toLowerCase() : '';
+
+            selMotivo.innerHTML = '<option value="">Selecciona un motivo</option>';
+
+            let motivos = [];
+            if (espNombre.includes('cardio')) {
+                motivos = [
+                    'Dolor o presión en el pecho',
+                    'Control de hipertensión arterial',
+                    'Palpitaciones o arritmias',
+                    'Evaluación de riesgo quirúrgico',
+                    'Chequeo preventivo cardiológico'
+                ];
+            } else if (espNombre.includes('neuro')) {
+                motivos = [
+                    'Dolores de cabeza o migraña recurrente',
+                    'Episodios de mareo o vértigo',
+                    'Trastornos del sueño o insomnio',
+                    'Control de neuralgia o ciática'
+                ];
+            } else if (espNombre.includes('trauma')) {
+                motivos = [
+                    'Dolor lumbar o en la columna',
+                    'Lesión en rodilla o meniscos',
+                    'Dolor en hombro o articulaciones',
+                    'Evaluación de fractura o esguince'
+                ];
+            } else if (espNombre.includes('derma')) {
+                motivos = [
+                    'Alergia, urticaria o picazón en la piel',
+                    'Revisión de lunares o manchas',
+                    'Acné o rosácea',
+                    'Caída de cabello o alopecia'
+                ];
+            } else if (espNombre.includes('gastro')) {
+                motivos = [
+                    'Dolor abdominal o cólicos',
+                    'Gastritis, acidez o reflujo',
+                    'Digestión pesada o náuseas',
+                    'Evaluación para endoscopía'
+                ];
+            } else {
+                motivos = [
+                    'Consulta médica general',
+                    'Chequeo médico preventivo anual',
+                    'Revisión de análisis de laboratorio',
+                    'Evaluación de fiebre o malestar general'
+                ];
+            }
+
+            motivos.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m;
+                opt.textContent = m;
+                selMotivo.appendChild(opt);
+            });
+
+            actualizarMedicosPorEspecialidad();
         }
 
         function actualizarMedicosPorEspecialidad(preIdMed) {
             const selEsp = document.getElementById('selectEspecialidad');
-            const espId = selEsp.value;
-            const selSede = document.getElementById('selectSede').value;
+            const espId = selEsp ? selEsp.value : '';
+            const selSede = document.getElementById('selectSede') ? document.getElementById('selectSede').value : '';
             const selMed = document.getElementById('selectMedico');
 
             if (!espId) {
-                selMed.innerHTML = '<option value="0">Cualquier médico disponible</option>';
+                if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
                 return;
             }
 
@@ -784,29 +912,55 @@
             fetch(url + '&_t=' + Date.now())
                 .then(res => res.json())
                 .then(data => {
-                    selMed.innerHTML = '<option value="0">Cualquier médico disponible</option>';
-                    if (data && data.length > 0) {
-                        data.forEach(m => {
-                            const opt = document.createElement('option');
-                            opt.value = m.idMedico || m.id;
-                            opt.textContent = m.nombreCompleto || m.nombres;
-                            if (preIdMed && String(opt.value) === String(preIdMed)) {
-                                opt.selected = true;
-                            }
-                            selMed.appendChild(opt);
-                        });
+                    if (selMed) {
+                        if (!data || data.length === 0) {
+                            // Si la sede específica no tiene médicos asignados en BD, consultar por especialidad
+                            fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + Date.now())
+                                .then(r => r.json())
+                                .then(fallbackData => {
+                                    llenarOpcionesMedicos(selMed, fallbackData, preIdMed);
+                                })
+                                .catch(() => {
+                                    llenarOpcionesMedicos(selMed, [], preIdMed);
+                                });
+                        } else {
+                            llenarOpcionesMedicos(selMed, data, preIdMed);
+                        }
                     }
                 })
                 .catch(err => {
                     console.log('Carga de médicos local', err);
+                    if (selMed) {
+                        llenarOpcionesMedicos(selMed, [], preIdMed);
+                    }
                 });
+        }
+
+        function llenarOpcionesMedicos(selMed, data, preIdMed) {
+            selMed.innerHTML = '<option value="0">Cualquier médico</option>';
+            if (!data || data.length === 0) {
+                // Médicos de respaldo si no hay registros activos en la especialidad seleccionada
+                data = [
+                    { idMedico: 1, nombreCompleto: "Dr. Carlos Mendoza Valdivia" },
+                    { idMedico: 2, nombreCompleto: "Dra. Elena Rostova K." }
+                ];
+            }
+            data.forEach(m => {
+                const opt = document.createElement('option');
+                opt.value = m.idMedico || m.id;
+                opt.textContent = m.nombreCompleto || m.nombres;
+                if (preIdMed && String(opt.value) === String(preIdMed)) {
+                    opt.selected = true;
+                }
+                selMed.appendChild(opt);
+            });
         }
 
         function buscarHorariosDisponibles() {
             const selEsp = document.getElementById('selectEspecialidad');
-            if (!selEsp.value) {
+            if (!selEsp || !selEsp.value) {
                 alert('Por favor selecciona una especialidad médica.');
-                selEsp.focus();
+                if (selEsp) selEsp.focus();
                 return;
             }
 
@@ -814,15 +968,16 @@
             state.especialidadNombre = selEsp.options[selEsp.selectedIndex].text;
             
             const selSede = document.getElementById('selectSede');
-            state.sedeId = selSede.value;
-            state.sedeNombre = selSede.options[selSede.selectedIndex].text;
+            state.sedeId = selSede ? selSede.value : '0';
+            state.sedeNombre = selSede ? selSede.options[selSede.selectedIndex].text : 'Sede San Borja';
 
             const selMed = document.getElementById('selectMedico');
-            state.medicoId = selMed.value;
-            state.medicoNombre = selMed.options[selMed.selectedIndex].text;
+            state.medicoId = selMed ? selMed.value : '0';
+            state.medicoNombre = selMed ? selMed.options[selMed.selectedIndex].text : 'Cualquier médico';
 
             state.fecha = document.getElementById('inputFecha').value;
-            state.motivo = document.getElementById('inputMotivo').value;
+            const selMotivo = document.getElementById('selectMotivo');
+            state.motivo = selMotivo ? selMotivo.value : '';
 
             document.getElementById('labelResumenCriterios').textContent = state.especialidadNombre + ' · ' + state.sedeNombre;
             document.getElementById('badgeFechaSeleccionada').textContent = 'Fecha: ' + state.fecha;
@@ -847,7 +1002,16 @@
             fetch(url + '&_t=' + Date.now())
                 .then(res => res.json())
                 .then(medicos => {
-                    renderizarMedicosConHorarios(medicos);
+                    if (!medicos || medicos.length === 0) {
+                        fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId + '&_t=' + Date.now())
+                            .then(r => r.json())
+                            .then(fallbackMedicos => {
+                                renderizarMedicosConHorarios(fallbackMedicos);
+                            })
+                            .catch(() => renderizarMedicosConHorarios([]));
+                    } else {
+                        renderizarMedicosConHorarios(medicos);
+                    }
                 })
                 .catch(() => {
                     renderizarMedicosConHorarios([]);

@@ -35,9 +35,12 @@ public class ApiMedicosServlet extends HttpServlet {
             String idSedeParam = request.getParameter("idSede");
             
             List<Map<String, Object>> medicos;
-            if (idSedeParam != null && !idSedeParam.trim().isEmpty()) {
+            if (idSedeParam != null && !idSedeParam.trim().isEmpty() && !"0".equals(idSedeParam)) {
                 int idSede = Integer.parseInt(idSedeParam);
                 medicos = citaDAO.obtenerMedicosDisponibles(idEspecialidad, idSede);
+                if (medicos == null || medicos.isEmpty()) {
+                    medicos = citaDAO.obtenerMedicosPorEspecialidad(idEspecialidad);
+                }
             } else {
                 medicos = citaDAO.obtenerMedicosPorEspecialidad(idEspecialidad);
             }

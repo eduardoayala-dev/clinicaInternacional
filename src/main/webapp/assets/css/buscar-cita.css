@@ -36,6 +36,37 @@
     display: inline-block;
 }
 
+.page-title-row-with-back {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.btn-back-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 18px;
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0284c7;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.03);
+    flex-shrink: 0;
+    margin-top: 4px;
+}
+
+.btn-back-pill:hover {
+    border-color: #cbd5e1;
+    color: #0369a1;
+    background: #f8fafc;
+}
+
 .page-main-title {
     font-family: 'Playfair Display', Georgia, serif;
     font-size: 32px;
@@ -51,7 +82,7 @@
     font-size: 14px;
     color: var(--text-gray, #64748b);
     line-height: 1.5;
-    margin-bottom: 28px;
+    margin-bottom: 0;
 }
 
 /* ==========================================================================
@@ -305,14 +336,14 @@
 }
 
 /* ==========================================================================
-   STEPPER DE RESERVA
+   STEPPER DE RESERVA (Alineado a la izquierda según diseño institucional)
    ========================================================================== */
 .wizard-stepper-container {
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     gap: 16px;
-    margin-bottom: 30px;
+    margin-bottom: 24px;
     flex-wrap: wrap;
 }
 
@@ -321,140 +352,190 @@
     align-items: center;
     gap: 10px;
     font-size: 14px;
-    font-weight: 600;
-    color: var(--text-light);
+    font-weight: 500;
+    color: #64748b;
     cursor: default;
-    transition: all 0.2s;
 }
 
 .wiz-step.active {
-    color: #0284c7;
-}
-
-.wiz-step.completed {
-    color: #10b981;
+    color: #0f172a;
+    font-weight: 700;
 }
 
 .wiz-num {
     width: 28px;
     height: 28px;
     border-radius: 50%;
-    background: #f1f5f9;
-    color: var(--text-gray);
+    border: 1.5px solid #cbd5e1;
+    background: #ffffff;
+    color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
     font-size: 12.5px;
-    font-weight: 700;
+    font-weight: 600;
 }
 
 .wiz-step.active .wiz-num {
     background: #0284c7;
+    border-color: #0284c7;
     color: #ffffff;
 }
 
 .wiz-step.completed .wiz-num {
     background: #10b981;
+    border-color: #10b981;
     color: #ffffff;
 }
 
 .wiz-line {
     width: 48px;
-    height: 2px;
-    background-color: var(--border-light);
+    height: 1px;
+    background-color: #e2e8f0;
 }
 
 /* ==========================================================================
-   CARD DE BÚSQUEDA Y FILTROS (Paso 1)
+   CARD DE BÚSQUEDA Y FILTROS - FIDELIDAD EXACTA
    ========================================================================== */
 .card-filter-box {
     background: #ffffff;
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--border-light);
-    padding: 28px 32px;
+    border-radius: 20px;
+    border: 1px solid #e2e8f0;
+    padding: 32px 36px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    margin-bottom: 20px;
+}
+
+.filter-row-2col,
+.filter-row-med-date {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
     margin-bottom: 24px;
 }
 
-.filter-grid-layout {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 20px;
-    margin-bottom: 22px;
+.filter-row-full {
+    margin-bottom: 24px;
+}
+
+.motivo-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
 }
 
 .filter-field {
     display: flex;
     flex-direction: column;
-    gap: 7px;
 }
 
 .filter-field label {
-    font-size: 13px;
+    font-size: 13.5px;
     font-weight: 600;
-    color: var(--text-dark);
+    color: #0f172a;
+    margin-bottom: 8px;
     display: flex;
     align-items: center;
     justify-content: space-between;
 }
 
-.ai-suggested-tag {
-    font-size: 11px;
-    font-weight: 700;
-    color: #15803d;
-    background: #dcfce7;
-    padding: 2px 7px;
-    border-radius: 6px;
-    text-transform: uppercase;
+.motivo-label-row label {
+    margin-bottom: 0;
+}
+
+.motivo-hint-tag {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.motivo-footer-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 6px;
+    margin-bottom: 0;
 }
 
 .filter-control {
     width: 100%;
-    padding: 11px 14px;
-    border-radius: var(--radius-md);
-    border: 1.5px solid var(--border-light);
+    height: 48px;
+    box-sizing: border-box;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1.5px solid #e2e8f0;
     background: #ffffff;
     font-size: 14px;
-    color: var(--text-dark);
+    color: #0f172a;
     outline: none;
     transition: all 0.2s;
     font-family: inherit;
+    appearance: none;
+    background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2394a3b8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+    background-repeat: no-repeat;
+    background-position: right 14px center;
+    background-size: 16px;
+    cursor: pointer;
 }
 
 .filter-control:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
 }
 
-/* Turno Pills */
-.turno-pills-row {
+.filter-control-date {
+    appearance: auto;
+    background-image: none;
+    cursor: pointer;
+}
+
+/* Turno Inline Row */
+.turno-inline-row {
     display: flex;
-    gap: 8px;
+    align-items: center;
+    gap: 16px;
+    margin-top: 8px;
+    margin-bottom: 32px;
+}
+
+.turno-inline-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0f172a;
+    min-width: 45px;
+}
+
+.turno-pills-wrap {
+    display: flex;
+    gap: 10px;
+    align-items: center;
 }
 
 .turno-pill {
-    flex: 1;
-    padding: 10px 12px;
-    border: 1.5px solid var(--border-light);
-    border-radius: var(--radius-md);
+    padding: 8px 18px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 9999px;
     background: #ffffff;
     font-size: 13px;
-    font-weight: 600;
-    color: var(--text-gray);
+    font-weight: 500;
+    color: #64748b;
     cursor: pointer;
-    text-align: center;
     transition: all 0.2s;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .turno-pill:hover {
     border-color: #cbd5e1;
-    color: var(--text-dark);
+    color: #0f172a;
 }
 
 .turno-pill.selected {
-    background: #eff6ff;
-    border-color: #2563eb;
-    color: #2563eb;
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    font-weight: 600;
 }
 
 /* Barra de Acciones de Búsqueda */
@@ -462,49 +543,62 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding-top: 18px;
+    padding-top: 24px;
     border-top: 1px solid #f1f5f9;
 }
 
-.btn-secondary-flat {
-    background: transparent;
-    border: 1.5px solid var(--border-light);
-    padding: 10px 18px;
-    border-radius: var(--radius-md);
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--text-gray);
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
-    align-items: center;
-    gap: 6px;
-}
-
-.btn-secondary-flat:hover {
-    border-color: #cbd5e1;
-    color: var(--text-dark);
-    background: #f8fafc;
-}
-
-.btn-primary-search {
-    background: #0284c7;
-    border: none;
-    padding: 11px 22px;
+.btn-limpiar-filtros {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    padding: 11px 24px;
     border-radius: 8px;
     font-size: 13.5px;
     font-weight: 600;
-    color: #ffffff;
+    color: #0284c7;
     cursor: pointer;
     transition: all 0.2s;
-    display: flex;
+}
+
+.btn-limpiar-filtros:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.btn-buscar-disponibilidad {
+    background: #0284c7;
+    border: none;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
     align-items: center;
     gap: 8px;
+    transition: background 0.2s;
     box-shadow: 0 1px 3px rgba(2, 132, 199, 0.2);
 }
 
-.btn-primary-search:hover {
+.btn-buscar-disponibilidad:hover {
     background: #0369a1;
+}
+
+.help-callcenter-row {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 20px;
+}
+
+.help-callcenter-row a {
+    color: #0284c7;
+    font-weight: 500;
+    text-decoration: none;
+    margin-left: 4px;
+}
+
+.help-callcenter-row a:hover {
+    text-decoration: underline;
 }
 
 /* ==========================================================================
