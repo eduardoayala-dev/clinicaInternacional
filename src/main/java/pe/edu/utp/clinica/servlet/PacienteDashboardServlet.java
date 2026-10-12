@@ -46,6 +46,10 @@ public class PacienteDashboardServlet extends HttpServlet {
         String action = request.getParameter("action");
         String path = request.getServletPath();
         
+        int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
+        int numNotifSinLeer = usuarioId > 0 ? citaDAO.contarNotificacionesSinLeer(usuarioId) : 0;
+        request.setAttribute("numNotifSinLeer", numNotifSinLeer);
+
         if ("nueva".equals(action) || "/paciente/citas".equals(path)) {
             request.setAttribute("listaEspecialidades", citaDAO.obtenerEspecialidades());
             request.setAttribute("listaSedes", citaDAO.obtenerSedes());
@@ -80,7 +84,6 @@ public class PacienteDashboardServlet extends HttpServlet {
             return;
         }
 
-        int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
         int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
 
         List<Map<String, Object>> listaProximasCitas = idPaciente > 0 ? citaDAO.obtenerProximasCitasPaciente(idPaciente) : new ArrayList<>();

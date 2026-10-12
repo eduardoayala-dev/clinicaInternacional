@@ -73,9 +73,9 @@
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
                 <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
                 <span>Notificaciones</span>
-                <c:if test="${numNotifSinLeer > 0}">
+                <% if (numNotifSinLeer > 0) { %>
                     <span class="badge-count"><%= numNotifSinLeer %></span>
-                </c:if>
+                <% } %>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
                 <i data-lucide="user" style="width: 18px; height: 18px;"></i>
@@ -107,9 +107,9 @@
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
                 <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
                 <span>Avisos</span>
-                <c:if test="${numNotifSinLeer > 0}">
+                <% if (numNotifSinLeer > 0) { %>
                     <span class="badge-avisos-count"><%= numNotifSinLeer %></span>
-                </c:if>
+                <% } %>
             </a>
         </header>
 

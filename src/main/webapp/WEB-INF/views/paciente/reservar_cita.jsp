@@ -29,7 +29,10 @@
         }
     }
 
-    int numNotifSinLeer = request.getAttribute("numNotifSinLeer") != null ? (Integer) request.getAttribute("numNotifSinLeer") : 0;
+    pe.edu.utp.clinica.dao.CitaDAO citaDAOBell = new pe.edu.utp.clinica.dao.CitaDAO();
+    int numNotifSinLeer = request.getAttribute("numNotifSinLeer") != null 
+        ? (Integer) request.getAttribute("numNotifSinLeer") 
+        : (usuario != null ? citaDAOBell.contarNotificacionesSinLeer(usuario.getIdUsuario()) : 0);
 %>
 <!DOCTYPE html>
 <html lang="es">
