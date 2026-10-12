@@ -1,0 +1,515 @@
+/* ==========================================================================
+   REPROGRAMAR CITA - CLÍNICA INTERNACIONAL
+   Portal del Paciente: Flujo clínico de reprogramación
+   ========================================================================== */
+
+.reprogramar-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 48px 56px 48px;
+    background-color: var(--bg-page, #f8fafc);
+}
+
+.reprogramar-content-wrapper {
+    max-width: 980px;
+    margin: 0 auto;
+}
+
+/* ENCABEZADO DE PÁGINA */
+.page-title-section {
+    margin-bottom: 24px;
+}
+
+.reprogramar-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark, #0f172a);
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+    line-height: 1.2;
+}
+
+.reprogramar-subtitle {
+    font-size: 14.5px;
+    color: var(--text-gray, #64748b);
+}
+
+/* BANNER DE NOTIFICACIÓN INFORMATIVA CLÍNICA */
+.reprogramar-banner-aviso {
+    background-color: #eff6ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    padding: 18px 24px;
+    margin-bottom: 28px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.banner-aviso-principal {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #1e3a8a;
+    line-height: 1.45;
+}
+
+.banner-aviso-secundario {
+    font-size: 13.5px;
+    color: #3b82f6;
+    line-height: 1.45;
+}
+
+/* STEPPER INSTITUCIONAL (1 Buscar, 2 Elegir horario, 3 Confirmar) */
+.reprogramar-stepper {
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-bottom: 24px;
+}
+
+.step-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
+    font-weight: 500;
+    color: #64748b;
+    cursor: default;
+    user-select: none;
+}
+
+.step-item.active {
+    font-weight: 600;
+    color: #0f172a;
+}
+
+.step-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    border: 1.5px solid #cbd5e1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    background-color: #ffffff;
+    transition: all 0.2s ease;
+}
+
+.step-item.active .step-circle {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+}
+
+.step-item.completed .step-circle {
+    background-color: #10b981;
+    border-color: #10b981;
+    color: #ffffff;
+}
+
+/* TARJETA PRINCIPAL DEL FORMULARIO */
+.reprogramar-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 16px;
+    padding: 36px 40px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.03);
+    margin-bottom: 24px;
+}
+
+/* GRID DE FORMULARIO DE 2 COLUMNAS */
+.reprog-form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 22px 28px;
+}
+
+.form-field-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field-group.full-width {
+    grid-column: span 2;
+}
+
+.form-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 8px;
+}
+
+.form-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+}
+
+.form-label-hint {
+    font-size: 12px;
+    color: #94a3b8;
+    font-weight: 400;
+}
+
+/* INPUTS Y SELECTS INSTITUCIONALES */
+.input-control,
+.select-control {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14.5px;
+    color: #0f172a;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.input-control:focus,
+.select-control:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.field-helper-note {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 6px;
+}
+
+/* DATE INPUT CON WRAPPER */
+.date-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.date-input-wrapper input[type="date"] {
+    width: 100%;
+    height: 48px;
+    padding: 0 16px;
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14.5px;
+    color: #0f172a;
+    font-family: inherit;
+    cursor: pointer;
+    outline: none;
+}
+
+.date-input-wrapper input[type="date"]:focus {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* SELECTOR DE TURNO CON PILLS */
+.turno-pills-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+}
+
+.turno-pill-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 20px;
+    border-radius: 9999px;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    color: #475569;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.turno-pill-btn:hover {
+    border-color: #94a3b8;
+    background-color: #f8fafc;
+}
+
+.turno-pill-btn.active {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.turno-check-icon {
+    width: 14px;
+    height: 14px;
+    display: none;
+}
+
+.turno-pill-btn.active .turno-check-icon {
+    display: inline-block;
+}
+
+/* ACCIONES / BOTONES DEL CARD */
+.card-actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 36px;
+    padding-top: 24px;
+    border-top: 1px solid #f1f5f9;
+}
+
+.btn-cancelar-reprog {
+    padding: 12px 24px;
+    background: transparent;
+    border: 1px solid #cbd5e1;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #2563eb;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-cancelar-reprog:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.btn-buscar-disp {
+    padding: 12px 28px;
+    background-color: #2563eb;
+    border: none;
+    border-radius: 10px;
+    font-size: 14px;
+    font-weight: 600;
+    color: #ffffff;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+}
+
+.btn-buscar-disp:hover {
+    background-color: #1d4ed8;
+}
+
+/* ENLACE DE AYUDA INFERIOR */
+.footer-help-text {
+    font-size: 13.5px;
+    color: #64748b;
+    margin-top: 12px;
+}
+
+.footer-help-text a {
+    color: #2563eb;
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.footer-help-text a:hover {
+    text-decoration: underline;
+}
+
+/* ==========================================================================
+   PASO 2: SELECCIÓN DE HORARIOS
+   ========================================================================== */
+.horarios-step-container {
+    display: none;
+}
+
+.horarios-doctor-header {
+    background: #f8fafc;
+    border-radius: 12px;
+    padding: 16px 20px;
+    margin-bottom: 24px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+}
+
+.doc-info-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #0f172a;
+}
+
+.doc-info-sub {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 2px;
+}
+
+.horarios-grid-wrapper {
+    margin-bottom: 28px;
+}
+
+.horarios-seccion-title {
+    font-size: 13px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: #64748b;
+    margin-bottom: 12px;
+}
+
+.slots-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+    gap: 12px;
+    margin-bottom: 20px;
+}
+
+.slot-btn {
+    padding: 12px 0;
+    text-align: center;
+    border: 1px solid #cbd5e1;
+    background: #ffffff;
+    border-radius: 8px;
+    font-size: 14.5px;
+    font-weight: 600;
+    color: #0f172a;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.slot-btn:hover {
+    border-color: #2563eb;
+    background-color: #eff6ff;
+}
+
+.slot-btn.selected {
+    background-color: #2563eb;
+    border-color: #2563eb;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(37, 99, 235, 0.25);
+}
+
+/* ==========================================================================
+   PASO 3: CONFIRMACIÓN Y COMPARATIVA CLÍNICA
+   ========================================================================== */
+.confirmar-step-container {
+    display: none;
+}
+
+.resumen-comparativo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 28px;
+}
+
+.comparativa-box {
+    border-radius: 12px;
+    padding: 22px;
+    border: 1px solid #e2e8f0;
+}
+
+.comparativa-box.original {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+}
+
+.comparativa-box.nueva {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.comp-tag {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    margin-bottom: 14px;
+}
+
+.comparativa-box.original .comp-tag {
+    background: #e2e8f0;
+    color: #475569;
+}
+
+.comparativa-box.nueva .comp-tag {
+    background: #dbeafe;
+    color: #1e40af;
+}
+
+.comp-item-row {
+    margin-bottom: 12px;
+}
+
+.comp-item-label {
+    font-size: 11.5px;
+    color: #64748b;
+    font-weight: 500;
+}
+
+.comp-item-value {
+    font-size: 14px;
+    font-weight: 600;
+    color: #0f172a;
+    margin-top: 2px;
+}
+
+.comparativa-box.nueva .comp-item-value {
+    color: #1e3a8a;
+}
+
+.alerta-liberacion-box {
+    background-color: #fef3c7;
+    border: 1px solid #fde68a;
+    border-radius: 10px;
+    padding: 14px 18px;
+    font-size: 13.5px;
+    color: #92400e;
+    margin-bottom: 24px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* RESPONSIVE */
+@media (max-width: 768px) {
+    .reprogramar-scroll-container {
+        padding: 20px 16px;
+    }
+
+    .reprogramar-card {
+        padding: 24px 18px;
+    }
+
+    .reprog-form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .form-field-group.full-width {
+        grid-column: span 1;
+    }
+
+    .card-actions-row {
+        flex-direction: column-reverse;
+        gap: 14px;
+    }
+
+    .btn-cancelar-reprog,
+    .btn-buscar-disp {
+        width: 100%;
+    }
+
+    .resumen-comparativo-grid {
+        grid-template-columns: 1fr;
+    }
+}
