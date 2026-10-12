@@ -229,10 +229,19 @@ public class MedicoDAO {
             e.printStackTrace();
         }
 
+        boolean esHoy = false;
+        try {
+            esHoy = java.time.LocalDate.parse(fecha).isEqual(java.time.LocalDate.now());
+        } catch (Exception ignored) {}
+        java.time.LocalTime ahora = java.time.LocalTime.now();
+
         if (todosLosHorarios.isEmpty()) {
             String[] std = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"};
             for (String h : std) {
                 java.time.LocalTime lt = java.time.LocalTime.parse(h);
+                if (esHoy && lt.isBefore(ahora)) {
+                    continue;
+                }
                 if (!horariosOcupados.contains(lt)) {
                     horariosDisponibles.add(h);
                 }
@@ -242,6 +251,9 @@ public class MedicoDAO {
 
         java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
         for (java.time.LocalTime t : todosLosHorarios) {
+            if (esHoy && t.isBefore(ahora)) {
+                continue;
+            }
             if (!horariosOcupados.contains(t)) {
                 horariosDisponibles.add(t.format(formatter));
             }

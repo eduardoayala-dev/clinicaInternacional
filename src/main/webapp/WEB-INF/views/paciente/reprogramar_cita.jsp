@@ -29,11 +29,45 @@
         }
     }
 
-    // Fecha por defecto para la búsqueda (mínimo mañana)
-    java.time.LocalDate manana = java.time.LocalDate.now().plusDays(1);
-    String minFecha = manana.toString();
-    String defaultFecha = (cita != null && cita.get("fecha") != null) ? (String) cita.get("fecha") : minFecha;
-    if (java.time.LocalDate.parse(defaultFecha).isBefore(manana)) {
+    // Fecha mínima permitida para reprogramar (desde hoy en adelante)
+    java.time.LocalDate hoy = java.time.LocalDate.now();
+    String minFecha = hoy.toString();
+
+    // Obtener la fecha, hora y turno exactos de la cita original
+    String fechaCita = null;
+    String horaCita = null;
+    String turnoCita = "manana";
+    if (cita != null) {
+        if (cita.get("fecha") != null && !((String)cita.get("fecha")).isEmpty()) {
+            fechaCita = (String) cita.get("fecha");
+        } else if (cita.get("fechaSolo") != null && !((String)cita.get("fechaSolo")).isEmpty()) {
+            fechaCita = (String) cita.get("fechaSolo");
+        }
+
+        if (cita.get("hora") != null && !((String)cita.get("hora")).isEmpty()) {
+            horaCita = (String) cita.get("hora");
+        } else if (cita.get("horaSolo") != null && !((String)cita.get("horaSolo")).isEmpty()) {
+            horaCita = (String) cita.get("horaSolo");
+        } else if (cita.get("horaFormateada") != null && !((String)cita.get("horaFormateada")).isEmpty()) {
+            horaCita = (String) cita.get("horaFormateada");
+        }
+
+        if (cita.get("turno") != null) {
+            turnoCita = (String) cita.get("turno");
+        } else if (horaCita != null && horaCita.contains(":")) {
+            try {
+                int h = Integer.parseInt(horaCita.split(":")[0]);
+                turnoCita = (h < 13) ? "manana" : "tarde";
+            } catch (Exception ignored) {}
+        }
+    }
+
+    String defaultFecha = (fechaCita != null) ? fechaCita : minFecha;
+    try {
+        if (java.time.LocalDate.parse(defaultFecha).isBefore(hoy)) {
+            defaultFecha = minFecha;
+        }
+    } catch (Exception e) {
         defaultFecha = minFecha;
     }
 %>
@@ -262,15 +296,15 @@
                                     <label class="form-label">Turno</label>
                                 </div>
                                 <div class="turno-pills-row">
-                                    <button type="button" class="turno-pill-btn active" id="btnTurnoManana" onclick="seleccionarTurno('manana')">
+                                    <button type="button" class="turno-pill-btn <%= "manana".equals(turnoCita) ? "active" : "" %>" id="btnTurnoManana" onclick="seleccionarTurno('manana')">
                                         <i data-lucide="check" class="turno-check-icon"></i>
                                         <span>Mañana</span>
                                     </button>
-                                    <button type="button" class="turno-pill-btn" id="btnTurnoTarde" onclick="seleccionarTurno('tarde')">
+                                    <button type="button" class="turno-pill-btn <%= "tarde".equals(turnoCita) ? "active" : "" %>" id="btnTurnoTarde" onclick="seleccionarTurno('tarde')">
                                         <i data-lucide="check" class="turno-check-icon"></i>
                                         <span>Tarde</span>
                                     </button>
-                                    <button type="button" class="turno-pill-btn" id="btnTurnoIndiferente" onclick="seleccionarTurno('indiferente')">
+                                    <button type="button" class="turno-pill-btn <%= (!"manana".equals(turnoCita) && !"tarde".equals(turnoCita)) ? "active" : "" %>" id="btnTurnoIndiferente" onclick="seleccionarTurno('indiferente')">
                                         <i data-lucide="check" class="turno-check-icon"></i>
                                         <span>Indiferente</span>
                                     </button>
@@ -303,6 +337,27 @@
                             <div style="text-align: right;">
                                 <div style="font-size: 14px; font-weight: 600; color: #1e3a8a;" id="displaySelectedDate">Fecha seleccionada</div>
                                 <div style="font-size: 12.5px; color: #64748b;">Selecciona tu nuevo horario de atención</div>
+                            </div>
+                        </div>
+
+                        <!-- BANNER INFORMATIVO Y SELECTOR RÁPIDO DE TURNO EN PASO 2 -->
+                        <div class="horario-actual-badge" id="bannerHorarioActual" style="display: <%= (horaCita != null && !horaCita.isEmpty()) ? "flex" : "none" %>;">
+                            <i data-lucide="info" style="width: 16px; height: 16px; flex-shrink: 0;"></i>
+                            <span>Horario actual programado: <strong><%= horaCita != null ? horaCita : "" %> hrs</strong>. Selecciona tu nuevo horario preferido:</span>
+                        </div>
+
+                        <div class="horarios-step2-filter-bar">
+                            <span class="filter-bar-label">Turno a consultar:</span>
+                            <div class="turno-pills-row mini">
+                                <button type="button" class="turno-pill-btn <%= (!"manana".equals(turnoCita) && !"tarde".equals(turnoCita)) ? "active" : "" %>" id="btnFiltroStep2Todos" onclick="cambiarFiltroStep2('indiferente')">
+                                    <span>Todos</span>
+                                </button>
+                                <button type="button" class="turno-pill-btn <%= "manana".equals(turnoCita) ? "active" : "" %>" id="btnFiltroStep2Manana" onclick="cambiarFiltroStep2('manana')">
+                                    <span>Mañana (08:00 - 12:30)</span>
+                                </button>
+                                <button type="button" class="turno-pill-btn <%= "tarde".equals(turnoCita) ? "active" : "" %>" id="btnFiltroStep2Tarde" onclick="cambiarFiltroStep2('tarde')">
+                                    <span>Tarde (14:00 - 18:30)</span>
+                                </button>
                             </div>
                         </div>
 
@@ -422,15 +477,38 @@
         // Inicializar iconos lucide
         lucide.createIcons();
 
-        let turnoActual = 'manana';
+        let turnoActual = '<%= turnoCita %>';
+        let horaCitaPrevia = '<%= horaCita != null ? horaCita : "" %>';
+        let fechaCitaPrevia = '<%= defaultFecha %>';
         let horaSeleccionada = null;
 
         function seleccionarTurno(turno) {
             turnoActual = turno;
-            document.getElementById('btnTurnoManana').classList.toggle('active', turno === 'manana');
-            document.getElementById('btnTurnoTarde').classList.toggle('active', turno === 'tarde');
-            document.getElementById('btnTurnoIndiferente').classList.toggle('active', turno === 'indiferente');
+            const btnM = document.getElementById('btnTurnoManana');
+            const btnT = document.getElementById('btnTurnoTarde');
+            const btnI = document.getElementById('btnTurnoIndiferente');
+            if (btnM) btnM.classList.toggle('active', turno === 'manana');
+            if (btnT) btnT.classList.toggle('active', turno === 'tarde');
+            if (btnI) btnI.classList.toggle('active', turno === 'indiferente');
+            actualizarPillsStep2();
             lucide.createIcons();
+        }
+
+        function cambiarFiltroStep2(nuevoTurno) {
+            seleccionarTurno(nuevoTurno);
+            const selectMed = document.getElementById('selectMedico');
+            const medId = selectMed ? selectMed.value : 1;
+            const fecha = document.getElementById('inputFecha').value;
+            cargarHorariosDisponibles(medId, fecha);
+        }
+
+        function actualizarPillsStep2() {
+            const btnTodos = document.getElementById('btnFiltroStep2Todos');
+            const btnManana = document.getElementById('btnFiltroStep2Manana');
+            const btnTarde = document.getElementById('btnFiltroStep2Tarde');
+            if (btnTodos) btnTodos.classList.toggle('active', turnoActual === 'indiferente');
+            if (btnManana) btnManana.classList.toggle('active', turnoActual === 'manana');
+            if (btnTarde) btnTarde.classList.toggle('active', turnoActual === 'tarde');
         }
 
         async function cargarMedicosDinamicos() {
@@ -478,6 +556,8 @@
             document.getElementById('displayDoctorName').textContent = medNombre;
             document.getElementById('displayEspecialidadSede').textContent = espNombre + ' · ' + sedeNombre;
             document.getElementById('displaySelectedDate').textContent = 'Fecha: ' + fecha;
+
+            actualizarPillsStep2();
 
             // Actualizar stepper
             document.getElementById('stepper1').className = 'step-item completed';
@@ -537,9 +617,19 @@
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'slot-btn';
-                btn.textContent = h;
-                btn.onclick = () => seleccionarSlot(btn, h);
+
+                // Detectar si coincide con el horario actual de la cita previa en la misma fecha
+                const esHorarioActual = (h === horaCitaPrevia && fecha === fechaCitaPrevia);
+                if (esHorarioActual) {
+                    btn.className = 'slot-btn current';
+                    btn.innerHTML = '<span>' + h + '</span><span class="slot-tag-actual">Actual</span>';
+                    btn.title = 'Tu horario actual programado';
+                    btn.disabled = true;
+                } else {
+                    btn.className = 'slot-btn';
+                    btn.textContent = h;
+                    btn.onclick = () => seleccionarSlot(btn, h);
+                }
 
                 if (esManana) {
                     gridManana.appendChild(btn);
