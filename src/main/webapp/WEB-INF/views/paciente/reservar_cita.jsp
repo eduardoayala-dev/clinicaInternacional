@@ -614,9 +614,9 @@
                                 </div>
 
                                 <div class="success-actions-row">
-                                    <a href="${pageContext.request.contextPath}/paciente/citas" class="btn-success-primary">
+                                    <a href="${pageContext.request.contextPath}/paciente/historial" class="btn-success-primary">
                                         <i data-lucide="calendar" style="width: 17px; height: 17px;"></i>
-                                        <span>Ver mis citas</span>
+                                        <span>Ir a mis citas</span>
                                     </a>
                                     <a href="${pageContext.request.contextPath}/paciente/dashboard" class="btn-success-secondary">
                                         <i data-lucide="home" style="width: 17px; height: 17px;"></i>
