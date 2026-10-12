@@ -39,20 +39,27 @@ public class DatabaseConfig {
                 host, port, dbName);
 
         try {
-            HikariConfig config = new HikariConfig();
-            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-            config.setJdbcUrl(mysqlUrl);
-            config.setUsername(user);
-            config.setPassword(password);
-            config.setMaximumPoolSize(10);
-            config.setConnectionTimeout(3000); // 3 sec timeout to test connection
+            // Pre-cargar clases del driver para evitar NoClassDefFoundError en threads de fondo
+            try {
+                Class.forName("com.mysql.cj.protocol.ExportControlled");
+            } catch (Throwable ignored) {}
 
-            dataSource = new HikariDataSource(config);
-            // Probar la conexión MySQL
-            try (Connection conn = dataSource.getConnection()) {
+            // Probar conectividad real con timeout corto ANTES de instanciar HikariPool
+            java.sql.DriverManager.setLoginTimeout(2);
+            try (Connection connTest = java.sql.DriverManager.getConnection(mysqlUrl, user, password)) {
+                HikariConfig config = new HikariConfig();
+                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+                config.setJdbcUrl(mysqlUrl);
+                config.setUsername(user);
+                config.setPassword(password);
+                config.setMaximumPoolSize(10);
+                config.setConnectionTimeout(3000);
+
+                dataSource = new HikariDataSource(config);
                 LOGGER.info("✅ Conexión exitosa al servidor MySQL en " + mysqlUrl);
+                return;
             }
-        } catch (Exception e) {
+        } catch (Throwable e) {
             LOGGER.log(Level.INFO, "ℹ️ Servidor MySQL no disponible (" + e.getMessage() + "). Iniciando Base de Datos H2 In-Memory con Ejecución SQL completa...");
             if (dataSource != null) {
                 try { dataSource.close(); } catch (Exception ex) {}
@@ -124,6 +131,8 @@ public class DatabaseConfig {
             stmt.execute("CREATE TABLE IF NOT EXISTS cita (id_cita INT AUTO_INCREMENT PRIMARY KEY, id_paciente INT, id_medico INT, id_disponibilidad INT, id_motivo INT, fecha_hora TIMESTAMP, estado VARCHAR(50), nivel_urgencia VARCHAR(20), fecha_recomendada_proxima DATE, riesgo_cancelacion VARCHAR(20), fecha_creacion TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
             stmt.execute("CREATE TABLE IF NOT EXISTS disponibilidad (id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY, id_medico INT, id_sede INT, fecha DATE, hora_inicio TIME, hora_fin TIME, duracion_minutos INT, estado VARCHAR(20))");
             stmt.execute("CREATE TABLE IF NOT EXISTS lista_espera (id_lista_espera INT AUTO_INCREMENT PRIMARY KEY, id_paciente INT, id_especialidad INT, id_sede INT, id_motivo INT, nivel_urgencia VARCHAR(20), rango_horario VARCHAR(20), canal_notificacion VARCHAR(20), fecha_registro TIMESTAMP DEFAULT CURRENT_TIMESTAMP, estado VARCHAR(20), posicion INT)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS notificacion (id_notificacion INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, id_cita INT, tipo VARCHAR(50), canal VARCHAR(20) DEFAULT 'PLATAFORMA', mensaje TEXT, fecha_envio TIMESTAMP DEFAULT CURRENT_TIMESTAMP, estado_envio VARCHAR(20) DEFAULT 'ENVIADA', leida INT DEFAULT 0)");
+            stmt.execute("CREATE TABLE IF NOT EXISTS auditoria_seguridad (id_auditoria INT AUTO_INCREMENT PRIMARY KEY, id_usuario INT, ip_origen VARCHAR(45), evento VARCHAR(100), descripcion TEXT, sospechoso BOOLEAN DEFAULT FALSE, fecha_hora TIMESTAMP DEFAULT CURRENT_TIMESTAMP)");
 
             // Inserciones iniciales
             stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (1, 'Roberto', 'Vargas', 'admin@clinicainternacional.pe', 'hash', 'ADMINISTRADOR', TRUE)");
