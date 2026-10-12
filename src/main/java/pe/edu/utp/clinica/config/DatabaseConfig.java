@@ -58,6 +58,7 @@ public class DatabaseConfig {
             dataSource = new HikariDataSource(config);
             try (Connection connTest = dataSource.getConnection()) {
                 LOGGER.info("✅ Conexión exitosa al servidor MySQL en " + mysqlUrl);
+                migrarEsquemaMySQLSiNecesario(connTest);
                 return;
             }
         } catch (Throwable e) {
@@ -67,6 +68,17 @@ public class DatabaseConfig {
                 dataSource = null;
             }
             inicializarH2Fallback();
+        }
+    }
+
+    private static void migrarEsquemaMySQLSiNecesario(Connection conn) {
+        try (Statement stmt = conn.createStatement()) {
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN canal_aviso VARCHAR(20) DEFAULT 'WhatsApp'"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja'"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN alergias VARCHAR(100) DEFAULT ''"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'"); } catch (Exception ignored) {}
+        } catch (Exception e) {
+            LOGGER.fine("Verificación de esquema MySQL: " + e.getMessage());
         }
     }
 

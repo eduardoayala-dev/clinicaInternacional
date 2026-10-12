@@ -7,6 +7,7 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -111,13 +112,28 @@ public class UsuarioDAO {
         return false;
     }
 
+    private static volatile boolean esquemaPacienteVerificado = false;
+
+    private void asegurarEsquemaPaciente(Connection conn) {
+        if (esquemaPacienteVerificado) return;
+        try (Statement st = conn.createStatement()) {
+            try { st.execute("ALTER TABLE paciente ADD COLUMN canal_aviso VARCHAR(20) DEFAULT 'WhatsApp'"); } catch (Exception ignored) {}
+            try { st.execute("ALTER TABLE paciente ADD COLUMN sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja'"); } catch (Exception ignored) {}
+            try { st.execute("ALTER TABLE paciente ADD COLUMN alergias VARCHAR(100) DEFAULT ''"); } catch (Exception ignored) {}
+            try { st.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'"); } catch (Exception ignored) {}
+            esquemaPacienteVerificado = true;
+        } catch (Exception ignored) {}
+    }
+
     public boolean crearCuentaPaciente(Usuario u, pe.edu.utp.clinica.model.Paciente p) {
         String sqlUsuario = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
-        String sqlPaciente = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlPacienteFull = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
+        String sqlPacienteBase = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, ?, ?, ?)";
 
         Connection conn = null;
         try {
             conn = DatabaseConfig.getConnection();
+            asegurarEsquemaPaciente(conn);
             conn.setAutoCommit(false);
 
             try (PreparedStatement stmtUsuario = conn.prepareStatement(sqlUsuario, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -140,7 +156,8 @@ public class UsuarioDAO {
                 }
             }
 
-            try (PreparedStatement stmtPaciente = conn.prepareStatement(sqlPaciente, PreparedStatement.RETURN_GENERATED_KEYS)) {
+            boolean insertado = false;
+            try (PreparedStatement stmtPaciente = conn.prepareStatement(sqlPacienteFull, PreparedStatement.RETURN_GENERATED_KEYS)) {
                 stmtPaciente.setInt(1, p.getUsuarioId());
                 stmtPaciente.setString(2, p.getDni());
                 stmtPaciente.setDate(3, java.sql.Date.valueOf(p.getFechaNacimiento()));
@@ -157,10 +174,28 @@ public class UsuarioDAO {
                         p.setIdPaciente(rsP.getInt(1));
                     }
                 }
+                insertado = true;
+            } catch (SQLException eCols) {
+                LOGGER.warning("Tabla paciente sin columnas extendidas. Realizando inserción con columnas base: " + eCols.getMessage());
+                try (PreparedStatement stmtBase = conn.prepareStatement(sqlPacienteBase, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                    stmtBase.setInt(1, p.getUsuarioId());
+                    stmtBase.setString(2, p.getDni());
+                    stmtBase.setDate(3, java.sql.Date.valueOf(p.getFechaNacimiento()));
+                    stmtBase.setString(4, p.getTelefono());
+                    stmtBase.setString(5, p.getDireccion());
+                    stmtBase.executeUpdate();
+
+                    try (ResultSet rsP = stmtBase.getGeneratedKeys()) {
+                        if (rsP.next()) {
+                            p.setIdPaciente(rsP.getInt(1));
+                        }
+                    }
+                    insertado = true;
+                }
             }
 
             conn.commit();
-            return true;
+            return insertado;
         } catch (SQLException e) {
             if (conn != null) {
                 try {
