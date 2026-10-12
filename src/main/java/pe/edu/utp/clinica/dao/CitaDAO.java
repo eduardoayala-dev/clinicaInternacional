@@ -74,7 +74,13 @@ public class CitaDAO {
                     String cmp = rs.getString("cmp");
 
                     String nombreCompleto = ((nombres != null ? nombres : "") + " " + (apellidos != null ? apellidos : "")).trim();
-                    if (nombreCompleto.isEmpty()) nombreCompleto = "Dr. Médico Especialista";
+                    if (nombreCompleto.isEmpty()) {
+                        nombreCompleto = "Dr. Médico Especialista";
+                    } else if (!nombreCompleto.startsWith("Dr.") && !nombreCompleto.startsWith("Dra.")) {
+                        String nLower = nombreCompleto.toLowerCase();
+                        String prefix = (nLower.startsWith("elena") || nLower.startsWith("andrea") || nLower.startsWith("mariana") || nLower.startsWith("marina") || nLower.startsWith("maria") || nLower.startsWith("rosa") || nLower.startsWith("claudia") || nLower.startsWith("patricia")) ? "Dra. " : "Dr. ";
+                        nombreCompleto = prefix + nombreCompleto;
+                    }
                     if (cmp == null || cmp.trim().isEmpty()) cmp = "CMP-48291";
 
                     map.put("idMedico", rs.getInt("id_medico"));
@@ -108,7 +114,13 @@ public class CitaDAO {
                     String cmp = rs.getString("cmp");
 
                     String nombreCompleto = ((nombres != null ? nombres : "") + " " + (apellidos != null ? apellidos : "")).trim();
-                    if (nombreCompleto.isEmpty()) nombreCompleto = "Dr. Médico Especialista";
+                    if (nombreCompleto.isEmpty()) {
+                        nombreCompleto = "Dr. Médico Especialista";
+                    } else if (!nombreCompleto.startsWith("Dr.") && !nombreCompleto.startsWith("Dra.")) {
+                        String nLower = nombreCompleto.toLowerCase();
+                        String prefix = (nLower.startsWith("elena") || nLower.startsWith("andrea") || nLower.startsWith("mariana") || nLower.startsWith("marina") || nLower.startsWith("maria") || nLower.startsWith("rosa") || nLower.startsWith("claudia") || nLower.startsWith("patricia")) ? "Dra. " : "Dr. ";
+                        nombreCompleto = prefix + nombreCompleto;
+                    }
                     if (cmp == null || cmp.trim().isEmpty()) cmp = "CMP-48291";
 
                     map.put("idMedico", rs.getInt("id_medico"));

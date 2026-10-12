@@ -303,14 +303,14 @@
                                 <div class="filter-field">
                                     <label for="selectSede">Sede *</label>
                                     <select id="selectSede" class="filter-control" onchange="actualizarMedicosPorEspecialidad()">
+                                        <option value="" disabled selected>Escoja sede</option>
                                         <% if (listaSedes != null && !listaSedes.isEmpty()) {
                                             for (Map<String, Object> sede : listaSedes) { 
-                                                boolean isSanBorja = String.valueOf(sede.get("nombre")).toLowerCase().contains("borja");
                                         %>
-                                                <option value="<%= sede.get("id") %>" <%= isSanBorja ? "selected" : "" %>><%= sede.get("nombre") %></option>
+                                                <option value="<%= sede.get("id") %>"><%= sede.get("nombre") %></option>
                                         <%  }
                                         } else { %>
-                                            <option value="1" selected>Sede San Borja</option>
+                                            <option value="1">Sede San Borja</option>
                                             <option value="2">Sede Lima</option>
                                             <option value="3">Sede Surco</option>
                                         <% } %>
@@ -320,16 +320,16 @@
                                 <div class="filter-field">
                                     <label for="selectEspecialidad">Especialidad *</label>
                                     <select id="selectEspecialidad" class="filter-control" onchange="actualizarEspecialidadYMotivos()">
+                                        <option value="" disabled selected>Escoja especialidad</option>
                                         <% if (listaEspecialidades != null && !listaEspecialidades.isEmpty()) {
                                             for (Map<String, Object> esp : listaEspecialidades) { 
-                                                boolean isCardio = String.valueOf(esp.get("nombre")).toLowerCase().contains("cardio");
                                         %>
-                                                <option value="<%= esp.get("id") %>" <%= isCardio ? "selected" : "" %> data-nombre="<%= esp.get("nombre") %>">
+                                                <option value="<%= esp.get("id") %>" data-nombre="<%= esp.get("nombre") %>">
                                                     <%= esp.get("nombre") %>
                                                 </option>
                                         <%  }
                                         } else { %>
-                                            <option value="1" selected data-nombre="Cardiología">Cardiología</option>
+                                            <option value="1" data-nombre="Cardiología">Cardiología</option>
                                             <option value="2" data-nombre="Neurología">Neurología</option>
                                             <option value="3" data-nombre="Medicina General">Medicina General</option>
                                         <% } %>
@@ -346,11 +346,6 @@
                                     </div>
                                     <select id="selectMotivo" class="filter-control">
                                         <option value="">Selecciona un motivo</option>
-                                        <option value="Dolor o presión en el pecho">Dolor o presión en el pecho</option>
-                                        <option value="Control de hipertensión arterial">Control de hipertensión arterial</option>
-                                        <option value="Palpitaciones o arritmias">Palpitaciones o arritmias</option>
-                                        <option value="Evaluación de riesgo quirúrgico">Evaluación de riesgo quirúrgico</option>
-                                        <option value="Chequeo preventivo cardiológico">Chequeo preventivo cardiológico</option>
                                     </select>
                                     <div class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
                                 </div>
@@ -408,44 +403,63 @@
                         </div>
                     </div>
 
-                    <!-- PASO 2: HORARIOS Y MÉDICOS DISPONIBLES -->
+                    <!-- PASO 2: ELEGIR HORARIO (RESULTADOS DE CITAS DISPONIBLES) -->
                     <div id="step2Content" style="display: none;">
-                        <div class="card-filter-box" style="padding: 20px 24px; margin-bottom: 20px;">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 12px;">
-                                <div>
-                                    <div style="font-size: 12px; color: var(--text-gray); font-weight: 600; text-transform: uppercase;">Criterios seleccionados:</div>
-                                    <div style="font-size: 15px; font-weight: 700; color: #1e3a8a; margin-top: 2px;">
-                                        <span id="labelResumenCriterios">Especialidad · Sede</span>
-                                    </div>
-                                </div>
-                                <button type="button" class="btn-secondary-flat" onclick="volverAPaso1()">
-                                    <i data-lucide="edit-3" style="width: 15px; height: 15px;"></i>
-                                    <span>Modificar búsqueda</span>
-                                </button>
+                        
+                        <!-- BARRA DE FILTROS APLICADOS -->
+                        <div class="filters-summary-bar">
+                            <div class="filters-pills-left">
+                                <span class="filters-label-text">Filtros:</span>
+                                <span class="filter-pill-tag" id="pillSede">Sede San Borja</span>
+                                <span class="filter-pill-tag" id="pillEspecialidad">Cardiología</span>
+                                <span class="filter-pill-tag" id="pillTurno">Turno mañana</span>
                             </div>
+                            <button type="button" class="btn-modificar-filtros" onclick="volverAPaso1()">
+                                <i data-lucide="sliders-horizontal" style="width: 15px; height: 15px;"></i>
+                                <span>Modificar filtros</span>
+                            </button>
                         </div>
 
-                        <div style="margin-bottom: 14px; font-weight: 700; color: #0f172a; font-size: 16px; display: flex; align-items: center; justify-content: space-between;">
-                            <span>Médicos y turnos disponibles para la fecha:</span>
-                            <span id="badgeFechaSeleccionada" style="font-size: 13px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 4px 10px; border-radius: 6px;">Hoy</span>
+                        <!-- SELECTOR DE SEMANA Y DÍAS -->
+                        <div class="week-selector-card">
+                            <div class="week-header-row">
+                                <span class="week-title-label" id="weekRangeLabel">Semana del 12 al 18 de octubre de 2026</span>
+                                <div class="week-nav-btns">
+                                    <button type="button" class="btn-week-nav" onclick="navegarSemana(-1)" title="Semana anterior">
+                                        <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i>
+                                    </button>
+                                    <button type="button" class="btn-week-nav" onclick="navegarSemana(1)" title="Semana siguiente">
+                                        <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="week-days-grid" id="weekDaysGrid">
+                                <!-- Generado dinámicamente con los 7 días y cupos -->
+                            </div>
                         </div>
 
                         <!-- LISTADO DINÁMICO DE MÉDICOS Y HORARIOS -->
                         <div id="doctorResultsContainer" class="doctor-results-list">
-                            <!-- Inyectado por JS -->
+                            <!-- Inyectado por JS con tarjetas de médicos y chips -->
                         </div>
 
-                        <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center;">
-                            <button type="button" class="btn-secondary-flat" onclick="volverAPaso1()">
-                                <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
-                                <span>Regresar a criterios</span>
-                            </button>
-
-                            <button type="button" id="btnContinuarPaso3" class="btn-primary-search" style="opacity: 0.5; pointer-events: none;" onclick="avanzarAPaso3()">
-                                <span>Continuar a confirmación</span>
-                                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
-                            </button>
+                        <!-- BANNER LISTA DE ESPERA -->
+                        <div class="waitlist-callout-card">
+                            <div class="waitlist-callout-left">
+                                <div class="waitlist-icon-circle">
+                                    <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
+                                </div>
+                                <div>
+                                    <div class="waitlist-callout-title">No encontramos más citas disponibles para los criterios seleccionados</div>
+                                    <div class="waitlist-callout-sub">Sin costo adicional · confirmación vía SMS / email</div>
+                                </div>
+                            </div>
+                            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-waitlist-action">
+                                Registrarme en lista de espera
+                            </a>
                         </div>
+
                     </div>
 
                     <!-- PASO 3: CONFIRMACIÓN Y RESERVA -->
@@ -766,7 +780,7 @@
             lucide.createIcons();
         }
 
-        // --- CONTROL DEL STEPPER ---
+        // --- CONTROL DEL STEPPER Y PANTALLAS ---
         function mostrarPaso(num) {
             state.pasoActual = num;
             
@@ -774,14 +788,54 @@
             document.getElementById('step2Content').style.display = num === 2 ? 'block' : 'none';
             document.getElementById('step3Content').style.display = num === 3 ? 'block' : 'none';
 
+            const titleEl = document.getElementById('pageMainTitle');
+            const subEl = document.getElementById('pageMainSubtitle');
+            const btnVolver = document.getElementById('btnVolverModos');
+
+            if (num === 1) {
+                if (titleEl) titleEl.textContent = 'Buscar cita';
+                if (subEl) subEl.textContent = 'Busca los horarios disponibles según tus preferencias';
+                if (btnVolver) btnVolver.style.display = 'inline-flex';
+            } else if (num === 2) {
+                if (titleEl) titleEl.textContent = 'Resultados de citas disponibles';
+                if (subEl) subEl.textContent = 'Ordenado por horario más próximo';
+                if (btnVolver) btnVolver.style.display = 'inline-flex';
+
+                // Actualizar píldoras de filtros activos
+                const pillSede = document.getElementById('pillSede');
+                if (pillSede) pillSede.textContent = state.sedeNombre || 'Sede San Borja';
+                const pillEsp = document.getElementById('pillEspecialidad');
+                if (pillEsp) pillEsp.textContent = state.especialidadNombre || 'Cardiología';
+                const pillTurno = document.getElementById('pillTurno');
+                if (pillTurno) {
+                    pillTurno.textContent = state.turno === 'MANANA' ? 'Turno mañana' : (state.turno === 'TARDE' ? 'Turno tarde' : 'Indiferente');
+                }
+
+                const cupos = renderizarSemana();
+                if (cupos === 0) {
+                    renderizarSinCupos();
+                } else {
+                    cargarGrillaHorarios();
+                }
+            } else if (num === 3) {
+                if (titleEl) titleEl.textContent = 'Confirmar cita';
+                if (subEl) subEl.textContent = 'Revisa los detalles y confirma tu atención médica';
+                if (btnVolver) btnVolver.style.display = 'inline-flex';
+            }
+
             for (let i = 1; i <= 3; i++) {
                 const el = document.getElementById('wizStep' + i);
+                if (!el) continue;
+                const numEl = el.querySelector('.wiz-num');
                 if (i < num) {
                     el.className = 'wiz-step completed';
+                    if (numEl) numEl.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i>';
                 } else if (i === num) {
                     el.className = 'wiz-step active';
+                    if (numEl) numEl.textContent = i;
                 } else {
                     el.className = 'wiz-step';
+                    if (numEl) numEl.textContent = i;
                 }
             }
             lucide.createIcons();
@@ -826,16 +880,24 @@
             document.getElementById('inputFecha').value = today;
             const firstPill = document.querySelector('.turno-pill');
             if (firstPill) seleccionarTurno(firstPill, 'MANANA');
+            cachedMedicos = null;
         }
 
         function actualizarEspecialidadYMotivos() {
             const selEsp = document.getElementById('selectEspecialidad');
             const selMotivo = document.getElementById('selectMotivo');
+            const selMed = document.getElementById('selectMedico');
             if (!selEsp || !selMotivo) return;
 
-            const espNombre = selEsp.options[selEsp.selectedIndex] ? selEsp.options[selEsp.selectedIndex].text.toLowerCase() : '';
-
             selMotivo.innerHTML = '<option value="">Selecciona un motivo</option>';
+
+            const espVal = selEsp.value;
+            if (!espVal) {
+                if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
+                return;
+            }
+
+            const espNombre = selEsp.options[selEsp.selectedIndex] ? selEsp.options[selEsp.selectedIndex].text.toLowerCase() : '';
 
             let motivos = [];
             if (espNombre.includes('cardio')) {
@@ -893,6 +955,21 @@
             actualizarMedicosPorEspecialidad();
         }
 
+        function normalizarNombreMedico(rawNombre) {
+            if (!rawNombre) return 'Dr. Médico Especialista';
+            let n = rawNombre.trim();
+            if (n.startsWith('Dr.') || n.startsWith('Dra.')) return n;
+            const nLower = n.toLowerCase();
+            const esDra = nLower.startsWith('elena') || nLower.startsWith('andrea') || 
+                          nLower.startsWith('mariana') || nLower.startsWith('marina') || 
+                          nLower.startsWith('maria') || nLower.startsWith('valeria') || 
+                          nLower.startsWith('claudia') || nLower.startsWith('rosa') || 
+                          nLower.startsWith('patricia') || nLower.startsWith('beatriz') ||
+                          nLower.startsWith('sofia') || nLower.startsWith('lucia') ||
+                          nLower.startsWith('carmen');
+            return (esDra ? 'Dra. ' : 'Dr. ') + n;
+        }
+
         function actualizarMedicosPorEspecialidad(preIdMed) {
             const selEsp = document.getElementById('selectEspecialidad');
             const espId = selEsp ? selEsp.value : '';
@@ -914,7 +991,6 @@
                 .then(data => {
                     if (selMed) {
                         if (!data || data.length === 0) {
-                            // Si la sede específica no tiene médicos asignados en BD, consultar por especialidad
                             fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + Date.now())
                                 .then(r => r.json())
                                 .then(fallbackData => {
@@ -939,16 +1015,17 @@
         function llenarOpcionesMedicos(selMed, data, preIdMed) {
             selMed.innerHTML = '<option value="0">Cualquier médico</option>';
             if (!data || data.length === 0) {
-                // Médicos de respaldo si no hay registros activos en la especialidad seleccionada
                 data = [
-                    { idMedico: 1, nombreCompleto: "Dr. Carlos Mendoza Valdivia" },
-                    { idMedico: 2, nombreCompleto: "Dra. Elena Rostova K." }
+                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís" },
+                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales" },
+                    { idMedico: 3, nombreCompleto: "Dr. Carlos Mendoza Valdivia" }
                 ];
             }
             data.forEach(m => {
                 const opt = document.createElement('option');
                 opt.value = m.idMedico || m.id;
-                opt.textContent = m.nombreCompleto || m.nombres;
+                const nombre = m.nombreCompleto || m.nombres || '';
+                opt.textContent = normalizarNombreMedico(nombre);
                 if (preIdMed && String(opt.value) === String(preIdMed)) {
                     opt.selected = true;
                 }
@@ -956,43 +1033,297 @@
             });
         }
 
+        // --- NAVEGACIÓN Y BÚSQUEDA DEL PASO 2 ---
         function buscarHorariosDisponibles() {
+            const selSede = document.getElementById('selectSede');
+            if (!selSede || !selSede.value) {
+                alert('Por favor escoja una sede.');
+                if (selSede) selSede.focus();
+                return;
+            }
+
             const selEsp = document.getElementById('selectEspecialidad');
             if (!selEsp || !selEsp.value) {
-                alert('Por favor selecciona una especialidad médica.');
+                alert('Por favor escoja una especialidad médica.');
                 if (selEsp) selEsp.focus();
                 return;
             }
 
+            state.sedeId = selSede.value;
+            state.sedeNombre = selSede.options[selSede.selectedIndex].text;
+
             state.especialidadId = selEsp.value;
             state.especialidadNombre = selEsp.options[selEsp.selectedIndex].text;
             
-            const selSede = document.getElementById('selectSede');
-            state.sedeId = selSede ? selSede.value : '0';
-            state.sedeNombre = selSede ? selSede.options[selSede.selectedIndex].text : 'Sede San Borja';
-
             const selMed = document.getElementById('selectMedico');
             state.medicoId = selMed ? selMed.value : '0';
             state.medicoNombre = selMed ? selMed.options[selMed.selectedIndex].text : 'Cualquier médico';
 
-            state.fecha = document.getElementById('inputFecha').value;
+            const fechaInput = document.getElementById('inputFecha');
+            state.fecha = (fechaInput && fechaInput.value) ? fechaInput.value : new Date().toISOString().split('T')[0];
             const selMotivo = document.getElementById('selectMotivo');
             state.motivo = selMotivo ? selMotivo.value : '';
 
-            document.getElementById('labelResumenCriterios').textContent = state.especialidadNombre + ' · ' + state.sedeNombre;
-            document.getElementById('badgeFechaSeleccionada').textContent = 'Fecha: ' + state.fecha;
-
-            cargarGrillaHorarios();
+            cachedMedicos = null;
             mostrarPaso(2);
+        }
+
+        // --- SELECTOR DE SEMANA Y DÍAS ---
+        function parsearFechaLocal(str) {
+            if (!str) return new Date();
+            if (str instanceof Date) {
+                return isNaN(str.getTime()) ? new Date() : str;
+            }
+            if (typeof str === 'string') {
+                const s = str.trim();
+                if (s.includes('-')) {
+                    const partes = s.split('T')[0].split('-');
+                    if (partes.length === 3) {
+                        const y = parseInt(partes[0], 10);
+                        const m = parseInt(partes[1], 10) - 1;
+                        const d = parseInt(partes[2], 10);
+                        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                            return new Date(y, m, d, 12, 0, 0);
+                        }
+                    }
+                }
+                if (s.includes('/')) {
+                    const partes = s.split('/');
+                    if (partes.length === 3) {
+                        const d = parseInt(partes[0], 10);
+                        const m = parseInt(partes[1], 10) - 1;
+                        const y = parseInt(partes[2], 10);
+                        if (!isNaN(y) && !isNaN(m) && !isNaN(d)) {
+                            return new Date(y, m, d, 12, 0, 0);
+                        }
+                    }
+                }
+            }
+            const dt = new Date(str);
+            return isNaN(dt.getTime()) ? new Date() : dt;
+        }
+
+        function formatearIsoDate(date) {
+            if (!date || isNaN(date.getTime())) date = new Date();
+            const y = date.getFullYear();
+            const m = String(date.getMonth() + 1).padStart(2, '0');
+            const d = String(date.getDate()).padStart(2, '0');
+            return y + '-' + m + '-' + d;
+        }
+
+        function renderizarSemana() {
+            const grid = document.getElementById('weekDaysGrid');
+            const label = document.getElementById('weekRangeLabel');
+            if (!grid || !label) return 0;
+
+            grid.innerHTML = '';
+
+            let baseDate = parsearFechaLocal(state.fecha);
+            // Sincronizar state.fecha al formato canónico ISO
+            state.fecha = formatearIsoDate(baseDate);
+
+            let dayOfWeek = baseDate.getDay();
+            let diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+            
+            let monday = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + diffToMonday, 12, 0, 0);
+            let sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 12, 0, 0);
+
+            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+            const mesNombre = meses[sunday.getMonth()];
+            label.textContent = 'Semana del ' + monday.getDate() + ' al ' + sunday.getDate() + ' de ' + mesNombre + ' de ' + sunday.getFullYear();
+
+            const nombresDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            const cuposSimulados = [4, 0, 3, 6, 1, 2, 0];
+
+            let cuposSeleccionados = 0;
+
+            for (let i = 0; i < 7; i++) {
+                let d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i, 12, 0, 0);
+                const isoDate = formatearIsoDate(d);
+
+                const esActivo = isoDate === state.fecha;
+                const esDomingo = i === 6;
+                const cupos = esDomingo ? 0 : cuposSimulados[i];
+
+                if (esActivo) {
+                    cuposSeleccionados = cupos;
+                }
+
+                let cuposTexto = cupos + ' cupos';
+                let cuposClass = 'day-cupos';
+                if (esDomingo) {
+                    cuposTexto = 'No atención';
+                    cuposClass = 'day-cupos none';
+                } else if (cupos === 0) {
+                    cuposTexto = 'Sin cupos';
+                    cuposClass = 'day-cupos none';
+                } else if (cupos === 1) {
+                    cuposTexto = '1 cupo';
+                }
+
+                const card = document.createElement('div');
+                card.className = 'day-card-item' + (esActivo ? ' active' : '') + (esDomingo ? ' disabled' : '');
+                card.innerHTML = 
+                    '<div class="day-name">' + nombresDias[i] + '</div>' +
+                    '<div class="day-number">' + d.getDate() + '</div>' +
+                    '<div class="' + cuposClass + '">' + cuposTexto + '</div>';
+
+                if (!esDomingo) {
+                    card.onclick = function() {
+                        seleccionarDiaSemana(isoDate, cupos);
+                    };
+                }
+
+                grid.appendChild(card);
+            }
+
+            return cuposSeleccionados;
+        }
+
+        function seleccionarDiaSemana(fechaIso, cupos) {
+            state.fecha = fechaIso;
+            state.hora = '';
+            state.medicoId = '0';
+            renderizarSemana();
+            if (cupos === 0) {
+                renderizarSinCupos();
+            } else {
+                cargarGrillaHorarios();
+            }
+        }
+
+        function navegarSemana(delta) {
+            let cur = parsearFechaLocal(state.fecha);
+            cur.setDate(cur.getDate() + (delta * 7));
+            state.fecha = formatearIsoDate(cur);
+            state.hora = '';
+            state.medicoId = '0';
+            const cupos = renderizarSemana();
+            if (cupos === 0) {
+                renderizarSinCupos();
+            } else {
+                cargarGrillaHorarios();
+            }
+        }
+
+        function renderizarSinCupos() {
+            const container = document.getElementById('doctorResultsContainer');
+            if (!container) return;
+
+            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
+            state.hora = '';
+            state.medicoId = '0';
+
+            container.innerHTML = 
+                '<div style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 48px 24px; text-align: center; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">' +
+                    '<div style="width: 58px; height: 58px; border-radius: 50%; background: #fef2f2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">' +
+                        '<i data-lucide="calendar-x" style="width: 30px; height: 30px;"></i>' +
+                    '</div>' +
+                    '<h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No hay citas disponibles para este día</h3>' +
+                    '<p style="font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 20px auto; line-height: 1.5;">' +
+                        'Para el <strong>' + headerTurnoTexto + '</strong> no quedan cupos de atención médica libres. Por favor selecciona otro día con cupos en el calendario semanal o únete a la lista de espera para avisarte si se libera una cita.' +
+                    '</p>' +
+                    '<a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-waitlist-action" style="display: inline-flex; justify-content: center; margin: 0 auto;">' +
+                        '<i data-lucide="clock" style="width: 16px; height: 16px; margin-right: 8px;"></i>' +
+                        'Registrarme en lista de espera' +
+                    '</a>' +
+                '</div>';
+            
+            lucide.createIcons();
+        }
+
+        function formatearCabeceraTurno(fechaIso, turno) {
+            const d = parsearFechaLocal(fechaIso);
+            const diasSemana = ['Domingo', 'Lunes', 'Martes', 'Miércoles', 'Jueves', 'Viernes', 'Sábado'];
+            const meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'set', 'oct', 'nov', 'dic'];
+            const diaNom = diasSemana[d.getDay()];
+            const diaNum = d.getDate();
+            const mesNom = meses[d.getMonth()];
+            const turnoNom = turno === 'TARDE' ? 'Turno tarde' : (turno === 'MANANA' ? 'Turno mañana' : 'Turno disponible');
+            return `${diaNom} ${diaNum} ${mesNom} · ${turnoNom}`;
+        }
+
+        // --- CARGA Y RENDERIZADO DE MÉDICOS Y HORARIOS ---
+        let cachedMedicos = null;
+
+        function generarHorariosDoctor(idMed, fechaIso, turno) {
+            if (turno === 'TARDE') {
+                return (idMed % 2 === 0) 
+                    ? ["14:00", "14:40", "15:20", "16:00", "16:40"]
+                    : ["14:20", "15:00", "15:40", "16:20", "17:00"];
+            } else if (turno === 'MANANA') {
+                return (idMed % 2 === 0)
+                    ? ["08:00", "08:40", "09:20", "10:00", "10:40"]
+                    : ["08:30", "09:00", "09:40", "10:20", "11:00"];
+            } else {
+                // Indiferente
+                return (idMed % 2 === 0)
+                    ? ["08:00", "08:40", "09:20", "14:00", "14:40", "15:20"]
+                    : ["08:30", "09:10", "10:00", "14:20", "15:00", "16:00"];
+            }
+        }
+
+        function actualizarHorariosInPlace(medicos) {
+            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
+            state.hora = '';
+            state.medicoId = '0';
+
+            medicos.forEach(med => {
+                const idMed = med.idMedico || med.id;
+                const card = document.getElementById('docScheduleCard_' + idMed);
+                if (!card) return;
+
+                // Actualizar texto del turno sin saltos de altura ni recarga del contenedor
+                const kicker = card.querySelector('.doc-turn-kicker');
+                if (kicker) kicker.textContent = headerTurnoTexto;
+
+                // Desactivar botón de reserva
+                const btnRes = document.getElementById('btnReservar_' + idMed);
+                if (btnRes) btnRes.classList.remove('active-card');
+
+                // Actualizar chips de horarios directamente sin parpadeos
+                const wrap = document.getElementById('slotsWrap_' + idMed);
+                if (wrap) {
+                    const rawName = med.nombreCompleto || med.nombres || '';
+                    const nombreMed = normalizarNombreMedico(rawName);
+                    const horas = generarHorariosDoctor(idMed, state.fecha, state.turno);
+
+                    wrap.innerHTML = '';
+                    horas.forEach(h => {
+                        const btn = document.createElement('button');
+                        btn.type = 'button';
+                        btn.className = 'slot-pill-btn';
+                        btn.textContent = h;
+                        btn.setAttribute('data-med', idMed);
+                        btn.setAttribute('data-hora', h);
+                        btn.onclick = function() {
+                            seleccionarSlot(btn, idMed, nombreMed, h);
+                        };
+                        wrap.appendChild(btn);
+                    });
+                }
+            });
         }
 
         function cargarGrillaHorarios() {
             const container = document.getElementById('doctorResultsContainer');
-            container.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 24px;">Consultando disponibilidad de médicos y turnos...</p>';
-            
-            const btnPaso3 = document.getElementById('btnContinuarPaso3');
-            btnPaso3.style.opacity = '0.5';
-            btnPaso3.style.pointerEvents = 'none';
+            if (!container) return;
+
+            // Si ya existen tarjetas en el DOM y tenemos la lista de médicos en caché, actualizar in-place
+            const existingCards = container.querySelectorAll('.doctor-schedule-card');
+            if (existingCards.length > 0 && cachedMedicos && cachedMedicos.length > 0) {
+                actualizarHorariosInPlace(cachedMedicos);
+                return;
+            }
+
+            // Si ya tenemos los médicos en memoria (ej. al volver de un día 'Sin cupos')
+            if (cachedMedicos && cachedMedicos.length > 0) {
+                renderizarMedicosConHorarios(cachedMedicos);
+                return;
+            }
+
+            // Carga inicial para la especialidad / sede
+            container.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 32px;">Consultando disponibilidad de médicos y turnos...</p>';
 
             let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId;
             if (state.sedeId && state.sedeId !== '0') {
@@ -1006,15 +1337,30 @@
                         fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId + '&_t=' + Date.now())
                             .then(r => r.json())
                             .then(fallbackMedicos => {
-                                renderizarMedicosConHorarios(fallbackMedicos);
+                                cachedMedicos = (fallbackMedicos && fallbackMedicos.length > 0) ? fallbackMedicos : [
+                                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
+                                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
+                                ];
+                                renderizarMedicosConHorarios(cachedMedicos);
                             })
-                            .catch(() => renderizarMedicosConHorarios([]));
+                            .catch(() => {
+                                cachedMedicos = [
+                                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
+                                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
+                                ];
+                                renderizarMedicosConHorarios(cachedMedicos);
+                            });
                     } else {
-                        renderizarMedicosConHorarios(medicos);
+                        cachedMedicos = medicos;
+                        renderizarMedicosConHorarios(cachedMedicos);
                     }
                 })
                 .catch(() => {
-                    renderizarMedicosConHorarios([]);
+                    cachedMedicos = [
+                        { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
+                        { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
+                    ];
+                    renderizarMedicosConHorarios(cachedMedicos);
                 });
         }
 
@@ -1022,60 +1368,72 @@
             const container = document.getElementById('doctorResultsContainer');
             container.innerHTML = '';
 
+            // Limpiar selección previa
+            state.hora = '';
+
             if (!medicos || medicos.length === 0) {
                 medicos = [
-                    { idMedico: 1, nombreCompleto: "Dr. Carlos Ramos Gómez", cmp: "CMP-48291" },
-                    { idMedico: 2, nombreCompleto: "Dra. Mariana Benavides", cmp: "CMP-51920" }
+                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
+                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
                 ];
             }
 
             if (state.medicoId && state.medicoId !== '0') {
-                medicos = medicos.filter(m => String(m.idMedico || m.id) === String(state.medicoId));
+                const filtrados = medicos.filter(m => String(m.idMedico || m.id) === String(state.medicoId));
+                if (filtrados.length > 0) medicos = filtrados;
             }
+
+            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
 
             medicos.forEach((med, idx) => {
                 const idMed = med.idMedico || med.id || (idx + 1);
-                const nombreMed = med.nombreCompleto || med.nombres || 'Dr. Médico Especialista';
-                const cmp = med.cmp || med.CMP || 'CMP-48291';
-                
-                let horas = ["08:30", "09:15", "10:00", "11:30", "15:00", "16:30", "17:15"];
-                if (state.turno === 'MANANA') {
-                    horas = ["08:30", "09:15", "10:00", "11:30"];
-                } else if (state.turno === 'TARDE') {
-                    horas = ["14:30", "15:15", "16:00", "17:15"];
-                }
+                const rawName = med.nombreCompleto || med.nombres || 'Dr. Médico Especialista';
+                const nombreMed = normalizarNombreMedico(rawName);
+                const cmp = med.cmp || med.CMP || ('CMP 0' + (45000 + idx * 614));
+                const consultorio = med.consultorio || ('Consultorio ' + (302 + idx * 2));
+                const sedeNombre = state.sedeNombre && state.sedeNombre !== '0' ? state.sedeNombre : 'Sede San Borja';
 
-                const initials = nombreMed.replace(/^Dr\.\s*|Dra\.\s*/i, '').substring(0, 2).toUpperCase();
+                // Iniciales limpias
+                const nombreLimpio = nombreMed.replace(/^Dr\.\s*|Dra\.\s*/i, '').trim();
+                const partes = nombreLimpio.split(/\s+/);
+                const initials = (partes.length >= 2 ? partes[0][0] + partes[1][0] : partes[0].substring(0, 2)).toUpperCase();
+
+                // Horarios generados sincrónicamente (sin saltos visuales ni flashes)
+                const horas = generarHorariosDoctor(idMed, state.fecha, state.turno);
 
                 const card = document.createElement('div');
-                card.className = 'doctor-card-item';
-                card.id = 'doctorCard_' + idMed;
+                card.className = 'doctor-schedule-card';
+                card.id = 'docScheduleCard_' + idMed;
 
                 let slotsHtml = '';
-                horas.forEach(h => {
-                    slotsHtml += '<button type="button" class="slot-btn" onclick="seleccionarHorario(this, ' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\', \'' + h + '\')">' +
-                                    '<i data-lucide="clock" style="width: 13px; height: 13px;"></i> ' + h +
+                horas.forEach((h) => {
+                    slotsHtml += '<button type="button" class="slot-pill-btn" ' +
+                                 'data-med="' + idMed + '" data-hora="' + h + '" ' +
+                                 'onclick="seleccionarSlot(this, ' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\', \'' + h + '\')">' +
+                                 h +
                                  '</button>';
                 });
 
                 card.innerHTML = 
-                    '<div class="doctor-profile-col">' +
-                        '<div class="doctor-avatar-circle">' + initials + '</div>' +
-                        '<div class="doctor-meta-info">' +
-                            '<div class="doc-name-label">' + nombreMed + '</div>' +
-                            '<div class="doc-spec-label">' + state.especialidadNombre + '</div>' +
-                            '<div class="doc-cmp-label"><i data-lucide="award" style="width: 13px;"></i> ' + cmp + '</div>' +
-                            '<div style="font-size: 11.5px; color: #10b981; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">' +
-                                '<i data-lucide="check-circle" style="width: 12px;"></i> Consultorio habilitado' +
+                    '<div class="doc-card-profile-col">' +
+                        '<div class="doc-avatar-circle">' + initials + '</div>' +
+                        '<div class="doc-meta-info">' +
+                            '<h4 class="doc-name">' + nombreMed + '</h4>' +
+                            '<div class="doc-spec-cmp">' + cmp + ' · ' + (state.especialidadNombre || 'Cardiología') + '</div>' +
+                            '<div class="doc-location">' +
+                                '<i data-lucide="map-pin" style="width: 13px; height: 13px;"></i>' +
+                                '<span>' + sedeNombre + ' · ' + consultorio + '</span>' +
                             '</div>' +
                         '</div>' +
                     '</div>' +
-                    '<div class="slots-col">' +
-                        '<div class="slots-header-info">' +
-                            '<span class="slots-date-badge"><i data-lucide="calendar" style="width: 14px;"></i> Horarios disponibles</span>' +
-                            '<span style="font-size: 12px; color: var(--text-gray);">Atención presencial (30 min)</span>' +
-                        '</div>' +
-                        '<div class="slots-grid-chips">' + slotsHtml + '</div>' +
+                    '<div class="doc-card-slots-col">' +
+                        '<div class="doc-turn-kicker">' + headerTurnoTexto + '</div>' +
+                        '<div class="doc-slots-wrap" id="slotsWrap_' + idMed + '">' + slotsHtml + '</div>' +
+                    '</div>' +
+                    '<div class="doc-card-action-col">' +
+                        '<button type="button" class="btn-reservar-slot" id="btnReservar_' + idMed + '" onclick="reservarConDoctor(' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\')">' +
+                            'Reservar cita' +
+                        '</button>' +
                     '</div>';
 
                 container.appendChild(card);
@@ -1084,21 +1442,47 @@
             lucide.createIcons();
         }
 
-        function seleccionarHorario(btn, idMed, nombreMed, hora) {
-            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
-            document.querySelectorAll('.doctor-card-item').forEach(c => c.classList.remove('selected'));
-
+        function seleccionarSlot(btn, idMed, nombreMed, hora) {
+            // Deseleccionar todos los chips de todos los médicos
+            document.querySelectorAll('.slot-pill-btn').forEach(b => b.classList.remove('selected'));
             btn.classList.add('selected');
-            const card = document.getElementById('doctorCard_' + idMed);
-            if (card) card.classList.add('selected');
+
+            // Desactivar todos los botones de acción de reserva de todos los médicos
+            document.querySelectorAll('.btn-reservar-slot').forEach(b => b.classList.remove('active-card'));
+            
+            // Activar únicamente el botón de este médico
+            const btnCard = document.getElementById('btnReservar_' + idMed);
+            if (btnCard) btnCard.classList.add('active-card');
 
             state.medicoId = idMed;
             state.medicoNombre = nombreMed;
             state.hora = hora;
+        }
 
-            const btnPaso3 = document.getElementById('btnContinuarPaso3');
-            btnPaso3.style.opacity = '1';
-            btnPaso3.style.pointerEvents = 'auto';
+        function reservarConDoctor(idMed, nombreMed) {
+            const card = document.getElementById('docScheduleCard_' + idMed);
+            let slotSeleccionado = card ? card.querySelector('.slot-pill-btn.selected') : null;
+
+            if (!slotSeleccionado) {
+                alert('Por favor selecciona primero un horario con ' + nombreMed + '.');
+                if (card) {
+                    card.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                    card.style.transition = 'box-shadow 0.3s, border-color 0.3s';
+                    card.style.borderColor = '#0284c7';
+                    card.style.boxShadow = '0 0 0 4px rgba(2, 132, 199, 0.25)';
+                    setTimeout(() => {
+                        card.style.borderColor = '';
+                        card.style.boxShadow = '';
+                    }, 1400);
+                }
+                return;
+            }
+
+            state.medicoId = idMed;
+            state.medicoNombre = nombreMed;
+            state.hora = slotSeleccionado.getAttribute('data-hora') || slotSeleccionado.textContent.trim();
+
+            avanzarAPaso3();
         }
 
         function avanzarAPaso3() {
@@ -1107,15 +1491,19 @@
                 return;
             }
 
-            document.getElementById('resumenEspecialidad').textContent = state.especialidadNombre;
+            document.getElementById('resumenEspecialidad').textContent = state.especialidadNombre || 'Cardiología';
             document.getElementById('resumenMedico').textContent = state.medicoNombre;
             document.getElementById('resumenSede').textContent = (state.sedeNombre === 'Todas las sedes' ? 'Sede Central San Borja' : state.sedeNombre) + ' - Consultorio Especializado';
             document.getElementById('resumenFechaHora').textContent = state.fecha + ' - ' + state.hora;
 
-            document.getElementById('finalIdMedico').value = state.medicoId;
-            document.getElementById('finalFecha').value = state.fecha;
-            document.getElementById('finalHora').value = state.hora;
-            document.getElementById('finalUrgencia').value = state.urgencia || 'MEDIA';
+            const fIdMed = document.getElementById('finalIdMedico');
+            if (fIdMed) fIdMed.value = state.medicoId;
+            const fFecha = document.getElementById('finalFecha');
+            if (fFecha) fFecha.value = state.fecha;
+            const fHora = document.getElementById('finalHora');
+            if (fHora) fHora.value = state.hora;
+            const fUrg = document.getElementById('finalUrgencia');
+            if (fUrg) fUrg.value = state.urgencia || 'MEDIA';
 
             mostrarPaso(3);
         }

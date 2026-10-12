@@ -382,9 +382,14 @@
     color: #ffffff;
 }
 
+.wiz-step.completed {
+    color: #0f172a;
+    font-weight: 600;
+}
+
 .wiz-step.completed .wiz-num {
-    background: #10b981;
-    border-color: #10b981;
+    background: #0284c7;
+    border-color: #0284c7;
     color: #ffffff;
 }
 
@@ -602,139 +607,415 @@
 }
 
 /* ==========================================================================
-   RESULTADOS DE MÉDICOS Y HORARIOS (Paso 2)
+   RESULTADOS DE MÉDICOS Y HORARIOS (Paso 2) - FIDELIDAD EXACTA MOCKUP
    ========================================================================== */
-.doctor-results-list {
+
+/* Barra de Filtros Aplicados */
+.filters-summary-bar {
     display: flex;
-    flex-direction: column;
-    gap: 18px;
-    margin-top: 20px;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 22px;
+    flex-wrap: wrap;
+    gap: 12px;
 }
 
-.doctor-card-item {
+.filters-pills-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.filters-label-text {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #64748b;
+    margin-right: 4px;
+}
+
+.filter-pill-tag {
     background: #ffffff;
-    border: 1.5px solid var(--border-light);
-    border-radius: var(--radius-lg);
-    padding: 22px;
-    display: grid;
-    grid-template-columns: 280px 1fr;
-    gap: 24px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.02);
+    border: 1px solid #e2e8f0;
+    border-radius: 9999px;
+    padding: 6px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #0f172a;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.02);
+}
+
+.btn-modificar-filtros {
+    background: transparent;
+    border: none;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0284c7;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 6px 12px;
+    border-radius: 8px;
     transition: all 0.2s;
 }
 
-.doctor-card-item:hover {
-    border-color: #cbd5e1;
-}
-
-.doctor-card-item.selected {
-    border-color: #0284c7;
-    box-shadow: 0 6px 20px rgba(2, 132, 199, 0.08);
-}
-
-.doctor-profile-col {
-    display: flex;
-    gap: 14px;
-    border-right: 1px solid #f1f5f9;
-    padding-right: 18px;
-}
-
-.doctor-avatar-circle {
-    width: 52px;
-    height: 52px;
-    border-radius: 50%;
+.btn-modificar-filtros:hover {
     background: #f0f9ff;
-    color: #0284c7;
-    font-size: 17px;
+    color: #0369a1;
+}
+
+/* Selector de Semana y Días */
+.week-selector-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 20px;
+    padding: 22px 24px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
+    margin-bottom: 22px;
+}
+
+.week-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.week-title-label {
+    font-size: 15px;
     font-weight: 700;
+    color: #0f172a;
+}
+
+.week-nav-btns {
+    display: flex;
+    gap: 8px;
+}
+
+.btn-week-nav {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    border: 1.5px solid #e2e8f0;
+    background: #ffffff;
+    color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    border: 2px solid #bae6fd;
+    cursor: pointer;
+    transition: all 0.2s;
 }
 
-.doctor-meta-info {
+.btn-week-nav:hover {
+    border-color: #cbd5e1;
+    color: #0f172a;
+    background: #f8fafc;
+}
+
+.week-days-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 12px;
+}
+
+.day-card-item {
+    background: #ffffff;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 14px 8px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    align-items: center;
+    gap: 3px;
+    user-select: none;
 }
 
-.doc-name-label {
-    font-size: 15.5px;
+.day-card-item:hover {
+    border-color: #93c5fd;
+    transform: translateY(-1px);
+}
+
+.day-card-item.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 4px 14px rgba(2, 132, 199, 0.25);
+}
+
+.day-name {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: capitalize;
+}
+
+.day-card-item.active .day-name {
+    color: #e0f2fe;
+}
+
+.day-number {
+    font-size: 22px;
     font-weight: 700;
-    color: var(--text-dark);
+    color: #0f172a;
+    line-height: 1.15;
+}
+
+.day-card-item.active .day-number {
+    color: #ffffff;
+}
+
+.day-cupos {
+    font-size: 11px;
+    font-weight: 600;
+    color: #10b981;
+    margin-top: 2px;
+}
+
+.day-cupos.none {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+.day-card-item.active .day-cupos {
+    color: #ffffff;
+}
+
+.day-card-item.disabled {
+    background: #f8fafc;
+    border-color: #f1f5f9;
+    cursor: not-allowed;
+    opacity: 0.65;
+}
+
+.day-card-item.disabled:hover {
+    transform: none;
+    border-color: #f1f5f9;
+}
+
+/* Tarjetas de Médicos con Horarios */
+.doctor-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-bottom: 20px;
+    min-height: 220px;
+}
+
+.doctor-schedule-card {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 18px;
+    padding: 24px 28px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.02);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 24px;
+    transition: all 0.2s;
+    flex-wrap: wrap;
+}
+
+.doctor-schedule-card:hover {
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.04);
+    border-color: #cbd5e1;
+}
+
+.doc-card-profile-col {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 250px;
+    flex-shrink: 0;
+}
+
+.doc-avatar-circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: #e0f9ff;
+    color: #0284c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 16px;
+    font-weight: 700;
+    flex-shrink: 0;
+    border: 1.5px solid #bae6fd;
+}
+
+.doc-meta-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.doc-name {
+    font-size: 16.5px;
+    font-weight: 700;
+    color: #0f172a;
     margin-bottom: 3px;
 }
 
-.doc-spec-label {
+.doc-spec-cmp {
     font-size: 13px;
-    color: #0284c7;
-    font-weight: 600;
+    color: #64748b;
     margin-bottom: 4px;
 }
 
-.doc-cmp-label {
-    font-size: 11.5px;
-    color: var(--text-gray);
+.doc-location {
+    font-size: 12.5px;
+    color: #64748b;
     display: flex;
     align-items: center;
     gap: 4px;
 }
 
-/* Horarios Columna */
-.slots-col {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
+.doc-location i {
+    color: #0284c7;
 }
 
-.slots-header-info {
+.doc-card-slots-col {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 280px;
+}
+
+.doc-turn-kicker {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0284c7;
+}
+
+.doc-slots-wrap {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+    min-height: 38px;
+}
+
+.slot-pill-btn {
+    padding: 8px 14px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 8px;
+    background: #ffffff;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0f172a;
+    cursor: pointer;
+    transition: all 0.2s;
+    user-select: none;
+}
+
+.slot-pill-btn:hover {
+    border-color: #0284c7;
+    color: #0284c7;
+}
+
+.slot-pill-btn.selected {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.25);
+}
+
+.doc-card-action-col {
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+}
+
+.btn-reservar-slot {
+    padding: 12px 24px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    border: 1.5px solid #0284c7;
+    background: #ffffff;
+    color: #0284c7;
+}
+
+.btn-reservar-slot:hover {
+    background: #0284c7;
+    color: #ffffff;
+}
+
+.btn-reservar-slot.active-card {
+    background: #0284c7;
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25);
+}
+
+/* Banner Inferior de Lista de Espera */
+.waitlist-callout-card {
+    background: #f0f9ff;
+    border: 1.5px solid #bae6fd;
+    border-radius: 16px;
+    padding: 20px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    gap: 16px;
+    margin-top: 14px;
+    flex-wrap: wrap;
 }
 
-.slots-date-badge {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text-dark);
+.waitlist-callout-left {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 14px;
 }
 
-.slots-grid-chips {
+.waitlist-icon-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: #e0f2fe;
+    color: #0284c7;
     display: flex;
-    flex-wrap: wrap;
-    gap: 10px;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
 }
 
-.slot-btn {
-    padding: 8px 16px;
-    border-radius: 8px;
-    border: 1.5px solid var(--border-light);
+.waitlist-callout-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: #0369a1;
+    margin-bottom: 2px;
+}
+
+.waitlist-callout-sub {
+    font-size: 12.5px;
+    color: #0284c7;
+}
+
+.btn-waitlist-action {
     background: #ffffff;
-    font-size: 13px;
+    border: 1.5px solid #0284c7;
+    color: #0284c7;
+    padding: 10px 22px;
+    border-radius: 8px;
+    font-size: 13.5px;
     font-weight: 600;
-    color: var(--text-dark);
     cursor: pointer;
     transition: all 0.2s;
-    display: flex;
+    text-decoration: none;
+    display: inline-flex;
     align-items: center;
-    gap: 6px;
+    flex-shrink: 0;
 }
 
-.slot-btn:hover {
-    border-color: #2563eb;
-    color: #2563eb;
-    background: #f8fafc;
-}
-
-.slot-btn.selected {
+.btn-waitlist-action:hover {
     background: #0284c7;
-    border-color: #0284c7;
     color: #ffffff;
 }
 
