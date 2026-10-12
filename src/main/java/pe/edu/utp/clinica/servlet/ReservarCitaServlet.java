@@ -45,12 +45,12 @@ public class ReservarCitaServlet extends HttpServlet {
                 // Redirigir al dashboard con alerta de éxito
                 response.sendRedirect(request.getContextPath() + "/paciente/dashboard?reserva=ok");
             } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/reservar_cita?error=true");
+                response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/paciente/reservar_cita?error=true");
+            response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
         }
     }
 }
