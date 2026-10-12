@@ -21,6 +21,10 @@
     if (flashMessage != null) {
         session.removeAttribute("flashMessage");
     }
+    String flashError = (String) session.getAttribute("flashError");
+    if (flashError != null) {
+        session.removeAttribute("flashError");
+    }
 
     int medicosTotal = metricas != null && metricas.get("medicosTotal") != null ? (Integer) metricas.get("medicosTotal") : 0;
     int medicosActivos = metricas != null && metricas.get("medicosActivos") != null ? (Integer) metricas.get("medicosActivos") : 0;
@@ -123,6 +127,13 @@
                 <div class="flash-alert">
                     <i data-lucide="check-circle" style="width: 18px; color: #166534;"></i>
                     <span><%= flashMessage %></span>
+                </div>
+            <% } %>
+
+            <% if (flashError != null) { %>
+                <div class="flash-alert" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
+                    <i data-lucide="alert-circle" style="width: 18px; color: #dc2626;"></i>
+                    <span><%= flashError %></span>
                 </div>
             <% } %>
 

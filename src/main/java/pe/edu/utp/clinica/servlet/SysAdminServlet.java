@@ -231,15 +231,29 @@ public class SysAdminServlet extends HttpServlet {
             if ("editar".equals(action)) {
                 int idUsuario = Integer.parseInt(request.getParameter("idUsuario"));
                 u.setIdUsuario(idUsuario);
-                usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
+                boolean ok = usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
                 usuarioDAO.cambiarEstadoUsuario(idUsuario, activo);
-                session.setAttribute("flashMessage", "Usuario #" + idUsuario + " (" + u.getNombreCompleto() + ") actualizado correctamente en la Base de Datos.");
+                if (ok) {
+                    session.setAttribute("flashMessage", "Usuario #" + idUsuario + " (" + u.getNombreCompleto() + ") actualizado correctamente en la Base de Datos.");
+                } else {
+                    session.setAttribute("flashError", "No se pudo actualizar el usuario. Verifica los datos ingresados.");
+                }
             } else {
+                if (usuarioDAO.existeEmail(email)) {
+                    session.setAttribute("flashError", "No se pudo registrar: el correo '" + email + "' ya se encuentra registrado en el sistema. Utiliza otro correo.");
+                    response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");
+                    return;
+                }
+
                 String passwordRaw = request.getParameter("password");
                 if (passwordRaw == null || passwordRaw.trim().isEmpty()) passwordRaw = "Password123!";
                 u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(passwordRaw, org.mindrot.jbcrypt.BCrypt.gensalt()));
-                usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
-                session.setAttribute("flashMessage", "Nuevo usuario (" + nombres + " " + apellidos + ") guardado en la Base de Datos.");
+                boolean ok = usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
+                if (ok) {
+                    session.setAttribute("flashMessage", "Nuevo usuario (" + nombres + " " + apellidos + ") guardado exitosamente en la Base de Datos.");
+                } else {
+                    session.setAttribute("flashError", "Error al registrar el personal. Verifica que el correo o código de colegiatura (CMP) no estén duplicados.");
+                }
             }
 
             response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");

@@ -112,6 +112,20 @@ public class UsuarioDAO {
         return false;
     }
 
+    public boolean existeEmail(String email) {
+        String sql = "SELECT 1 FROM usuario WHERE LOWER(email) = LOWER(?)";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, email != null ? email.trim() : "");
+            try (ResultSet rs = stmt.executeQuery()) {
+                return rs.next();
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al verificar si email ya existe: " + e.getMessage(), e);
+        }
+        return false;
+    }
+
     private static volatile boolean esquemaPacienteVerificado = false;
 
     private void asegurarEsquemaPaciente(Connection conn) {
