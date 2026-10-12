@@ -8,8 +8,10 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.config.DatabaseConfig;
 import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.dao.MedicoDAO;
 import pe.edu.utp.clinica.dao.UsuarioDAO;
 import pe.edu.utp.clinica.model.Usuario;
+
 
 import java.io.IOException;
 import java.sql.Connection;
@@ -153,11 +155,22 @@ public class AdminDashboardServlet extends HttpServlet {
             e.printStackTrace();
         }
 
+        // Obtener sedes y especialidades para los filtros y modal
+        MedicoDAO medicoDAO = new MedicoDAO();
+        List<Map<String, Object>> sedes = medicoDAO.obtenerSedes();
+        List<Map<String, Object>> especialidades = medicoDAO.obtenerEspecialidades();
+
         request.setAttribute("listaMedicos", medicos);
+        request.setAttribute("sedes", sedes);
+        request.setAttribute("especialidades", especialidades);
         request.setAttribute("totalMedicos", totalMedicosBD);
         request.setAttribute("totalActivos", totalActivosBD);
         request.setAttribute("totalLicencia", totalLicenciaBD);
         request.setAttribute("totalEspecialidades", totalEspecialidadesBD);
+        request.setAttribute("filtroQuery", query != null ? query : "");
+        request.setAttribute("filtroEspecialidad", especialidad != null ? especialidad : "");
+        request.setAttribute("filtroSede", sede != null ? sede : "");
+        request.setAttribute("filtroEstado", estado != null ? estado : "ACTIVO");
     }
 
     private void cargarDatosPacientes(HttpServletRequest request) {
@@ -308,36 +321,78 @@ public class AdminDashboardServlet extends HttpServlet {
 
     private List<Map<String, Object>> obtenerMedicosPadrónBD(String query, String especialidad, String sede, String estado) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT m.cmp, u.nombres, u.apellidos, p_dni.dni, e.nombre AS especialidad_nombre, s.nombre AS sede_nombre, m.estado " +
-                     "FROM medico m " +
-                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "LEFT JOIN paciente p_dni ON u.id_usuario = p_dni.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "ORDER BY m.id_medico ASC";
+        StringBuilder sql = new StringBuilder(
+            "SELECT m.id_medico, m.cmp, u.nombres, u.apellidos, COALESCE(p_dni.dni, '45120378') AS dni, " +
+            "COALESCE(e.nombre, 'Medicina general') AS especialidad_nombre, " +
+            "COALESCE(s.nombre, 'Sede San Borja') AS sede_nombre, " +
+            "COALESCE(m.estado, 'ACTIVO') AS estado " +
+            "FROM medico m " +
+            "JOIN usuario u ON m.id_usuario = u.id_usuario " +
+            "LEFT JOIN paciente p_dni ON u.id_usuario = p_dni.id_usuario " +
+            "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+            "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
+            "WHERE 1=1 "
+        );
+
+        List<Object> params = new ArrayList<>();
+        if (query != null && !query.trim().isEmpty()) {
+            sql.append("AND (LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(m.cmp) LIKE ?) ");
+            String qLike = "%" + query.trim().toLowerCase() + "%";
+            params.add(qLike);
+            params.add(qLike);
+            params.add(qLike);
+        }
+        if (especialidad != null && !especialidad.trim().isEmpty() && !"Todas".equalsIgnoreCase(especialidad)) {
+            sql.append("AND e.nombre = ? ");
+            params.add(especialidad.trim());
+        }
+        if (sede != null && !sede.trim().isEmpty() && !"Todas las sedes".equalsIgnoreCase(sede)) {
+            sql.append("AND s.nombre = ? ");
+            params.add(sede.trim());
+        }
+        if (estado != null && !estado.trim().isEmpty() && !"Todos".equalsIgnoreCase(estado)) {
+            sql.append("AND m.estado = ? ");
+            params.add(estado.trim());
+        }
+
+        sql.append("ORDER BY m.id_medico ASC");
 
         try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("cmp", rs.getString("cmp") != null ? rs.getString("cmp") : "CMP-00000");
-                m.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "09482711");
-                m.put("rne", "24109");
-                m.put("nombre", "Dr. " + rs.getString("nombres") + " " + rs.getString("apellidos"));
-                String esp = rs.getString("especialidad_nombre");
-                m.put("especialidades", Arrays.asList(esp != null ? esp : "Medicina General"));
-                String sNombre = rs.getString("sede_nombre");
-                m.put("sede", sNombre != null ? sNombre : "Sede Central");
-                m.put("horas", "36 hrs");
-                m.put("estado", rs.getString("estado") != null ? rs.getString("estado") : "ACTIVO");
-                list.add(m);
+             PreparedStatement ps = conn.prepareStatement(sql.toString())) {
+            for (int i = 0; i < params.size(); i++) {
+                ps.setObject(i + 1, params.get(i));
+            }
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> m = new HashMap<>();
+                    String rawCmp = rs.getString("cmp");
+                    m.put("cmp", (rawCmp != null && !rawCmp.trim().isEmpty()) ? rawCmp : "045821");
+                    m.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "09452178");
+                    
+                    String rawN = rs.getString("nombres") != null ? rs.getString("nombres") : "";
+                    String rawA = rs.getString("apellidos") != null ? rs.getString("apellidos") : "";
+                    String cleanN = rawN.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "").replaceAll("\\s+", " ").trim();
+                    String cleanA = rawA.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "").replaceAll("\\s+", " ").trim();
+                    m.put("nombre", "Dr. " + (cleanN + " " + cleanA).trim());
+                    
+                    String esp = rs.getString("especialidad_nombre");
+                    m.put("especialidad", esp != null ? esp : "Medicina general");
+                    m.put("especialidades", Arrays.asList(esp != null ? esp : "Medicina general"));
+                    
+                    String sNombre = rs.getString("sede_nombre");
+                    m.put("sede", sNombre != null ? sNombre : "Sede San Borja");
+                    
+                    String est = rs.getString("estado");
+                    m.put("estado", est != null ? est : "ACTIVO");
+                    m.put("horas", "ACTIVO".equalsIgnoreCase(est) ? "30 h" : "—");
+                    list.add(m);
+                }
             }
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        if (list.isEmpty()) {
+        if (list.isEmpty() && (query == null || query.isEmpty()) && (especialidad == null || especialidad.isEmpty())) {
             return obtenerMedicosPadrónFallback();
         }
         return list;
