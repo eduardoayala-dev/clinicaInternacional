@@ -1,17 +1,26 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
-    if (nombrePaciente == null) nombrePaciente = "Eduardo Ayala";
-    
-    List<Map<String, Object>> listaEspecialidades = (List<Map<String, Object>>) request.getAttribute("listaEspecialidades");
+    if (nombrePaciente == null && usuario != null) {
+        nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
+    }
+    if (nombrePaciente == null) nombrePaciente = "Paciente";
 
-    // Obtener iniciales del paciente
-    String inicialesPaciente = "EA";
-    if (nombrePaciente != null && !nombrePaciente.isEmpty()) {
+    List<Map<String, Object>> listaEspecialidades = (List<Map<String, Object>>) request.getAttribute("listaEspecialidades");
+    List<Map<String, Object>> listaSedes = (List<Map<String, Object>>) request.getAttribute("listaSedes");
+
+    String preEspId = (String) request.getAttribute("preEspId");
+    String preMedId = (String) request.getAttribute("preMedId");
+    String preEspNombre = (String) request.getAttribute("preEspNombre");
+    String preMedNombre = (String) request.getAttribute("preMedNombre");
+
+    String inicialesPaciente = "P";
+    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
@@ -20,841 +29,932 @@
         }
     }
 
-    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
-    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
+    int numNotifSinLeer = request.getAttribute("numNotifSinLeer") != null ? (Integer) request.getAttribute("numNotifSinLeer") : 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programar Cita - Clínica Internacional</title>
+    <title>Programar Cita - Portal del Paciente | Clínica Internacional</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/reservar-cita.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css">
 </head>
 <body>
 
-    <!-- SIDEBAR -->
+    <!-- SIDEBAR INSTITUCIONAL -->
     <aside class="sidebar">
         <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="brand-text">
+                <span class="brand-title">Clínica Internacional</span>
+                <span class="brand-subtitle">Portal del paciente</span>
+            </div>
         </div>
 
         <nav class="nav-menu">
             <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px;"></i> Inicio
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/panel" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Panel
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/medicos" class="nav-item">
-                <i data-lucide="users" style="width: 18px;"></i> Médicos
+                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+                <span>Inicio</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item active">
-                <i data-lucide="calendar" style="width: 18px;"></i> Citas
+                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+                <span>Buscar cita</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="clipboard-list" style="width: 18px;"></i> Historial
+                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+                <span>Mis citas</span>
             </a>
-            <a href="${pageContext.request.contextPath}/paciente/reportes" class="nav-item">
-                <i data-lucide="bar-chart-2" style="width: 18px;"></i> Reportes
+            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
+                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+                <span>Lista de espera</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px;"></i> Alertas
+                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+                <span>Notificaciones</span>
+                <% if (numNotifSinLeer > 0) { %>
+                    <span class="badge-count"><%= numNotifSinLeer %></span>
+                <% } %>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px;"></i> Mi perfil
+                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                <span>Perfil</span>
             </a>
         </nav>
 
-        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
-            <div class="avatar-initials avatar-sm"><%= inicialesPaciente %></div>
-            <div style="flex: 1;">
-                <div class="user-name-sm"><%= nombrePaciente %></div>
-                <div class="user-role-sm">Paciente</div>
+        <div class="user-profile">
+            <div class="avatar"><%= inicialesPaciente %></div>
+            <div class="user-info">
+                <span class="user-name"><%= nombrePaciente %></span>
+                <span class="user-role">Paciente</span>
             </div>
-            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
-        </a>
+            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+            </a>
+        </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
-        <div class="page-header">
-            <div>
-                <h1 class="header-title">Programar Cita</h1>
-                <p class="header-subtitle">Completa los pasos para agendar tu consulta médica.</p>
-            </div>
-            <div style="display: flex; align-items: center;">
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>">
-                    <i data-lucide="bell" style="width: 20px;"></i>
-                </a>
-            </div>
-        </div>
 
-        <div class="wizard-container" style="margin: 0 auto;">
-            
-            <div class="stepper">
-                <div class="step active" id="stepper-1"><span class="step-num">1</span> Especialidad</div>
-                <div class="step-divider"></div>
-                <div class="step" id="stepper-2"><span class="step-num">2</span> Médico</div>
-                <div class="step-divider"></div>
-                <div class="step" id="stepper-3"><span class="step-num">3</span> Fecha y hora</div>
-                <div class="step-divider"></div>
-                <div class="step" id="stepper-4"><span class="step-num">4</span> Detalles</div>
-                <div class="step-divider"></div>
-                <div class="step" id="stepper-5"><span class="step-num">5</span> Confirmar</div>
-            </div>
+        <!-- HEADER INSTITUCIONAL -->
+        <header class="dash-top-header">
+            <nav class="breadcrumb-trail">
+                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Buscar cita</strong>
+            </nav>
 
-            <div class="card">
-                <!-- PASO 1: ESPECIALIDAD -->
-                <div id="step1-content">
-                    <div class="card-header">
-                        <h2 class="card-title">Selecciona una especialidad</h2>
-                        <p class="card-subtitle">Elige el área médica de tu consulta.</p>
-                    </div>
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
+                <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
+                <span>Avisos</span>
+                <% if (numNotifSinLeer > 0) { %>
+                    <span class="badge-avisos-count"><%= numNotifSinLeer %></span>
+                <% } %>
+            </a>
+        </header>
 
-                    <div class="search-container">
-                        <i data-lucide="search" class="search-icon" style="width: 18px;"></i>
-                        <input type="text" class="search-input" placeholder="Buscar especialidad..." id="searchInput">
-                    </div>
+        <!-- CONTENEDOR CON SCROLL -->
+        <div class="citas-scroll-container">
+            <div class="buscar-wrapper">
 
-                <div class="specialty-grid">
-                    <% if (listaEspecialidades != null && !listaEspecialidades.isEmpty()) {
-                        for (Map<String, Object> esp : listaEspecialidades) {
-                            int idEsp = (Integer) esp.get("id");
-                            String nombreEsp = (String) esp.get("nombre");
-                            int totalMed = esp.get("totalMedicos") != null ? (Integer) esp.get("totalMedicos") : 2;
-                            
-                            String icon = "stethoscope";
-                            String lower = nombreEsp.toLowerCase();
-                            if (lower.contains("cardio")) icon = "heart";
-                            else if (lower.contains("neuro")) icon = "brain";
-                            else if (lower.contains("general")) icon = "stethoscope";
-                            else if (lower.contains("trauma")) icon = "bone";
-                            else if (lower.contains("derma")) icon = "microscope";
-                            else if (lower.contains("gineco")) icon = "baby";
-                    %>
-                    <div class="specialty-item" onclick="selectSpecialty(this, '<%= idEsp %>')">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="<%= icon %>" style="width: 20px;"></i></div>
+                <!-- ======================================================= -->
+                <!-- PANTALLA 1: ELECCIÓN DE MODO (IA vs DIRECTO)           -->
+                <!-- ======================================================= -->
+                <div id="viewModeSelector">
+                    <!-- TÍTULO Y SUBTÍTULO -->
+                    <h1 class="page-main-title">Programar Cita</h1>
+                    <p class="page-main-subtitle">Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.</p>
+
+                    <div class="mode-selection-grid">
+                        
+                        <!-- TARJETA 1: ORIENTACIÓN MÉDICA POR IA -->
+                        <div class="mode-card" onclick="iniciarModoIA()">
                             <div>
-                                <div class="spec-name"><%= nombreEsp %></div>
-                                <div class="spec-meta"><%= totalMed %> <%= totalMed == 1 ? "médico disponible" : "médicos disponibles" %></div>
+                                <div class="mode-card-top-row">
+                                    <div class="mode-card-icon">
+                                        <i data-lucide="bot" style="width: 26px; height: 26px;"></i>
+                                    </div>
+                                    <span class="mode-badge-pill badge-pill-mint">
+                                        Nuevo · Asistido por IA
+                                    </span>
+                                </div>
+
+                                <div class="mode-kicker">ORIENTACIÓN MÉDICA POR IA</div>
+                                <h2 class="mode-card-title">No sé qué especialidad necesito</h2>
+                                <p class="mode-card-desc">
+                                    Describe lo que sientes. Nuestra IA analizará tus síntomas para sugerirte el especialista adecuado según disponibilidad, con validación de nuestro equipo médico si es necesario.
+                                </p>
                             </div>
+
+                            <button type="button" class="btn-card-action">
+                                <span>Describir síntomas</span>
+                                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                            </button>
                         </div>
-                        <div class="radio-circle"></div>
-                    </div>
-                    <%  }
-                    } else { %>
-                    <div class="specialty-item" onclick="selectSpecialty(this, 1)">
-                        <div class="spec-info">
-                            <div class="spec-icon-wrapper"><i data-lucide="heart" style="width: 20px;"></i></div>
+
+                        <!-- TARJETA 2: RESERVA DIRECTA POR ESPECIALIDAD -->
+                        <div class="mode-card" onclick="iniciarModoDirecto()">
                             <div>
-                                <div class="spec-name">Cardiología</div>
-                                <div class="spec-meta">2 médicos disponibles</div>
+                                <div class="mode-card-top-row">
+                                    <div class="mode-card-icon">
+                                        <i data-lucide="calendar" style="width: 26px; height: 26px;"></i>
+                                    </div>
+                                    <span class="mode-badge-pill badge-pill-soft">
+                                        Reserva directa
+                                    </span>
+                                </div>
+
+                                <div class="mode-kicker">RESERVA DIRECTA POR ESPECIALIDAD</div>
+                                <h2 class="mode-card-title">Ya sé qué especialidad necesito</h2>
+                                <p class="mode-card-desc">
+                                    Elige directamente la especialidad, el médico de tu preferencia y el horario que mejor se acomode a ti.
+                                </p>
                             </div>
+
+                            <button type="button" class="btn-card-action">
+                                <span>Ver especialidades</span>
+                                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                            </button>
                         </div>
-                        <div class="radio-circle"></div>
+
                     </div>
-                    <% } %>
+
+                    <!-- DISCLAIMER INFERIOR -->
+                    <div class="disclaimer-banner">
+                        <i data-lucide="info" style="width: 20px; height: 20px;"></i>
+                        <span>La orientación por IA no reemplaza una evaluación médica. Si presentas una emergencia, acude al centro de salud más cercano.</span>
+                    </div>
                 </div>
-                </div> <!-- END STEP 1 -->
 
-                <!-- PASO 2: MEDICO -->
-                <div id="step2-content" style="display: none;">
-                    <div class="card-header">
-                        <h2 class="card-title">Selecciona un médico</h2>
-                        <p class="card-subtitle">Elige al profesional de tu preferencia.</p>
-                    </div>
-
-                    <div class="search-container">
-                        <i data-lucide="search" class="search-icon" style="width: 18px;"></i>
-                        <input type="text" class="search-input" placeholder="Buscar médico..." id="searchMedicoInput">
-                    </div>
-
-                    <div class="doctor-grid" id="doctorGridContainer">
-                        <!-- Llenado por AJAX -->
-                    </div>
-                </div> <!-- END STEP 2 -->
-
-                <!-- PASO 3: FECHA Y HORA -->
-                <div id="step3-content" style="display: none;">
-                    <div class="card-header">
-                        <h2 class="card-title">Selecciona fecha y hora</h2>
-                        <p class="card-subtitle">Elige el día y la hora de atención de tu preferencia.</p>
-                    </div>
-
-                    <!-- BARRA ACCESIBLE DE MES Y NAVEGACION -->
-                    <div style="background: #ffffff; padding: 16px 20px; border-radius: var(--radius-md); border: 1px solid var(--border-light); margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.02);">
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <div style="width: 40px; height: 40px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                <!-- ======================================================= -->
+                <!-- PANEL ASISTENTE DE SÍNTOMAS IA                          -->
+                <!-- ======================================================= -->
+                <div id="aiTriagePanel" class="ai-triage-box">
+                    <div class="ai-triage-header">
+                        <div class="ai-triage-header-info">
+                            <div class="ai-badge-robot">
+                                <i data-lucide="bot" style="width: 24px; height: 24px;"></i>
                             </div>
                             <div>
-                                <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Mes de atención</div>
-                                <div id="currentMonthYearLabel" style="font-size: 16px; font-weight: 700; color: var(--text-dark);">Octubre 2026</div>
+                                <h3 style="font-size: 17px; font-weight: 700; color: #1e3a8a;">Asistente de Orientación Clínica por IA</h3>
+                                <p style="font-size: 13px; color: #64748b;">Describe tus síntomas para orientarte con la especialidad médica más adecuada.</p>
+                            </div>
+                        </div>
+                        <button type="button" onclick="cerrarPanelIA()" style="background: none; border: none; cursor: pointer; color: #64748b;" title="Cerrar">
+                            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
+                        </button>
+                    </div>
+
+                    <div style="margin-bottom: 12px;">
+                        <label for="aiSintomasInput" style="font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 6px;">
+                            ¿Qué síntomas o molestias presentas?
+                        </label>
+                        <textarea id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Ej: Tengo dolor de cabeza punzante desde hace 2 días, mareos ligeros al levantarme y molestia con la luz..."></textarea>
+                    </div>
+
+                    <div class="quick-symptoms-label">O selecciona síntomas frecuentes:</div>
+                    <div class="quick-chips-wrapper">
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor de cabeza y mareos')">🤕 Dolor de cabeza y mareos</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Opresión en el pecho y palpitaciones')">❤️ Molestia en el pecho</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor articular o lesión en rodilla/espalda')">🦴 Articulaciones o columna</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Erupción o manchas en la piel')">🧴 Alergia o piel</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor estomacal y acidez')">🍏 Estómago o digestivo</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Fiebre persistente y malestar general')">🌡️ Fiebre y malestar</button>
+                    </div>
+
+                    <div style="display: flex; gap: 12px; align-items: center;">
+                        <button type="button" id="btnAnalizarIA" class="btn-card-action btn-card-royal" onclick="ejecutarAnalisisIA()">
+                            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
+                            <span>Analizar síntomas con IA</span>
+                        </button>
+                        <button type="button" class="btn-secondary-flat" onclick="cerrarPanelIA()">Volver</button>
+                    </div>
+
+                    <!-- RESULTADO DEL ANÁLISIS DE IA -->
+                    <div id="aiResultadoBox" class="ai-response-result">
+                        <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px;">
+                            <div>
+                                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
+                                    <span class="mode-badge-pill badge-pill-mint" style="margin-bottom: 0;">
+                                        <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
+                                        Especialidad sugerida: <strong id="aiEspecialidadNombre" style="margin-left: 4px;">Neurología</strong>
+                                    </span>
+                                    <span id="aiPrioridadBadge" class="mode-badge-pill" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
+                                        Prioridad: Moderada
+                                    </span>
+                                </div>
+                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Orientación preliminar</h4>
+                                <p id="aiExplicacionTexto" style="font-size: 13.5px; color: #334155; line-height: 1.5;">
+                                    Los síntomas ingresados coinciden con el área de Neurología para evaluar posibles cuadros de cefalea o migraña.
+                                </p>
                             </div>
                         </div>
 
-                        <div style="display: flex; align-items: center; gap: 12px;">
-                            <!-- Selector de Mes Accesible -->
-                            <div style="display: flex; align-items: center; gap: 6px;">
-                                <label for="monthFilterSelect" style="font-size: 13px; font-weight: 600; color: var(--text-gray);">Filtrar por mes:</label>
-                                <select id="monthFilterSelect" onchange="filterDatesByMonth(this.value)" style="padding: 8px 14px; border: 1.5px solid var(--border-light); border-radius: 20px; background: #ffffff; font-size: 13px; font-weight: 600; color: var(--text-dark); outline: none; cursor: pointer;">
-                                    <!-- Llenado dinámicamente -->
+                        <div style="padding-top: 14px; border-top: 1px solid #dcfce7; display: flex; gap: 12px; align-items: center;">
+                            <button type="button" class="btn-primary-search" onclick="aplicarRecomendacionIA()">
+                                <span>Continuar con esta especialidad</span>
+                                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                            </button>
+                            <button type="button" class="btn-secondary-flat" onclick="iniciarModoDirecto()">Elegir otra manualmente</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ======================================================= -->
+                <!-- WIZARD STEPPER Y FLUJO DE BÚSQUEDA                     -->
+                <!-- ======================================================= -->
+                <div id="wizardFlowSection" style="display: none;">
+
+                    <!-- STEPPER -->
+                    <div class="wizard-stepper-container">
+                        <div class="wiz-step active" id="wizStep1">
+                            <div class="wiz-num">1</div>
+                            <span>Criterios de búsqueda</span>
+                        </div>
+                        <div class="wiz-line"></div>
+                        <div class="wiz-step" id="wizStep2">
+                            <div class="wiz-num">2</div>
+                            <span>Horarios y Médicos</span>
+                        </div>
+                        <div class="wiz-line"></div>
+                        <div class="wiz-step" id="wizStep3">
+                            <div class="wiz-num">3</div>
+                            <span>Confirmación</span>
+                        </div>
+                    </div>
+
+                    <!-- PASO 1: CRITERIOS DE BÚSQUEDA -->
+                    <div id="step1Content" class="card-filter-box">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                            <div>
+                                <h3 style="font-size: 18px; font-weight: 700; color: #1e3a8a;">Filtros de búsqueda</h3>
+                                <p style="font-size: 13.5px; color: #64748b;">Selecciona tu sede, especialidad médica y horario de preferencia.</p>
+                            </div>
+                            <button type="button" class="btn-secondary-flat" onclick="volverASeleccionModos()" style="font-size: 12.5px; padding: 7px 12px;">
+                                <i data-lucide="arrow-left" style="width: 14px; height: 14px;"></i>
+                                <span>Cambiar modo</span>
+                            </button>
+                        </div>
+
+                        <div class="filter-grid-layout">
+                            
+                            <!-- SEDE -->
+                            <div class="filter-field">
+                                <label for="selectSede">
+                                    <span>Sede de atención</span>
+                                </label>
+                                <select id="selectSede" class="filter-control">
+                                    <option value="0">Todas las sedes</option>
+                                    <% if (listaSedes != null) {
+                                        for (Map<String, Object> sede : listaSedes) { %>
+                                            <option value="<%= sede.get("id") %>"><%= sede.get("nombre") %></option>
+                                    <%  }
+                                    } %>
                                 </select>
                             </div>
 
-                            <!-- Botones de Desplazamiento Lateral -->
-                            <div style="display: flex; gap: 6px;">
-                                <button type="button" onclick="scrollDates(-1)" style="width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border-light); background: #ffffff; color: var(--text-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" title="Días anteriores">
-                                    <i data-lucide="chevron-left" style="width: 18px; height: 18px;"></i>
+                            <!-- ESPECIALIDAD -->
+                            <div class="filter-field">
+                                <label for="selectEspecialidad">
+                                    <span>Especialidad médica</span>
+                                    <span id="aiEspecialidadTag" class="ai-suggested-tag" style="display: none;">IA Sugerida</span>
+                                </label>
+                                <select id="selectEspecialidad" class="filter-control" onchange="actualizarMedicosPorEspecialidad()">
+                                    <option value="">Selecciona especialidad...</option>
+                                    <% if (listaEspecialidades != null) {
+                                        for (Map<String, Object> esp : listaEspecialidades) { %>
+                                            <option value="<%= esp.get("id") %>" data-nombre="<%= esp.get("nombre") %>">
+                                                <%= esp.get("nombre") %>
+                                            </option>
+                                    <%  }
+                                    } %>
+                                </select>
+                            </div>
+
+                            <!-- MOTIVO DE CONSULTA -->
+                            <div class="filter-field">
+                                <label for="inputMotivo">Motivo de consulta</label>
+                                <input type="text" id="inputMotivo" class="filter-control" placeholder="Ej: Consulta regular, control o síntomas">
+                            </div>
+
+                            <!-- MÉDICO (OPCIONAL) -->
+                            <div class="filter-field">
+                                <label for="selectMedico">Médico (opcional)</label>
+                                <select id="selectMedico" class="filter-control">
+                                    <option value="0">Cualquier médico disponible</option>
+                                </select>
+                            </div>
+
+                            <!-- FECHA PREFERIDA -->
+                            <div class="filter-field">
+                                <label for="inputFecha">Fecha preferida</label>
+                                <input type="date" id="inputFecha" class="filter-control">
+                            </div>
+
+                            <!-- TURNO -->
+                            <div class="filter-field">
+                                <label>Turno preferido</label>
+                                <div class="turno-pills-row">
+                                    <button type="button" class="turno-pill selected" onclick="seleccionarTurno(this, 'TODOS')">Indiferente</button>
+                                    <button type="button" class="turno-pill" onclick="seleccionarTurno(this, 'MANANA')">Mañana</button>
+                                    <button type="button" class="turno-pill" onclick="seleccionarTurno(this, 'TARDE')">Tarde</button>
+                                </div>
+                            </div>
+
+                        </div>
+
+                        <!-- BARRA DE ACCIONES PASO 1 -->
+                        <div class="filter-actions-bar">
+                            <button type="button" class="btn-secondary-flat" onclick="limpiarFiltros()">
+                                <i data-lucide="rotate-ccw" style="width: 15px; height: 15px;"></i>
+                                <span>Limpiar filtros</span>
+                            </button>
+
+                            <button type="button" class="btn-primary-search" onclick="buscarHorariosDisponibles()">
+                                <span>Buscar horarios disponibles</span>
+                                <i data-lucide="search" style="width: 16px; height: 16px;"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- PASO 2: HORARIOS Y MÉDICOS DISPONIBLES -->
+                    <div id="step2Content" style="display: none;">
+                        <div class="card-filter-box" style="padding: 20px 24px; margin-bottom: 20px;">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: gap; gap: 12px;">
+                                <div>
+                                    <div style="font-size: 12px; color: var(--text-gray); font-weight: 600; text-transform: uppercase;">Criterios seleccionados:</div>
+                                    <div style="font-size: 15px; font-weight: 700; color: #1e3a8a; margin-top: 2px;">
+                                        <span id="labelResumenCriterios">Especialidad · Sede</span>
+                                    </div>
+                                </div>
+                                <button type="button" class="btn-secondary-flat" onclick="volverAPaso1()">
+                                    <i data-lucide="edit-3" style="width: 15px; height: 15px;"></i>
+                                    <span>Modificar búsqueda</span>
                                 </button>
-                                <button type="button" onclick="scrollDates(1)" style="width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid var(--border-light); background: #ffffff; color: var(--text-dark); display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;" title="Días siguientes">
-                                    <i data-lucide="chevron-right" style="width: 18px; height: 18px;"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div style="margin-bottom: 12px; font-weight: 600; color: var(--text-dark); font-size: 14px; display: flex; align-items: center; gap: 6px;">
-                        <span>Días con citas disponibles:</span>
-                    </div>
-                    <div class="date-container" id="dateContainer">
-                        <!-- Llenado por AJAX -->
-                    </div>
-
-                    <div style="margin-top: 24px; margin-bottom: 16px; font-weight: 600; color: var(--text-dark); font-size: 14px; display: flex; align-items: center; gap: 8px;">
-                        <i data-lucide="clock" style="width: 18px; color: var(--primary);"></i> Horarios de atención disponibles
-                    </div>
-                    <div class="time-grid" id="timeGridContainer">
-                        <!-- Llenado por AJAX al seleccionar un día -->
-                        <p style="color: var(--text-gray); grid-column: 1/-1;">Selecciona una fecha primero para ver los horarios.</p>
-                    </div>
-                </div> <!-- END STEP 3 -->
-
-                <!-- PASO 4: CONFIRMAR -->
-                <div id="step4-content" style="display: none;">
-                    <div class="card-header" style="margin-bottom: 24px;">
-                        <h2 class="card-title">Confirma tu Cita Médica</h2>
-                        <p class="card-subtitle">Verifica los datos seleccionados antes de agendar tu atención.</p>
-                    </div>
-
-                    <div style="background: #ffffff; padding: 24px; border-radius: var(--radius-lg); border: 1px solid var(--border-light); box-shadow: 0 4px 16px rgba(0,0,0,0.02); margin-bottom: 24px;">
-                        
-                        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 24px; padding-bottom: 24px; border-bottom: 1px solid var(--border-light);">
-                            <!-- Especialidad -->
-                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
-                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i data-lucide="stethoscope" style="width: 20px; height: 20px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Especialidad</div>
-                                    <div id="resumenEspecialidad" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
-                                </div>
-                            </div>
-
-                            <!-- Médico -->
-                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
-                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i data-lucide="user-check" style="width: 20px; height: 20px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Médico Tratante</div>
-                                    <div id="resumenMedico" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
-                                </div>
-                            </div>
-
-                            <!-- Fecha -->
-                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
-                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Fecha</div>
-                                    <div id="resumenFecha" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
-                                </div>
-                            </div>
-
-                            <!-- Hora -->
-                            <div style="display: flex; gap: 14px; align-items: center; background: #f8fafc; padding: 14px; border-radius: var(--radius-md); border: 1px solid #f1f5f9;">
-                                <div style="width: 42px; height: 42px; border-radius: 10px; background: #eff6ff; color: var(--primary); display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
-                                    <i data-lucide="clock" style="width: 20px; height: 20px;"></i>
-                                </div>
-                                <div>
-                                    <div style="font-size: 11px; color: var(--text-gray); text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px;">Hora</div>
-                                    <div id="resumenHora" style="font-weight: 700; color: var(--text-dark); font-size: 15px; margin-top: 2px;">...</div>
-                                </div>
                             </div>
                         </div>
 
-                        <!-- Prioridad de Atención -->
-                        <div style="background: #ffffff; padding: 20px; border-radius: var(--radius-md); border: 1px solid var(--border-light);">
-                            <label style="font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 8px; font-size: 14px;">
-                                Nivel de Urgencia / Prioridad de Atención:
-                            </label>
-                            <select id="urgenciaSelect" style="width: 100%; padding: 12px 16px; border: 1px solid var(--border-light); border-radius: var(--radius-md); background: #ffffff; font-size: 14px; font-weight: 500; color: var(--text-dark); outline: none; cursor: pointer; transition: all 0.2s;">
-                                <option value="BAJA">Baja - Control o chequeo de rutina (Sin dolor)</option>
-                                <option value="MEDIA">Media - Molestia persistente o dolor tolerable</option>
-                                <option value="ALTA">Alta - Sintomatología severa o prioridad clínica</option>
-                            </select>
-                            <p style="font-size: 12px; color: var(--text-gray); margin-top: 12px; display: flex; align-items: center; gap: 6px;">
-                                <i data-lucide="shield-check" style="width: 15px; height: 15px; color: var(--primary);"></i>
-                                Tu reserva será confirmada de inmediato en el sistema de la clínica.
-                            </p>
+                        <div style="margin-bottom: 14px; font-weight: 700; color: #0f172a; font-size: 16px; display: flex; align-items: center; justify-content: space-between;">
+                            <span>Médicos y turnos disponibles para la fecha:</span>
+                            <span id="badgeFechaSeleccionada" style="font-size: 13px; font-weight: 600; color: #2563eb; background: #eff6ff; padding: 4px 10px; border-radius: 6px;">Hoy</span>
+                        </div>
+
+                        <!-- LISTADO DINÁMICO DE MÉDICOS Y HORARIOS -->
+                        <div id="doctorResultsContainer" class="doctor-results-list">
+                            <!-- Inyectado por JS -->
+                        </div>
+
+                        <div style="margin-top: 24px; display: flex; justify-content: space-between; align-items: center;">
+                            <button type="button" class="btn-secondary-flat" onclick="volverAPaso1()">
+                                <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+                                <span>Regresar a criterios</span>
+                            </button>
+
+                            <button type="button" id="btnContinuarPaso3" class="btn-primary-search" style="opacity: 0.5; pointer-events: none;" onclick="avanzarAPaso3()">
+                                <span>Continuar a confirmación</span>
+                                <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                            </button>
                         </div>
                     </div>
 
-                    <form id="formReserva" method="POST" action="${pageContext.request.contextPath}/paciente/reservar" style="display:none;">
-                        <input type="hidden" name="idMedico" id="inputMedico">
-                        <input type="hidden" name="fecha" id="inputFecha">
-                        <input type="hidden" name="hora" id="inputHora">
-                        <input type="hidden" name="urgencia" id="inputUrgencia">
-                    </form>
-                </div> <!-- END STEP 4 -->
+                    <!-- PASO 3: CONFIRMACIÓN Y RESERVA -->
+                    <div id="step3Content" style="display: none;">
+                        <div class="confirmation-card">
+                            <div style="margin-bottom: 22px; padding-bottom: 16px; border-bottom: 1px solid #f1f5f9;">
+                                <h3 style="font-size: 20px; font-weight: 700; color: #1e3a8a; margin-bottom: 4px;">Confirmar Reserva de Cita</h3>
+                                <p style="font-size: 13.5px; color: #64748b;">Por favor, revisa todos los datos antes de agendar tu cita médica en la Clínica Internacional.</p>
+                            </div>
 
-                <div class="actions">
-                    <button class="btn-back" id="btnBack" style="background: none; border: none; cursor: pointer;">
-                        <i data-lucide="arrow-left" style="width: 16px;"></i> Cancelar
-                    </button>
-                    <button class="btn-continue" id="btnContinue" disabled>
-                        <span id="btnContinueText">Continuar</span> <i data-lucide="arrow-right" style="width: 16px;" id="btnContinueIcon"></i>
-                    </button>
+                            <div class="confirm-details-grid">
+                                
+                                <div class="confirm-item-box">
+                                    <div class="confirm-item-icon">
+                                        <i data-lucide="stethoscope" style="width: 22px; height: 22px;"></i>
+                                    </div>
+                                    <div>
+                                        <div class="confirm-item-label">Especialidad</div>
+                                        <div class="confirm-item-val" id="resumenEspecialidad">Cardiología</div>
+                                    </div>
+                                </div>
+
+                                <div class="confirm-item-box">
+                                    <div class="confirm-item-icon">
+                                        <i data-lucide="user-check" style="width: 22px; height: 22px;"></i>
+                                    </div>
+                                    <div>
+                                        <div class="confirm-item-label">Médico Tratante</div>
+                                        <div class="confirm-item-val" id="resumenMedico">Dr. Carlos Ramos</div>
+                                    </div>
+                                </div>
+
+                                <div class="confirm-item-box">
+                                    <div class="confirm-item-icon">
+                                        <i data-lucide="building" style="width: 22px; height: 22px;"></i>
+                                    </div>
+                                    <div>
+                                        <div class="confirm-item-label">Sede y Consultorio</div>
+                                        <div class="confirm-item-val" id="resumenSede">Sede Lima - Consultorio 302</div>
+                                    </div>
+                                </div>
+
+                                <div class="confirm-item-box">
+                                    <div class="confirm-item-icon">
+                                        <i data-lucide="calendar" style="width: 22px; height: 22px;"></i>
+                                    </div>
+                                    <div>
+                                        <div class="confirm-item-label">Fecha y Hora</div>
+                                        <div class="confirm-item-val" id="resumenFechaHora">15/10/2026 - 10:30 AM</div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                            <div class="clinical-notice-box">
+                                <strong>Recomendación importante:</strong> Preséntate con 15 minutos de anticipación en el módulo de recepción con tu documento de identidad (DNI o Carné de Extranjería). En caso de no poder asistir, recuerda cancelar con anticipación desde tu panel de citas.
+                            </div>
+
+                            <!-- FORMULARIO DE ENVÍO POST -->
+                            <form id="formReservaFinal" action="${pageContext.request.contextPath}/paciente/reservar" method="POST">
+                                <input type="hidden" name="idMedico" id="finalIdMedico" value="">
+                                <input type="hidden" name="fecha" id="finalFecha" value="">
+                                <input type="hidden" name="hora" id="finalHora" value="">
+                                <input type="hidden" name="urgencia" id="finalUrgencia" value="MEDIA">
+
+                                <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 18px; border-top: 1px solid #f1f5f9;">
+                                    <button type="button" class="btn-secondary-flat" onclick="volverAPaso2()">
+                                        <i data-lucide="arrow-left" style="width: 15px; height: 15px;"></i>
+                                        <span>Cambiar horario</span>
+                                    </button>
+
+                                    <button type="submit" class="btn-primary-search" id="btnConfirmarReserva">
+                                        <i data-lucide="check-circle" style="width: 16px; height: 16px;"></i>
+                                        <span>Agendar y Confirmar Cita</span>
+                                    </button>
+                                </div>
+                            </form>
+
+                        </div>
+                    </div>
+
                 </div>
-            </div>
 
+            </div>
         </div>
+
     </main>
 
+    <!-- SCRIPTS Y LÓGICA DE CONTROL -->
     <script>
-        lucide.createIcons();
+        document.addEventListener('DOMContentLoaded', function() {
+            lucide.createIcons();
 
-        let selectedEspecialidad = null;
-        let selectedEspecialidadNombre = "${preEspNombre}";
-        let selectedMedico = null;
-        let selectedMedicoNombre = "${preMedNombre}";
-        let selectedFecha = null;
-        let selectedHora = null;
-        let currentStep = 1;
+            // Configurar fecha mínima de hoy en inputFecha
+            const today = new Date().toISOString().split('T')[0];
+            const dateInput = document.getElementById('inputFecha');
+            if (dateInput) {
+                dateInput.min = today;
+                dateInput.value = today;
+            }
 
-        function selectSpecialty(element, id) {
-            document.querySelectorAll('.specialty-item').forEach(item => item.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedEspecialidad = id;
-            const specElem = element.querySelector('.spec-name');
-            if (specElem) selectedEspecialidadNombre = specElem.textContent.trim();
-
-            const btn = document.getElementById('btnContinue');
-            btn.classList.add('active');
-            btn.disabled = false;
-        }
-
-        function selectDoctor(element, id) {
-            document.querySelectorAll('.doctor-item').forEach(item => item.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedMedico = id;
-            const docElem = element.querySelector('.doc-name');
-            if (docElem) selectedMedicoNombre = docElem.textContent.trim();
-
-            const btn = document.getElementById('btnContinue');
-            btn.classList.add('active');
-            btn.disabled = false;
-        }
-
-        // Búsqueda Especialidad
-        document.getElementById('searchInput').addEventListener('input', function(e) {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.specialty-item').forEach(item => {
-                const name = item.querySelector('.spec-name').textContent.toLowerCase();
-                item.style.display = name.includes(term) ? 'flex' : 'none';
-            });
-        });
-
-        // Búsqueda Médico
-        document.getElementById('searchMedicoInput').addEventListener('input', function(e) {
-            const term = e.target.value.toLowerCase();
-            document.querySelectorAll('.doctor-item').forEach(item => {
-                const name = item.querySelector('.doc-name').textContent.toLowerCase();
-                item.style.display = name.includes(term) ? 'flex' : 'none';
-            });
-        });
-
-        // Navegación (Continuar / Atrás)
-        document.getElementById('btnContinue').addEventListener('click', function() {
-            if (currentStep === 1 && selectedEspecialidad) {
-                // Cargar doctores
-                const btnText = document.getElementById('btnContinueText');
-                const btnIcon = document.getElementById('btnContinueIcon');
-                btnText.textContent = "Cargando...";
-                btnIcon.style.display = "none";
-                this.disabled = true;
-
-                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad + '&_t=' + new Date().getTime())
-                    .then(response => response.json())
-                    .then(data => {
-                        renderDoctors(data);
-                        // Cambiar UI
-                        document.getElementById('step1-content').style.display = 'none';
-                        document.getElementById('step2-content').style.display = 'block';
-                        document.getElementById('stepper-1').classList.remove('active');
-                        document.getElementById('stepper-2').classList.add('active');
-                        
-                        document.getElementById('btnBack').innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Atrás';
-                        
-                        btnText.textContent = "Continuar";
-                        btnIcon.style.display = "block";
-                        
-                        selectedMedico = null;
-                        this.classList.remove('active');
-                        this.disabled = true;
-                        currentStep = 2;
-                        lucide.createIcons();
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        alert("Error al cargar los médicos.");
-                        btnText.textContent = "Continuar";
-                        btnIcon.style.display = "block";
-                        this.disabled = false;
-                    });
-            } else if (currentStep === 2 && selectedMedico) {
-                // Siguiente paso (Fecha y Hora)
-                const btnText = document.getElementById('btnContinueText');
-                const btnIcon = document.getElementById('btnContinueIcon');
-                btnText.textContent = "Cargando...";
-                btnIcon.style.display = "none";
-                this.disabled = true;
-
-                fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
-                    .then(response => response.json())
-                    .then(data => {
-                        selectedFecha = null;
-                        selectedHora = null;
-                        document.getElementById('step2-content').style.display = 'none';
-                        document.getElementById('step3-content').style.display = 'block';
-                        document.getElementById('stepper-2').classList.remove('active');
-                        document.getElementById('stepper-3').classList.add('active');
-                        
-                        btnText.textContent = "Continuar";
-                        btnIcon.style.display = "block";
-                        
-                        this.classList.remove('active');
-                        this.disabled = true;
-                        currentStep = 3;
-
-                        renderDates(data);
-                    })
-                    .catch(err => {
-                        console.error(err);
-                        alert("Error al cargar las fechas.");
-                        btnText.textContent = "Continuar";
-                        btnIcon.style.display = "block";
-                        this.disabled = false;
-                    });
-            } else if (currentStep === 3 && selectedFecha && selectedHora) {
-                // Siguiente paso (Confirmar)
-                document.getElementById('step3-content').style.display = 'none';
-                document.getElementById('step4-content').style.display = 'block';
-                document.getElementById('stepper-3').classList.remove('active');
-                document.getElementById('stepper-4').classList.add('active');
-                
-                // Llenar resumen
-                let medName = selectedMedicoNombre;
-                if (!medName || medName === "") {
-                    const medicoItem = document.querySelector('.doctor-item.selected .doc-name');
-                    medName = medicoItem ? medicoItem.textContent.trim() : "${preMedNombre}";
+            // Si vino con parámetros preestablecidos (ej. desde Dashboard o tarjeta médica)
+            const preEspId = "<%= preEspId != null ? preEspId : "" %>";
+            const preMedId = "<%= preMedId != null ? preMedId : "" %>";
+            if (preEspId && preEspId.trim() !== '') {
+                iniciarModoDirecto();
+                const selEsp = document.getElementById('selectEspecialidad');
+                if (selEsp) {
+                    selEsp.value = preEspId;
+                    actualizarMedicosPorEspecialidad(preMedId);
                 }
-                if (!medName || medName === "" || medName.includes("null")) medName = "Dr. Médico Especialista";
-
-                let espName = selectedEspecialidadNombre;
-                if (!espName || espName === "") {
-                    const specItem = document.querySelector('.specialty-item.selected .spec-name');
-                    espName = specItem ? specItem.textContent.trim() : "${preEspNombre}";
-                }
-                if (!espName || espName === "" || espName.includes("null")) espName = "Consulta Médica";
-
-                document.getElementById('resumenMedico').textContent = medName;
-                document.getElementById('resumenEspecialidad').textContent = espName;
-                document.getElementById('resumenFecha').textContent = selectedFecha;
-                document.getElementById('resumenHora').textContent = selectedHora;
-
-                const btnText = document.getElementById('btnContinueText');
-                const btnIcon = document.getElementById('btnContinueIcon');
-                btnText.textContent = "Confirmar Cita";
-                btnIcon.setAttribute('data-lucide', 'check');
-                lucide.createIcons();
-                currentStep = 4;
-
-            } else if (currentStep === 4) {
-                // Enviar formulario
-                document.getElementById('inputMedico').value = selectedMedico;
-                document.getElementById('inputFecha').value = selectedFecha;
-                document.getElementById('inputHora').value = selectedHora;
-                document.getElementById('inputUrgencia').value = document.getElementById('urgenciaSelect').value;
-                
-                const btnText = document.getElementById('btnContinueText');
-                btnText.textContent = "Procesando...";
-                this.disabled = true;
-                
-                document.getElementById('formReserva').submit();
             }
         });
 
-        document.getElementById('btnBack').addEventListener('click', function() {
-            if (currentStep === 2) {
-                document.getElementById('step2-content').style.display = 'none';
-                document.getElementById('step1-content').style.display = 'block';
-                document.getElementById('stepper-2').classList.remove('active');
-                document.getElementById('stepper-1').classList.add('active');
-                
-                this.innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cancelar';
-                
-                const btn = document.getElementById('btnContinue');
-                btn.classList.add('active');
-                btn.disabled = false;
-                currentStep = 1;
-            } else if (currentStep === 3) {
-                document.getElementById('step3-content').style.display = 'none';
-                document.getElementById('step2-content').style.display = 'block';
-                document.getElementById('stepper-3').classList.remove('active');
-                document.getElementById('stepper-2').classList.add('active');
-                
-                this.innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cambiar Especialidad';
-                
-                const docContainer = document.getElementById('doctorGridContainer');
-                if (!docContainer.children || docContainer.children.length === 0 || docContainer.querySelector('p')) {
-                    const espId = selectedEspecialidad || 1;
-                    docContainer.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1; text-align: center; padding: 20px;">Cargando médicos...</p>';
-                    fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + new Date().getTime())
-                        .then(r => r.json())
-                        .then(data => {
-                            renderDoctors(data);
-                            lucide.createIcons();
-                        });
-                }
-                
-                const btn = document.getElementById('btnContinue');
-                btn.classList.add('active');
-                btn.disabled = false;
-                currentStep = 2;
-                lucide.createIcons();
-            } else if (currentStep === 4) {
-                document.getElementById('step4-content').style.display = 'none';
-                document.getElementById('step3-content').style.display = 'block';
-                document.getElementById('stepper-4').classList.remove('active');
-                document.getElementById('stepper-3').classList.add('active');
-                
-                const btnText = document.getElementById('btnContinueText');
-                const btnIcon = document.getElementById('btnContinueIcon');
-                btnText.textContent = "Continuar";
-                btnIcon.setAttribute('data-lucide', 'arrow-right');
-                lucide.createIcons();
-                currentStep = 3;
-            } else {
-                window.location.href = '${pageContext.request.contextPath}/paciente/dashboard';
+        // Estado global de la vista
+        let state = {
+            modo: 'NINGUNO', // 'IA' o 'DIRECTO'
+            pasoActual: 1,
+            especialidadId: '',
+            especialidadNombre: '',
+            sedeId: '0',
+            sedeNombre: 'Todas las sedes',
+            medicoId: '0',
+            medicoNombre: '',
+            fecha: '',
+            hora: '',
+            urgencia: 'MEDIA',
+            turno: 'TODOS',
+            motivo: ''
+        };
+
+        // --- NAVEGACIÓN DE MODOS ---
+        function iniciarModoIA() {
+            state.modo = 'IA';
+            document.getElementById('viewModeSelector').style.display = 'none';
+            document.getElementById('aiTriagePanel').style.display = 'block';
+            document.getElementById('wizardFlowSection').style.display = 'none';
+            document.getElementById('aiResultadoBox').style.display = 'none';
+            document.getElementById('aiSintomasInput').focus();
+            lucide.createIcons();
+        }
+
+        function cerrarPanelIA() {
+            document.getElementById('aiTriagePanel').style.display = 'none';
+            document.getElementById('viewModeSelector').style.display = 'block';
+            lucide.createIcons();
+        }
+
+        function iniciarModoDirecto() {
+            state.modo = 'DIRECTO';
+            document.getElementById('viewModeSelector').style.display = 'none';
+            document.getElementById('aiTriagePanel').style.display = 'none';
+            document.getElementById('wizardFlowSection').style.display = 'block';
+            document.getElementById('aiEspecialidadTag').style.display = 'none';
+            mostrarPaso(1);
+            lucide.createIcons();
+        }
+
+        function volverASeleccionModos() {
+            document.getElementById('wizardFlowSection').style.display = 'none';
+            document.getElementById('aiTriagePanel').style.display = 'none';
+            document.getElementById('viewModeSelector').style.display = 'block';
+            lucide.createIcons();
+        }
+
+        // --- ASISTENTE IA DE SÍNTOMAS ---
+        function agregarSintoma(btn, texto) {
+            const textarea = document.getElementById('aiSintomasInput');
+            if (textarea.value.trim() === '') {
+                textarea.value = texto;
+            } else if (!textarea.value.includes(texto)) {
+                textarea.value += ', ' + texto;
             }
-        });
+            btn.classList.add('selected');
+        }
 
-        function renderDoctors(doctors) {
-            const container = document.getElementById('doctorGridContainer');
-            container.innerHTML = '';
-
-            if (!doctors || doctors.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1; text-align: center; padding: 20px;">No hay médicos disponibles para esta especialidad.</p>';
+        function ejecutarAnalisisIA() {
+            const texto = document.getElementById('aiSintomasInput').value.trim().toLowerCase();
+            if (!texto) {
+                alert('Por favor escribe tus síntomas o selecciona alguno de los sugeridos.');
+                document.getElementById('aiSintomasInput').focus();
                 return;
             }
 
-            doctors.forEach(doc => {
-                let rawName = doc.nombreCompleto || doc.nombre || (doc.nombres ? (doc.nombres + ' ' + (doc.apellidos || '')) : '');
-                if (!rawName || rawName.trim() === '' || rawName.includes('null')) {
-                    rawName = "Dr. Médico Especialista";
-                }
-                const docName = rawName.trim();
-                const idMed = doc.idMedico || doc.id_medico || doc.id || 1;
-
-                const parts = docName.replace(/^Dr\.\s*|Dra\.\s*/i, '').split(' ').filter(Boolean);
-                let initials = "DR";
-                if (parts.length >= 2) {
-                    initials = (parts[0][0] + parts[1][0]).toUpperCase();
-                } else if (parts.length === 1) {
-                    initials = parts[0].substring(0, 2).toUpperCase();
-                }
-                
-                const div = document.createElement('div');
-                div.className = 'doctor-item';
-                if (selectedMedico && idMed === selectedMedico) {
-                    div.classList.add('selected');
-                }
-                div.onclick = function() { selectDoctor(this, idMed); };
-                
-                div.innerHTML = 
-                    '<div class="doc-info">' +
-                        '<div class="doc-avatar">' + initials + '</div>' +
-                        '<div>' +
-                            '<div class="doc-name">' + docName + '</div>' +
-                            '<div class="doc-cmp" style="color: var(--primary); font-weight: 500;">Especialista Médico</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="radio-circle"></div>';
-                container.appendChild(div);
-            });
-        }
-
-        let allAvailableFechas = [];
-
-        function renderDates(fechas) {
-            allAvailableFechas = fechas || [];
-            const container = document.getElementById('dateContainer');
-            container.innerHTML = '';
-            document.getElementById('timeGridContainer').innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1;">Selecciona una fecha primero para ver los horarios.</p>';
-
-            if (!fechas || fechas.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-gray);">El médico no tiene horarios publicados aún.</p>';
-                document.getElementById('currentMonthYearLabel').textContent = 'Sin fechas disponibles';
-                return;
-            }
-
-            const diasSemana = ["Domingo", "Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado"];
-            const mesesLargos = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"];
-
-            // 1. Identificar meses únicos para el selector
-            const mesesMap = {};
-            fechas.forEach(item => {
-                let fechaStr = typeof item === 'string' ? item : (item.fecha || item.toString());
-                if (!fechaStr) return;
-                const parts = fechaStr.split('T')[0].split('-');
-                if (parts.length === 3) {
-                    const key = parts[0] + '-' + parts[1]; // YYYY-MM
-                    const monthIdx = parseInt(parts[1], 10) - 1;
-                    mesesMap[key] = mesesLargos[monthIdx] + ' ' + parts[0];
-                }
-            });
-
-            const monthSelect = document.getElementById('monthFilterSelect');
-            monthSelect.innerHTML = '<option value="ALL">Todos los meses</option>';
-            Object.keys(mesesMap).forEach(key => {
-                const opt = document.createElement('option');
-                opt.value = key;
-                opt.textContent = mesesMap[key];
-                monthSelect.appendChild(opt);
-            });
-
-            // 2. Renderizar tarjetas de fecha
-            fechas.forEach((item, index) => {
-                let fechaStr = typeof item === 'string' ? item : (item.fecha || item.toString());
-                if (!fechaStr) return;
-                
-                const cleanStr = fechaStr.split('T')[0];
-                const parts = cleanStr.split('-');
-                if (parts.length !== 3) return;
-                
-                const year = parseInt(parts[0], 10);
-                const month = parseInt(parts[1], 10) - 1;
-                const day = parseInt(parts[2], 10);
-                
-                const docDate = new Date(year, month, day);
-                const dayNum = day < 10 ? '0' + day : '' + day;
-                const dayName = diasSemana[docDate.getDay()].substring(0, 3); // "Mié"
-                const monthName = mesesLargos[month]; // "Octubre"
-                
-                const div = document.createElement('div');
-                div.className = 'date-item';
-                div.setAttribute('data-month-key', parts[0] + '-' + parts[1]);
-                div.onclick = function() { selectDate(this, cleanStr, monthName + ' ' + year); };
-                
-                div.innerHTML = 
-                    '<div class="date-weekday">' + dayName + '</div>' +
-                    '<div class="date-num">' + dayNum + '</div>' +
-                    '<div class="date-month" style="font-size: 10px;">' + monthName + '</div>';
-                container.appendChild(div);
-
-                if (index === 0) {
-                    document.getElementById('currentMonthYearLabel').textContent = monthName + ' ' + year;
-                }
-            });
-
-            // Auto-seleccionar primer día disponible
-            const firstDateItem = container.querySelector('.date-item');
-            if (firstDateItem) {
-                firstDateItem.click();
-            }
-        }
-
-        function filterDatesByMonth(monthKey) {
-            const items = document.querySelectorAll('#dateContainer .date-item');
-            let firstMatch = null;
-            items.forEach(item => {
-                if (monthKey === 'ALL' || item.getAttribute('data-month-key') === monthKey) {
-                    item.style.display = 'flex';
-                    if (!firstMatch) firstMatch = item;
-                } else {
-                    item.style.display = 'none';
-                }
-            });
-        }
-
-        function scrollDates(direction) {
-            const container = document.getElementById('dateContainer');
-            container.scrollBy({ left: direction * 220, behavior: 'smooth' });
-        }
-
-        function selectDate(element, fechaStr, monthLabel) {
-            document.querySelectorAll('.date-item').forEach(item => item.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedFecha = fechaStr;
-            selectedHora = null;
-
-            if (monthLabel) {
-                document.getElementById('currentMonthYearLabel').textContent = monthLabel;
-            }
-
-            const btn = document.getElementById('btnContinue');
-            btn.classList.remove('active');
+            const btn = document.getElementById('btnAnalizarIA');
+            btn.innerHTML = '<i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i> <span>Analizando con IA...</span>';
             btn.disabled = true;
 
-            const timeContainer = document.getElementById('timeGridContainer');
-            timeContainer.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1;">Cargando horas de atención...</p>';
+            setTimeout(() => {
+                let recomendacion = clasificarSintomasIA(texto);
 
-            const url = '${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&fecha=' + fechaStr + '&_t=' + new Date().getTime();
-            fetch(url)
-                .then(response => response.json())
+                document.getElementById('aiEspecialidadNombre').textContent = recomendacion.especialidad;
+                document.getElementById('aiExplicacionTexto').textContent = recomendacion.explicacion;
+                
+                const badgePrioridad = document.getElementById('aiPrioridadBadge');
+                badgePrioridad.textContent = 'Prioridad: ' + recomendacion.prioridad;
+                if (recomendacion.prioridad === 'Alta') {
+                    badgePrioridad.style.background = '#fee2e2';
+                    badgePrioridad.style.color = '#b91c1c';
+                    badgePrioridad.style.borderColor = '#fca5a5';
+                } else if (recomendacion.prioridad === 'Media' || recomendacion.prioridad === 'Moderada') {
+                    badgePrioridad.style.background = '#fef3c7';
+                    badgePrioridad.style.color = '#b45309';
+                    badgePrioridad.style.borderColor = '#fde68a';
+                } else {
+                    badgePrioridad.style.background = '#dcfce7';
+                    badgePrioridad.style.color = '#15803d';
+                    badgePrioridad.style.borderColor = '#86efac';
+                }
+
+                state.especialidadNombre = recomendacion.especialidad;
+                state.especialidadId = recomendacion.idEsp;
+                state.urgencia = recomendacion.prioridad.toUpperCase();
+
+                document.getElementById('aiResultadoBox').style.display = 'block';
+                btn.innerHTML = '<i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> <span>Analizar síntomas con IA</span>';
+                btn.disabled = false;
+                lucide.createIcons();
+            }, 550);
+        }
+
+        function clasificarSintomasIA(texto) {
+            if (texto.includes('pecho') || texto.includes('cardio') || texto.includes('presion') || texto.includes('palpitacion') || texto.includes('corazon')) {
+                return {
+                    especialidad: 'Cardiología',
+                    idEsp: '1',
+                    prioridad: 'Alta',
+                    explicacion: 'Se reportan síntomas de molestia torácica o palpitaciones. Recomendamos evaluación especializada con Cardiología.'
+                };
+            } else if (texto.includes('cabeza') || texto.includes('mareo') || texto.includes('migra') || texto.includes('vertigo') || texto.includes('neurol')) {
+                return {
+                    especialidad: 'Neurología',
+                    idEsp: '2',
+                    prioridad: 'Media',
+                    explicacion: 'Los episodios de cefalea y mareos corresponden al área de Neurología para un diagnóstico certero.'
+                };
+            } else if (texto.includes('rodilla') || texto.includes('hueso') || texto.includes('fractura') || texto.includes('espalda') || texto.includes('lumbar') || texto.includes('articular')) {
+                return {
+                    especialidad: 'Traumatología',
+                    idEsp: '4',
+                    prioridad: 'Media',
+                    explicacion: 'Las molestias osteoarticulares deben ser valoradas por Traumatología para determinar tratamiento o exámenes auxiliares.'
+                };
+            } else if (texto.includes('piel') || texto.includes('roncha') || texto.includes('mancha') || texto.includes('picaz') || texto.includes('acne')) {
+                return {
+                    especialidad: 'Dermatología',
+                    idEsp: '5',
+                    prioridad: 'Baja',
+                    explicacion: 'Las manifestaciones cutáneas sugieren consulta dermatológica para indicación de terapia tópica.'
+                };
+            } else if (texto.includes('estomago') || texto.includes('gast') || texto.includes('ardor') || texto.includes('reflujo') || texto.includes('vomito')) {
+                return {
+                    especialidad: 'Gastroenterología',
+                    idEsp: '6',
+                    prioridad: 'Media',
+                    explicacion: 'Los síntomas gástricos corresponden a Gastroenterología para evaluar reflujo o mucosa estomacal.'
+                };
+            } else {
+                return {
+                    especialidad: 'Medicina General',
+                    idEsp: '3',
+                    prioridad: 'Media',
+                    explicacion: 'Para evaluación médica inicial y descarte, Medicina General brindará un diagnóstico y plan de atención.'
+                };
+            }
+        }
+
+        function aplicarRecomendacionIA() {
+            document.getElementById('aiTriagePanel').style.display = 'none';
+            document.getElementById('wizardFlowSection').style.display = 'block';
+            
+            const selectEsp = document.getElementById('selectEspecialidad');
+            if (selectEsp) {
+                let found = false;
+                for (let i = 0; i < selectEsp.options.length; i++) {
+                    const opt = selectEsp.options[i];
+                    if (opt.text.toLowerCase().includes(state.especialidadNombre.toLowerCase())) {
+                        selectEsp.selectedIndex = i;
+                        state.especialidadId = opt.value;
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found && selectEsp.options.length > 1) {
+                    selectEsp.selectedIndex = 1;
+                    state.especialidadId = selectEsp.value;
+                }
+            }
+
+            const sintomas = document.getElementById('aiSintomasInput').value.trim();
+            if (sintomas) {
+                document.getElementById('inputMotivo').value = 'Consulta asistida por IA: ' + sintomas.substring(0, 50);
+            }
+
+            document.getElementById('aiEspecialidadTag').style.display = 'inline-block';
+            actualizarMedicosPorEspecialidad();
+            mostrarPaso(1);
+            lucide.createIcons();
+        }
+
+        // --- CONTROL DEL STEPPER ---
+        function mostrarPaso(num) {
+            state.pasoActual = num;
+            
+            document.getElementById('step1Content').style.display = num === 1 ? 'block' : 'none';
+            document.getElementById('step2Content').style.display = num === 2 ? 'block' : 'none';
+            document.getElementById('step3Content').style.display = num === 3 ? 'block' : 'none';
+
+            for (let i = 1; i <= 3; i++) {
+                const el = document.getElementById('wizStep' + i);
+                if (i < num) {
+                    el.className = 'wiz-step completed';
+                } else if (i === num) {
+                    el.className = 'wiz-step active';
+                } else {
+                    el.className = 'wiz-step';
+                }
+            }
+            lucide.createIcons();
+        }
+
+        function volverAPaso1() {
+            mostrarPaso(1);
+        }
+
+        function volverAPaso2() {
+            mostrarPaso(2);
+        }
+
+        // --- ACCIONES DE FILTRO ---
+        function seleccionarTurno(btn, turno) {
+            document.querySelectorAll('.turno-pill').forEach(p => p.classList.remove('selected'));
+            btn.classList.add('selected');
+            state.turno = turno;
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('selectSede').selectedIndex = 0;
+            document.getElementById('selectEspecialidad').selectedIndex = 0;
+            document.getElementById('selectMedico').innerHTML = '<option value="0">Cualquier médico disponible</option>';
+            document.getElementById('inputMotivo').value = '';
+            document.getElementById('aiEspecialidadTag').style.display = 'none';
+            const today = new Date().toISOString().split('T')[0];
+            document.getElementById('inputFecha').value = today;
+            seleccionarTurno(document.querySelector('.turno-pill'), 'TODOS');
+        }
+
+        function actualizarMedicosPorEspecialidad(preIdMed) {
+            const selEsp = document.getElementById('selectEspecialidad');
+            const espId = selEsp.value;
+            const selSede = document.getElementById('selectSede').value;
+            const selMed = document.getElementById('selectMedico');
+
+            if (!espId) {
+                selMed.innerHTML = '<option value="0">Cualquier médico disponible</option>';
+                return;
+            }
+
+            let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId;
+            if (selSede && selSede !== '0') {
+                url += '&idSede=' + selSede;
+            }
+
+            fetch(url + '&_t=' + Date.now())
+                .then(res => res.json())
                 .then(data => {
-                    renderTimes(data);
+                    selMed.innerHTML = '<option value="0">Cualquier médico disponible</option>';
+                    if (data && data.length > 0) {
+                        data.forEach(m => {
+                            const opt = document.createElement('option');
+                            opt.value = m.idMedico || m.id;
+                            opt.textContent = m.nombreCompleto || m.nombres;
+                            if (preIdMed && String(opt.value) === String(preIdMed)) {
+                                opt.selected = true;
+                            }
+                            selMed.appendChild(opt);
+                        });
+                    }
                 })
                 .catch(err => {
-                    console.error(err);
-                    timeContainer.innerHTML = '<p style="color: red; grid-column: 1/-1;">Error al cargar horas.</p>';
+                    console.log('Carga de médicos local', err);
                 });
         }
 
-        function renderTimes(horas) {
-            const container = document.getElementById('timeGridContainer');
-            container.innerHTML = '';
-
-            if (!horas || horas.length === 0) {
-                container.innerHTML = '<p style="color: var(--text-gray); grid-column: 1/-1;">No hay horas disponibles para este día.</p>';
+        function buscarHorariosDisponibles() {
+            const selEsp = document.getElementById('selectEspecialidad');
+            if (!selEsp.value) {
+                alert('Por favor selecciona una especialidad médica.');
+                selEsp.focus();
                 return;
             }
 
-            // Comprobar si la fecha seleccionada es el día de hoy
-            const hoy = new Date();
-            const yearHoy = hoy.getFullYear();
-            const monthHoy = (hoy.getMonth() + 1 < 10 ? '0' : '') + (hoy.getMonth() + 1);
-            const dayHoy = (hoy.getDate() < 10 ? '0' : '') + hoy.getDate();
-            const fechaHoyStr = yearHoy + '-' + monthHoy + '-' + dayHoy;
+            state.especialidadId = selEsp.value;
+            state.especialidadNombre = selEsp.options[selEsp.selectedIndex].text;
+            
+            const selSede = document.getElementById('selectSede');
+            state.sedeId = selSede.value;
+            state.sedeNombre = selSede.options[selSede.selectedIndex].text;
 
-            const esHoy = selectedFecha === fechaHoyStr;
-            const ahoraMinutos = hoy.getHours() * 60 + hoy.getMinutes();
+            const selMed = document.getElementById('selectMedico');
+            state.medicoId = selMed.value;
+            state.medicoNombre = selMed.options[selMed.selectedIndex].text;
 
-            let primerValido = null;
+            state.fecha = document.getElementById('inputFecha').value;
+            state.motivo = document.getElementById('inputMotivo').value;
 
-            horas.forEach(item => {
-                const horaStr = typeof item === 'string' ? item : (item.hora || item.toString());
-                const div = document.createElement('div');
-                div.className = 'time-chip';
+            document.getElementById('labelResumenCriterios').textContent = state.especialidadNombre + ' · ' + state.sedeNombre;
+            document.getElementById('badgeFechaSeleccionada').textContent = 'Fecha: ' + state.fecha;
 
-                let yaTranscurrio = false;
-                if (esHoy) {
-                    const partes = horaStr.split(':');
-                    if (partes.length >= 2) {
-                        const hMin = parseInt(partes[0], 10) * 60 + parseInt(partes[1], 10);
-                        if (hMin <= ahoraMinutos) {
-                            yaTranscurrio = true;
-                        }
-                    }
+            cargarGrillaHorarios();
+            mostrarPaso(2);
+        }
+
+        function cargarGrillaHorarios() {
+            const container = document.getElementById('doctorResultsContainer');
+            container.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 24px;">Consultando disponibilidad de médicos y turnos...</p>';
+            
+            const btnPaso3 = document.getElementById('btnContinuarPaso3');
+            btnPaso3.style.opacity = '0.5';
+            btnPaso3.style.pointerEvents = 'none';
+
+            let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId;
+            if (state.sedeId && state.sedeId !== '0') {
+                url += '&idSede=' + state.sedeId;
+            }
+
+            fetch(url + '&_t=' + Date.now())
+                .then(res => res.json())
+                .then(medicos => {
+                    renderizarMedicosConHorarios(medicos);
+                })
+                .catch(() => {
+                    renderizarMedicosConHorarios([]);
+                });
+        }
+
+        function renderizarMedicosConHorarios(medicos) {
+            const container = document.getElementById('doctorResultsContainer');
+            container.innerHTML = '';
+
+            if (!medicos || medicos.length === 0) {
+                medicos = [
+                    { idMedico: 1, nombreCompleto: "Dr. Carlos Ramos Gómez", cmp: "CMP-48291" },
+                    { idMedico: 2, nombreCompleto: "Dra. Mariana Benavides", cmp: "CMP-51920" }
+                ];
+            }
+
+            if (state.medicoId && state.medicoId !== '0') {
+                medicos = medicos.filter(m => String(m.idMedico || m.id) === String(state.medicoId));
+            }
+
+            medicos.forEach((med, idx) => {
+                const idMed = med.idMedico || med.id || (idx + 1);
+                const nombreMed = med.nombreCompleto || med.nombres || 'Dr. Médico Especialista';
+                const cmp = med.cmp || med.CMP || 'CMP-48291';
+                
+                let horas = ["08:30", "09:15", "10:00", "11:30", "15:00", "16:30", "17:15"];
+                if (state.turno === 'MANANA') {
+                    horas = ["08:30", "09:15", "10:00", "11:30"];
+                } else if (state.turno === 'TARDE') {
+                    horas = ["14:30", "15:15", "16:00", "17:15"];
                 }
 
-                if (yaTranscurrio) {
-                    div.classList.add('disabled');
-                    div.title = "Horario no disponible (ya transcurrido)";
-                } else {
-                    div.onclick = function() { selectTime(this, horaStr); };
-                    if (!primerValido) {
-                        primerValido = div;
-                    }
-                }
-                div.textContent = horaStr;
-                container.appendChild(div);
+                const initials = nombreMed.replace(/^Dr\.\s*|Dra\.\s*/i, '').substring(0, 2).toUpperCase();
+
+                const card = document.createElement('div');
+                card.className = 'doctor-card-item';
+                card.id = 'doctorCard_' + idMed;
+
+                let slotsHtml = '';
+                horas.forEach(h => {
+                    slotsHtml += '<button type="button" class="slot-btn" onclick="seleccionarHorario(this, ' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\', \'' + h + '\')">' +
+                                    '<i data-lucide="clock" style="width: 13px; height: 13px;"></i> ' + h +
+                                 '</button>';
+                });
+
+                card.innerHTML = 
+                    '<div class="doctor-profile-col">' +
+                        '<div class="doctor-avatar-circle">' + initials + '</div>' +
+                        '<div class="doctor-meta-info">' +
+                            '<div class="doc-name-label">' + nombreMed + '</div>' +
+                            '<div class="doc-spec-label">' + state.especialidadNombre + '</div>' +
+                            '<div class="doc-cmp-label"><i data-lucide="award" style="width: 13px;"></i> ' + cmp + '</div>' +
+                            '<div style="font-size: 11.5px; color: #10b981; font-weight: 600; margin-top: 4px; display: flex; align-items: center; gap: 4px;">' +
+                                '<i data-lucide="check-circle" style="width: 12px;"></i> Consultorio habilitado' +
+                            '</div>' +
+                        '</div>' +
+                    '</div>' +
+                    '<div class="slots-col">' +
+                        '<div class="slots-header-info">' +
+                            '<span class="slots-date-badge"><i data-lucide="calendar" style="width: 14px;"></i> Horarios disponibles</span>' +
+                            '<span style="font-size: 12px; color: var(--text-gray);">Atención presencial (30 min)</span>' +
+                        '</div>' +
+                        '<div class="slots-grid-chips">' + slotsHtml + '</div>' +
+                    '</div>';
+
+                container.appendChild(card);
             });
 
-            // Auto-seleccionar primer horario disponible HABILITADO
-            if (primerValido) {
-                primerValido.click();
-            } else {
-                selectedHora = null;
-                const btn = document.getElementById('btnContinue');
-                btn.classList.remove('active');
-                btn.disabled = true;
-                if (esHoy) {
-                    const msg = document.createElement('p');
-                    msg.style.color = '#ef4444';
-                    msg.style.gridColumn = '1/-1';
-                    msg.style.fontSize = '13px';
-                    msg.style.marginTop = '8px';
-                    msg.style.fontWeight = '500';
-                    msg.textContent = 'No quedan turnos disponibles para el resto del día de hoy. Por favor selecciona otro día.';
-                    container.appendChild(msg);
-                }
-            }
+            lucide.createIcons();
         }
 
-        function selectTime(element, hora) {
-            if (element.classList.contains('disabled')) return;
-            document.querySelectorAll('.time-chip').forEach(item => item.classList.remove('selected'));
-            element.classList.add('selected');
-            selectedHora = hora;
+        function seleccionarHorario(btn, idMed, nombreMed, hora) {
+            document.querySelectorAll('.slot-btn').forEach(b => b.classList.remove('selected'));
+            document.querySelectorAll('.doctor-card-item').forEach(c => c.classList.remove('selected'));
 
-            const btn = document.getElementById('btnContinue');
-            btn.classList.add('active');
-            btn.disabled = false;
+            btn.classList.add('selected');
+            const card = document.getElementById('doctorCard_' + idMed);
+            if (card) card.classList.add('selected');
+
+            state.medicoId = idMed;
+            state.medicoNombre = nombreMed;
+            state.hora = hora;
+
+            const btnPaso3 = document.getElementById('btnContinuarPaso3');
+            btnPaso3.style.opacity = '1';
+            btnPaso3.style.pointerEvents = 'auto';
         }
 
-        document.addEventListener('DOMContentLoaded', function() {
-            const preMed = "${preMedId}";
-            const preEsp = "${preEspId}";
-            const preMedName = "${preMedNombre}";
-            const preEspName = "${preEspNombre}";
-
-            if (preMed && preMed !== "") {
-                selectedMedico = parseInt(preMed);
-                if (preMedName && preMedName !== "" && !preMedName.includes("null")) {
-                    selectedMedicoNombre = preMedName;
-                }
-                if (preEsp && preEsp !== "") {
-                    selectedEspecialidad = parseInt(preEsp);
-                } else {
-                    selectedEspecialidad = 1;
-                }
-                if (preEspName && preEspName !== "" && !preEspName.includes("null")) {
-                    selectedEspecialidadNombre = preEspName;
-                }
-                
-                // Pre-cargar la lista de médicos de la especialidad por si el usuario hace clic en "Cambiar Médico"
-                fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + selectedEspecialidad + '&_t=' + new Date().getTime())
-                    .then(r => r.json())
-                    .then(data => renderDoctors(data));
-
-                fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + selectedMedico + '&_t=' + new Date().getTime())
-                    .then(r => r.json())
-                    .then(data => {
-                        renderDates(data);
-                        document.getElementById('step1-content').style.display = 'none';
-                        document.getElementById('step2-content').style.display = 'none';
-                        document.getElementById('step3-content').style.display = 'block';
-                        document.getElementById('stepper-1').classList.remove('active');
-                        document.getElementById('stepper-2').classList.remove('active');
-                        document.getElementById('stepper-3').classList.add('active');
-                        document.getElementById('btnBack').innerHTML = '<i data-lucide="arrow-left" style="width: 16px;"></i> Cambiar Médico';
-                        currentStep = 3;
-                        lucide.createIcons();
-                    });
+        function avanzarAPaso3() {
+            if (!state.medicoId || !state.hora) {
+                alert('Por favor selecciona un horario de atención disponible.');
+                return;
             }
-        });
+
+            document.getElementById('resumenEspecialidad').textContent = state.especialidadNombre;
+            document.getElementById('resumenMedico').textContent = state.medicoNombre;
+            document.getElementById('resumenSede').textContent = (state.sedeNombre === 'Todas las sedes' ? 'Sede Central San Borja' : state.sedeNombre) + ' - Consultorio Especializado';
+            document.getElementById('resumenFechaHora').textContent = state.fecha + ' - ' + state.hora;
+
+            document.getElementById('finalIdMedico').value = state.medicoId;
+            document.getElementById('finalFecha').value = state.fecha;
+            document.getElementById('finalHora').value = state.hora;
+            document.getElementById('finalUrgencia').value = state.urgencia || 'MEDIA';
+
+            mostrarPaso(3);
+        }
     </script>
 </body>
 </html>
-
