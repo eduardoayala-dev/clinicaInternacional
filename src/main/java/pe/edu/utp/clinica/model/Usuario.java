@@ -20,6 +20,9 @@ public class Usuario implements Serializable {
     private String cargo;
     private Integer idEspecialidad;
     private Integer idSede;
+    private String nombreSede;
+    private String estadoDetallado;
+    private String motivoEstado;
 
     public Usuario() {
     }
@@ -120,4 +123,42 @@ public class Usuario implements Serializable {
 
     public Integer getIdSede() { return idSede; }
     public void setIdSede(Integer idSede) { this.idSede = idSede; }
+
+    public String getNombreSede() {
+        if (nombreSede != null && !nombreSede.trim().isEmpty()) return nombreSede;
+        if ("ADMINISTRADOR".equalsIgnoreCase(rol)) return "Multisede";
+        return "Sede San Borja";
+    }
+    public void setNombreSede(String nombreSede) { this.nombreSede = nombreSede; }
+
+    public String getEstadoDetallado() {
+        if (estadoDetallado != null && !estadoDetallado.trim().isEmpty()) return estadoDetallado;
+        return isActivo() ? "Activo" : "Inactivo";
+    }
+    public void setEstadoDetallado(String estadoDetallado) { this.estadoDetallado = estadoDetallado; }
+
+    public String getMotivoEstado() { return motivoEstado; }
+    public void setMotivoEstado(String motivoEstado) { this.motivoEstado = motivoEstado; }
+
+    public String getRolEtiqueta() {
+        if ("MEDICO".equalsIgnoreCase(rol)) return "Médico";
+        if ("PERSONAL_ADMINISTRATIVO".equalsIgnoreCase(rol)) return "Personal administrativo";
+        if ("ADMINISTRADOR".equalsIgnoreCase(rol)) return "Administrador";
+        return rol != null ? rol : "Usuario";
+    }
+
+    public String getFechaRegistroFormateada() {
+        if (fechaRegistro != null) {
+            return String.format("%02d/%02d/%d", fechaRegistro.getDayOfMonth(), fechaRegistro.getMonthValue(), fechaRegistro.getYear());
+        }
+        return "02/03/2025";
+    }
+
+    public String getNombreMostrar() {
+        String nombreCompleto = getNombreCompleto().trim();
+        if ("MEDICO".equalsIgnoreCase(rol) && !nombreCompleto.toLowerCase().startsWith("dr.") && !nombreCompleto.toLowerCase().startsWith("dra.")) {
+            return "Dr. " + nombreCompleto;
+        }
+        return nombreCompleto;
+    }
 }

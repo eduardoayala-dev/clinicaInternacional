@@ -6,11 +6,14 @@
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreAdmin = (String) request.getAttribute("nombreAdmin");
     if (nombreAdmin == null && usuario != null) {
-        nombreAdmin = usuario.getNombres() + " " + usuario.getApellidos();
+        nombreAdmin = usuario.getNombreCompleto();
     }
-    if (nombreAdmin == null) nombreAdmin = "Roberto Vargas";
+    if (nombreAdmin == null || nombreAdmin.trim().isEmpty()) {
+        nombreAdmin = "Jorge Vargas";
+    }
 
     List<Usuario> listaUsuarios = (List<Usuario>) request.getAttribute("listaUsuarios");
+    Map<String, Object> metricas = (Map<String, Object>) request.getAttribute("metricasUsuarios");
     List<Map<String, Object>> sedes = (List<Map<String, Object>>) request.getAttribute("sedes");
     List<Map<String, Object>> especialidades = (List<Map<String, Object>>) request.getAttribute("especialidades");
 
@@ -18,501 +21,568 @@
     if (flashMessage != null) {
         session.removeAttribute("flashMessage");
     }
+    String flashError = (String) session.getAttribute("flashError");
+    if (flashError != null) {
+        session.removeAttribute("flashError");
+    }
+
+    int medicosTotal = metricas != null && metricas.get("medicosTotal") != null ? (Integer) metricas.get("medicosTotal") : 0;
+    int medicosActivos = metricas != null && metricas.get("medicosActivos") != null ? (Integer) metricas.get("medicosActivos") : 0;
+    int personalTotal = metricas != null && metricas.get("personalTotal") != null ? (Integer) metricas.get("personalTotal") : 0;
+    int personalActivos = metricas != null && metricas.get("personalActivos") != null ? (Integer) metricas.get("personalActivos") : 0;
+    int adminsTotal = metricas != null && metricas.get("adminsTotal") != null ? (Integer) metricas.get("adminsTotal") : 0;
+    int adminsActivos = metricas != null && metricas.get("adminsActivos") != null ? (Integer) metricas.get("adminsActivos") : 0;
+    int totalUsuariosGeneral = metricas != null && metricas.get("totalUsuarios") != null ? (Integer) metricas.get("totalUsuarios") : (listaUsuarios != null ? listaUsuarios.size() : 0);
 %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Gestión de Usuarios y Roles - Clínica Internacional</title>
+    <title>Usuarios y roles - Clínica Internacional</title>
+    <!-- Tipografía Institucional: Playfair Display + Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    
+    <!-- CSS del Layout Institucional y Estilos de Usuarios -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-layout.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-usuarios.css">
+    
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-light: #eff6ff;
-            --bg-body: #f8fafc;
-            --bg-surface: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-light: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --radius-md: 8px;
-            --radius-lg: 12px;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
-
-        /* HEADER SUPERIOR (TOPBAR) */
-        .topbar {
-            height: 64px; flex-shrink: 0; background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-light); display: flex;
-            align-items: center; justify-content: space-between; padding: 0 32px; z-index: 10;
-        }
-        .topbar-brand { display: flex; align-items: center; gap: 12px; }
-        .topbar-brand img { height: 36px; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; }
-        .user-info { display: flex; flex-direction: column; align-items: flex-end; }
-        .user-name { font-weight: 700; font-size: 13px; color: var(--text-main); }
-        .user-role { font-size: 11px; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-        .btn-logout { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: all 0.2s; }
-        .btn-logout:hover { color: #ef4444; background: #fef2f2; }
-
-        /* CONTENEDOR INFERIOR */
-        .app-body { display: flex; height: calc(100vh - 64px); overflow: hidden; }
-
-        /* SIDEBAR BLANCO */
-        .sidebar {
-            width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border-light);
-            padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow-y: auto;
-        }
-        .nav-item {
-            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-            color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500;
-            border-radius: var(--radius-md); transition: all 0.2s ease;
-        }
-        .nav-item:hover { background-color: var(--bg-body); color: var(--text-main); }
-        .nav-item.active { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
-
-        /* ÁREA PRINCIPAL */
-        .main-content { flex: 1; height: 100%; overflow-y: auto; padding: 32px 40px; }
-        .page-header { margin-bottom: 24px; }
-        .page-title { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.5px; }
-        .page-subtitle { font-size: 14px; color: var(--text-muted); }
-
-        .flash-alert {
-            background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 14px 18px;
-            border-radius: var(--radius-md); font-weight: 600; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 10px;
-        }
-
-        /* METRIC CARDS 4 COLUMNS */
-        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
-        .metric-card {
-            background: var(--bg-surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .metric-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
-        .metric-value { font-size: 28px; font-weight: 700; color: var(--text-main); margin-top: 10px; }
-
-        /* FILTER CARD */
-        .filter-card {
-            background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-light);
-            padding: 20px 24px; margin-bottom: 24px; box-shadow: var(--shadow-sm);
-            display: flex; justify-content: space-between; align-items: center; gap: 16px; flex-wrap: wrap;
-        }
-        .filter-inputs { display: flex; gap: 12px; align-items: center; flex: 1; }
-        .search-box {
-            display: flex; align-items: center; gap: 8px; border: 1px solid var(--border-light);
-            padding: 10px 16px; border-radius: 20px; background: #ffffff; flex: 1; max-width: 360px;
-        }
-        .search-box input { border: none; outline: none; width: 100%; font-size: 14px; }
-        .select-filter {
-            padding: 10px 16px; border-radius: 20px; border: 1px solid var(--border-light);
-            font-size: 14px; color: var(--text-main); outline: none; background: #ffffff;
-        }
-        
-        .btn-add-user {
-            background: var(--primary); color: #ffffff; border: none; padding: 10px 22px; border-radius: 20px;
-            font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 12px rgba(37,99,235,0.2);
-            display: inline-flex; align-items: center; gap: 8px; text-decoration: none;
-        }
-        .btn-add-user:hover { background: #1d4ed8; transform: translateY(-1px); }
-
-        /* TABLE PANEL */
-        .panel {
-            background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-light);
-            overflow: hidden; box-shadow: var(--shadow-sm);
-        }
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { background: #ffffff; padding: 16px 20px; font-size: 12px; font-weight: 600; color: var(--text-muted); border-bottom: 1px solid var(--border-light); }
-        td { padding: 16px 20px; font-size: 14px; color: var(--text-main); border-bottom: 1px solid var(--border-light); vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background: #f8fafc; }
-
-        .badge-role { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
-        .badge-admin { background: #fee2e2; color: #991b1b; }
-        .badge-medico { background: #e0f2fe; color: #0369a1; }
-        .badge-personal { background: #fef3c7; color: #92400e; }
-
-        .badge-activo { background: #dcfce7; color: #166534; }
-        .badge-inactivo { background: #fee2e2; color: #991b1b; }
-
-        /* ICON BUTTONS LIMPIOS Y SENCILLOS */
-        .btn-icon {
-            background: #ffffff; border: 1px solid var(--border-light); border-radius: var(--radius-md);
-            width: 34px; height: 34px; display: inline-flex; align-items: center; justify-content: center;
-            color: var(--text-muted); cursor: pointer; transition: all 0.2s; outline: none;
-        }
-        .btn-icon:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
-        .btn-icon-disable:hover { background: #fef2f2; color: #ef4444; border-color: #fca5a5; }
-        .btn-icon-enable:hover { background: #ecfdf5; color: #10b981; border-color: #6ee7b7; }
-
-        /* MODAL STYLING */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: rgba(15,23,42,0.4); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 1000;
-        }
-        .modal-card {
-            background: #ffffff; border-radius: var(--radius-lg); width: 100%; max-width: 580px; padding: 28px;
-            box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); border: 1px solid var(--border-light); max-height: 90vh; overflow-y: auto;
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title { font-size: 18px; font-weight: 700; color: var(--text-main); }
-        .modal-close { background: none; border: none; font-size: 20px; color: var(--text-muted); cursor: pointer; }
-        
-        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
-        .form-group { display: flex; flex-direction: column; gap: 6px; }
-        .form-group.full { grid-column: 1 / -1; }
-        .form-group label { font-size: 13px; font-weight: 600; color: var(--text-main); }
-        .form-group input, .form-group select {
-            padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-light); font-size: 14px; outline: none;
-        }
-        .form-group input:focus, .form-group select:focus { border-color: var(--primary); }
-
-        .clinical-box {
-            background: #f8fafc; border: 1px solid var(--border-light); border-radius: var(--radius-md);
-            padding: 16px; margin-bottom: 20px; grid-column: 1 / -1; display: none;
-        }
-        .clinical-box-title { font-size: 12px; font-weight: 700; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; }
-
-        .modal-footer { display: flex; justify-content: flex-end; gap: 12px; }
-        .btn-cancel { padding: 10px 20px; border-radius: 20px; border: 1px solid var(--border-light); background: #ffffff; cursor: pointer; font-weight: 600; }
-        .btn-save { padding: 10px 22px; border-radius: 20px; border: none; background: var(--primary); color: #ffffff; cursor: pointer; font-weight: 600; }
-
-        @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .metrics-grid { grid-template-columns: repeat(2, 1fr); } }
-    </style>
 </head>
 <body>
 
-    <header class="topbar">
-        <div class="topbar-brand">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
-        </div>
-        <div class="topbar-right">
-            <div class="user-info">
-                <span class="user-name"><%= nombreAdmin %></span>
-                <span class="user-role">ADMINISTRADOR DE SISTEMAS</span>
+    <!-- ==========================================================================
+         PANEL IZQUIERDO INSTITUCIONAL (260px)
+         ========================================================================== -->
+    <aside class="sidebar">
+        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="brand-container">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
+                 alt="Logo Clínica Internacional" class="brand-logo-img"
+                 onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="brand-text">
+                <span class="brand-title">Clínica Internacional</span>
+                <span class="brand-subtitle">Portal del administrador</span>
             </div>
-            <div class="user-avatar"><i data-lucide="user" style="width: 18px; height: 18px;"></i></div>
-            <div style="width: 1px; height: 24px; background: var(--border-light); margin: 0 4px;"></div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Salir</a>
-        </div>
-    </header>
+        </a>
 
-    <div class="app-body">
-        <aside class="sidebar">
+        <nav class="nav-menu">
             <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+                <i data-lucide="home"></i>
+                <span>Inicio</span>
             </a>
             <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item active">
-                <i data-lucide="users" style="width: 18px;"></i> Usuarios y Roles
+                <i data-lucide="shield"></i>
+                <span>Usuarios y roles</span>
             </a>
             <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-item">
-                <i data-lucide="building-2" style="width: 18px;"></i> Gestión de Sedes
+                <i data-lucide="building"></i>
+                <span>Sedes</span>
             </a>
             <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-item">
-                <i data-lucide="sliders-horizontal" style="width: 18px;"></i> Config. Priorización
+                <i data-lucide="sliders"></i>
+                <span>Configuración de priorización</span>
             </a>
             <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-item">
-                <i data-lucide="pie-chart" style="width: 18px;"></i> Métricas
+                <i data-lucide="trending-up"></i>
+                <span>Indicadores y analítica</span>
             </a>
-            <a href="#" class="nav-item" style="margin-top: auto; border-top: 1px solid var(--border-light); border-radius: 0; padding-top: 16px;">
-                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
-            </a>
-        </aside>
+        </nav>
 
-        <main class="main-content">
-            <div class="page-header">
-                <h1 class="page-title">Gestión de Usuarios y Roles del Sistema</h1>
-                <p class="page-subtitle">Administración de accesos de médicos asistenciales, personal administrativo y administradores TI.</p>
+        <div class="user-profile">
+            <div class="avatar"><%= nombreAdmin != null && !nombreAdmin.trim().isEmpty() ? ("" + nombreAdmin.charAt(0) + (nombreAdmin.contains(" ") ? ("" + nombreAdmin.charAt(nombreAdmin.indexOf(" ") + 1)) : "")).toUpperCase() : "JV" %></div>
+            <div class="user-info">
+                <span class="user-name"><%= nombreAdmin %></span>
+                <span class="user-role">Administrador</span>
+            </div>
+            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+                <i data-lucide="log-out"></i>
+            </a>
+        </div>
+    </aside>
+
+    <!-- ==========================================================================
+         CONTENEDOR PRINCIPAL CON HEADER SUPERIOR BLANCO
+         ========================================================================== -->
+    <main class="main-content">
+        <!-- BARRA SUPERIOR BLANCA / GRIS CLARO (DISTINGUIDA DEL FONDO #f3f6fb) -->
+        <header class="dash-top-header">
+            <nav class="breadcrumb-trail">
+                <span>Administrador</span>
+                <span class="bc-sep">/</span>
+                <strong>Usuarios y roles</strong>
+            </nav>
+        </header>
+
+        <!-- ÁREA CON SCROLL Y FONDO #f3f6fb -->
+        <div class="dash-scroll-container">
+            <!-- Título y Subtítulo en Playfair Display -->
+            <div class="page-title-box">
+                <h1 class="page-title-serif">Usuarios y roles</h1>
+                <p class="page-subtitle">Cuentas del personal con acceso al sistema</p>
             </div>
 
             <% if (flashMessage != null) { %>
                 <div class="flash-alert">
-                    <i data-lucide="check-circle" style="width: 18px;"></i>
-                    <%= flashMessage %>
+                    <i data-lucide="check-circle" style="width: 18px; color: #166534;"></i>
+                    <span><%= flashMessage %></span>
                 </div>
             <% } %>
 
-            <!-- METRIC CARDS 4 COLUMNS -->
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-title">MÉDICOS <i data-lucide="stethoscope" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">142</div>
+            <% if (flashError != null) { %>
+                <div class="flash-alert" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
+                    <i data-lucide="alert-circle" style="width: 18px; color: #dc2626;"></i>
+                    <span><%= flashError %></span>
                 </div>
+            <% } %>
 
-                <div class="metric-card">
-                    <div class="metric-title">PERSONAL ADM. <i data-lucide="briefcase" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">64</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">PACIENTES REGISTRADOS <i data-lucide="users" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">1,248</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">ADMINISTRADORES TI <i data-lucide="shield" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">8</div>
-                </div>
-            </div>
-
-            <!-- FILTER CARD -->
-            <div class="filter-card">
-                <div class="filter-inputs">
-                    <div class="search-box">
-                        <i data-lucide="search" style="width: 18px; color: var(--text-muted);"></i>
-                        <input type="text" id="searchInput" placeholder="Buscar por nombre, correo o rol..." onkeyup="filtrarTabla()">
+            <!-- 1. TARJETAS DE MÉTRICAS (3 COLUMNAS) -->
+            <div class="metrics-row">
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Médicos</span>
+                        <div class="stat-icon-badge">
+                            <i data-lucide="stethoscope"></i>
+                        </div>
                     </div>
-                    <select class="select-filter" id="rolFilter" onchange="filtrarTabla()">
-                        <option value="">Todos los Roles</option>
-                        <option value="MEDICO">Médico</option>
-                        <option value="PERSONAL_ADMINISTRATIVO">Personal Adm.</option>
-                        <option value="ADMINISTRADOR">Admin TI</option>
-                    </select>
-                    <select class="select-filter" id="estadoFilter" onchange="filtrarTabla()">
-                        <option value="">Todos los Estados</option>
-                        <option value="ACTIVO">Activo</option>
-                        <option value="INACTIVO">Inactivo</option>
-                    </select>
+                    <div class="stat-number"><%= medicosTotal %></div>
+                    <div class="stat-subtext">Activos: <%= medicosActivos %></div>
                 </div>
-                <button class="btn-add-user" onclick="abrirModalNuevo()">
-                    <i data-lucide="user-plus" style="width: 18px;"></i> + Nuevo Usuario
-                </button>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Personal administrativo</span>
+                        <div class="stat-icon-badge">
+                            <i data-lucide="users"></i>
+                        </div>
+                    </div>
+                    <div class="stat-number"><%= personalTotal %></div>
+                    <div class="stat-subtext">Activos: <%= personalActivos %></div>
+                </div>
+
+                <div class="stat-card">
+                    <div class="stat-header">
+                        <span class="stat-label">Administradores</span>
+                        <div class="stat-icon-badge">
+                            <i data-lucide="shield"></i>
+                        </div>
+                    </div>
+                    <div class="stat-number"><%= adminsTotal %></div>
+                    <div class="stat-subtext">Activos: <%= adminsActivos %></div>
+                </div>
             </div>
 
-            <!-- TABLE PANEL -->
-            <div class="panel">
-                <table id="usuariosTable">
+            <!-- 2. TARJETA DE FILTROS -->
+            <div class="filters-card">
+                <div class="filter-group">
+                    <label for="inputBuscar">Buscar</label>
+                    <div class="search-input-wrapper">
+                        <input type="text" id="inputBuscar" placeholder="Nombre o correo" oninput="filtrarUsuarios()">
+                        <i data-lucide="search"></i>
+                    </div>
+                </div>
+
+                <div class="filter-group">
+                    <label for="selectRol">Rol</label>
+                    <select id="selectRol" class="filter-select" onchange="filtrarUsuarios()">
+                        <option value="">Todos los roles</option>
+                        <option value="Médico">Médico</option>
+                        <option value="Personal administrativo">Personal administrativo</option>
+                        <option value="Administrador">Administrador</option>
+                    </select>
+                </div>
+
+                <div class="filter-group">
+                    <label for="selectEstado">Estado</label>
+                    <select id="selectEstado" class="filter-select" onchange="filtrarUsuarios()">
+                        <option value="">Todos (activo, inactivo, suspendido)</option>
+                        <option value="Activo">Activo</option>
+                        <option value="Inactivo">Inactivo</option>
+                        <option value="Suspendido">Suspendido</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- 3. FILA DE BOTONES DE ACCIÓN -->
+            <div class="actions-row">
+                <div class="actions-left">
+                    <button class="btn-primary-action" onclick="abrirModalNuevo()">
+                        <i data-lucide="plus"></i>
+                        <span>Nuevo usuario</span>
+                    </button>
+                    <button class="btn-secondary-action" onclick="exportarExcel()">
+                        <i data-lucide="download"></i>
+                        <span>Exportar Excel</span>
+                    </button>
+                </div>
+                <button class="btn-reset-filters" onclick="reiniciarFiltros()">Reiniciar filtros</button>
+            </div>
+
+            <!-- 4. TABLA DE USUARIOS Y ROLES -->
+            <div class="table-card">
+                <table class="users-table" id="tablaUsuarios">
                     <thead>
                         <tr>
-                            <th>Nombre y Apellidos</th>
-                            <th>Correo Electrónico</th>
-                            <th>Rol Asignado</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
+                            <th>NOMBRE Y APELLIDOS</th>
+                            <th>CORREO / IDENTIFICADOR</th>
+                            <th>ROL ASIGNADO</th>
+                            <th>SEDE PRINCIPAL</th>
+                            <th>ESTADO</th>
+                            <th>FECHA DE REGISTRO</th>
+                            <th>ACCIONES</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="tbodyUsuarios">
                         <% if (listaUsuarios != null && !listaUsuarios.isEmpty()) { 
                             for (Usuario u : listaUsuarios) { 
-                                String badgeClass = "badge-personal";
-                                if ("ADMINISTRADOR".equals(u.getRol())) badgeClass = "badge-admin";
-                                else if ("MEDICO".equals(u.getRol())) badgeClass = "badge-medico";
+                                String estadoClass = u.getEstadoDetallado().toLowerCase();
                         %>
-                        <tr>
-                            <td><strong><%= u.getNombreCompleto() %></strong></td>
-                            <td style="color: var(--text-muted);"><%= u.getEmail() %></td>
-                            <td><span class="badge-role <%= badgeClass %>"><%= u.getRol() %></span></td>
+                        <tr class="user-row" 
+                            data-nombre="<%= u.getNombreMostrar().toLowerCase() %>" 
+                            data-correo="<%= u.getEmail() != null ? u.getEmail().toLowerCase() : "" %>"
+                            data-rol="<%= u.getRolEtiqueta() %>"
+                            data-estado="<%= u.getEstadoDetallado() %>"
+                            data-id="<%= u.getIdUsuario() %>"
+                            data-nombres="<%= u.getNombres() != null ? u.getNombres().replace("\"", "&quot;") : "" %>"
+                            data-apellidos="<%= u.getApellidos() != null ? u.getApellidos().replace("\"", "&quot;") : "" %>"
+                            data-email="<%= u.getEmail() != null ? u.getEmail() : "" %>"
+                            data-rol-code="<%= u.getRol() %>"
+                            data-sede-id="<%= u.getIdSede() != null ? u.getIdSede() : "" %>"
+                            data-cmp="<%= u.getCmp() != null ? u.getCmp() : "" %>"
+                            data-esp-id="<%= u.getIdEspecialidad() != null ? u.getIdEspecialidad() : "" %>"
+                            data-cargo="<%= u.getCargo() != null ? u.getCargo() : "" %>">
                             <td>
-                                <% if (u.isActivo()) { %>
-                                    <span class="badge-role badge-activo">ACTIVO</span>
-                                <% } else { %>
-                                    <span class="badge-role badge-inactivo">INACTIVO</span>
-                                <% } %>
-                            </td>
-                            <td style="display: flex; gap: 8px;">
-                                <button class="btn-icon" title="Editar usuario" onclick="editarUsuario('<%= u.getIdUsuario() %>', '<%= u.getNombres() %>', '<%= u.getApellidos() %>', '<%= u.getEmail() %>', '<%= u.getRol() %>')">
-                                    <i data-lucide="edit-2" style="width: 16px;"></i>
-                                </button>
-                                <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST" style="margin: 0;">
-                                    <input type="hidden" name="action" value="cambiarEstado">
-                                    <input type="hidden" name="idUsuario" value="<%= u.getIdUsuario() %>">
-                                    <% if (u.isActivo()) { %>
-                                        <input type="hidden" name="estado" value="false">
-                                        <button type="submit" class="btn-icon btn-icon-disable" title="Deshabilitar usuario">
-                                            <i data-lucide="user-x" style="width: 16px;"></i>
-                                        </button>
-                                    <% } else { %>
-                                        <input type="hidden" name="estado" value="true">
-                                        <button type="submit" class="btn-icon btn-icon-enable" title="Habilitar usuario">
-                                            <i data-lucide="user-check" style="width: 16px;"></i>
-                                        </button>
+                                <div class="user-cell-name">
+                                    <span class="user-name-title"><%= u.getNombreMostrar() %></span>
+                                    <% if (u.getMotivoEstado() != null && !u.getMotivoEstado().isEmpty()) { %>
+                                        <span class="user-name-note"><%= u.getMotivoEstado() %></span>
                                     <% } %>
-                                </form>
+                                </div>
+                            </td>
+                            <td><%= u.getEmail() %></td>
+                            <td><%= u.getRolEtiqueta() %></td>
+                            <td><%= u.getNombreSede() %></td>
+                            <td>
+                                <span class="status-pill <%= estadoClass %>"><%= u.getEstadoDetallado() %></span>
+                            </td>
+                            <td><%= u.getFechaRegistroFormateada() %></td>
+                            <td>
+                                <button type="button" class="btn-table-edit" onclick="abrirModalEditarDesdeFila(this)">Editar</button>
                             </td>
                         </tr>
-                        <% } } else { %>
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: var(--text-muted); padding: 32px;">
-                                No hay personal médico o administrativo registrado.
-                            </td>
-                        </tr>
-                        <% } %>
+                        <%  } 
+                           } %>
                     </tbody>
                 </table>
             </div>
-        </main>
-    </div>
 
-    <!-- MODAL REGISTRO/EDICION -->
-    <div class="modal-overlay" id="userModal">
-        <div class="modal-card">
-            <div class="modal-header">
-                <h3 class="modal-title" id="modalTitle">Nuevo Usuario del Sistema</h3>
-                <button class="modal-close" onclick="cerrarModal()">&times;</button>
+            <!-- 5. BARRA DE PAGINACIÓN -->
+            <div class="pagination-bar">
+                <span class="pagination-info" id="paginationInfo">Mostrando 5 de <%= totalUsuariosGeneral %> usuarios</span>
+                <div class="pagination-controls">
+                    <button class="btn-pagination" id="btnPrevPage" onclick="cambiarPagina(-1)">&lt; Anterior</button>
+                    <span class="pagination-page-label" id="paginationPage">Página 1 de 27</span>
+                    <button class="btn-pagination btn-pagination-next" id="btnNextPage" onclick="cambiarPagina(1)">Siguiente &gt;</button>
+                </div>
             </div>
-            <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST">
-                <input type="hidden" name="action" id="modalAction" value="registrar">
-                <input type="hidden" name="idUsuario" id="idUsuario">
+        </div>
+    </main>
 
-                <div class="form-grid">
-                    <div class="form-group">
-                        <label>Nombres *</label>
-                        <input type="text" name="nombres" id="modalNombres" required>
+    <!-- ==========================================================================
+         MODAL CREAR / EDITAR USUARIO
+         ========================================================================== -->
+    <div class="modal-backdrop" id="modalUsuarioBackdrop" onclick="cerrarModalFondo(event)">
+        <div class="modal-window">
+            <div class="modal-header-row">
+                <h3 class="modal-header-title" id="modalTitulo">Nuevo usuario</h3>
+                <button type="button" class="btn-modal-close" onclick="cerrarModal()">&times;</button>
+            </div>
+
+            <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST" id="formUsuario">
+                <input type="hidden" name="action" id="formAction" value="registrar">
+                <input type="hidden" name="idUsuario" id="formIdUsuario" value="">
+
+                <div class="form-grid-modal">
+                    <div class="form-field">
+                        <label for="formNombres">Nombres</label>
+                        <input type="text" id="formNombres" name="nombres" required placeholder="Ej. Carlos">
                     </div>
-                    <div class="form-group">
-                        <label>Apellidos *</label>
-                        <input type="text" name="apellidos" id="modalApellidos" required>
+
+                    <div class="form-field">
+                        <label for="formApellidos">Apellidos</label>
+                        <input type="text" id="formApellidos" name="apellidos" required placeholder="Ej. Mendoza">
                     </div>
-                    <div class="form-group full">
-                        <label>Correo Electrónico *</label>
-                        <input type="email" name="email" id="modalEmail" required>
+
+                    <div class="form-field full">
+                        <label for="formEmail">Correo electrónico institucional</label>
+                        <input type="email" id="formEmail" name="email" required placeholder="cmendoza@clinica.pe">
                     </div>
-                    <div class="form-group full">
-                        <label>Rol del Sistema *</label>
-                        <select name="rol" id="modalRol" required onchange="onRolChange()">
-                            <option value="" disabled selected>Seleccione un rol...</option>
-                            <option value="MEDICO">Médico Especialista</option>
-                            <option value="PERSONAL_ADMINISTRATIVO">Personal Administrativo / Admisión</option>
-                            <option value="ADMINISTRADOR">Administrador TI</option>
+
+                    <div class="form-field">
+                        <label for="formRol">Rol asignado</label>
+                        <select id="formRol" name="rol" required onchange="actualizarCamposCondicionales()">
+                            <option value="MEDICO">Médico</option>
+                            <option value="PERSONAL_ADMINISTRATIVO">Personal administrativo</option>
+                            <option value="ADMINISTRADOR">Administrador</option>
                         </select>
                     </div>
 
-                    <!-- CAMPOS DINÁMICOS MÉDICO -->
-                    <div class="clinical-box" id="boxMedico">
-                        <div class="clinical-box-title"><i data-lucide="stethoscope" style="width: 14px; vertical-align: middle;"></i> Información Asistencial del Médico</div>
-                        <div class="form-grid" style="margin-bottom: 0;">
-                            <div class="form-group">
-                                <label>Colegiatura (CMP) *</label>
-                                <input type="text" name="cmp" id="modalCmp" placeholder="Ej. CMP 45211">
+                    <div class="form-field">
+                        <label for="formEstado">Estado de la cuenta</label>
+                        <select id="formEstado" name="estado" required>
+                            <option value="ACTIVO">Activo</option>
+                            <option value="INACTIVO">Inactivo</option>
+                            <option value="SUSPENDIDO">Suspendido</option>
+                        </select>
+                    </div>
+
+                    <div class="form-field full">
+                        <label for="formSede">Sede principal asignada</label>
+                        <select id="formSede" name="id_sede">
+                            <option value="">Multisede (Acceso global)</option>
+                            <% if (sedes != null) { 
+                                for (Map<String, Object> s : sedes) { %>
+                                    <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
+                            <%  } 
+                               } %>
+                        </select>
+                    </div>
+
+                    <!-- Campos condicionales para Médicos -->
+                    <div class="conditional-role-box" id="boxMedico">
+                        <div class="conditional-role-title">Datos clínicos del médico</div>
+                        <div class="form-grid-modal" style="margin-bottom: 0;">
+                            <div class="form-field">
+                                <label for="formCmp">N° Colegiatura (CMP)</label>
+                                <input type="text" id="formCmp" name="cmp" placeholder="Ej. CMP-45211">
                             </div>
-                            <div class="form-group">
-                                <label>Especialidad Principal *</label>
-                                <select name="id_especialidad" id="modalEspecialidad">
+                            <div class="form-field">
+                                <label for="formEspecialidad">Especialidad médica</label>
+                                <select id="formEspecialidad" name="id_especialidad">
                                     <option value="">Seleccione especialidad...</option>
-                                    <% if (especialidades != null) { for (Map<String, Object> esp : especialidades) { %>
-                                        <option value="<%= esp.get("id") %>"><%= esp.get("nombre") %></option>
-                                    <% } } %>
-                                </select>
-                            </div>
-                            <div class="form-group full">
-                                <label>Sede Principal de Atención *</label>
-                                <select name="id_sede_medico" id="modalSedeMedico">
-                                    <option value="">Seleccione sede...</option>
-                                    <% if (sedes != null) { for (Map<String, Object> s : sedes) { %>
-                                        <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
-                                    <% } } %>
+                                    <% if (especialidades != null) { 
+                                        for (Map<String, Object> esp : especialidades) { %>
+                                            <option value="<%= esp.get("id") %>"><%= esp.get("nombre") %></option>
+                                    <%  } 
+                                       } %>
                                 </select>
                             </div>
                         </div>
                     </div>
 
-                    <!-- CAMPOS DINÁMICOS PERSONAL ADM -->
-                    <div class="clinical-box" id="boxPersonal">
-                        <div class="clinical-box-title"><i data-lucide="briefcase" style="width: 14px; vertical-align: middle;"></i> Información de Admisión / Recepción</div>
-                        <div class="form-grid" style="margin-bottom: 0;">
-                            <div class="form-group">
-                                <label>Código de Empleado</label>
-                                <input type="text" value="Autogenerado por el sistema (Ej. ADM-003)" disabled style="background: #f1f5f9; color: var(--text-muted); font-style: italic;">
-                            </div>
-                            <div class="form-group">
-                                <label>Cargo / Área *</label>
-                                <input type="text" name="cargo" id="modalCargo" placeholder="Ej. Admisión - Ventanilla 2">
-                            </div>
-                            <div class="form-group full">
-                                <label>Sede Asignada *</label>
-                                <select name="id_sede_personal" id="modalSedePersonal">
-                                    <option value="">Seleccione sede...</option>
-                                    <% if (sedes != null) { for (Map<String, Object> s : sedes) { %>
-                                        <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
-                                    <% } } %>
-                                </select>
-                            </div>
+                    <!-- Campos condicionales para Personal Administrativo -->
+                    <div class="conditional-role-box" id="boxPersonal">
+                        <div class="conditional-role-title">Datos del personal administrativo</div>
+                        <div class="form-field full">
+                            <label for="formCargo">Cargo o puesto</label>
+                            <input type="text" id="formCargo" name="cargo" placeholder="Ej. Coordinador de Admisión">
                         </div>
                     </div>
 
-                    <div class="form-group full" id="passwordGroup">
-                        <label>Contraseña Inicial</label>
-                        <input type="password" name="password" id="modalPassword" placeholder="Contraseña de acceso para nuevo usuario">
+                    <div class="form-field full" id="groupPassword">
+                        <label for="formPassword">Contraseña de acceso</label>
+                        <input type="password" id="formPassword" name="password" placeholder="Por defecto: Password123!">
                     </div>
                 </div>
 
-                <div class="modal-footer">
-                    <button type="button" class="btn-cancel" onclick="cerrarModal()">Cancelar</button>
-                    <button type="submit" class="btn-save">Guardar Usuario</button>
+                <div class="modal-footer-row">
+                    <button type="button" class="btn-modal-cancel" onclick="cerrarModal()">Cancelar</button>
+                    <button type="submit" class="btn-modal-submit" id="btnSubmitModal">Guardar usuario</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- ==========================================================================
+         LÓGICA JAVASCRIPT: FILTRADO EN TIEMPO REAL, MODALES Y EXPORTACIÓN EXCEL
+         ========================================================================== -->
     <script>
-        lucide.createIcons();
+        let paginaActual = 1;
+        const filasPorPagina = 5;
 
-        function onRolChange() {
-            let rol = document.getElementById('modalRol').value;
-            let boxMedico = document.getElementById('boxMedico');
-            let boxPersonal = document.getElementById('boxPersonal');
-
-            if (rol === 'MEDICO') {
-                boxMedico.style.display = 'block';
-                boxPersonal.style.display = 'none';
-            } else if (rol === 'PERSONAL_ADMINISTRATIVO') {
-                boxMedico.style.display = 'none';
-                boxPersonal.style.display = 'block';
-            } else {
-                boxMedico.style.display = 'none';
-                boxPersonal.style.display = 'none';
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.lucide) {
+                lucide.createIcons();
             }
+            actualizarCamposCondicionales();
+            filtrarUsuarios();
+        });
+
+        // Filtrado en vivo de la tabla por Nombre/Correo, Rol y Estado
+        function filtrarUsuarios() {
+            const texto = document.getElementById("inputBuscar").value.toLowerCase().trim();
+            const rolSeleccionado = document.getElementById("selectRol").value;
+            const estadoSeleccionado = document.getElementById("selectEstado").value;
+
+            const filas = document.querySelectorAll("#tbodyUsuarios .user-row");
+            let visibles = [];
+
+            filas.forEach(fila => {
+                const nombre = fila.getAttribute("data-nombre") || "";
+                const correo = fila.getAttribute("data-correo") || "";
+                const rol = fila.getAttribute("data-rol") || "";
+                const estado = fila.getAttribute("data-estado") || "";
+
+                const coincideTexto = !texto || nombre.includes(texto) || correo.includes(texto);
+                const coincideRol = !rolSeleccionado || rol === rolSeleccionado;
+                const coincideEstado = !estadoSeleccionado || estado === estadoSeleccionado;
+
+                if (coincideTexto && coincideRol && coincideEstado) {
+                    visibles.push(fila);
+                } else {
+                    fila.style.display = "none";
+                }
+            });
+
+            // Paginación visual
+            const totalVisibles = visibles.length;
+            const totalPaginas = Math.max(1, Math.ceil(totalVisibles / filasPorPagina));
+            if (paginaActual > totalPaginas) paginaActual = 1;
+
+            const inicio = (paginaActual - 1) * filasPorPagina;
+            const fin = inicio + filasPorPagina;
+
+            visibles.forEach((fila, idx) => {
+                if (idx >= inicio && idx < fin) {
+                    fila.style.display = "";
+                } else {
+                    fila.style.display = "none";
+                }
+            });
+
+            // Actualizar etiquetas
+            const mostrandoHasta = Math.min(fin, totalVisibles);
+            const infoTexto = totalVisibles === 0 
+                ? "Mostrando 0 de 0 usuarios" 
+                : "Mostrando " + (inicio + 1) + " - " + mostrandoHasta + " de " + totalVisibles + " usuarios";
+            document.getElementById("paginationInfo").innerText = infoTexto;
+            document.getElementById("paginationPage").innerText = "Página " + paginaActual + " de " + totalPaginas;
+
+            document.getElementById("btnPrevPage").disabled = (paginaActual <= 1);
+            document.getElementById("btnNextPage").disabled = (paginaActual >= totalPaginas);
         }
 
+        function cambiarPagina(delta) {
+            paginaActual += delta;
+            filtrarUsuarios();
+        }
+
+        function reiniciarFiltros() {
+            document.getElementById("inputBuscar").value = "";
+            document.getElementById("selectRol").value = "";
+            document.getElementById("selectEstado").value = "";
+            paginaActual = 1;
+            filtrarUsuarios();
+        }
+
+        // Exportar tabla a Excel / CSV en tiempo real sin recargar página
+        function exportarExcel() {
+            const filas = document.querySelectorAll("#tbodyUsuarios .user-row");
+            let csv = "\uFEFF"; // BOM UTF-8 para apertura directa en Microsoft Excel
+            csv += "NOMBRE Y APELLIDOS;CORREO / IDENTIFICADOR;ROL ASIGNADO;SEDE PRINCIPAL;ESTADO;FECHA DE REGISTRO\r\n";
+
+            filas.forEach(f => {
+                const cols = f.querySelectorAll("td");
+                if (cols.length >= 6) {
+                    const nombre = cols[0].querySelector(".user-name-title") ? cols[0].querySelector(".user-name-title").innerText.trim() : cols[0].innerText.trim();
+                    const correo = cols[1].innerText.trim();
+                    const rol = cols[2].innerText.trim();
+                    const sede = cols[3].innerText.trim();
+                    const estado = cols[4].innerText.trim();
+                    const fecha = cols[5].innerText.trim();
+
+                    csv += '"' + nombre + '";"' + correo + '";"' + rol + '";"' + sede + '";"' + estado + '";"' + fecha + '"\r\n';
+                }
+            });
+
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = "usuarios_clinica_internacional.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Gestión de Modales
         function abrirModalNuevo() {
-            document.getElementById('modalTitle').innerText = "Nuevo Usuario del Sistema";
-            document.getElementById('modalAction').value = "registrar";
-            document.getElementById('idUsuario').value = "";
-            document.getElementById('modalNombres').value = "";
-            document.getElementById('modalApellidos').value = "";
-            document.getElementById('modalEmail').value = "";
-            document.getElementById('modalRol').value = "";
-            document.getElementById('passwordGroup').style.display = "flex";
-            document.getElementById('modalPassword').required = true;
-            onRolChange();
-            document.getElementById('userModal').style.display = "flex";
+            document.getElementById("modalTitulo").innerText = "Nuevo usuario";
+            document.getElementById("formAction").value = "registrar";
+            document.getElementById("formIdUsuario").value = "";
+            document.getElementById("formNombres").value = "";
+            document.getElementById("formApellidos").value = "";
+            document.getElementById("formEmail").value = "";
+            document.getElementById("formRol").value = "MEDICO";
+            document.getElementById("formEstado").value = "ACTIVO";
+            document.getElementById("formSede").value = "3"; // Sede San Borja por defecto
+            document.getElementById("formCmp").value = "";
+            document.getElementById("formEspecialidad").value = "";
+            document.getElementById("formCargo").value = "";
+            document.getElementById("groupPassword").style.display = "flex";
+            document.getElementById("btnSubmitModal").innerText = "Guardar usuario";
+
+            actualizarCamposCondicionales();
+            document.getElementById("modalUsuarioBackdrop").style.display = "flex";
+            if (window.lucide) lucide.createIcons();
         }
 
-        function editarUsuario(id, nombres, apellidos, email, rol) {
-            document.getElementById('modalTitle').innerText = "Editar Usuario #" + id;
-            document.getElementById('modalAction').value = "editar";
-            document.getElementById('idUsuario').value = id;
-            document.getElementById('modalNombres').value = nombres;
-            document.getElementById('modalApellidos').value = apellidos;
-            document.getElementById('modalEmail').value = email;
-            document.getElementById('modalRol').value = rol;
-            document.getElementById('passwordGroup').style.display = "none";
-            document.getElementById('modalPassword').required = false;
-            onRolChange();
-            document.getElementById('userModal').style.display = "flex";
+        function abrirModalEditarDesdeFila(btn) {
+            const fila = btn.closest(".user-row");
+            if (!fila) return;
+
+            document.getElementById("modalTitulo").innerText = "Editar usuario";
+            document.getElementById("formAction").value = "editar";
+            document.getElementById("formIdUsuario").value = fila.getAttribute("data-id") || "";
+            document.getElementById("formNombres").value = fila.getAttribute("data-nombres") || "";
+            document.getElementById("formApellidos").value = fila.getAttribute("data-apellidos") || "";
+            document.getElementById("formEmail").value = fila.getAttribute("data-email") || "";
+            
+            const rolCode = fila.getAttribute("data-rol-code") || "MEDICO";
+            document.getElementById("formRol").value = rolCode;
+
+            const estado = fila.getAttribute("data-estado") || "Activo";
+            document.getElementById("formEstado").value = estado.toUpperCase();
+
+            document.getElementById("formSede").value = fila.getAttribute("data-sede-id") || "";
+            document.getElementById("formCmp").value = fila.getAttribute("data-cmp") || "";
+            document.getElementById("formEspecialidad").value = fila.getAttribute("data-esp-id") || "";
+            document.getElementById("formCargo").value = fila.getAttribute("data-cargo") || "";
+            document.getElementById("groupPassword").style.display = "none";
+            document.getElementById("btnSubmitModal").innerText = "Actualizar usuario";
+
+            actualizarCamposCondicionales();
+            document.getElementById("modalUsuarioBackdrop").style.display = "flex";
+            if (window.lucide) lucide.createIcons();
         }
 
         function cerrarModal() {
-            document.getElementById('userModal').style.display = "none";
+            document.getElementById("modalUsuarioBackdrop").style.display = "none";
         }
 
-        function filtrarTabla() {
-            let q = document.getElementById('searchInput').value.toLowerCase();
-            let rol = document.getElementById('rolFilter').value.toLowerCase();
-            let estado = document.getElementById('estadoFilter').value.toLowerCase();
-            let rows = document.querySelectorAll('#usuariosTable tbody tr');
+        function cerrarModalFondo(event) {
+            if (event.target === document.getElementById("modalUsuarioBackdrop")) {
+                cerrarModal();
+            }
+        }
 
-            rows.forEach(tr => {
-                let text = tr.innerText.toLowerCase();
-                let match = text.includes(q) && tr.innerText.toLowerCase().includes(rol) && tr.innerText.toLowerCase().includes(estado);
-                tr.style.display = match ? '' : 'none';
-            });
+        function actualizarCamposCondicionales() {
+            const rol = document.getElementById("formRol").value;
+            const boxMedico = document.getElementById("boxMedico");
+            const boxPersonal = document.getElementById("boxPersonal");
+
+            if (rol === "MEDICO") {
+                boxMedico.style.display = "block";
+                boxPersonal.style.display = "none";
+            } else if (rol === "PERSONAL_ADMINISTRATIVO") {
+                boxMedico.style.display = "none";
+                boxPersonal.style.display = "block";
+            } else {
+                boxMedico.style.display = "none";
+                boxPersonal.style.display = "none";
+            }
         }
     </script>
 </body>

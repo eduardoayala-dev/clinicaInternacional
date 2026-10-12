@@ -48,7 +48,11 @@ public class AdminDashboardServlet extends HttpServlet {
         }
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
-        if (!"PERSONAL_ADMINISTRATIVO".equals(usuario.getRol()) && !"ADMINISTRADOR".equals(usuario.getRol())) {
+        if ("ADMINISTRADOR".equals(usuario.getRol())) {
+            response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
+            return;
+        }
+        if (!"PERSONAL_ADMINISTRATIVO".equals(usuario.getRol())) {
             response.sendRedirect(request.getContextPath() + "/login/personal?error=rol_invalido");
             return;
         }

@@ -20,57 +20,60 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            --primary: #2563eb;
-            --primary-light: #eff6ff;
-            --bg-body: #f8fafc;
+            --primary: #0284c7;
+            --primary-hover: #0369a1;
+            --primary-light: #e8f1fc;
+            --bg-body: #f3f6fb;
             --bg-surface: #ffffff;
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --border-light: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --radius-md: 8px;
-            --radius-lg: 12px;
+            --border-light: #edf2f7;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.02);
+            --radius-md: 10px;
+            --radius-lg: 14px;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
+        body { display: flex; height: 100vh; width: 100vw; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
 
-        /* HEADER SUPERIOR (TOPBAR) */
-        .topbar {
-            height: 64px; flex-shrink: 0; background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-light); display: flex;
-            align-items: center; justify-content: space-between; padding: 0 32px; z-index: 10;
-        }
-        .topbar-brand { display: flex; align-items: center; gap: 12px; }
-        .topbar-brand img { height: 36px; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; }
-        .user-info { display: flex; flex-direction: column; align-items: flex-end; }
-        .user-name { font-weight: 700; font-size: 13px; color: var(--text-main); }
-        .user-role { font-size: 11px; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-        .btn-logout { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: all 0.2s; }
-        .btn-logout:hover { color: #ef4444; background: #fef2f2; }
-
-        /* CONTENEDOR INFERIOR */
-        .app-body { display: flex; height: calc(100vh - 64px); overflow: hidden; }
-
-        /* SIDEBAR BLANCO */
+        /* PANEL IZQUIERDO ESTÁNDAR */
         .sidebar {
-            width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border-light);
-            padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow-y: auto;
+            width: 250px; min-width: 250px; height: 100vh; background-color: #ffffff;
+            border-right: 1px solid var(--border-light); display: flex; flex-direction: column;
+            padding: 24px 16px; flex-shrink: 0; z-index: 20;
         }
-        .nav-item {
-            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-            color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500;
-            border-radius: var(--radius-md); transition: all 0.2s ease;
-        }
-        .nav-item:hover { background-color: var(--bg-body); color: var(--text-main); }
-        .nav-item.active { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 24px 8px; text-decoration: none; }
+        .brand-icon-wrapper { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
+        .brand-icon-img { width: 36px; height: 36px; object-fit: contain; }
+        .brand-text-block { display: flex; flex-direction: column; }
+        .brand-name { font-size: 14.5px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
+        .brand-subtext { font-size: 11.5px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
 
-        /* ÁREA PRINCIPAL */
-        .main-content { flex: 1; height: 100%; overflow-y: auto; padding: 32px 40px; }
+        .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; flex: 1; }
+        .nav-link {
+            display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-radius: 12px;
+            color: #475569; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s ease;
+        }
+        .nav-link i { width: 19px; height: 19px; color: #94a3b8; stroke-width: 2; transition: color 0.15s ease; }
+        .nav-link:hover { background-color: #f8fafc; color: var(--text-main); }
+        .nav-link:hover i { color: #64748b; }
+        .nav-link.active { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
+        .nav-link.active i { color: var(--primary); }
+
+        .sidebar-footer { margin-top: auto; padding-top: 16px; }
+        .user-capsule { background-color: #edf2f7; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; }
+        .user-avatar-circle { width: 36px; height: 36px; border-radius: 50%; background-color: var(--primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
+        .user-info-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .user-full-name { font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
+        .user-role-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+        .btn-sidebar-logout { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
+        .btn-sidebar-logout:hover { color: #dc2626; background-color: #fee2e2; }
+        .btn-sidebar-logout i { width: 18px; height: 18px; }
+
+        .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 28px 48px 40px 48px; }
+        .breadcrumb-trail { font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; }
         .page-header { margin-bottom: 24px; }
-        .page-title { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.5px; }
+        .page-title { font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.5px; }
         .page-subtitle { font-size: 14px; color: var(--text-muted); }
 
         /* FILTER CARD */
@@ -136,48 +139,63 @@
 </head>
 <body>
 
-    <header class="topbar">
-        <div class="topbar-brand">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
-        </div>
-        <div class="topbar-right">
-            <div class="user-info">
-                <span class="user-name"><%= nombreAdmin %></span>
-                <span class="user-role">ADMINISTRADOR DEL SISTEMA</span>
+    <!-- PANEL DE LA IZQUIERDA ESTÁNDAR -->
+    <aside class="sidebar">
+        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="sidebar-brand">
+            <div class="brand-icon-wrapper">
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
+                     alt="Logo" class="brand-icon-img"
+                     onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
             </div>
-            <div class="user-avatar"><i data-lucide="user" style="width: 18px; height: 18px;"></i></div>
-            <div style="width: 1px; height: 24px; background: var(--border-light); margin: 0 4px;"></div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Salir</a>
-        </div>
-    </header>
-
-    <div class="app-body">
-        <aside class="sidebar">
-            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item">
-                <i data-lucide="users" style="width: 18px;"></i> Usuarios y Roles
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-item">
-                <i data-lucide="building-2" style="width: 18px;"></i> Gestión de Sedes
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-item">
-                <i data-lucide="sliders-horizontal" style="width: 18px;"></i> Config. Priorización
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-item active">
-                <i data-lucide="pie-chart" style="width: 18px;"></i> Métricas
-            </a>
-            <a href="#" class="nav-item" style="margin-top: auto; border-top: 1px solid var(--border-light); border-radius: 0; padding-top: 16px;">
-                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
-            </a>
-        </aside>
-
-        <main class="main-content">
-            <div class="page-header">
-                <h1 class="page-title">Indicadores y Analítica Global</h1>
-                <p class="page-subtitle">Supervisión agregada del rendimiento asistencial y distribución de riesgo de toda la clínica.</p>
+            <div class="brand-text-block">
+                <span class="brand-name">Clínica Internacional</span>
+                <span class="brand-subtext">Portal del administrador</span>
             </div>
+        </a>
+
+        <nav class="sidebar-nav">
+            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-link">
+                <i data-lucide="home"></i>
+                <span>Inicio</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-link">
+                <i data-lucide="shield"></i>
+                <span>Usuarios y roles</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-link">
+                <i data-lucide="building"></i>
+                <span>Sedes</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-link">
+                <i data-lucide="sliders"></i>
+                <span>Configuración de priorización</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-link active">
+                <i data-lucide="trending-up"></i>
+                <span>Indicadores y analítica</span>
+            </a>
+        </nav>
+
+        <div class="sidebar-footer">
+            <div class="user-capsule">
+                <div class="user-avatar-circle"><%= nombreAdmin != null && !nombreAdmin.isEmpty() ? ("" + nombreAdmin.charAt(0)).toUpperCase() : "JV" %></div>
+                <div class="user-info-text">
+                    <span class="user-full-name"><%= nombreAdmin %></span>
+                    <span class="user-role-desc">Administrador</span>
+                </div>
+                <a href="${pageContext.request.contextPath}/logout" class="btn-sidebar-logout" title="Cerrar sesión">
+                    <i data-lucide="log-out"></i>
+                </a>
+            </div>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <div class="breadcrumb-trail">Administrador / <span>Indicadores y analítica</span></div>
+        <div class="page-header">
+            <h1 class="page-title">Indicadores y Analítica Global</h1>
+            <p class="page-subtitle">Supervisión agregada del rendimiento asistencial y distribución de riesgo de toda la clínica.</p>
+        </div>
 
             <!-- FILTER CARD -->
             <div class="filter-card">
@@ -393,7 +411,6 @@
                 </div>
             </div>
         </main>
-    </div>
 
     <script>
         lucide.createIcons();
