@@ -57,6 +57,7 @@ public class PacienteHistorialServlet extends HttpServlet {
 
         String action = request.getParameter("action");
         String idCitaStr = request.getParameter("idCita");
+        String motivo = request.getParameter("motivo");
         if (idCitaStr != null && !idCitaStr.isEmpty()) {
             try {
                 int idCita = Integer.parseInt(idCitaStr);
@@ -64,7 +65,21 @@ public class PacienteHistorialServlet extends HttpServlet {
                 if ("confirmar".equals(action)) {
                     citaDAO.actualizarEstadoCita(idCita, "CONFIRMADA");
                 } else if ("cancelar".equals(action)) {
+                    try {
+                        citaDAO.ejecutarReasignacionInteligente(idCita);
+                    } catch (Exception ignored) {}
                     citaDAO.actualizarEstadoCita(idCita, "CANCELADA");
+
+                    Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+                    if (usuario != null) {
+                        String msg = "Tu cita médica ha sido cancelada correctamente.";
+                        if (motivo != null && !motivo.trim().isEmpty()) {
+                            msg += " Motivo registrado: " + motivo.trim() + ".";
+                        }
+                        try {
+                            citaDAO.crearNotificacion(usuario.getIdUsuario(), idCita, "Cita Cancelada", msg);
+                        } catch (Exception ignored) {}
+                    }
                 }
             } catch (NumberFormatException e) {
                 // Ignore parse error

@@ -189,11 +189,12 @@
                                         <td class="actions-cell">
                                             <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver detalle</button>
                                             <a href="${pageContext.request.contextPath}/paciente/citas?medicoId=<%= c.get("idMedico") %>" class="action-link">Reprogramar</a>
-                                            <form method="POST" action="${pageContext.request.contextPath}/paciente/historial" style="display:inline;" onsubmit="return confirm('¿Estás seguro de que deseas cancelar esta cita?');">
-                                                <input type="hidden" name="action" value="cancelar">
-                                                <input type="hidden" name="idCita" value="<%= c.get("idCita") %>">
-                                                <button type="submit" class="action-link danger">Cancelar</button>
-                                            </form>
+                                            <button type="button" class="action-link danger btn-trigger-cancelar"
+                                                    data-id="<%= c.get("idCita") %>"
+                                                    data-especialidad="<%= c.get("especialidad") %>"
+                                                    data-medico="<%= c.get("medico") %>"
+                                                    data-fechahora="<%= c.get("fechaModal") != null ? c.get("fechaModal") : (c.get("fechaFormateada") + " · " + c.get("horaFormateada")) %>"
+                                                    data-sede="<%= c.get("sede") %> · <%= c.get("consultorio") %>">Cancelar</button>
                                         </td>
                                     </tr>
                                 <% } %>
@@ -390,6 +391,66 @@
         </div>
     </div>
 
+    <!-- MODAL CANCELAR CITA -->
+    <div id="modalCancelarCita" class="modal-cancelar-backdrop" style="display: none;">
+        <div class="modal-cancelar-card">
+            <h2 class="modal-cancelar-title">¿Cancelar tu cita?</h2>
+            
+            <div class="modal-cancelar-detalles">
+                <div class="modal-detalle-row">
+                    <span class="modal-detalle-label">Especialidad</span>
+                    <span class="modal-detalle-val" id="modalCancelarEspecialidad">Cardiología</span>
+                </div>
+                <div class="modal-detalle-row">
+                    <span class="modal-detalle-label">Médico</span>
+                    <span class="modal-detalle-val" id="modalCancelarMedico">Dr. Carlos Mendoza</span>
+                </div>
+                <div class="modal-detalle-row">
+                    <span class="modal-detalle-label">Fecha y hora</span>
+                    <span class="modal-detalle-val" id="modalCancelarFechaHora">Lun 12 oct 2026 · 08:30</span>
+                </div>
+                <div class="modal-detalle-row">
+                    <span class="modal-detalle-label">Sede</span>
+                    <span class="modal-detalle-val" id="modalCancelarSede">Sede Lima Norte · Consultorio 114</span>
+                </div>
+            </div>
+
+            <form id="formCancelarCita" method="POST" action="${pageContext.request.contextPath}/paciente/historial">
+                <input type="hidden" name="action" value="cancelar">
+                <input type="hidden" name="idCita" id="modalCancelarIdCita" value="">
+
+                <div class="modal-cancelar-field">
+                    <label for="selectMotivoCancelacion" class="modal-cancelar-label">Motivo de cancelación (opcional)</label>
+                    <div class="select-wrapper">
+                        <select id="selectMotivoCancelacion" name="motivo" class="modal-cancelar-select">
+                            <option value="" selected>Selecciona un motivo</option>
+                            <option value="Cambio de planes">Cambio de planes</option>
+                            <option value="Imprevisto laboral o personal">Imprevisto laboral o personal</option>
+                            <option value="Problemas de salud / Emergencia">Problemas de salud / Emergencia</option>
+                            <option value="Prefiero otra fecha u horario">Prefiero otra fecha u horario</option>
+                            <option value="Ya no requiero la consulta médica">Ya no requiero la consulta médica</option>
+                            <option value="Otro motivo">Otro motivo</option>
+                        </select>
+                        <i data-lucide="chevron-down" class="select-arrow-icon"></i>
+                    </div>
+                </div>
+
+                <div class="modal-cancelar-alert">
+                    <i data-lucide="alert-triangle" class="modal-alert-icon"></i>
+                    <div class="modal-alert-content">
+                        <strong class="modal-alert-title">Importante</strong>
+                        <p class="modal-alert-text">Si cancelas, el cupo se libera y puede ofrecerse a otro paciente.</p>
+                    </div>
+                </div>
+
+                <div class="modal-cancelar-actions">
+                    <button type="button" class="btn-cancelar-cancel" onclick="cerrarModalCancelar()">No, mantener cita</button>
+                    <button type="submit" class="btn-cancelar-confirm">Sí, cancelar cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         lucide.createIcons();
 
@@ -421,6 +482,43 @@
         function cerrarModalDetalle() {
             document.getElementById('modalDetalleCita').style.display = 'none';
         }
+
+        function abrirModalCancelar(id, especialidad, medico, fechaHora, sede) {
+            document.getElementById('modalCancelarIdCita').value = id || '';
+            document.getElementById('modalCancelarEspecialidad').innerText = especialidad || '--';
+            document.getElementById('modalCancelarMedico').innerText = medico || '--';
+            document.getElementById('modalCancelarFechaHora').innerText = fechaHora || '--';
+            document.getElementById('modalCancelarSede').innerText = sede || '--';
+            const sel = document.getElementById('selectMotivoCancelacion');
+            if (sel) sel.selectedIndex = 0;
+            const m = document.getElementById('modalCancelarCita');
+            m.style.display = 'flex';
+            lucide.createIcons();
+        }
+
+        function cerrarModalCancelar() {
+            const m = document.getElementById('modalCancelarCita');
+            if (m) m.style.display = 'none';
+        }
+
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-trigger-cancelar');
+            if (btn) {
+                abrirModalCancelar(
+                    btn.dataset.id,
+                    btn.dataset.especialidad,
+                    btn.dataset.medico,
+                    btn.dataset.fechahora,
+                    btn.dataset.sede
+                );
+            }
+        });
+
+        document.getElementById('modalCancelarCita')?.addEventListener('click', function(e) {
+            if (e.target === this) {
+                cerrarModalCancelar();
+            }
+        });
     </script>
 
 </body>

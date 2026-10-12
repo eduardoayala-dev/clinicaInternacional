@@ -6,9 +6,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class CitaDAO {
@@ -74,7 +77,13 @@ public class CitaDAO {
                     String cmp = rs.getString("cmp");
 
                     String nombreCompleto = ((nombres != null ? nombres : "") + " " + (apellidos != null ? apellidos : "")).trim();
-                    if (nombreCompleto.isEmpty()) nombreCompleto = "Dr. Médico Especialista";
+                    if (nombreCompleto.isEmpty()) {
+                        nombreCompleto = "Dr. Médico Especialista";
+                    } else if (!nombreCompleto.startsWith("Dr.") && !nombreCompleto.startsWith("Dra.")) {
+                        String nLower = nombreCompleto.toLowerCase();
+                        String prefix = (nLower.startsWith("elena") || nLower.startsWith("andrea") || nLower.startsWith("mariana") || nLower.startsWith("marina") || nLower.startsWith("maria") || nLower.startsWith("rosa") || nLower.startsWith("claudia") || nLower.startsWith("patricia")) ? "Dra. " : "Dr. ";
+                        nombreCompleto = prefix + nombreCompleto;
+                    }
                     if (cmp == null || cmp.trim().isEmpty()) cmp = "CMP-48291";
 
                     map.put("idMedico", rs.getInt("id_medico"));
@@ -108,7 +117,13 @@ public class CitaDAO {
                     String cmp = rs.getString("cmp");
 
                     String nombreCompleto = ((nombres != null ? nombres : "") + " " + (apellidos != null ? apellidos : "")).trim();
-                    if (nombreCompleto.isEmpty()) nombreCompleto = "Dr. Médico Especialista";
+                    if (nombreCompleto.isEmpty()) {
+                        nombreCompleto = "Dr. Médico Especialista";
+                    } else if (!nombreCompleto.startsWith("Dr.") && !nombreCompleto.startsWith("Dra.")) {
+                        String nLower = nombreCompleto.toLowerCase();
+                        String prefix = (nLower.startsWith("elena") || nLower.startsWith("andrea") || nLower.startsWith("mariana") || nLower.startsWith("marina") || nLower.startsWith("maria") || nLower.startsWith("rosa") || nLower.startsWith("claudia") || nLower.startsWith("patricia")) ? "Dra. " : "Dr. ";
+                        nombreCompleto = prefix + nombreCompleto;
+                    }
                     if (cmp == null || cmp.trim().isEmpty()) cmp = "CMP-48291";
 
                     map.put("idMedico", rs.getInt("id_medico"));
@@ -288,6 +303,10 @@ public class CitaDAO {
      * Registra la cita y aplica el Motor de Predicción
      */
     public boolean reservarCita(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
+        return reservarCitaConId(idPacienteParam, idMedico, fecha, hora, nivelUrgencia) > 0;
+    }
+
+    public int reservarCitaConId(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
         String sqlInsert = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, fecha_hora, estado, riesgo_cancelacion, nivel_urgencia) VALUES (?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
         
         try (Connection conn = DatabaseConfig.getConnection()) {
@@ -345,8 +364,9 @@ public class CitaDAO {
                 
                 int filas = ps.executeUpdate();
                 if (filas > 0) {
+                    int idCitaNueva = 0;
                     try (ResultSet keys = ps.getGeneratedKeys()) {
-                        int idCitaNueva = keys.next() ? keys.getInt(1) : 0;
+                        idCitaNueva = keys.next() ? keys.getInt(1) : 0;
                         int idUsuarioPaciente = obtenerIdUsuarioPorPacienteId(idPacienteReal);
                         Map<String, Object> detMed = obtenerDetallesMedico(idMedico);
                         String nombreMed = detMed.get("nombreMedico") != null ? (String) detMed.get("nombreMedico") : "tu especialista";
@@ -354,13 +374,13 @@ public class CitaDAO {
                         String msg = "¡Cita Confirmada! Tu consulta de " + espMed + " con " + nombreMed + " ha sido agendada con éxito para el " + fecha + " a las " + hora + ".";
                         crearNotificacion(idUsuarioPaciente, idCitaNueva > 0 ? idCitaNueva : null, "Citas", msg);
                     }
-                    return true;
+                    return idCitaNueva > 0 ? idCitaNueva : 1;
                 }
-                return false;
+                return 0;
             }
         } catch (Exception e) {
             e.printStackTrace();
-            return false;
+            return 0;
         }
     }
 
@@ -654,9 +674,58 @@ public class CitaDAO {
         return -1;
     }
 
+    private LocalDateTime extraerFechaHora(ResultSet rs, String columna) {
+        try {
+            String str = rs.getString(columna);
+            if (str != null && !str.trim().isEmpty()) {
+                str = str.trim();
+                if (str.length() >= 19) {
+                    str = str.substring(0, 19).replace('T', ' ');
+                    return LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                } else if (str.length() >= 16) {
+                    str = str.substring(0, 16).replace('T', ' ');
+                    return LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                }
+            }
+        } catch (Exception ignored) {}
+        try {
+            Timestamp ts = rs.getTimestamp(columna);
+            if (ts != null) {
+                return ts.toLocalDateTime();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private String formatearFechaEspanol(LocalDateTime ldt) {
+        if (ldt == null) return "Por definir";
+        String diaSemana = ldt.format(DateTimeFormatter.ofPattern("EEE", Locale.forLanguageTag("es"))).replace(".", "");
+        String resto = ldt.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.forLanguageTag("es"))).replace(".", "");
+        return diaSemana.toLowerCase() + " " + resto;
+    }
+
+    private String formatearFechaModal(LocalDateTime ldt) {
+        if (ldt == null) return "--";
+        String diaSemana = ldt.format(DateTimeFormatter.ofPattern("EEE", Locale.forLanguageTag("es"))).replace(".", "");
+        if (!diaSemana.isEmpty()) {
+            diaSemana = Character.toUpperCase(diaSemana.charAt(0)) + diaSemana.substring(1).toLowerCase();
+        }
+        String resto = ldt.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.forLanguageTag("es"))).replace(".", "");
+        String hora = ldt.format(DateTimeFormatter.ofPattern("HH:mm"));
+        return diaSemana + " " + resto + " · " + hora;
+    }
+
+    private String normalizarCmp(String rawCmp) {
+        if (rawCmp == null || rawCmp.trim().isEmpty()) {
+            return "CMP 045218";
+        }
+        String clean = rawCmp.trim().replaceAll("(?i)^CMP[-:\\s]*", "").trim();
+        return "CMP " + clean;
+    }
+
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
@@ -675,20 +744,22 @@ public class CitaDAO {
                     int idCita = rs.getInt("id_cita");
                     map.put("id", "CIT-" + idCita);
                     map.put("idCita", idCita);
-                    Timestamp ts = rs.getTimestamp("fecha_hora");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        map.put("fechaHora", ldt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
-                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", formatearFechaEspanol(ldt));
+                        map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("fechaModal", formatearFechaModal(ldt));
                     } else {
                         map.put("fechaHora", "Por definir");
                         map.put("fechaFormateada", "Por definir");
                         map.put("horaFormateada", "--:--");
+                        map.put("fechaModal", "Por definir");
                     }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 045218");
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
                     map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
                     map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
@@ -706,7 +777,7 @@ public class CitaDAO {
 
     public List<Map<String, Object>> obtenerHistorialPaciente(int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
@@ -725,17 +796,21 @@ public class CitaDAO {
                     int idCita = rs.getInt("id_cita");
                     map.put("id", "CIT-" + idCita);
                     map.put("idCita", idCita);
-                    Timestamp ts = rs.getTimestamp("fecha_hora");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
-                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", formatearFechaEspanol(ldt));
+                        map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("fechaModal", formatearFechaModal(ldt));
                     } else {
+                        map.put("fechaHora", "Concluida");
                         map.put("fechaFormateada", "Concluida");
                         map.put("horaFormateada", "--:--");
+                        map.put("fechaModal", "Concluida");
                     }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
                     map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
@@ -753,7 +828,7 @@ public class CitaDAO {
 
     public List<Map<String, Object>> obtenerCitasCanceladasPaciente(int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
@@ -772,17 +847,21 @@ public class CitaDAO {
                     int idCita = rs.getInt("id_cita");
                     map.put("id", "CIT-" + idCita);
                     map.put("idCita", idCita);
-                    Timestamp ts = rs.getTimestamp("fecha_hora");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
-                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", formatearFechaEspanol(ldt));
+                        map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("fechaModal", formatearFechaModal(ldt));
                     } else {
+                        map.put("fechaHora", "Cancelada");
                         map.put("fechaFormateada", "Cancelada");
                         map.put("horaFormateada", "--:--");
+                        map.put("fechaModal", "Cancelada");
                     }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
                     map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
@@ -814,7 +893,7 @@ public class CitaDAO {
                     m.put("idMedico", rs.getInt("id_medico"));
                     m.put("nombre", "Dr. " + rs.getString("nombres") + " " + rs.getString("apellidos"));
                     m.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
-                    m.put("cmp", rs.getString("cmp") != null ? rs.getString("cmp") : "CMP 00000");
+                    m.put("cmp", normalizarCmp(rs.getString("cmp")));
                     m.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     list.add(m);
                 }
@@ -1012,12 +1091,51 @@ public class CitaDAO {
         return idPaciente;
     }
 
+    public boolean inscribirListaEspera(int idPaciente, int idEspecialidad, Integer idSede, String rangoHorario, String urgenciaDisponibilidad, String canalesNotificacion) {
+        String sqlCancelar = "UPDATE lista_espera SET estado = 'CANCELADA' WHERE id_paciente = ? AND estado IN ('ACTIVA', 'OFERTADA')";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement psCanc = conn.prepareStatement(sqlCancelar)) {
+            psCanc.setInt(1, idPaciente);
+            psCanc.executeUpdate();
+        } catch (Exception ignored) {}
+
+        int sedeIdFinal = (idSede != null && idSede > 0) ? idSede : 1;
+        String sqlInsert = "INSERT INTO lista_espera (id_paciente, id_especialidad, id_sede, nivel_urgencia, rango_horario, canal_notificacion, estado, posicion) " +
+                           "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVA', 1)";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
+            ps.setInt(1, idPaciente);
+            ps.setInt(2, idEspecialidad);
+            ps.setInt(3, sedeIdFinal);
+            ps.setString(4, urgenciaDisponibilidad != null && !urgenciaDisponibilidad.trim().isEmpty() ? urgenciaDisponibilidad : "MEDIA");
+            ps.setString(5, rangoHorario != null && !rangoHorario.trim().isEmpty() ? rangoHorario : "MANANA");
+            ps.setString(6, canalesNotificacion != null && !canalesNotificacion.trim().isEmpty() ? canalesNotificacion : "WHATSAPP");
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean retirarListaEspera(int idListaEspera, int idPaciente) {
+        String sql = "UPDATE lista_espera SET estado = 'CANCELADA' WHERE id_lista_espera = ? AND id_paciente = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idListaEspera);
+            ps.setInt(2, idPaciente);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public Map<String, Object> obtenerEstadoListaEspera(int idPaciente) {
         String sql = "SELECT le.id_lista_espera, le.estado, le.rango_horario, le.canal_notificacion, " +
                      "e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM lista_espera le " +
                      "JOIN especialidad e ON le.id_especialidad = e.id_especialidad " +
-                     "JOIN sede s ON le.id_sede = s.id_sede " +
+                     "LEFT JOIN sede s ON le.id_sede = s.id_sede " +
                      "WHERE le.id_paciente = ? AND le.estado IN ('ACTIVA', 'OFERTADA') " +
                      "ORDER BY le.fecha_registro DESC LIMIT 1";
         try (Connection conn = DatabaseConfig.getConnection();
@@ -1028,13 +1146,38 @@ public class CitaDAO {
                     Map<String, Object> map = new HashMap<>();
                     map.put("idListaEspera", rs.getInt("id_lista_espera"));
                     String estado = rs.getString("estado");
-                    map.put("estado", "OFERTADA".equals(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
+                    map.put("estadoCodigo", estado != null ? estado.toUpperCase() : "ACTIVA");
+                    map.put("estado", "OFERTADA".equalsIgnoreCase(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
                     map.put("especialidad", rs.getString("especialidad"));
-                    map.put("sede", rs.getString("sede"));
+                    String sede = rs.getString("sede");
+                    map.put("sede", (sede != null && !sede.trim().isEmpty()) ? sede : "Sede San Borja");
                     String rango = rs.getString("rango_horario");
                     String canal = rs.getString("canal_notificacion");
-                    String rangoStr = "manana".equalsIgnoreCase(rango) ? "Turno mañana" : ("tarde".equalsIgnoreCase(rango) ? "Turno tarde" : "Turno indiferente");
-                    String canalStr = canal != null ? canal : "WhatsApp";
+
+                    String rangoStr = "Mañana";
+                    if (rango != null) {
+                        String rLow = rango.toLowerCase();
+                        if (rLow.contains("tarde") && (rLow.contains("manana") || rLow.contains("mañana"))) {
+                            rangoStr = "Mañana / Tarde";
+                        } else if (rLow.contains("tarde")) {
+                            rangoStr = "Tarde";
+                        } else if (rLow.contains("manana") || rLow.contains("mañana")) {
+                            rangoStr = "Mañana";
+                        }
+                    }
+
+                    String canalStr = "SMS / WhatsApp";
+                    if (canal != null) {
+                        String cUp = canal.toUpperCase();
+                        if (cUp.contains("CORREO") && (cUp.contains("SMS") || cUp.contains("WHATSAPP"))) {
+                            canalStr = "SMS / WhatsApp · Correo";
+                        } else if (cUp.contains("CORREO")) {
+                            canalStr = "Correo electrónico";
+                        } else {
+                            canalStr = "SMS / WhatsApp";
+                        }
+                    }
+
                     map.put("preferencias", rangoStr + " · " + canalStr);
                     return map;
                 }

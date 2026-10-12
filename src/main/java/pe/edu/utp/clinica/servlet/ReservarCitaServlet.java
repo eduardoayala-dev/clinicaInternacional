@@ -39,18 +39,45 @@ public class ReservarCitaServlet extends HttpServlet {
             // Obtener el id_paciente correspondiente al id_usuario de la sesión
             int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
 
-            boolean exito = citaDAO.reservarCita(idPaciente, idMedico, fecha, hora, nivelUrgencia);
+            int idCita = citaDAO.reservarCitaConId(idPaciente, idMedico, fecha, hora, nivelUrgencia);
+            boolean exito = idCita > 0;
+
+            String accept = request.getHeader("Accept");
+            String requestedWith = request.getHeader("X-Requested-With");
+            boolean esAjax = "XMLHttpRequest".equals(requestedWith) 
+                          || (accept != null && accept.contains("application/json"))
+                          || "true".equals(request.getParameter("ajax"));
+
+            if (esAjax) {
+                response.setContentType("application/json;charset=UTF-8");
+                if (exito) {
+                    String anio = java.time.Year.now().toString();
+                    String codigoCita = "CI-" + anio + "-" + String.format("%06d", idCita);
+                    response.getWriter().write("{\"success\":true,\"idCita\":" + idCita + ",\"codigoCita\":\"" + codigoCita + "\"}");
+                } else {
+                    response.getWriter().write("{\"success\":false,\"error\":\"No se pudo completar la reserva.\"}");
+                }
+                return;
+            }
 
             if (exito) {
-                // Redirigir al dashboard con alerta de éxito
-                response.sendRedirect(request.getContextPath() + "/paciente/dashboard?reserva=ok");
+                String anio = java.time.Year.now().toString();
+                String codigoCita = "CI-" + anio + "-" + String.format("%06d", idCita);
+                response.sendRedirect(request.getContextPath() + "/paciente/citas?reserva=ok&codigo=" + codigoCita);
             } else {
                 response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
             }
 
         } catch (Exception e) {
             e.printStackTrace();
-            response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
+            String accept = request.getHeader("Accept");
+            String requestedWith = request.getHeader("X-Requested-With");
+            if ("XMLHttpRequest".equals(requestedWith) || (accept != null && accept.contains("application/json"))) {
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"success\":false,\"error\":\"Error interno al procesar reserva.\"}");
+            } else {
+                response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
+            }
         }
     }
 }

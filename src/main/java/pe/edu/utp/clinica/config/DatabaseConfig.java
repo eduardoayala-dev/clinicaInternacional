@@ -35,7 +35,7 @@ public class DatabaseConfig {
         String user = System.getenv().getOrDefault("DB_USER", "root");
         String password = System.getenv().getOrDefault("DB_PASSWORD", "");
 
-        String mysqlUrl = String.format("jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC&characterEncoding=UTF-8",
+        String mysqlUrl = String.format("jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima&characterEncoding=UTF-8",
                 host, port, dbName);
 
         try {
