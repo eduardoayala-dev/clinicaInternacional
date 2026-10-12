@@ -6,9 +6,12 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.Timestamp;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class CitaDAO {
@@ -671,9 +674,58 @@ public class CitaDAO {
         return -1;
     }
 
+    private LocalDateTime extraerFechaHora(ResultSet rs, String columna) {
+        try {
+            String str = rs.getString(columna);
+            if (str != null && !str.trim().isEmpty()) {
+                str = str.trim();
+                if (str.length() >= 19) {
+                    str = str.substring(0, 19).replace('T', ' ');
+                    return LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+                } else if (str.length() >= 16) {
+                    str = str.substring(0, 16).replace('T', ' ');
+                    return LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
+                }
+            }
+        } catch (Exception ignored) {}
+        try {
+            Timestamp ts = rs.getTimestamp(columna);
+            if (ts != null) {
+                return ts.toLocalDateTime();
+            }
+        } catch (Exception ignored) {}
+        return null;
+    }
+
+    private String formatearFechaEspanol(LocalDateTime ldt) {
+        if (ldt == null) return "Por definir";
+        String diaSemana = ldt.format(DateTimeFormatter.ofPattern("EEE", Locale.forLanguageTag("es"))).replace(".", "");
+        String resto = ldt.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.forLanguageTag("es"))).replace(".", "");
+        return diaSemana.toLowerCase() + " " + resto;
+    }
+
+    private String formatearFechaModal(LocalDateTime ldt) {
+        if (ldt == null) return "--";
+        String diaSemana = ldt.format(DateTimeFormatter.ofPattern("EEE", Locale.forLanguageTag("es"))).replace(".", "");
+        if (!diaSemana.isEmpty()) {
+            diaSemana = Character.toUpperCase(diaSemana.charAt(0)) + diaSemana.substring(1).toLowerCase();
+        }
+        String resto = ldt.format(DateTimeFormatter.ofPattern("dd MMM yyyy", Locale.forLanguageTag("es"))).replace(".", "");
+        String hora = ldt.format(DateTimeFormatter.ofPattern("HH:mm"));
+        return diaSemana + " " + resto + " · " + hora;
+    }
+
+    private String normalizarCmp(String rawCmp) {
+        if (rawCmp == null || rawCmp.trim().isEmpty()) {
+            return "CMP 045218";
+        }
+        String clean = rawCmp.trim().replaceAll("(?i)^CMP[-:\\s]*", "").trim();
+        return "CMP " + clean;
+    }
+
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
@@ -692,20 +744,22 @@ public class CitaDAO {
                     int idCita = rs.getInt("id_cita");
                     map.put("id", "CIT-" + idCita);
                     map.put("idCita", idCita);
-                    Timestamp ts = rs.getTimestamp("fecha_hora");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        map.put("fechaHora", ldt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
-                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", formatearFechaEspanol(ldt));
+                        map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("fechaModal", formatearFechaModal(ldt));
                     } else {
                         map.put("fechaHora", "Por definir");
                         map.put("fechaFormateada", "Por definir");
                         map.put("horaFormateada", "--:--");
+                        map.put("fechaModal", "Por definir");
                     }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 045218");
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
                     map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
                     map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
@@ -723,7 +777,7 @@ public class CitaDAO {
 
     public List<Map<String, Object>> obtenerHistorialPaciente(int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
@@ -742,17 +796,21 @@ public class CitaDAO {
                     int idCita = rs.getInt("id_cita");
                     map.put("id", "CIT-" + idCita);
                     map.put("idCita", idCita);
-                    Timestamp ts = rs.getTimestamp("fecha_hora");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
-                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", formatearFechaEspanol(ldt));
+                        map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("fechaModal", formatearFechaModal(ldt));
                     } else {
+                        map.put("fechaHora", "Concluida");
                         map.put("fechaFormateada", "Concluida");
                         map.put("horaFormateada", "--:--");
+                        map.put("fechaModal", "Concluida");
                     }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
                     map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
@@ -770,7 +828,7 @@ public class CitaDAO {
 
     public List<Map<String, Object>> obtenerCitasCanceladasPaciente(int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
@@ -789,17 +847,21 @@ public class CitaDAO {
                     int idCita = rs.getInt("id_cita");
                     map.put("id", "CIT-" + idCita);
                     map.put("idCita", idCita);
-                    Timestamp ts = rs.getTimestamp("fecha_hora");
-                    if (ts != null) {
-                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
-                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", formatearFechaEspanol(ldt));
+                        map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("fechaModal", formatearFechaModal(ldt));
                     } else {
+                        map.put("fechaHora", "Cancelada");
                         map.put("fechaFormateada", "Cancelada");
                         map.put("horaFormateada", "--:--");
+                        map.put("fechaModal", "Cancelada");
                     }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
                     map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
@@ -831,7 +893,7 @@ public class CitaDAO {
                     m.put("idMedico", rs.getInt("id_medico"));
                     m.put("nombre", "Dr. " + rs.getString("nombres") + " " + rs.getString("apellidos"));
                     m.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
-                    m.put("cmp", rs.getString("cmp") != null ? rs.getString("cmp") : "CMP 00000");
+                    m.put("cmp", normalizarCmp(rs.getString("cmp")));
                     m.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     list.add(m);
                 }
