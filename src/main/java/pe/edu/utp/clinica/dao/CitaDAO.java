@@ -596,6 +596,10 @@ public class CitaDAO {
     }
 
     public int obtenerIdPacientePorUsuarioId(int usuarioId) {
+        if (usuarioId <= 0) {
+            return -1;
+        }
+
         String sqlSelect = "SELECT id_paciente FROM paciente WHERE id_usuario = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
@@ -609,12 +613,34 @@ public class CitaDAO {
             e.printStackTrace();
         }
 
-        // Si el usuario no tiene registro en la tabla paciente, creamos uno por defecto para garantizar la integridad referencial
+        // Verificar que el id_usuario realmente exista en la tabla usuario para evitar fallas de Foreign Key
+        String sqlCheckUser = "SELECT dni FROM usuario WHERE id_usuario = ?";
+        String dniUsuario = null;
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlCheckUser)) {
+            ps.setInt(1, usuarioId);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    dniUsuario = rs.getString("dni");
+                } else {
+                    return -1; // El usuario no existe en la BD
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+
+        if (dniUsuario == null || dniUsuario.trim().isEmpty()) {
+            dniUsuario = "DNI" + usuarioId + String.valueOf(System.currentTimeMillis() % 10000);
+        }
+
+        // Si el usuario existe pero aún no tenía fila en paciente, creamos su ficha médica de forma segura
         String sqlInsert = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, '1995-01-01', '999999999', 'Av. Javier Prado Este 1066')";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlInsert, java.sql.Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, usuarioId);
-            ps.setString(2, "DNI" + usuarioId + String.valueOf(System.currentTimeMillis() % 10000));
+            ps.setString(2, dniUsuario);
             ps.executeUpdate();
             try (ResultSet keys = ps.getGeneratedKeys()) {
                 if (keys.next()) {
@@ -625,7 +651,7 @@ public class CitaDAO {
             e.printStackTrace();
         }
 
-        return usuarioId;
+        return -1;
     }
 
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {
@@ -646,17 +672,29 @@ public class CitaDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("id", "CIT-" + rs.getInt("id_cita"));
-                    map.put("idCita", rs.getInt("id_cita"));
+                    int idCita = rs.getInt("id_cita");
+                    map.put("id", "CIT-" + idCita);
+                    map.put("idCita", idCita);
                     Timestamp ts = rs.getTimestamp("fecha_hora");
-                    String fhStr = ts != null ? ts.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "Por definir";
-                    map.put("fechaHora", fhStr);
+                    if (ts != null) {
+                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
+                        map.put("fechaHora", ldt.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
+                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    } else {
+                        map.put("fechaHora", "Por definir");
+                        map.put("fechaFormateada", "Por definir");
+                        map.put("horaFormateada", "--:--");
+                    }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
-                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
+                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 045218");
+                    map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
+                    map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
                     map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                     map.put("modalidad", "Presencial");
-                    map.put("estado", rs.getString("estado") != null ? rs.getString("estado") : "CONFIRMADA");
+                    String est = rs.getString("estado");
+                    map.put("estado", est != null ? est : "CONFIRMADA");
                     list.add(map);
                 }
             }
@@ -670,13 +708,13 @@ public class CitaDAO {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
-                     "e.nombre AS especialidad, s.nombre AS sede " +
+                     "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM cita c " +
                      "JOIN medico m ON c.id_medico = m.id_medico " +
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND (c.estado = 'COMPLETADA' OR c.fecha_hora < CURRENT_TIMESTAMP()) " +
+                     "WHERE c.id_paciente = ? AND (c.estado = 'COMPLETADA' OR (c.estado != 'CANCELADA' AND c.fecha_hora < CURRENT_TIMESTAMP())) " +
                      "ORDER BY c.fecha_hora DESC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -684,15 +722,71 @@ public class CitaDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("id", rs.getInt("id_cita"));
+                    int idCita = rs.getInt("id_cita");
+                    map.put("id", "CIT-" + idCita);
+                    map.put("idCita", idCita);
                     Timestamp ts = rs.getTimestamp("fecha_hora");
-                    String fechaStr = ts != null ? ts.toLocalDateTime().format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy")) : "";
-                    map.put("fecha", fechaStr);
+                    if (ts != null) {
+                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
+                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
+                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    } else {
+                        map.put("fechaFormateada", "Concluida");
+                        map.put("horaFormateada", "--:--");
+                    }
                     map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
+                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+                    map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
+                    map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
                     map.put("diagnostico", "Consulta ambulatoria realizada");
                     map.put("tipo", "Consulta");
-                    map.put("estado", rs.getString("estado"));
+                    map.put("estado", rs.getString("estado") != null ? rs.getString("estado") : "COMPLETADA");
+                    list.add(map);
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return list;
+    }
+
+    public List<Map<String, Object>> obtenerCitasCanceladasPaciente(int idPaciente) {
+        List<Map<String, Object>> list = new ArrayList<>();
+        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
+                     "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
+                     "FROM cita c " +
+                     "JOIN medico m ON c.id_medico = m.id_medico " +
+                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
+                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
+                     "WHERE c.id_paciente = ? AND c.estado = 'CANCELADA' " +
+                     "ORDER BY c.fecha_hora DESC";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idPaciente);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    int idCita = rs.getInt("id_cita");
+                    map.put("id", "CIT-" + idCita);
+                    map.put("idCita", idCita);
+                    Timestamp ts = rs.getTimestamp("fecha_hora");
+                    if (ts != null) {
+                        java.time.LocalDateTime ldt = ts.toLocalDateTime();
+                        map.put("fechaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("EEE dd MMM yyyy", java.util.Locale.forLanguageTag("es"))));
+                        map.put("horaFormateada", ldt.format(java.time.format.DateTimeFormatter.ofPattern("HH:mm")));
+                    } else {
+                        map.put("fechaFormateada", "Cancelada");
+                        map.put("horaFormateada", "--:--");
+                    }
+                    map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
+                    map.put("cmp", rs.getString("cmp") != null ? "CMP " + rs.getString("cmp") : "CMP 00000");
+                    map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+                    map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
+                    map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
+                    map.put("estado", "CANCELADA");
                     list.add(map);
                 }
             }
