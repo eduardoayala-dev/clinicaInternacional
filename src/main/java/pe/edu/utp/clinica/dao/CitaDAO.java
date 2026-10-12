@@ -254,11 +254,6 @@ public class CitaDAO {
         return horariosDisponibles;
     }
 
-    /**
-     * Motor Heurístico de IA para el MVP:
-     * Calcula la probabilidad de que un paciente cancele su próxima cita 
-     * basado en su historial de inasistencias en la tabla cita.
-     */
     private String calcularRiesgoCancelacion(int idPaciente) throws java.sql.SQLException {
         String sqlTotal = "SELECT COUNT(*) FROM cita WHERE id_paciente = ?";
         String sqlFaltas = "SELECT COUNT(*) FROM cita WHERE id_paciente = ? AND estado IN ('CANCELADA', 'NO_ASISTIO')";
@@ -921,5 +916,69 @@ public class CitaDAO {
             e.printStackTrace();
         }
         return idPaciente;
+    }
+
+    public Map<String, Object> obtenerEstadoListaEspera(int idPaciente) {
+        String sql = "SELECT le.id_lista_espera, le.estado, le.rango_horario, le.canal_notificacion, " +
+                     "e.nombre AS especialidad, s.nombre AS sede " +
+                     "FROM lista_espera le " +
+                     "JOIN especialidad e ON le.id_especialidad = e.id_especialidad " +
+                     "JOIN sede s ON le.id_sede = s.id_sede " +
+                     "WHERE le.id_paciente = ? AND le.estado IN ('ACTIVA', 'OFERTADA') " +
+                     "ORDER BY le.fecha_registro DESC LIMIT 1";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idPaciente);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("idListaEspera", rs.getInt("id_lista_espera"));
+                    String estado = rs.getString("estado");
+                    map.put("estado", "OFERTADA".equals(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
+                    map.put("especialidad", rs.getString("especialidad"));
+                    map.put("sede", rs.getString("sede"));
+                    String rango = rs.getString("rango_horario");
+                    String canal = rs.getString("canal_notificacion");
+                    String rangoStr = "manana".equalsIgnoreCase(rango) ? "Turno mañana" : ("tarde".equalsIgnoreCase(rango) ? "Turno tarde" : "Turno indiferente");
+                    String canalStr = canal != null ? canal : "WhatsApp";
+                    map.put("preferencias", rangoStr + " · " + canalStr);
+                    return map;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
+    public Map<String, Object> obtenerOfertaCupoAnticipado(int idPaciente) {
+        String sql = "SELECT le.id_lista_espera, e.nombre AS especialidad, s.nombre AS sede, " +
+                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos " +
+                     "FROM lista_espera le " +
+                     "JOIN especialidad e ON le.id_especialidad = e.id_especialidad " +
+                     "JOIN sede s ON le.id_sede = s.id_sede " +
+                     "LEFT JOIN medico m ON le.id_especialidad = m.id_especialidad " +
+                     "LEFT JOIN usuario u ON m.id_usuario = u.id_usuario " +
+                     "WHERE le.id_paciente = ? AND le.estado = 'OFERTADA' " +
+                     "ORDER BY le.fecha_registro DESC LIMIT 1";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idPaciente);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("especialidad", rs.getString("especialidad"));
+                    String medNom = rs.getString("medico_nombres");
+                    String medApe = rs.getString("medico_apellidos");
+                    map.put("medico", (medNom != null ? "Dr. " + medNom + " " + (medApe != null ? medApe : "") : "Dr. Especialista"));
+                    map.put("fechaOfrecida", "Mar 13 oct 2026 · 10:20");
+                    map.put("tiempoRestante", "Tiempo restante: 14:32");
+                    return map;
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
     }
 }

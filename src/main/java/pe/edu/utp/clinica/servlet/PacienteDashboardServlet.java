@@ -95,6 +95,9 @@ public class PacienteDashboardServlet extends HttpServlet {
         stats.put("estudiosPendientes", 0);
         stats.put("consultasTotales", historialCitas.size());
 
+        Map<String, Object> estadoListaEspera = idPaciente > 0 ? citaDAO.obtenerEstadoListaEspera(idPaciente) : null;
+        Map<String, Object> ofertaCupo = idPaciente > 0 ? citaDAO.obtenerOfertaCupoAnticipado(idPaciente) : null;
+
         String ultimoAcceso = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss"));
         String ipAcceso = request.getRemoteAddr();
 
@@ -103,6 +106,8 @@ public class PacienteDashboardServlet extends HttpServlet {
         request.setAttribute("proximaCita", proximaCita);
         request.setAttribute("listaProximasCitas", listaProximasCitas);
         request.setAttribute("medicosAsignados", medicosAsignados);
+        request.setAttribute("estadoListaEspera", estadoListaEspera);
+        request.setAttribute("ofertaCupo", ofertaCupo);
         request.setAttribute("stats", stats);
         request.setAttribute("ultimoAcceso", ultimoAcceso);
         request.setAttribute("ipAcceso", ipAcceso);

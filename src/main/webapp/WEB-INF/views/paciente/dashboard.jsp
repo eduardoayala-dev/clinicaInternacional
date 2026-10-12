@@ -1,650 +1,322 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.util.List" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
-    if (nombrePaciente == null && usuario != null) nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
-    if (nombrePaciente == null) nombrePaciente = "Paciente";
-    
+    if (nombrePaciente == null && usuario != null) {
+        nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
+    }
+    if (nombrePaciente == null) {
+        nombrePaciente = "Paciente";
+    }
+
+    String primerNombre = "Paciente";
     String inicialesPaciente = "P";
     if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
+        primerNombre = partes[0];
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
         } else {
             inicialesPaciente = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
         }
     }
-    
-    Map<String, Object> proximaCita = (Map<String, Object>) request.getAttribute("proximaCita");
-    List<Map<String, Object>> listaProximasCitas = (List<Map<String, Object>>) request.getAttribute("listaProximasCitas");
-    List<Map<String, Object>> medicosAsignados = (List<Map<String, Object>>) request.getAttribute("medicosAsignados");
-    Map<String, Integer> stats = (Map<String, Integer>) request.getAttribute("stats");
-    int numProximas = stats != null && stats.get("proximasCitas") != null ? stats.get("proximasCitas") : 0;
-    int numMedicos = stats != null && stats.get("medicosAsignados") != null ? stats.get("medicosAsignados") : 0;
-    int numEstudios = stats != null && stats.get("estudiosPendientes") != null ? stats.get("estudiosPendientes") : 0;
-    int numConsultas = stats != null && stats.get("consultasTotales") != null ? stats.get("consultasTotales") : 0;
 
-    pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
-    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
+    pe.edu.utp.clinica.dao.CitaDAO citaDAOBell = new pe.edu.utp.clinica.dao.CitaDAO();
+    int numNotifSinLeer = usuario != null ? citaDAOBell.contarNotificacionesSinLeer(usuario.getIdUsuario()) : 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Portal del Paciente - Clínica Internacional</title>
+    <title>Inicio - Portal del Paciente | Clínica Internacional</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-hover: #1d4ed8;
-            --bg-page: #f0f8ff; 
-            --bg-card: #ffffff;
-            --text-dark: #0f172a;
-            --text-gray: #64748b;
-            --border-light: #e2e8f0;
-            --radius-lg: 16px;
-            --radius-md: 12px;
-            --sidebar-width: 260px;
-        }
-
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
-
-        body {
-            background-color: var(--bg-page);
-            color: var(--text-dark);
-            display: flex;
-            height: 100vh;
-            overflow: hidden;
-            -webkit-font-smoothing: antialiased;
-            -moz-osx-font-smoothing: grayscale;
-        }
-
-        /* SIDEBAR */
-        .sidebar {
-            width: var(--sidebar-width);
-            background-color: var(--bg-card);
-            border-right: 1px solid var(--border-light);
-            display: flex;
-            flex-direction: column;
-            padding: 24px 20px;
-            flex-shrink: 0;
-            z-index: 10;
-        }
-
-        .brand-container {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 40px;
-            padding-left: 8px;
-        }
-        .brand-container img { height: 36px; }
-
-        .nav-menu {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            flex: 1;
-        }
-
-        .nav-item {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            padding: 12px 16px;
-            border-radius: var(--radius-md);
-            color: var(--text-gray);
-            text-decoration: none;
-            font-size: 14px;
-            font-weight: 500;
-            transition: all 0.2s;
-        }
-
-        .nav-item:hover {
-            background-color: #f8fafc;
-            color: var(--text-dark);
-        }
-
-        .nav-item.active {
-            background-color: #eff6ff;
-            color: var(--primary);
-            font-weight: 600;
-        }
-
-        .user-profile-bottom {
-            margin-top: auto;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 16px 8px 8px 8px;
-            border-top: 1px solid var(--border-light);
-            cursor: pointer;
-            text-decoration: none;
-        }
-        
-        .avatar-initials {
-            display: flex; align-items: center; justify-content: center;
-            border-radius: 50%; font-weight: 600; color: var(--primary);
-            background-color: #eff6ff;
-        }
-        .avatar-lg { width: 48px; height: 48px; font-size: 16px; border: 2px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .avatar-sm { width: 36px; height: 36px; font-size: 13px; flex-shrink: 0; }
-
-        .user-name-sm { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
-        .user-role-sm { font-size: 11px; color: var(--text-gray); }
-
-        /* MAIN CONTENT */
-        .main-content {
-            flex: 1;
-            padding: 40px 50px;
-            overflow-y: auto;
-        }
-
-        /* HEADER */
-        .page-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 32px;
-        }
-
-        .header-date { font-size: 13px; color: var(--text-gray); font-weight: 500; margin-bottom: 8px; text-transform: capitalize; }
-        .header-title { font-size: 28px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.5px; }
-        .header-subtitle { font-size: 14px; color: var(--text-gray); }
-
-        .btn-bell {
-            width: 44px; height: 44px;
-            border-radius: 12px;
-            background: #ffffff;
-            border: 1px solid var(--border-light);
-            display: flex; align-items: center; justify-content: center;
-            color: var(--text-gray);
-            position: relative;
-            text-decoration: none;
-            transition: all 0.2s;
-        }
-        .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
-        .btn-bell.has-unread::after {
-            content: '';
-            position: absolute; top: 10px; right: 12px;
-            width: 8px; height: 8px; background: #ef4444; border-radius: 50%;
-            border: 2px solid #ffffff;
-        }
-
-        .btn-primary {
-            background-color: var(--primary);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 30px;
-            font-size: 14px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-            transition: all 0.2s;
-        }
-        .btn-primary:hover { background-color: var(--primary-hover); transform: translateY(-1px); box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3); }
-
-        /* KPI ROW */
-        .kpi-row {
-            display: grid;
-            grid-template-columns: repeat(4, 1fr);
-            gap: 20px;
-            margin-bottom: 32px;
-        }
-
-        .kpi-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            position: relative;
-        }
-
-        .kpi-badge {
-            position: absolute; top: 24px; right: 24px;
-            padding: 4px 10px; border-radius: 20px;
-            font-size: 9px; font-weight: 700;
-            text-transform: uppercase; letter-spacing: 0.5px;
-        }
-        .badge-neutral { background: #f1f5f9; color: #475569; }
-        .badge-warning { background: #fef2f2; color: #dc2626; }
-
-        .kpi-icon-wrapper {
-            width: 32px; height: 32px;
-            border-radius: 8px;
-            display: flex; align-items: center; justify-content: center;
-        }
-
-        .kpi-number {
-            font-size: 32px;
-            font-weight: 700;
-            color: var(--primary);
-            line-height: 1;
-            letter-spacing: -1px;
-        }
-
-        .kpi-label {
-            font-size: 13px;
-            color: var(--text-gray);
-            font-weight: 500;
-        }
-
-        /* GRID MAIN */
-        .main-grid {
-            display: grid;
-            grid-template-columns: 2fr 1fr;
-            gap: 24px;
-        }
-
-        .section-card {
-            background: var(--bg-card);
-            border-radius: var(--radius-lg);
-            padding: 24px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-            margin-bottom: 24px;
-        }
-
-        .section-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 24px;
-        }
-
-        .section-title {
-            font-size: 16px;
-            font-weight: 700;
-            color: var(--text-dark);
-        }
-
-        .link-all {
-            font-size: 12px;
-            color: var(--primary);
-            text-decoration: none;
-            font-weight: 600;
-        }
-
-        /* LISTA CITAS */
-        .appt-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 16px;
-            background: #ffffff;
-            border-radius: var(--radius-md);
-            margin-bottom: 12px;
-            border: 1px solid var(--border-light);
-        }
-        .appt-item:last-child { margin-bottom: 0; }
-        
-        .appt-doc-info {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        
-        .doc-name { font-weight: 600; font-size: 15px; color: var(--text-dark); margin-bottom: 4px; }
-        .doc-spec { font-size: 13px; color: var(--text-gray); }
-
-        .appt-meta {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            font-size: 12px;
-            color: var(--text-gray);
-            margin-top: 8px;
-        }
-        .appt-meta span { display: flex; align-items: center; gap: 4px; }
-        .badge-video { color: #10b981; background: #d1fae5; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
-        .badge-pres { color: #3b82f6; background: #dbeafe; padding: 2px 8px; border-radius: 12px; font-weight: 600; }
-
-        .btn-confirm {
-            background: var(--primary);
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-        .btn-confirm:hover { background: var(--primary-hover); }
-
-        /* SIGNOS VITALES GRID */
-        .vitals-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
-        }
-        .vital-box {
-            border: none;
-            border-radius: var(--radius-md);
-            padding: 16px;
-        }
-        .vital-label { font-size: 13px; color: var(--text-gray); margin-bottom: 12px; font-weight: 500; }
-        .vital-val { font-size: 28px; font-weight: 700; color: var(--primary); margin-bottom: 4px; line-height: 1; letter-spacing: -0.5px; }
-        .vital-unit { font-size: 14px; font-weight: 500; color: var(--text-gray); }
-        .vital-trend { font-size: 12px; color: var(--text-gray); }
-
-        /* ACCIONES RAPIDAS */
-        .action-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        .action-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 14px 16px;
-            background: #ffffff;
-            border: 1px solid var(--border-light);
-            border-radius: var(--radius-md);
-            text-decoration: none;
-            color: var(--text-dark);
-            font-size: 14px;
-            font-weight: 600;
-            transition: all 0.2s;
-        }
-        .action-item:hover { background: #f8fafc; border-color: #cbd5e1; }
-        .action-left { display: flex; align-items: center; gap: 12px; }
-        .action-icon { color: var(--text-gray); }
-
-        /* EQUIPO MEDICO */
-        .team-list {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-        }
-        .team-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-        .team-info { display: flex; align-items: center; gap: 12px; }
-        .team-doc { font-size: 14px; font-weight: 600; color: var(--text-dark); }
-        .team-spec { font-size: 12px; color: var(--text-gray); }
-        .team-link { font-size: 12px; color: var(--primary); text-decoration: none; font-weight: 600; padding: 6px 14px; background: #eff6ff; border-radius: 12px; transition: background 0.2s; }
-        .team-link:hover { background: #dbeafe; }
-        
-    </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard-paciente.css">
 </head>
 <body>
 
     <!-- SIDEBAR -->
     <aside class="sidebar">
         <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="brand-text">
+                <span class="brand-title">Clínica Internacional</span>
+                <span class="brand-subtitle">Portal del paciente</span>
+            </div>
         </div>
 
         <nav class="nav-menu">
             <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item active">
-                <i data-lucide="home" style="width: 18px;"></i> Inicio
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/panel" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Panel
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/medicos" class="nav-item">
-                <i data-lucide="users" style="width: 18px;"></i> Médicos
+                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+                <span>Inicio</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px;"></i> Citas
+                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+                <span>Buscar cita</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="clipboard-list" style="width: 18px;"></i> Historial
+                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+                <span>Mis citas</span>
             </a>
-            <a href="${pageContext.request.contextPath}/paciente/reportes" class="nav-item">
-                <i data-lucide="bar-chart-2" style="width: 18px;"></i> Reportes
+            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
+                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+                <span>Lista de espera</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px;"></i> Alertas
+                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+                <span>Notificaciones</span>
+                <c:if test="${numNotifSinLeer > 0}">
+                    <span class="badge-count"><%= numNotifSinLeer %></span>
+                </c:if>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px;"></i> Mi perfil
+                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                <span>Perfil</span>
             </a>
         </nav>
 
-        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
-            <div class="avatar-initials avatar-sm"><%= inicialesPaciente %></div>
-            <div style="flex: 1;">
-                <div class="user-name-sm"><%= nombrePaciente %></div>
-                <div class="user-role-sm">Paciente</div>
+        <div class="user-profile">
+            <div class="avatar"><%= inicialesPaciente %></div>
+            <div class="user-info">
+                <span class="user-name"><c:out value="${nombrePaciente}" /></span>
+                <span class="user-role">Paciente</span>
             </div>
-            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
-        </a>
+            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+            </a>
+        </div>
     </aside>
 
-    <!-- MAIN CONTENT -->
+    <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
-        
-        <div class="page-header">
-            <div>
-                <div class="header-date">Lunes, 7 de septiembre 2026</div>
-                <h1 class="header-title">Buenos días, <%= nombrePaciente.split(" ")[0] %></h1>
-                <p class="header-subtitle">Tienes <%= numProximas %> <%= numProximas == 1 ? "cita programada" : "citas programadas" %>.</p>
-            </div>
-            <div style="display: flex; align-items: center; gap: 16px;">
-                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell <%= tieneNotifSinLeer ? "has-unread" : "" %>" title="Alertas">
-                    <i data-lucide="bell" style="width: 20px;"></i>
-                </a>
-                <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva" class="btn-primary">
-                    <i data-lucide="plus" style="width: 18px;"></i>
-                    Programar cita
-                </a>
-            </div>
-        </div>
 
-        <!-- KPI CARDS -->
-        <div class="kpi-row">
-            <div class="kpi-card">
-                <span class="kpi-badge badge-neutral">este mes</span>
-                <div class="kpi-icon-wrapper" style="background: #eff6ff; color: var(--primary);">
-                    <i data-lucide="calendar" style="width: 18px;"></i>
-                </div>
-                <div>
-                    <div class="kpi-number"><%= numProximas %></div>
-                    <div class="kpi-label">Próximas citas</div>
-                </div>
-            </div>
-            
-            <div class="kpi-card">
-                <span class="kpi-badge badge-neutral">activos</span>
-                <div class="kpi-icon-wrapper" style="background: #eff6ff; color: var(--primary);">
-                    <i data-lucide="stethoscope" style="width: 18px;"></i>
-                </div>
-                <div>
-                    <div class="kpi-number"><%= numMedicos %></div>
-                    <div class="kpi-label">Médicos asignados</div>
-                </div>
-            </div>
-            
-            <div class="kpi-card">
-                <span class="kpi-badge badge-warning">revisión requerida</span>
-                <div class="kpi-icon-wrapper" style="background: #eff6ff; color: var(--primary);">
-                    <i data-lucide="microscope" style="width: 18px;"></i>
-                </div>
-                <div>
-                    <div class="kpi-number"><%= numEstudios %></div>
-                    <div class="kpi-label">Estudios pendientes</div>
-                </div>
-            </div>
-            
-            <div class="kpi-card">
-                <span class="kpi-badge badge-neutral">historial</span>
-                <div class="kpi-icon-wrapper" style="background: #eff6ff; color: var(--primary);">
-                    <i data-lucide="clipboard-list" style="width: 18px;"></i>
-                </div>
-                <div>
-                    <div class="kpi-number"><%= numConsultas %></div>
-                    <div class="kpi-label">Consultas totales</div>
-                </div>
-            </div>
-        </div>
+        <!-- BARRA SUPERIOR (HEADER BLANCO INSTITUCIONAL) -->
+        <header class="dash-top-header">
+            <nav class="breadcrumb-trail">
+                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Inicio</strong>
+            </nav>
 
-        <!-- MAIN CONTENT GRID -->
-        <div class="main-grid">
-            
-            <!-- LEFT COLUMN -->
-            <div>
-                <!-- PROXIMAS CITAS LIST -->
-                <div class="section-card">
-                    <div class="section-header">
-                        <div class="section-title">Próximas citas</div>
-                        <a href="${pageContext.request.contextPath}/paciente/citas" class="link-all">Ver todas &rarr;</a>
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
+                <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
+                <span>Avisos</span>
+                <c:if test="${numNotifSinLeer > 0}">
+                    <span class="badge-avisos-count"><%= numNotifSinLeer %></span>
+                </c:if>
+            </a>
+        </header>
+
+        <!-- ÁREA CON SCROLL PARA EL CONTENIDO DEL DASHBOARD -->
+        <div class="dash-scroll-container">
+
+            <!-- ENCABEZADO DE SALUDO -->
+            <section class="greeting-section">
+                <h1 class="greeting-title">Hola, <%= primerNombre %></h1>
+                <p class="greeting-subtitle">Resumen de tus citas, ofertas y lista de espera</p>
+            </section>
+
+            <!-- BANNER CONDICIONAL: OFERTA DE CUPO ANTICIPADO -->
+            <c:if test="${not empty ofertaCupo}">
+                <div class="banner-cupo-oferta">
+                    <div class="banner-cupo-left">
+                    <div class="banner-cupo-icon">
+                        <i data-lucide="bell" style="width: 22px; height: 22px;"></i>
                     </div>
-                    
-                    <% if (listaProximasCitas != null && !listaProximasCitas.isEmpty()) {
-                        for (Map<String, Object> c : listaProximasCitas) {
-                            String med = (String) c.get("medico");
-                            String esp = (String) c.get("especialidad");
-                            String fh = (String) c.get("fechaHora");
-                            String mod = (String) c.get("modalidad");
-                            String inits = "DR";
-                            if (med != null && med.length() >= 4) {
-                                String clean = med.replace("Dr. ", "").replace("Dra. ", "");
-                                String[] p = clean.split(" ");
-                                inits = p.length >= 2 ? p[0].substring(0,1) + p[1].substring(0,1) : clean.substring(0, Math.min(2, clean.length()));
-                            }
-                    %>
-                    <div class="appt-item">
-                        <div class="appt-doc-info">
-                            <div class="avatar-initials avatar-lg"><%= inits.toUpperCase() %></div>
-                            <div>
-                                <div class="doc-name"><%= med %></div>
-                                <div class="doc-spec"><%= esp %></div>
-                                <div class="appt-meta">
-                                    <span><i data-lucide="calendar" style="width: 14px;"></i> <%= fh %></span>
-                                    <span class="<%= "Video".equalsIgnoreCase(mod) ? "badge-video" : "badge-pres" %>">
-                                        <i data-lucide="<%= "Video".equalsIgnoreCase(mod) ? "video" : "map-pin" %>" style="width: 12px;"></i> <%= mod %>
-                                    </span>
+                    <div class="banner-cupo-body">
+                        <div class="banner-cupo-heading">
+                            <span class="badge-cupo-tag">Oferta de cupo</span>
+                            <span class="banner-cupo-title">¡Cupo anticipado disponible por cancelación!</span>
+                        </div>
+                        <div class="banner-cupo-meta">
+                            <span class="banner-meta-field">
+                                Especialidad / médico: <strong><c:out value="${ofertaCupo.especialidad}" /> · <c:out value="${ofertaCupo.medico}" /></strong>
+                            </span>
+                            <span class="banner-meta-field">
+                                Nueva fecha ofrecida: <strong><c:out value="${ofertaCupo.fechaOfrecida}" /></strong>
+                            </span>
+                            <span class="banner-meta-field">
+                                Caducidad de la oferta: <span class="timer-amber"><c:out value="${ofertaCupo.tiempoRestante}" /></span>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-revisar-oferta">
+                    <span>Revisar oferta en notificaciones</span>
+                    <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
+                </a>
+            </div>
+        </c:if>
+
+        <!-- GRID DE 2 TARJETAS (PRÓXIMA CITA / LISTA DE ESPERA) -->
+        <div class="cards-summary-grid">
+
+            <!-- TARJETA 1: PRÓXIMA CITA -->
+            <div class="dash-summary-card">
+                <div>
+                    <div class="summary-card-header">
+                        <h2 class="summary-card-title">Próxima cita</h2>
+                        <c:choose>
+                            <c:when test="${not empty proximaCita}">
+                                <span class="status-badge-confirmed">Confirmada · Web</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="status-badge-confirmed" style="background:#f1f5f9;color:#64748b;">Sin citas</span>
+                            </c:otherwise>
+                        </c:choose>
+                    </div>
+
+                    <c:choose>
+                        <c:when test="${not empty proximaCita}">
+                            <div class="card-info-rows">
+                                <div class="card-info-row">
+                                    <span class="row-label">Fecha y hora designada</span>
+                                    <span class="row-val"><c:out value="${proximaCita.fechaHora}" /></span>
+                                </div>
+                                <div class="card-info-row">
+                                    <span class="row-label">Especialidad</span>
+                                    <span class="row-val"><c:out value="${proximaCita.especialidad}" /></span>
+                                </div>
+                                <div class="card-info-row">
+                                    <span class="row-label">Profesional</span>
+                                    <span class="row-val"><c:out value="${proximaCita.medico}" /></span>
+                                </div>
+                                <div class="card-info-row">
+                                    <span class="row-label">Ubicación clínica</span>
+                                    <span class="row-val"><c:out value="${proximaCita.ubicacion}" /></span>
                                 </div>
                             </div>
-                        </div>
-                        <button class="btn-confirm">Confirmada</button>
-                    </div>
-                    <%  }
-                    } else { %>
-                    <div style="text-align: center; padding: 36px 20px; color: var(--text-gray);">
-                        <i data-lucide="calendar-off" style="width: 36px; height: 36px; stroke-width: 1.5; margin-bottom: 8px; color: #94a3b8;"></i>
-                        <div style="font-weight: 600; color: var(--text-dark); margin-bottom: 4px;">No tienes citas programadas</div>
-                        <div style="font-size: 13px; margin-bottom: 16px;">Reserva una atención médica de forma rápida y 100% digital.</div>
-                        <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva" class="btn-primary" style="display: inline-flex; width: auto; font-size: 13px; padding: 8px 16px;">
-                            <i data-lucide="plus" style="width: 16px;"></i> Programar cita ahora
-                        </a>
-                    </div>
-                    <% } %>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="card-empty-state">
+                                <i data-lucide="calendar-check" style="width: 38px; height: 38px; color: #94a3b8;"></i>
+                                <span>No tienes citas médicas programadas próximamente.</span>
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
 
-                <!-- SIGNOS VITALES -->
-                <div class="section-card">
-                    <div class="section-header">
-                        <div class="section-title">Signos vitales recientes</div>
-                        <div style="font-size: 12px; color: var(--text-gray);">Sin registros recientes</div>
-                    </div>
-                    
-                    <div class="vitals-grid">
-                        <div class="vital-box" style="background: #eff6ff;">
-                            <div class="vital-label">Presión arterial</div>
-                            <div class="vital-val" style="color: #64748b;">--/-- <span class="vital-unit">mmHg</span></div>
-                            <div class="vital-trend" style="color: var(--text-gray);">A la espera de triaje</div>
-                        </div>
-                        <div class="vital-box" style="background: #f0f9ff;">
-                            <div class="vital-label">Frecuencia cardíaca</div>
-                            <div class="vital-val" style="color: #64748b;">-- <span class="vital-unit">bpm</span></div>
-                            <div class="vital-trend" style="color: var(--text-gray);">A la espera de triaje</div>
-                        </div>
-                    </div>
-                </div>
+                <c:choose>
+                    <c:when test="${not empty proximaCita}">
+                        <a href="${pageContext.request.contextPath}/paciente/historial" class="summary-card-link">
+                            <span>Ver detalle de cita</span>
+                            <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
+                        </a>
+                    </c:when>
+                    <c:otherwise>
+                        <a href="${pageContext.request.contextPath}/paciente/citas" class="summary-card-link">
+                            <span>Buscar y agendar una cita</span>
+                            <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
+                        </a>
+                    </c:otherwise>
+                </c:choose>
             </div>
 
-            <!-- RIGHT COLUMN -->
-            <div>
-                <!-- ACCIONES RAPIDAS -->
-                <div class="section-card">
-                    <div class="section-header">
-                        <div class="section-title">Acciones rápidas</div>
+            <!-- TARJETA 2: LISTA DE ESPERA -->
+            <div class="dash-summary-card">
+                <div>
+                    <div class="summary-card-header">
+                        <h2 class="summary-card-title">Lista de espera</h2>
+                        <c:choose>
+                            <c:when test="${not empty estadoListaEspera}">
+                                <span class="status-badge-waiting">Registro activo</span>
+                            </c:when>
+                            <c:otherwise>
+                                <span class="status-badge-waiting" style="background:#f1f5f9;color:#64748b;">Inactivo</span>
+                            </c:otherwise>
+                        </c:choose>
                     </div>
-                    
-                    <div class="action-list">
-                        <a href="${pageContext.request.contextPath}/paciente/medicos" class="action-item">
-                            <div class="action-left">
-                                <i data-lucide="search" class="action-icon" style="width: 18px;"></i>
-                                Buscar médico
-                            </div>
-                            <i data-lucide="chevron-right" style="width: 18px; color: var(--text-gray);"></i>
-                        </a>
-                        <a href="${pageContext.request.contextPath}/paciente/historial" class="action-item">
-                            <div class="action-left">
-                                <i data-lucide="clipboard-list" class="action-icon" style="width: 18px;"></i>
-                                Ver historial
-                            </div>
-                            <i data-lucide="chevron-right" style="width: 18px; color: var(--text-gray);"></i>
-                        </a>
-                        <a href="${pageContext.request.contextPath}/paciente/reportes" class="action-item">
-                            <div class="action-left">
-                                <i data-lucide="bar-chart-2" class="action-icon" style="width: 18px;"></i>
-                                Mis reportes
-                            </div>
-                            <i data-lucide="chevron-right" style="width: 18px; color: var(--text-gray);"></i>
-                        </a>
-                    </div>
-                </div>
 
-                <!-- EQUIPO MEDICO -->
-                <div class="section-card">
-                    <div class="section-header">
-                        <div class="section-title">Mi equipo médico</div>
-                        <a href="${pageContext.request.contextPath}/paciente/medicos" class="link-all">Ver todos</a>
-                    </div>
-                    
-                    <div class="team-list">
-                        <% if (medicosAsignados != null && !medicosAsignados.isEmpty()) {
-                            for (Map<String, Object> m : medicosAsignados) {
-                                String nomM = (String) m.get("nombre");
-                                String espM = (String) m.get("especialidad");
-                                Integer idMedM = (Integer) m.get("idMedico");
-                        %>
-                        <div class="team-item">
-                            <div class="team-info">
-                                <div class="avatar-initials avatar-sm">DR</div>
-                                <div>
-                                    <div class="team-doc"><%= nomM %></div>
-                                    <div class="team-spec"><%= espM %></div>
+                    <c:choose>
+                        <c:when test="${not empty estadoListaEspera}">
+                            <div class="card-info-rows">
+                                <div class="card-info-row">
+                                    <span class="row-label">Estado actual en fila</span>
+                                    <span class="row-val"><c:out value="${estadoListaEspera.estado}" /></span>
+                                </div>
+                                <div class="card-info-row">
+                                    <span class="row-label">Especialidad solicitada</span>
+                                    <span class="row-val"><c:out value="${estadoListaEspera.especialidad}" /></span>
+                                </div>
+                                <div class="card-info-row">
+                                    <span class="row-label">Sede asignada</span>
+                                    <span class="row-val"><c:out value="${estadoListaEspera.sede}" /></span>
+                                </div>
+                                <div class="card-info-row">
+                                    <span class="row-label">Preferencias registradas</span>
+                                    <span class="row-val"><c:out value="${estadoListaEspera.preferencias}" /></span>
                                 </div>
                             </div>
-                            <a href="${pageContext.request.contextPath}/paciente/citas?action=nueva&medicoId=<%= idMedM %>" class="team-link">Cita</a>
-                        </div>
-                        <%  }
-                        } else { %>
-                        <div style="text-align: center; padding: 20px; color: var(--text-gray); font-size: 13px;">
-                            No tienes médicos asignados aún.
-                        </div>
-                        <% } %>
-                    </div>
+                        </c:when>
+                        <c:otherwise>
+                            <div class="card-empty-state">
+                                <i data-lucide="clock" style="width: 38px; height: 38px; color: #94a3b8;"></i>
+                                <span>No te encuentras en lista de espera actualmente.</span>
+                            </div>
+                        </c:otherwise>
+                    </c:choose>
                 </div>
 
+                <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="summary-card-link">
+                    <span>Ver estado en lista de espera</span>
+                    <i data-lucide="chevron-right" style="width: 15px; height: 15px;"></i>
+                </a>
             </div>
 
         </div>
+
+        <!-- SECCIÓN DE ACCIONES RÁPIDAS -->
+        <section class="quick-actions-section">
+            <h2 class="quick-section-title">Acciones rápidas</h2>
+            <div class="quick-actions-grid">
+
+                <a href="${pageContext.request.contextPath}/paciente/citas" class="quick-action-card">
+                    <div class="quick-icon-wrapper">
+                        <i data-lucide="search" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div class="quick-card-texts">
+                        <span class="quick-card-title">Buscar y agendar nueva cita</span>
+                        <span class="quick-card-desc">Explorar especialidades y profesionales</span>
+                    </div>
+                </a>
+
+                <a href="${pageContext.request.contextPath}/paciente/historial" class="quick-action-card">
+                    <div class="quick-icon-wrapper">
+                        <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div class="quick-card-texts">
+                        <span class="quick-card-title">Mis citas programadas</span>
+                        <span class="quick-card-desc">Historial y consultas activas</span>
+                    </div>
+                </a>
+
+                <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="quick-action-card">
+                    <div class="quick-icon-wrapper">
+                        <i data-lucide="bell" style="width: 20px; height: 20px;"></i>
+                    </div>
+                    <div class="quick-card-texts">
+                        <span class="quick-card-title">Bandeja de avisos (<%= numNotifSinLeer %>)</span>
+                        <span class="quick-card-desc">Ofertas y alertas pendientes</span>
+                    </div>
+                </a>
+
+            </div>
+        </section>
+
+        </div> <!-- /.dash-scroll-container -->
+
     </main>
 
     <script>
         lucide.createIcons();
     </script>
+
 </body>
 </html>
