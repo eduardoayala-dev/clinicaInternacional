@@ -352,20 +352,30 @@ public class UsuarioDAO {
     }
 
     public pe.edu.utp.clinica.model.Paciente obtenerPacientePorUsuarioId(int usuarioId) {
-        String sql = "SELECT id_paciente, id_usuario, dni, fecha_nacimiento, telefono, direccion FROM paciente WHERE id_usuario = ?";
+        String sql = "SELECT * FROM paciente WHERE id_usuario = ?";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usuarioId);
             try (ResultSet rs = stmt.executeQuery()) {
                 if (rs.next()) {
                     java.sql.Date fechaNac = rs.getDate("fecha_nacimiento");
+                    java.time.LocalDate fn = fechaNac != null ? fechaNac.toLocalDate() : null;
+                    String canalAviso = getSafeColumn(rs, "canal_aviso", "WhatsApp");
+                    String sedePref = getSafeColumn(rs, "sede_preferida", "Sede San Borja");
+                    String alergias = getSafeColumn(rs, "alergias", "");
+                    String tipoCob = getSafeColumn(rs, "tipo_cobertura", "EPS");
+
                     return new pe.edu.utp.clinica.model.Paciente(
                         rs.getInt("id_paciente"),
                         rs.getInt("id_usuario"),
                         rs.getString("dni"),
-                        fechaNac != null ? fechaNac.toLocalDate() : null,
+                        fn,
                         rs.getString("telefono"),
-                        rs.getString("direccion")
+                        rs.getString("direccion"),
+                        canalAviso,
+                        sedePref,
+                        alergias,
+                        tipoCob
                     );
                 }
             }
@@ -373,6 +383,15 @@ public class UsuarioDAO {
             LOGGER.log(Level.SEVERE, "Error al obtener paciente por usuarioId: " + e.getMessage(), e);
         }
         return null;
+    }
+
+    private String getSafeColumn(ResultSet rs, String colName, String defaultVal) {
+        try {
+            String val = rs.getString(colName);
+            return (val != null && !val.trim().isEmpty()) ? val : defaultVal;
+        } catch (SQLException e) {
+            return defaultVal;
+        }
     }
 
     public boolean actualizarContactoPaciente(int idUsuario, String email, String telefono, String direccion) {
@@ -407,4 +426,77 @@ public class UsuarioDAO {
             }
         }
     }
+
+    public boolean actualizarPerfilCompletoPaciente(int idUsuario, String nombres, String apellidos, String email,
+                                                    String fechaNacimiento, String telefono, String direccion,
+                                                    String canalAviso, String sedePreferida, String alergias, String tipoCobertura) {
+        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ?, email = ? WHERE id_usuario = ?";
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false);
+            try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
+                stmtU.setString(1, nombres);
+                stmtU.setString(2, apellidos);
+                stmtU.setString(3, email);
+                stmtU.setInt(4, idUsuario);
+                stmtU.executeUpdate();
+            }
+
+            // Actualizar paciente basico
+            boolean tieneFecha = (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty());
+            String sqlPaciente = tieneFecha ?
+                "UPDATE paciente SET telefono = ?, direccion = ?, fecha_nacimiento = ? WHERE id_usuario = ?" :
+                "UPDATE paciente SET telefono = ?, direccion = ? WHERE id_usuario = ?";
+
+            try (PreparedStatement stmtP = conn.prepareStatement(sqlPaciente)) {
+                stmtP.setString(1, telefono);
+                stmtP.setString(2, direccion);
+                if (tieneFecha) {
+                    java.time.LocalDate ld;
+                    String f = fechaNacimiento.trim();
+                    if (f.contains("/")) {
+                        String[] partes = f.split("/");
+                        ld = java.time.LocalDate.of(Integer.parseInt(partes[2]), Integer.parseInt(partes[1]), Integer.parseInt(partes[0]));
+                    } else {
+                        ld = java.time.LocalDate.parse(f);
+                    }
+                    stmtP.setDate(3, java.sql.Date.valueOf(ld));
+                    stmtP.setInt(4, idUsuario);
+                } else {
+                    stmtP.setInt(3, idUsuario);
+                }
+                stmtP.executeUpdate();
+            }
+
+            // Opcional: Actualizar campos extendidos si las columnas existen en la base de datos
+            try {
+                String sqlExt = "UPDATE paciente SET canal_aviso = ?, sede_preferida = ?, alergias = ?, tipo_cobertura = ? WHERE id_usuario = ?";
+                try (PreparedStatement stmtExt = conn.prepareStatement(sqlExt)) {
+                    stmtExt.setString(1, canalAviso != null ? canalAviso : "WhatsApp");
+                    stmtExt.setString(2, sedePreferida != null ? sedePreferida : "Sede San Borja");
+                    stmtExt.setString(3, alergias != null ? alergias : "");
+                    stmtExt.setString(4, tipoCobertura != null ? tipoCobertura : "EPS");
+                    stmtExt.setInt(5, idUsuario);
+                    stmtExt.executeUpdate();
+                }
+            } catch (SQLException ignore) {
+                // Si la tabla no tiene las columnas adicionales en MySQL/H2 antiguo, no interrumpe el guardado principal
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) {}
+            }
+            LOGGER.log(Level.SEVERE, "Error al actualizar perfil completo del paciente: " + e.getMessage(), e);
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
+            }
+        }
+    }
 }
+

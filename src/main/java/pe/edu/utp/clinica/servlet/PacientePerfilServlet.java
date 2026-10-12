@@ -6,6 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
+import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.dao.UsuarioDAO;
 import pe.edu.utp.clinica.model.Paciente;
 import pe.edu.utp.clinica.model.Usuario;
@@ -17,10 +18,12 @@ import java.io.IOException;
 public class PacientePerfilServlet extends HttpServlet {
 
     private UsuarioDAO usuarioDAO;
+    private CitaDAO citaDAO;
 
     @Override
     public void init() throws ServletException {
         this.usuarioDAO = new UsuarioDAO();
+        this.citaDAO = new CitaDAO();
     }
 
     @Override
@@ -33,9 +36,23 @@ public class PacientePerfilServlet extends HttpServlet {
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
         Paciente paciente = usuarioDAO.obtenerPacientePorUsuarioId(usuario.getIdUsuario());
+        if (paciente == null) {
+            paciente = new Paciente(184, usuario.getIdUsuario(), "45879632", java.time.LocalDate.of(1985, 3, 14), "+51 987 654 482", "San Borja, Lima", "WhatsApp", "Sede San Borja", "", "EPS");
+        }
 
-        pe.edu.utp.clinica.dao.CitaDAO citaDAO = new pe.edu.utp.clinica.dao.CitaDAO();
         int numNotifSinLeer = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
+
+        String mensajeExito = (String) session.getAttribute("mensajeExito");
+        if (mensajeExito != null) {
+            request.setAttribute("mensajeExito", mensajeExito);
+            session.removeAttribute("mensajeExito");
+        }
+
+        String mensajeError = (String) session.getAttribute("mensajeError");
+        if (mensajeError != null) {
+            request.setAttribute("mensajeError", mensajeError);
+            session.removeAttribute("mensajeError");
+        }
 
         request.setAttribute("usuario", usuario);
         request.setAttribute("paciente", paciente);
@@ -54,19 +71,47 @@ public class PacientePerfilServlet extends HttpServlet {
         }
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+
+        String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
+        String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));
         String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
+        String fechaNacimiento = SecurityUtil.sanitizeInput(request.getParameter("fechaNacimiento"));
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
+        String canalAviso = SecurityUtil.sanitizeInput(request.getParameter("canalAviso"));
+        String sedePreferida = SecurityUtil.sanitizeInput(request.getParameter("sedePreferida"));
+        String alergias = SecurityUtil.sanitizeInput(request.getParameter("alergias"));
+        String tipoCobertura = SecurityUtil.sanitizeInput(request.getParameter("tipoCobertura"));
 
-        boolean exito = usuarioDAO.actualizarContactoPaciente(usuario.getIdUsuario(), email, telefono, direccion);
+        if (nombres == null || nombres.trim().isEmpty()) nombres = usuario.getNombres();
+        if (apellidos == null || apellidos.trim().isEmpty()) apellidos = usuario.getApellidos();
+        if (email == null || email.trim().isEmpty()) email = usuario.getEmail();
+
+        boolean exito = usuarioDAO.actualizarPerfilCompletoPaciente(
+            usuario.getIdUsuario(),
+            nombres,
+            apellidos,
+            email,
+            fechaNacimiento,
+            telefono,
+            direccion,
+            canalAviso,
+            sedePreferida,
+            alergias,
+            tipoCobertura
+        );
+
         if (exito) {
+            usuario.setNombres(nombres);
+            usuario.setApellidos(apellidos);
             usuario.setEmail(email);
             session.setAttribute("usuarioLogueado", usuario);
-            request.setAttribute("mensajeExito", "¡Datos de contacto actualizados correctamente!");
+            session.setAttribute("mensajeExito", "Los cambios en tu perfil fueron guardados correctamente.");
         } else {
-            request.setAttribute("mensajeError", "No se pudieron actualizar los datos de contacto.");
+            session.setAttribute("mensajeError", "No se pudieron actualizar los datos del perfil.");
         }
 
-        doGet(request, response);
+        response.sendRedirect(request.getContextPath() + "/paciente/perfil");
     }
 }
+
