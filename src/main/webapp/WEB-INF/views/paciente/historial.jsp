@@ -137,7 +137,7 @@
                     Historial de citas pasadas
                 </button>
                 <button type="button" class="citas-tab-btn" id="tabBtnCanceladas" onclick="cambiarPestana('canceladas')">
-                    Citas canceladas
+                    Canceladas y reprogramadas (<%= citasCanceladas != null ? citasCanceladas.size() : 0 %>)
                 </button>
             </div>
 
@@ -195,13 +195,15 @@
                                         </td>
                                         <td class="actions-cell">
                                             <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver detalle</button>
-                                            <a href="${pageContext.request.contextPath}/paciente/reprogramar?idCita=<%= c.get("idCita") %>" class="action-link">Reprogramar</a>
-                                            <button type="button" class="action-link danger btn-trigger-cancelar"
-                                                    data-id="<%= c.get("idCita") %>"
-                                                    data-especialidad="<%= c.get("especialidad") %>"
-                                                    data-medico="<%= c.get("medico") %>"
-                                                    data-fechahora="<%= c.get("fechaModal") != null ? c.get("fechaModal") : (c.get("fechaFormateada") + " · " + c.get("horaFormateada")) %>"
-                                                    data-sede="<%= c.get("sede") %> · <%= c.get("consultorio") %>">Cancelar</button>
+                                            <% if (esConfirmada || esPendiente) { %>
+                                                <a href="${pageContext.request.contextPath}/paciente/reprogramar?idCita=<%= c.get("idCita") %>" class="action-link">Reprogramar</a>
+                                                <button type="button" class="action-link danger btn-trigger-cancelar"
+                                                        data-id="<%= c.get("idCita") %>"
+                                                        data-especialidad="<%= c.get("especialidad") %>"
+                                                        data-medico="<%= c.get("medico") %>"
+                                                        data-fechahora="<%= c.get("fechaModal") != null ? c.get("fechaModal") : (c.get("fechaFormateada") + " · " + c.get("horaFormateada")) %>"
+                                                        data-sede="<%= c.get("sede") %> · <%= c.get("consultorio") %>">Cancelar</button>
+                                            <% } %>
                                         </td>
                                     </tr>
                                 <% } %>
@@ -290,7 +292,10 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <% for (Map<String, Object> c : citasCanceladas) { %>
+                                <% for (Map<String, Object> c : citasCanceladas) { 
+                                    String estCanc = (String) c.get("estado");
+                                    boolean esReprog = "REPROGRAMADA".equalsIgnoreCase(estCanc);
+                                %>
                                     <tr>
                                         <td>
                                             <span class="cell-primary"><%= c.get("fechaFormateada") %></span>
@@ -308,9 +313,14 @@
                                             <span class="cell-secondary"><%= c.get("consultorio") %></span>
                                         </td>
                                         <td>
-                                            <span class="badge-status cancelada">Cancelada</span>
+                                            <% if (esReprog) { %>
+                                                <span class="badge-status" style="background-color: #ede9fe; color: #5b21b6; border: 1px solid #ddd6fe; font-weight: 600;">Reprogramada</span>
+                                            <% } else { %>
+                                                <span class="badge-status cancelada">Cancelada</span>
+                                            <% } %>
                                         </td>
                                         <td class="actions-cell">
+                                            <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver detalle</button>
                                             <a href="${pageContext.request.contextPath}/paciente/citas" class="action-link">Reagendar</a>
                                         </td>
                                     </tr>

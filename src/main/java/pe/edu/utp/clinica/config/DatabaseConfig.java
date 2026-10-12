@@ -39,23 +39,24 @@ public class DatabaseConfig {
                 host, port, dbName);
 
         try {
-            // Pre-cargar clases del driver para evitar NoClassDefFoundError en threads de fondo
+            // Cargar y registrar explícitamente el driver de MySQL para el DriverManager y HikariCP
             try {
-                Class.forName("com.mysql.cj.protocol.ExportControlled");
-            } catch (Throwable ignored) {}
+                Class.forName("com.mysql.cj.jdbc.Driver");
+            } catch (Throwable t) {
+                LOGGER.warning("Driver com.mysql.cj.jdbc.Driver: " + t.getMessage());
+            }
 
-            // Probar conectividad real con timeout corto ANTES de instanciar HikariPool
-            java.sql.DriverManager.setLoginTimeout(2);
-            try (Connection connTest = java.sql.DriverManager.getConnection(mysqlUrl, user, password)) {
-                HikariConfig config = new HikariConfig();
-                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-                config.setJdbcUrl(mysqlUrl);
-                config.setUsername(user);
-                config.setPassword(password);
-                config.setMaximumPoolSize(10);
-                config.setConnectionTimeout(3000);
+            HikariConfig config = new HikariConfig();
+            config.setDriverClassName("com.mysql.cj.jdbc.Driver");
+            config.setJdbcUrl(mysqlUrl);
+            config.setUsername(user);
+            config.setPassword(password);
+            config.setMaximumPoolSize(10);
+            config.setConnectionTimeout(3000);
+            config.setInitializationFailTimeout(2500);
 
-                dataSource = new HikariDataSource(config);
+            dataSource = new HikariDataSource(config);
+            try (Connection connTest = dataSource.getConnection()) {
                 LOGGER.info("✅ Conexión exitosa al servidor MySQL en " + mysqlUrl);
                 return;
             }
@@ -86,8 +87,11 @@ public class DatabaseConfig {
             try (Connection conn = dataSource.getConnection();
                  Statement stmt = conn.createStatement()) {
                 
-                InputStream is = DatabaseConfig.class.getClassLoader().getResourceAsStream("../../sql/schema.sql");
-                if (is == null) {
+                InputStream is = null;
+                java.io.File fileSchema = new java.io.File("sql/schema.sql");
+                if (fileSchema.exists()) {
+                    is = new java.io.FileInputStream(fileSchema);
+                } else {
                     is = DatabaseConfig.class.getClassLoader().getResourceAsStream("schema.sql");
                 }
                 
@@ -140,11 +144,13 @@ public class DatabaseConfig {
             try { stmt.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'"); } catch (Exception ignored) {}
 
             // Inserciones iniciales
-            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (1, 'Roberto', 'Vargas', 'admin@clinicainternacional.pe', 'hash', 'ADMINISTRADOR', TRUE)");
-            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (2, 'Marina', 'Salvatierra', 'personal@clinicainternacional.pe', 'hash', 'PERSONAL_ADMINISTRATIVO', TRUE)");
-            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (3, 'Carlos', 'Mendoza Valdivia', 'cmendoza@clinicainternacional.pe', 'hash', 'MEDICO', TRUE)");
-            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (4, 'Elena', 'Rostova K.', 'erostova@clinicainternacional.pe', 'hash', 'MEDICO', TRUE)");
-            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (5, 'Jorge', 'Valdivia Núñez', 'jorge.valdivia@correo.com', 'hash', 'PACIENTE', TRUE)");
+            String defaultBcrypt = "$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa"; // Password123! / admin123
+            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (1, 'Roberto', 'Vargas', 'admin@clinicainternacional.pe', '" + defaultBcrypt + "', 'ADMINISTRADOR', TRUE)");
+            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (2, 'Marina', 'Salvatierra', 'personal@clinicainternacional.pe', '" + defaultBcrypt + "', 'PERSONAL_ADMINISTRATIVO', TRUE)");
+            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (3, 'Carlos', 'Mendoza Valdivia', 'cmendoza@clinicainternacional.pe', '" + defaultBcrypt + "', 'MEDICO', TRUE)");
+            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (4, 'Elena', 'Rostova K.', 'erostova@clinicainternacional.pe', '" + defaultBcrypt + "', 'MEDICO', TRUE)");
+            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (5, 'Jorge', 'Valdivia Núñez', 'jorge.valdivia@correo.com', '" + defaultBcrypt + "', 'PACIENTE', TRUE)");
+            stmt.execute("INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES (8, 'Jorge', 'Valdivia', 'paciente@clinica.pe', '" + defaultBcrypt + "', 'PACIENTE', TRUE)");
             
             stmt.execute("INSERT INTO paciente (id_paciente, id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (1, 5, '10492837', '1976-05-14', '+51 987 654 321', 'Av. Las Palmeras 450', 'WhatsApp', 'Sede San Borja', '', 'EPS')");
             stmt.execute("INSERT INTO medico (id_medico, id_usuario, cmp, id_especialidad, id_sede, estado) VALUES (1, 3, 'CMP 45211', 1, 1, 'ACTIVO')");
