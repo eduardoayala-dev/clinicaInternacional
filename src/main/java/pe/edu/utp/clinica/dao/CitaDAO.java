@@ -1091,12 +1091,51 @@ public class CitaDAO {
         return idPaciente;
     }
 
+    public boolean inscribirListaEspera(int idPaciente, int idEspecialidad, Integer idSede, String rangoHorario, String urgenciaDisponibilidad, String canalesNotificacion) {
+        String sqlCancelar = "UPDATE lista_espera SET estado = 'CANCELADA' WHERE id_paciente = ? AND estado IN ('ACTIVA', 'OFERTADA')";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement psCanc = conn.prepareStatement(sqlCancelar)) {
+            psCanc.setInt(1, idPaciente);
+            psCanc.executeUpdate();
+        } catch (Exception ignored) {}
+
+        int sedeIdFinal = (idSede != null && idSede > 0) ? idSede : 1;
+        String sqlInsert = "INSERT INTO lista_espera (id_paciente, id_especialidad, id_sede, nivel_urgencia, rango_horario, canal_notificacion, estado, posicion) " +
+                           "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVA', 1)";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
+            ps.setInt(1, idPaciente);
+            ps.setInt(2, idEspecialidad);
+            ps.setInt(3, sedeIdFinal);
+            ps.setString(4, urgenciaDisponibilidad != null && !urgenciaDisponibilidad.trim().isEmpty() ? urgenciaDisponibilidad : "MEDIA");
+            ps.setString(5, rangoHorario != null && !rangoHorario.trim().isEmpty() ? rangoHorario : "MANANA");
+            ps.setString(6, canalesNotificacion != null && !canalesNotificacion.trim().isEmpty() ? canalesNotificacion : "WHATSAPP");
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    public boolean retirarListaEspera(int idListaEspera, int idPaciente) {
+        String sql = "UPDATE lista_espera SET estado = 'CANCELADA' WHERE id_lista_espera = ? AND id_paciente = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idListaEspera);
+            ps.setInt(2, idPaciente);
+            return ps.executeUpdate() > 0;
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
     public Map<String, Object> obtenerEstadoListaEspera(int idPaciente) {
         String sql = "SELECT le.id_lista_espera, le.estado, le.rango_horario, le.canal_notificacion, " +
                      "e.nombre AS especialidad, s.nombre AS sede " +
                      "FROM lista_espera le " +
                      "JOIN especialidad e ON le.id_especialidad = e.id_especialidad " +
-                     "JOIN sede s ON le.id_sede = s.id_sede " +
+                     "LEFT JOIN sede s ON le.id_sede = s.id_sede " +
                      "WHERE le.id_paciente = ? AND le.estado IN ('ACTIVA', 'OFERTADA') " +
                      "ORDER BY le.fecha_registro DESC LIMIT 1";
         try (Connection conn = DatabaseConfig.getConnection();
@@ -1107,13 +1146,38 @@ public class CitaDAO {
                     Map<String, Object> map = new HashMap<>();
                     map.put("idListaEspera", rs.getInt("id_lista_espera"));
                     String estado = rs.getString("estado");
-                    map.put("estado", "OFERTADA".equals(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
+                    map.put("estadoCodigo", estado != null ? estado.toUpperCase() : "ACTIVA");
+                    map.put("estado", "OFERTADA".equalsIgnoreCase(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
                     map.put("especialidad", rs.getString("especialidad"));
-                    map.put("sede", rs.getString("sede"));
+                    String sede = rs.getString("sede");
+                    map.put("sede", (sede != null && !sede.trim().isEmpty()) ? sede : "Sede San Borja");
                     String rango = rs.getString("rango_horario");
                     String canal = rs.getString("canal_notificacion");
-                    String rangoStr = "manana".equalsIgnoreCase(rango) ? "Turno mañana" : ("tarde".equalsIgnoreCase(rango) ? "Turno tarde" : "Turno indiferente");
-                    String canalStr = canal != null ? canal : "WhatsApp";
+
+                    String rangoStr = "Mañana";
+                    if (rango != null) {
+                        String rLow = rango.toLowerCase();
+                        if (rLow.contains("tarde") && (rLow.contains("manana") || rLow.contains("mañana"))) {
+                            rangoStr = "Mañana / Tarde";
+                        } else if (rLow.contains("tarde")) {
+                            rangoStr = "Tarde";
+                        } else if (rLow.contains("manana") || rLow.contains("mañana")) {
+                            rangoStr = "Mañana";
+                        }
+                    }
+
+                    String canalStr = "SMS / WhatsApp";
+                    if (canal != null) {
+                        String cUp = canal.toUpperCase();
+                        if (cUp.contains("CORREO") && (cUp.contains("SMS") || cUp.contains("WHATSAPP"))) {
+                            canalStr = "SMS / WhatsApp · Correo";
+                        } else if (cUp.contains("CORREO")) {
+                            canalStr = "Correo electrónico";
+                        } else {
+                            canalStr = "SMS / WhatsApp";
+                        }
+                    }
+
                     map.put("preferencias", rangoStr + " · " + canalStr);
                     return map;
                 }
