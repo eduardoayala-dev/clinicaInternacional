@@ -12,7 +12,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Iniciar Sesión - Clínica Internacional</title>
+    <title>Clínica Internacional - Portal del Paciente</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
@@ -146,11 +146,11 @@
                 </div>
             </section>
 
-            <!-- VISTA 2: CREAR CUENTA NUEVA -->
+            <!-- VISTA 2: CREAR CUENTA DE PACIENTE -->
             <section id="view-register" class="auth-view ${showRegister ? 'active' : ''}">
-                <div class="auth-header" style="margin-bottom: 20px;">
-                    <h2 class="auth-title" style="font-size: 28px;">Crear cuenta de Paciente</h2>
-                    <p class="auth-subtitle">Completa tus datos para agendar citas y gestionar tu historial médico.</p>
+                <div class="reg-header-row">
+                    <h2 class="reg-title">Crear cuenta de paciente</h2>
+                    <span class="req-note">* Campos obligatorios</span>
                 </div>
 
                 <c:if test="${not empty sessionScope.registerError}">
@@ -166,101 +166,184 @@
                     <span>Por seguridad, la contraseña no debe contener tu número de documento.</span>
                 </div>
 
-                <form id="registerForm" action="${pageContext.request.contextPath}/registro" method="POST">
-                    
-                    <div class="section-badge">01. Datos Personales</div>
-                    <div class="form-grid-3">
-                        <div class="form-group">
-                            <label class="form-label">Nombres *</label>
-                            <input type="text" name="nombres" class="form-input" required placeholder="Ej. Juan Carlos">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Apellidos *</label>
-                            <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez García">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Fecha de Nacimiento *</label>
-                            <input type="date" name="fechaNacimiento" class="form-input" required>
-                        </div>
-                    </div>
+                <div id="pwdMismatchError" class="alert-error" style="display:none;">
+                    <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
+                    <span>Las contraseñas no coinciden. Por favor verifícalas.</span>
+                </div>
 
-                    <div class="form-grid-3">
-                        <div class="form-group">
-                            <label class="form-label">Tipo de Documento *</label>
-                            <select name="tipoDocumento" id="regTipoDoc" class="form-select" required>
-                                <option value="DNI">DNI</option>
-                                <option value="CE">Carnet de Extranjería</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Nº de Documento *</label>
-                            <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 72345678" pattern="[A-Za-z0-9]+">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Sexo / Género *</label>
-                            <select name="genero" class="form-select" required>
-                                <option value="">[ Seleccionar ]</option>
-                                <option value="M">Masculino</option>
-                                <option value="F">Femenino</option>
-                                <option value="O">Otro</option>
-                            </select>
-                        </div>
-                    </div>
+                <form id="registerForm" action="${pageContext.request.contextPath}/registro" method="POST" autocomplete="off">
+                    <input type="hidden" name="terminos" value="on">
 
-                    <div class="section-badge">02. Datos de Contacto</div>
-                    <div class="form-grid-3">
-                        <div class="form-group">
-                            <label class="form-label">Teléfono / Celular *</label>
-                            <input type="text" name="telefono" class="form-input" required placeholder="Ej. 987 654 321">
+                    <!-- SECCIÓN 01: DATOS PERSONALES -->
+                    <div class="reg-card">
+                        <div class="reg-card-header">
+                            <span class="reg-badge">01</span>
+                            <span class="reg-card-title">Datos personales</span>
+                            <span class="reg-card-subtitle">· Identificación</span>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Correo Electrónico *</label>
-                            <input type="email" name="email" class="form-input" required placeholder="correo@ejemplo.com">
-                        </div>
-                        <div class="form-group">
-                            <label class="form-label">Dirección *</label>
-                            <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. Javier Prado 123">
-                        </div>
-                    </div>
 
-                    <div class="section-badge">03. Contraseña y Seguridad</div>
-                    <div class="form-grid-2">
-                        <div class="form-group">
-                            <label class="form-label">Crear Contraseña *</label>
-                            <div class="input-box has-right-icon">
-                                <input type="password" name="password" id="regPwd" class="form-input" required placeholder="Crea tu contraseña">
-                                <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwd', this)" title="Mostrar/ocultar contraseña">
-                                    <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
-                                </button>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Nombres completos *</label>
+                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena">
                             </div>
-                            <p style="font-size: 12px; color: #64748b; margin-top: 6px;">Usa una clave segura y fácil de recordar.</p>
+                            <div class="form-group">
+                                <label class="form-label">Apellidos *</label>
+                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez">
+                            </div>
                         </div>
 
-                        <div class="form-group">
-                            <div class="pwd-requirements-box">
-                                <div class="req-header">Requisitos de contraseña:</div>
-                                <div class="req-item" id="chk-len"><i data-lucide="circle" style="width:13px;height:13px;"></i> Mínimo 8 caracteres</div>
-                                <div class="req-item" id="chk-upper"><i data-lucide="circle" style="width:13px;height:13px;"></i> Al menos 1 mayúscula</div>
-                                <div class="req-item" id="chk-lower"><i data-lucide="circle" style="width:13px;height:13px;"></i> Al menos 1 minúscula</div>
-                                <div class="req-item" id="chk-num"><i data-lucide="circle" style="width:13px;height:13px;"></i> Al menos 1 número</div>
-                                <div class="req-item" id="chk-sym"><i data-lucide="circle" style="width:13px;height:13px;"></i> Al menos 1 símbolo (@, #, $)</div>
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Tipo de documento *</label>
+                                <select name="tipoDocumento" id="regTipoDoc" class="form-select" required>
+                                    <option value="DNI" selected>DNI</option>
+                                    <option value="CE">Carnet de Extranjería</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Número de documento *</label>
+                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+">
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Fecha de nacimiento *</label>
+                                <input type="date" name="fechaNacimiento" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Sexo / género *</label>
+                                <select name="genero" class="form-select" required>
+                                    <option value="" disabled selected>Seleccionar</option>
+                                    <option value="F">Femenino</option>
+                                    <option value="M">Masculino</option>
+                                    <option value="O">Otro</option>
+                                </select>
                             </div>
                         </div>
                     </div>
 
-                    <div class="terms-wrapper">
-                        <input type="checkbox" id="terminos" name="terminos" required>
-                        <label for="terminos">Comprendo y acepto los términos del servicio y las políticas de privacidad de la Clínica Internacional.</label>
+                    <!-- SECCIÓN 02: DATOS DE CONTACTO Y UBICACIÓN -->
+                    <div class="reg-card">
+                        <div class="reg-card-header">
+                            <span class="reg-badge">02</span>
+                            <span class="reg-card-title">Datos de contacto y ubicación</span>
+                            <span class="reg-card-subtitle">· Notificaciones y citas</span>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Teléfono / celular *</label>
+                                <input type="text" name="telefono" class="form-input" required placeholder="Ej. 987 654 321">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Correo electrónico *</label>
+                                <input type="email" name="email" class="form-input" required placeholder="nombre@correo.com">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Canal preferido de aviso *</label>
+                            <div class="channel-options">
+                                <label class="channel-pill" onclick="selectChannel(this)">
+                                    <input type="radio" name="canalAviso" value="SMS">
+                                    <span class="radio-circle"></span>
+                                    <span>SMS</span>
+                                </label>
+                                <label class="channel-pill active" onclick="selectChannel(this)">
+                                    <input type="radio" name="canalAviso" value="WhatsApp" checked>
+                                    <span class="radio-circle"></span>
+                                    <span>WhatsApp</span>
+                                </label>
+                                <label class="channel-pill" onclick="selectChannel(this)">
+                                    <input type="radio" name="canalAviso" value="Correo">
+                                    <span class="radio-circle"></span>
+                                    <span>Correo</span>
+                                </label>
+                            </div>
+                        </div>
+
+                        <div class="form-group" style="margin-bottom: 6px;">
+                            <label class="form-label">Dirección / zona de residencia *</label>
+                            <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. San Borja Norte, San Borja">
+                        </div>
                     </div>
 
-                    <div class="reg-actions-row">
-                        <button type="submit" id="btnSubmitReg" class="btn-submit-primary" style="flex: 1;" disabled>
-                            Confirmar y Registrarme
-                        </button>
-                        <button type="button" class="btn-back-to-login" onclick="toggleView('view-login')">
-                            <i data-lucide="arrow-left" style="width: 16px; height: 16px;"></i>
-                            Volver a iniciar sesión
-                        </button>
+                    <!-- SECCIÓN 03: CREDENCIALES DE ACCESO -->
+                    <div class="reg-card">
+                        <div class="reg-card-header">
+                            <span class="reg-badge">03</span>
+                            <span class="reg-card-title">Credenciales de acceso</span>
+                            <span class="reg-card-subtitle">· Portal del paciente</span>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Crear contraseña *</label>
+                                <div class="input-box has-right-icon">
+                                    <input type="password" name="password" id="regPwd" class="form-input" required placeholder="••••••••">
+                                    <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwd', this)" title="Mostrar/ocultar contraseña">
+                                        <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div class="form-group">
+                                <label class="form-label">Confirmar contraseña *</label>
+                                <div class="input-box has-right-icon">
+                                    <input type="password" name="confirmPassword" id="regPwdConfirm" class="form-input" required placeholder="••••••••">
+                                    <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwdConfirm', this)" title="Mostrar/ocultar contraseña">
+                                        <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                                    </button>
+                                </div>
+                                <div class="pwd-match-indicator" id="pwdMatchMsg" style="display: none;">
+                                    <i data-lucide="check" style="width: 14px; height: 14px;"></i> Las contraseñas coinciden
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- SECCIÓN 04: DATOS DE SALUD Y COBERTURA -->
+                    <div class="reg-card">
+                        <div class="reg-card-header">
+                            <span class="reg-badge">04</span>
+                            <span class="reg-card-title">Datos de salud y cobertura</span>
+                            <span class="reg-card-subtitle">· Información del paciente</span>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Alergias conocidas (opcional)</label>
+                                <input type="text" name="alergias" class="form-input" placeholder="Ej. Penicilina">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Tipo de cobertura *</label>
+                                <select name="cobertura" class="form-select">
+                                    <option value="Particular / EPS" selected>EPS / seguro privado / particular</option>
+                                    <option value="Particular">Particular</option>
+                                    <option value="EPS Rimac">EPS Rímac</option>
+                                    <option value="EPS Pacifico">EPS Pacífico</option>
+                                    <option value="EsSalud">EsSalud / Seguro Privado</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- BARRA DE ACCIONES INFERIOR -->
+                    <div class="reg-footer-bar">
+                        <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-cancel-link">
+                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Cancelar y volver
+                        </a>
+                        <div class="reg-footer-right">
+                            <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-login-link">
+                                Ya tengo cuenta, iniciar sesión
+                            </a>
+                            <button type="submit" id="btnSubmitReg" class="btn-register-action">
+                                <span>Registrarme</span>
+                                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
+                            </button>
+                        </div>
                     </div>
                 </form>
             </section>
@@ -275,7 +358,6 @@
 
     function togglePwdVisibility(inputId, btnEl) {
         const input = document.getElementById(inputId);
-        const icon = btnEl.querySelector('[data-lucide]') || btnEl.querySelector('svg');
         if (input.type === 'password') {
             input.type = 'text';
             btnEl.innerHTML = '<i data-lucide="eye-off" style="width: 18px; height: 18px;"></i>';
@@ -302,57 +384,70 @@
             loginView.classList.add('active');
             document.getElementById('formPane').scrollTop = 0;
         }
+        lucide.createIcons();
     }
 
-    // Validación de contraseña en tiempo real
+    function selectChannel(pillEl) {
+        document.querySelectorAll('.channel-pill').forEach(p => p.classList.remove('active'));
+        pillEl.classList.add('active');
+        const radio = pillEl.querySelector('input[type="radio"]');
+        if (radio) radio.checked = true;
+    }
+
+    // Validación de coincidencia de contraseñas
     const pwd = document.getElementById('regPwd');
+    const pwdConfirm = document.getElementById('regPwdConfirm');
+    const pwdMatchMsg = document.getElementById('pwdMatchMsg');
     const dniInput = document.getElementById('regDni');
-    const btnSubmit = document.getElementById('btnSubmitReg');
     const registerForm = document.getElementById('registerForm');
     const dniSubmitError = document.getElementById('dniSubmitError');
+    const pwdMismatchError = document.getElementById('pwdMismatchError');
 
-    function checkIcon(elementId, isValid) {
-        const el = document.getElementById(elementId);
-        if (!el) return;
-        if (isValid) {
-            el.classList.add('valid');
-            el.innerHTML = '<i data-lucide="check-circle" style="width:13px;height:13px;"></i> ' + el.innerText.trim();
+    function checkPasswordMatch() {
+        if (!pwd || !pwdConfirm || !pwdMatchMsg) return;
+        const val1 = pwd.value;
+        const val2 = pwdConfirm.value;
+
+        if (val1 && val2 && val1 === val2) {
+            pwdMatchMsg.style.display = 'flex';
+            pwdMatchMsg.classList.remove('mismatch');
+            pwdMatchMsg.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i> Las contraseñas coinciden';
+            lucide.createIcons({root: pwdMatchMsg});
+        } else if (val1 && val2 && val1 !== val2) {
+            pwdMatchMsg.style.display = 'flex';
+            pwdMatchMsg.classList.add('mismatch');
+            pwdMatchMsg.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Las contraseñas no coinciden';
+            lucide.createIcons({root: pwdMatchMsg});
         } else {
-            el.classList.remove('valid');
-            el.innerHTML = '<i data-lucide="circle" style="width:13px;height:13px;"></i> ' + el.innerText.trim();
+            pwdMatchMsg.style.display = 'none';
         }
-        lucide.createIcons({root: el});
     }
 
-    if (pwd) {
-        pwd.addEventListener('input', function() {
-            const val = pwd.value;
-            const isLen = val.length >= 8;
-            const isUpper = /[A-Z]/.test(val);
-            const isLower = /[a-z]/.test(val);
-            const isNum = /[0-9]/.test(val);
-            const isSym = /[@#$%^&+=!_\-]/.test(val);
-
-            checkIcon('chk-len', isLen);
-            checkIcon('chk-upper', isUpper);
-            checkIcon('chk-lower', isLower);
-            checkIcon('chk-num', isNum);
-            checkIcon('chk-sym', isSym);
-
-            btnSubmit.disabled = !(isLen && isUpper && isLower && isNum && isSym);
-        });
-    }
+    if (pwd) pwd.addEventListener('input', checkPasswordMatch);
+    if (pwdConfirm) pwdConfirm.addEventListener('input', checkPasswordMatch);
 
     if (registerForm) {
         registerForm.addEventListener('submit', function(e) {
             const val = pwd.value;
+            const val2 = pwdConfirm.value;
             const dniVal = dniInput.value;
+
+            if (val !== val2) {
+                e.preventDefault();
+                pwdMismatchError.style.display = 'flex';
+                pwdConfirm.focus();
+                document.getElementById('formPane').scrollTo({ top: 0, behavior: 'smooth' });
+                return;
+            } else {
+                pwdMismatchError.style.display = 'none';
+            }
 
             if (dniVal.length > 0 && val.includes(dniVal)) {
                 e.preventDefault();
                 dniSubmitError.style.display = 'flex';
                 pwd.focus();
                 document.getElementById('formPane').scrollTo({ top: 0, behavior: 'smooth' });
+                return;
             } else {
                 dniSubmitError.style.display = 'none';
             }
