@@ -11,6 +11,8 @@ import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.util.SecurityUtil;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "MedicoAtencionServlet", urlPatterns = {"/medico/atencion"})
 public class MedicoAtencionServlet extends HttpServlet {
@@ -36,17 +38,24 @@ public class MedicoAtencionServlet extends HttpServlet {
             return;
         }
 
+        int idMedico = citaDAO.obtenerIdMedicoPorUsuarioId(usuario.getIdUsuario());
         String idCitaStr = request.getParameter("idCita");
-        int idCita = 1;
-        if (idCitaStr != null && !idCitaStr.isEmpty()) {
+        int idCita = -1;
+        if (idCitaStr != null && !idCitaStr.trim().isEmpty()) {
             try {
                 idCita = Integer.parseInt(idCitaStr);
             } catch (NumberFormatException ignored) {}
         }
 
+        Map<String, Object> citaDetalle = null;
+        if (idCita > 0) {
+            citaDetalle = citaDAO.obtenerDetalleCitaMedico(idCita);
+        }
+
         request.setAttribute("usuario", usuario);
         request.setAttribute("nombreMedico", usuario.getNombres() + " " + usuario.getApellidos());
         request.setAttribute("idCita", idCita);
+        request.setAttribute("cita", citaDetalle);
 
         request.getRequestDispatcher("/WEB-INF/views/medico/atencion.jsp").forward(request, response);
     }
@@ -60,8 +69,9 @@ public class MedicoAtencionServlet extends HttpServlet {
         }
 
         String idCitaStr = request.getParameter("idCita");
-        String estadoAsistencia = SecurityUtil.sanitizeInput(request.getParameter("asistencia"));
+        String accion = SecurityUtil.sanitizeInput(request.getParameter("accion"));
         String prioridad = SecurityUtil.sanitizeInput(request.getParameter("prioridad"));
+        String fechaProxima = SecurityUtil.sanitizeInput(request.getParameter("fechaProxima"));
         String indicaciones = SecurityUtil.sanitizeInput(request.getParameter("indicaciones"));
 
         int idCita = 1;
@@ -71,10 +81,15 @@ public class MedicoAtencionServlet extends HttpServlet {
             } catch (NumberFormatException ignored) {}
         }
 
-        String nuevoEstado = "NO_ASISTIO".equals(estadoAsistencia) ? "NO_ASISTIO" : "ATENDIDO";
-        citaDAO.actualizarAtencionMedica(idCita, nuevoEstado, prioridad, indicaciones);
+        if ("no_asistio".equalsIgnoreCase(accion)) {
+            citaDAO.actualizarAtencionMedica(idCita, "NO_ASISTIO", "BAJA", null, "Paciente no se presentó al llamado en consultorio.");
+            request.setAttribute("mensajeExito", "Estado actualizado: Marcado como 'No se presentó al llamado'.");
+        } else {
+            String nuevoEstado = "ATENDIDA";
+            citaDAO.actualizarAtencionMedica(idCita, nuevoEstado, prioridad != null ? prioridad : "MEDIA", fechaProxima, indicaciones);
+            request.setAttribute("mensajeExito", "¡Registro de atención guardado con éxito! Cita finalizada y plan de seguimiento registrado.");
+        }
 
-        request.setAttribute("mensajeExito", "¡Registro de atención médica guardado correctamente!");
         doGet(request, response);
     }
 }

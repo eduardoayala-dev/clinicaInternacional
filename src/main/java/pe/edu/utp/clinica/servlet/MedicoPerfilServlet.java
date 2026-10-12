@@ -27,8 +27,13 @@ public class MedicoPerfilServlet extends HttpServlet {
             return;
         }
 
+        pe.edu.utp.clinica.dao.CitaDAO citaDAO = new pe.edu.utp.clinica.dao.CitaDAO();
+        int idMedico = citaDAO.obtenerIdMedicoPorUsuarioId(usuario.getIdUsuario());
+        java.util.Map<String, Object> detalles = citaDAO.obtenerDetallesMedico(idMedico);
+
         request.setAttribute("usuario", usuario);
-        request.setAttribute("nombreMedico", usuario.getNombres() + " " + usuario.getApellidos());
+        request.setAttribute("nombreMedico", detalles.get("nombreMedico") != null ? detalles.get("nombreMedico") : ("Dr. " + usuario.getNombres() + " " + usuario.getApellidos()));
+        request.setAttribute("detallesMedico", detalles);
 
         request.getRequestDispatcher("/WEB-INF/views/medico/perfil.jsp").forward(request, response);
     }
