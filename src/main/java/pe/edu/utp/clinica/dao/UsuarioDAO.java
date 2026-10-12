@@ -353,13 +353,18 @@ public class UsuarioDAO {
     public java.util.List<Usuario> obtenerTodos() {
         java.util.List<Usuario> lista = new java.util.ArrayList<>();
         String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +
-                     "m.cmp, m.id_especialidad, m.id_sede AS id_sede_medico, e.nombre AS especialidad, " +
-                     "pa.codigo_empleado, pa.cargo, pa.id_sede AS id_sede_personal " +
+                     "m.cmp, m.id_especialidad, m.id_sede AS id_sede_medico, m.estado AS estado_medico, " +
+                     "e.nombre AS especialidad, sm.nombre AS sede_medico, " +
+                     "pa.codigo_empleado, pa.cargo, pa.id_sede AS id_sede_personal, sp.nombre AS sede_personal, " +
+                     "a.estado AS estado_admin " +
                      "FROM usuario u " +
                      "LEFT JOIN medico m ON u.id_usuario = m.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+                     "LEFT JOIN sede sm ON m.id_sede = sm.id_sede " +
                      "LEFT JOIN personal_administrativo pa ON u.id_usuario = pa.id_usuario " +
-                     "ORDER BY u.id_usuario DESC";
+                     "LEFT JOIN sede sp ON pa.id_sede = sp.id_sede " +
+                     "LEFT JOIN administrador a ON u.id_usuario = a.id_usuario " +
+                     "ORDER BY u.id_usuario ASC";
         
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
@@ -385,16 +390,109 @@ public class UsuarioDAO {
                 if ("MEDICO".equals(u.getRol())) {
                     u.setIdEspecialidad(rs.getInt("id_especialidad"));
                     u.setIdSede(rs.getInt("id_sede_medico"));
+                    String sNom = rs.getString("sede_medico");
+                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sede Central");
+                    String estM = rs.getString("estado_medico");
+                    if (!u.isActivo() || "INACTIVO".equalsIgnoreCase(estM)) {
+                        u.setEstadoDetallado("Inactivo");
+                    } else if ("LICENCIA".equalsIgnoreCase(estM)) {
+                        u.setEstadoDetallado("Suspendido");
+                    } else {
+                        u.setEstadoDetallado("Activo");
+                    }
                 } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
                     u.setIdSede(rs.getInt("id_sede_personal"));
+                    String sNom = rs.getString("sede_personal");
+                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sede Central");
+                    u.setEstadoDetallado(u.isActivo() ? "Activo" : "Inactivo");
+                } else if ("ADMINISTRADOR".equals(u.getRol())) {
+                    u.setNombreSede("Multisede");
+                    String estA = rs.getString("estado_admin");
+                    if (!u.isActivo() || "INACTIVO".equalsIgnoreCase(estA)) {
+                        u.setEstadoDetallado("Inactivo");
+                    } else {
+                        u.setEstadoDetallado("Activo");
+                    }
+                } else {
+                    u.setEstadoDetallado(u.isActivo() ? "Activo" : "Inactivo");
                 }
                 
                 lista.add(u);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al listar usuarios: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al listar usuarios reales: " + e.getMessage(), e);
         }
+
         return lista;
+    }
+
+    public java.util.Map<String, Object> obtenerMetricasPersonal() {
+        java.util.Map<String, Object> metricas = new java.util.HashMap<>();
+        int medicosTotal = 0;
+        int medicosActivos = 0;
+        int personalTotal = 0;
+        int personalActivos = 0;
+        int adminsTotal = 0;
+        int adminsActivos = 0;
+        int totalPersonal = 0;
+
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            // Métricas reales de Médicos
+            String sqlMed = "SELECT COUNT(*) AS total, " +
+                            "SUM(CASE WHEN (m.estado = 'ACTIVO' OR m.estado IS NULL) AND u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
+                            "FROM medico m JOIN usuario u ON m.id_usuario = u.id_usuario";
+            try (PreparedStatement ps = conn.prepareStatement(sqlMed);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    medicosTotal = rs.getInt("total");
+                    medicosActivos = rs.getInt("activos");
+                }
+            }
+
+            // Métricas reales de Personal Administrativo
+            String sqlPers = "SELECT COUNT(*) AS total, " +
+                             "SUM(CASE WHEN u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
+                             "FROM personal_administrativo pa JOIN usuario u ON pa.id_usuario = u.id_usuario";
+            try (PreparedStatement ps = conn.prepareStatement(sqlPers);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    personalTotal = rs.getInt("total");
+                    personalActivos = rs.getInt("activos");
+                }
+            }
+
+            // Métricas reales de Administradores
+            String sqlAdm = "SELECT COUNT(*) AS total, " +
+                            "SUM(CASE WHEN (a.estado = 'ACTIVO' OR a.estado IS NULL) AND u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
+                            "FROM administrador a JOIN usuario u ON a.id_usuario = u.id_usuario";
+            try (PreparedStatement ps = conn.prepareStatement(sqlAdm);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    adminsTotal = rs.getInt("total");
+                    adminsActivos = rs.getInt("activos");
+                }
+            }
+
+            // Total real de personal del sistema con acceso (no pacientes)
+            String sqlTotal = "SELECT COUNT(*) FROM usuario WHERE rol != 'PACIENTE'";
+            try (PreparedStatement ps = conn.prepareStatement(sqlTotal);
+                 ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    totalPersonal = rs.getInt(1);
+                }
+            }
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al calcular métricas reales de personal en BD: " + e.getMessage(), e);
+        }
+
+        metricas.put("medicosTotal", medicosTotal);
+        metricas.put("medicosActivos", medicosActivos);
+        metricas.put("personalTotal", personalTotal);
+        metricas.put("personalActivos", personalActivos);
+        metricas.put("adminsTotal", adminsTotal);
+        metricas.put("adminsActivos", adminsActivos);
+        metricas.put("totalUsuarios", totalPersonal);
+        return metricas;
     }
 
     public pe.edu.utp.clinica.model.Paciente obtenerPacientePorUsuarioId(int usuarioId) {

@@ -68,6 +68,8 @@ public class SysAdminServlet extends HttpServlet {
                     }
                 }
                 request.setAttribute("listaUsuarios", personal);
+                Map<String, Object> metricasUsuarios = usuarioDAO.obtenerMetricasPersonal();
+                request.setAttribute("metricasUsuarios", metricasUsuarios);
                 cargarSedesYEspecialidades(request);
                 request.getRequestDispatcher("/WEB-INF/views/sysadmin/usuarios.jsp").forward(request, response);
                 break;
@@ -205,6 +207,15 @@ public class SysAdminServlet extends HttpServlet {
             Integer idSede = null;
             String cargo = null;
 
+            String estado = request.getParameter("estado");
+            boolean activo = !"INACTIVO".equalsIgnoreCase(estado) && !"SUSPENDIDO".equalsIgnoreCase(estado);
+            u.setActivo(activo);
+
+            String idSedeGeneral = request.getParameter("id_sede");
+            if (idSedeGeneral != null && !idSedeGeneral.trim().isEmpty()) {
+                try { idSede = Integer.parseInt(idSedeGeneral); } catch (Exception ignored) {}
+            }
+
             if ("MEDICO".equals(rol)) {
                 cmp = request.getParameter("cmp");
                 String espStr = request.getParameter("id_especialidad");
@@ -218,14 +229,15 @@ public class SysAdminServlet extends HttpServlet {
             }
 
             if ("editar".equals(action)) {
-                u.setIdUsuario(Integer.parseInt(request.getParameter("idUsuario")));
+                int idUsuario = Integer.parseInt(request.getParameter("idUsuario"));
+                u.setIdUsuario(idUsuario);
                 usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
-                session.setAttribute("flashMessage", "Usuario actualizado correctamente en la Base de Datos.");
+                usuarioDAO.cambiarEstadoUsuario(idUsuario, activo);
+                session.setAttribute("flashMessage", "Usuario #" + idUsuario + " (" + u.getNombreCompleto() + ") actualizado correctamente en la Base de Datos.");
             } else {
                 String passwordRaw = request.getParameter("password");
                 if (passwordRaw == null || passwordRaw.trim().isEmpty()) passwordRaw = "Password123!";
                 u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(passwordRaw, org.mindrot.jbcrypt.BCrypt.gensalt()));
-                u.setActivo(true);
                 usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
                 session.setAttribute("flashMessage", "Nuevo usuario (" + nombres + " " + apellidos + ") guardado en la Base de Datos.");
             }
