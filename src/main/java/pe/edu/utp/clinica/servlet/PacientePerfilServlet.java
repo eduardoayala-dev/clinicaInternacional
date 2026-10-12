@@ -35,9 +35,25 @@ public class PacientePerfilServlet extends HttpServlet {
         }
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        if (usuario.getIdUsuario() <= 0 && usuario.getEmail() != null) {
+            Usuario usuarioRecuperado = usuarioDAO.buscarPorEmailODni(usuario.getEmail());
+            if (usuarioRecuperado != null) {
+                usuario = usuarioRecuperado;
+                session.setAttribute("usuarioLogueado", usuario);
+            }
+        }
+
         Paciente paciente = usuarioDAO.obtenerPacientePorUsuarioId(usuario.getIdUsuario());
         if (paciente == null) {
-            paciente = new Paciente(184, usuario.getIdUsuario(), "45879632", java.time.LocalDate.of(1985, 3, 14), "+51 987 654 482", "San Borja, Lima", "WhatsApp", "Sede San Borja", "", "EPS");
+            paciente = new Paciente();
+            paciente.setUsuarioId(usuario.getIdUsuario());
+            paciente.setDni("");
+            paciente.setTelefono("");
+            paciente.setDireccion("");
+            paciente.setCanalAviso("WhatsApp");
+            paciente.setSedePreferida("Sede San Borja");
+            paciente.setAlergias("");
+            paciente.setTipoCobertura("EPS");
         }
 
         int numNotifSinLeer = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
@@ -71,6 +87,13 @@ public class PacientePerfilServlet extends HttpServlet {
         }
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        if (usuario.getIdUsuario() <= 0 && usuario.getEmail() != null) {
+            Usuario usuarioRecuperado = usuarioDAO.buscarPorEmailODni(usuario.getEmail());
+            if (usuarioRecuperado != null) {
+                usuario = usuarioRecuperado;
+                session.setAttribute("usuarioLogueado", usuario);
+            }
+        }
 
         String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
         String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));

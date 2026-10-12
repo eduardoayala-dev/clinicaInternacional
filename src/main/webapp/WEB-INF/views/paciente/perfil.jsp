@@ -12,32 +12,30 @@
         nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
     }
     if (nombrePaciente == null || nombrePaciente.trim().isEmpty()) {
-        nombrePaciente = "María Pérez";
+        nombrePaciente = "Paciente";
     }
 
-    String nombresVal = usuario != null && usuario.getNombres() != null ? usuario.getNombres() : "María Elena";
-    String apellidosVal = usuario != null && usuario.getApellidos() != null ? usuario.getApellidos() : "Pérez Gómez";
-    String emailVal = usuario != null && usuario.getEmail() != null ? usuario.getEmail() : "maría.perez@correo.com";
-    String dniVal = (paciente != null && paciente.getDni() != null && !paciente.getDni().trim().isEmpty()) ? paciente.getDni() : "45879632";
+    String nombresVal = usuario != null && usuario.getNombres() != null ? usuario.getNombres() : "";
+    String apellidosVal = usuario != null && usuario.getApellidos() != null ? usuario.getApellidos() : "";
+    String emailVal = usuario != null && usuario.getEmail() != null ? usuario.getEmail() : "";
+    String dniVal = (paciente != null && paciente.getDni() != null) ? paciente.getDni() : "";
     
     String fechaNacVal = "";
     if (paciente != null && paciente.getFechaNacimiento() != null) {
         fechaNacVal = paciente.getFechaNacimiento().toString(); // YYYY-MM-DD
-    } else {
-        fechaNacVal = "1985-03-14";
     }
 
-    String edadVal = (paciente != null) ? paciente.getEdadCalculada() : "41 años";
-    String telefonoVal = (paciente != null && paciente.getTelefono() != null && !paciente.getTelefono().trim().isEmpty()) ? paciente.getTelefono() : "+51 987 654 482";
-    String direccionVal = (paciente != null && paciente.getDireccion() != null && !paciente.getDireccion().trim().isEmpty()) ? paciente.getDireccion() : "San Borja, Lima";
+    String edadVal = (paciente != null) ? paciente.getEdadCalculada() : "--";
+    String telefonoVal = (paciente != null && paciente.getTelefono() != null) ? paciente.getTelefono() : "";
+    String direccionVal = (paciente != null && paciente.getDireccion() != null) ? paciente.getDireccion() : "";
     String canalAvisoVal = (paciente != null && paciente.getCanalAviso() != null) ? paciente.getCanalAviso() : "WhatsApp";
     String sedePrefVal = (paciente != null && paciente.getSedePreferida() != null) ? paciente.getSedePreferida() : "Sede San Borja";
     String alergiasVal = (paciente != null && paciente.getAlergias() != null) ? paciente.getAlergias() : "";
     String coberturaVal = (paciente != null && paciente.getTipoCobertura() != null) ? paciente.getTipoCobertura() : "EPS";
-    String codigoRegistro = (paciente != null) ? paciente.getCodigoRegistro() : "PAC-000184";
+    String codigoRegistro = (paciente != null) ? paciente.getCodigoRegistro() : (usuario != null ? "PAC-" + String.format("%06d", usuario.getIdUsuario()) : "PAC-000000");
 
-    String inicialesPaciente = "MP";
-    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
+    String inicialesPaciente = "P";
+    if (nombrePaciente != null && !nombrePaciente.trim().isEmpty() && !"Paciente".equalsIgnoreCase(nombrePaciente.trim())) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
             inicialesPaciente = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
@@ -192,7 +190,7 @@
                             <div class="form-group-item">
                                 <label for="documentoInput">Tipo y número de documento</label>
                                 <div class="input-wrapper-relative">
-                                    <input type="text" id="documentoInput" value="DNI <%= dniVal %>" readonly class="perfil-input readonly-input">
+                                    <input type="text" id="documentoInput" value="<%= dniVal.isEmpty() ? "" : ("DNI " + dniVal) %>" readonly class="perfil-input readonly-input">
                                     <span class="badge-solo-lectura">Solo lectura</span>
                                 </div>
                             </div>
@@ -290,10 +288,10 @@
                         <div class="form-group-item">
                             <label for="tipoCoberturaSelect">Tipo de cobertura *</label>
                             <select id="tipoCoberturaSelect" name="tipoCobertura" class="perfil-select">
-                                <option value="EPS" <%= "EPS".equalsIgnoreCase(coberturaVal) ? "selected" : "" %>>EPS</option>
+                                <option value="EPS" <%= (coberturaVal != null && (coberturaVal.contains("EPS") || "Particular / EPS".equalsIgnoreCase(coberturaVal))) ? "selected" : "" %>>EPS</option>
                                 <option value="Particular" <%= "Particular".equalsIgnoreCase(coberturaVal) ? "selected" : "" %>>Particular</option>
-                                <option value="Seguro Privado / RIMAC" <%= "Seguro Privado / RIMAC".equalsIgnoreCase(coberturaVal) ? "selected" : "" %>>Seguro Privado / RIMAC</option>
-                                <option value="EsSalud / SIS" <%= "EsSalud / SIS".equalsIgnoreCase(coberturaVal) ? "selected" : "" %>>EsSalud / SIS</option>
+                                <option value="Seguro Privado / RIMAC" <%= (coberturaVal != null && (coberturaVal.contains("Rimac") || "Seguro Privado / RIMAC".equalsIgnoreCase(coberturaVal))) ? "selected" : "" %>>Seguro Privado / RIMAC</option>
+                                <option value="EsSalud / SIS" <%= (coberturaVal != null && (coberturaVal.contains("EsSalud") || "EsSalud / SIS".equalsIgnoreCase(coberturaVal))) ? "selected" : "" %>>EsSalud / SIS</option>
                             </select>
                         </div>
                     </div>
