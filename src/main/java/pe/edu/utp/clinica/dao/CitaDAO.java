@@ -252,11 +252,23 @@ public class CitaDAO {
             map.put("fechaFormateada", formatearFechaEspanol(ldt));
             map.put("horaFormateada", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
             map.put("fechaModal", formatearFechaModal(ldt));
+            map.put("fecha", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            map.put("fechaSolo", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+            map.put("hora", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+            map.put("horaSolo", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+            map.put("turno", ldt.getHour() < 13 ? "manana" : "tarde");
+            map.put("fechaFormateadaBanner", formatearFechaEspanol(ldt) + " · " + ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
         } else {
             map.put("fechaHora", "Por definir");
             map.put("fechaFormateada", "Por definir");
             map.put("horaFormateada", "--:--");
             map.put("fechaModal", "Por definir");
+            map.put("fecha", "");
+            map.put("fechaSolo", "");
+            map.put("hora", "");
+            map.put("horaSolo", "");
+            map.put("turno", "manana");
+            map.put("fechaFormateadaBanner", "Por definir");
         }
         map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
         map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
@@ -294,8 +306,11 @@ public class CitaDAO {
                     
                     LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
                     if (ldt != null) {
+                        map.put("fecha", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
                         map.put("fechaSolo", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                        map.put("hora", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
                         map.put("horaSolo", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        map.put("turno", ldt.getHour() < 13 ? "manana" : "tarde");
                         map.put("fechaFormateadaBanner", formatearFechaEspanol(ldt) + " · " + ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
                     }
                     return map;
@@ -338,10 +353,11 @@ public class CitaDAO {
             }
 
             String fechaHoraStr = nuevaFecha + " " + (nuevaHora.length() == 5 ? nuevaHora + ":00" : nuevaHora);
-            String sqlCheckOcupado = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
+            String sqlCheckOcupado = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND id_cita != ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
             try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckOcupado)) {
                 psCheck.setInt(1, idNuevoMedico);
                 psCheck.setString(2, fechaHoraStr);
+                psCheck.setInt(3, idCitaAnterior);
                 try (ResultSet rsCheck = psCheck.executeQuery()) {
                     if (rsCheck.next() && rsCheck.getInt(1) > 0) {
                         conn.rollback();
