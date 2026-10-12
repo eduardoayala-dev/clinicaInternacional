@@ -178,7 +178,6 @@ public class CitaDAO {
     // =========================================================================
 
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {
-        List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
                      "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
                      "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
@@ -541,7 +540,6 @@ public class CitaDAO {
                          "JOIN medico m ON c.id_medico = m.id_medico " +
                          "WHERE c.id_cita = ?";
         int idEspecialidad = 1;
-        int idSede = 1;
         int idDisp = 1;
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlCita)) {
@@ -549,7 +547,6 @@ public class CitaDAO {
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     idEspecialidad = rs.getInt("id_especialidad");
-                    idSede = rs.getInt("id_sede");
                     idDisp = rs.getInt("id_disponibilidad");
                 }
             }
