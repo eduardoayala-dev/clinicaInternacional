@@ -250,7 +250,7 @@ public class CitaDAO {
         }
 
         if (todosLosHorarios.isEmpty()) {
-            String[] std = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30"};
+            String[] std = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"};
             for (String h : std) {
                 java.time.LocalTime lt = java.time.LocalTime.parse(h);
                 if (!horariosOcupados.contains(lt)) {
@@ -734,7 +734,7 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND c.estado != 'CANCELADA' AND c.fecha_hora >= CURRENT_TIMESTAMP() " +
+                     "WHERE c.id_paciente = ? AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') AND c.fecha_hora >= CURRENT_TIMESTAMP() " +
                      "ORDER BY c.fecha_hora ASC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -786,7 +786,7 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND (c.estado = 'COMPLETADA' OR (c.estado != 'CANCELADA' AND c.fecha_hora < CURRENT_TIMESTAMP())) " +
+                     "WHERE c.id_paciente = ? AND (c.estado = 'COMPLETADA' OR (c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') AND c.fecha_hora < CURRENT_TIMESTAMP())) " +
                      "ORDER BY c.fecha_hora DESC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -837,7 +837,7 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND c.estado = 'CANCELADA' " +
+                     "WHERE c.id_paciente = ? AND c.estado IN ('CANCELADA', 'REPROGRAMADA') " +
                      "ORDER BY c.fecha_hora DESC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
