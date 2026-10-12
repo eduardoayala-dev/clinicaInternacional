@@ -49,12 +49,12 @@ public class AuthFilter implements Filter {
             return;
         }
 
-        if (uri.contains("/admin/") && !"ADMINISTRADOR".equals(rol) && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
+        if (uri.contains("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
             redirigirSegunRol(res, req.getContextPath(), rol);
             return;
         }
 
-        if (uri.contains("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
+        if (uri.contains("/admin/") && !uri.contains("/sysadmin/") && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
             redirigirSegunRol(res, req.getContextPath(), rol);
             return;
         }

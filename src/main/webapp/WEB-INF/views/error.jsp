@@ -27,18 +27,25 @@
     }
 %>
 
-<!-- Lógica inteligente para el botón "Volver al Inicio" -->
+<!-- Lógica inteligente para el botón "Volver al Inicio" según el rol autenticado -->
 <c:set var="homeUrl" value="${pageContext.request.contextPath}/" />
 <c:if test="${not empty sessionScope.usuarioLogueado}">
+    <c:set var="userRol" value="${sessionScope.rol != null ? sessionScope.rol : sessionScope.usuarioLogueado.rol}" />
     <c:choose>
-        <c:when test="${sessionScope.rol eq 'ADMINISTRADOR'}">
+        <c:when test="${userRol eq 'ADMINISTRADOR'}">
+            <c:set var="homeUrl" value="${pageContext.request.contextPath}/sysadmin/dashboard" />
+        </c:when>
+        <c:when test="${userRol eq 'PERSONAL_ADMINISTRATIVO'}">
             <c:set var="homeUrl" value="${pageContext.request.contextPath}/admin/dashboard" />
         </c:when>
-        <c:when test="${sessionScope.rol eq 'PACIENTE'}">
+        <c:when test="${userRol eq 'MEDICO'}">
+            <c:set var="homeUrl" value="${pageContext.request.contextPath}/medico/agenda" />
+        </c:when>
+        <c:when test="${userRol eq 'PACIENTE'}">
             <c:set var="homeUrl" value="${pageContext.request.contextPath}/paciente/dashboard" />
         </c:when>
         <c:otherwise>
-            <c:set var="homeUrl" value="${pageContext.request.contextPath}/admin/dashboard" />
+            <c:set var="homeUrl" value="${pageContext.request.contextPath}/sysadmin/dashboard" />
         </c:otherwise>
     </c:choose>
 </c:if>
