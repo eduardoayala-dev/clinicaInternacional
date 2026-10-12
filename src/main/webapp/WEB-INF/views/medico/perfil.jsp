@@ -118,32 +118,37 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
-        </div>
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/medico/inicio" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+    <aside class="med-sidebar">
+        <a href="${pageContext.request.contextPath}/medico/inicio" class="med-brand">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="med-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div>
+                <div class="med-brand-name">Clínica Internacional</div>
+                <div class="med-brand-sub">Portal del médico</div>
+            </div>
+        </a>
+        <nav class="med-nav">
+            <a href="${pageContext.request.contextPath}/medico/inicio" class="med-nav-item">
+                <i data-lucide="home"></i> Inicio
             </a>
-            <a href="${pageContext.request.contextPath}/medico/agenda" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px;"></i> Mi Agenda
+            <a href="${pageContext.request.contextPath}/medico/agenda" class="med-nav-item">
+                <i data-lucide="calendar"></i> Mi agenda
             </a>
-            <a href="${pageContext.request.contextPath}/medico/atencion" class="nav-item">
-                <i data-lucide="stethoscope" style="width: 18px;"></i> Atención Paciente
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/perfil" class="nav-item active">
-                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
+            <a href="${pageContext.request.contextPath}/medico/atencion" class="med-nav-item">
+                <i data-lucide="stethoscope"></i> Atención de paciente actual
             </a>
         </nav>
-        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
-            <div class="avatar-initials"><%= inicialesMedico %></div>
-            <div style="flex: 1;">
-                <div class="user-name-sm"><%= nombreMedico %></div>
-                <div class="user-role-sm">Médico Especialista</div>
-            </div>
-            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
-        </a>
+        <div class="med-user-footer">
+            <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link">
+                <div class="med-avatar"><%= inicialesMedico %></div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="med-user-name"><%= nombreMedico %></div>
+                    <div class="med-user-role">Médico Especialista</div>
+                </div>
+            </a>
+            <a href="${pageContext.request.contextPath}/logout" class="med-logout-btn" title="Cerrar sesión">
+                <i data-lucide="log-out"></i>
+            </a>
+        </div>
     </aside>
 
     <main class="main-content">
@@ -157,6 +162,13 @@
             </a>
         </div>
 
+        <%
+            java.util.Map<String, Object> detMed = (java.util.Map<String, Object>) request.getAttribute("detallesMedico");
+            String cmpVal = detMed != null && detMed.get("cmp") != null ? (String) detMed.get("cmp") : "CMP 45892";
+            String espVal = detMed != null && detMed.get("especialidad") != null ? (String) detMed.get("especialidad") : "Medicina General";
+            String sedeVal = detMed != null && detMed.get("sedeNombre") != null ? (String) detMed.get("sedeNombre") : "Sede San Borja";
+        %>
+
         <div class="profile-grid">
             <!-- IZQUIERDA: AVATAR CARD -->
             <div class="card-box">
@@ -168,12 +180,12 @@
 
                 <div class="field-group">
                     <div class="field-label">Colegiatura / CMP</div>
-                    <div class="field-val">CMP 45892 (Hábil)</div>
+                    <div class="field-val"><%= cmpVal %> (Hábil)</div>
                 </div>
 
                 <div class="field-group">
                     <div class="field-label">Especialidad</div>
-                    <div class="field-val" style="color: var(--primary);">Cardiología</div>
+                    <div class="field-val" style="color: var(--primary);"><%= espVal %></div>
                 </div>
             </div>
 
@@ -190,12 +202,12 @@
 
                 <div class="field-group">
                     <div class="field-label">Sede Asignada Principal</div>
-                    <div class="field-val">Sede Central — San Isidro (Consultorio 302)</div>
+                    <div class="field-val"><%= sedeVal %> (Consultorio 102)</div>
                 </div>
 
                 <div class="field-group">
                     <div class="field-label">Propuesta de Horario Asistencial</div>
-                    <div class="field-val">Turno Mañana: 08:00 AM a 13:00 PM (Lunes a Viernes)</div>
+                    <div class="field-val">Turno Mañana: 08:00 AM a 14:00 PM (Lunes a Viernes)</div>
                 </div>
             </div>
         </div>

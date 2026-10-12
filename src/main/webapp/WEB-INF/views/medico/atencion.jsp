@@ -150,32 +150,37 @@
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
-        </div>
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/medico/inicio" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+    <aside class="med-sidebar">
+        <a href="${pageContext.request.contextPath}/medico/inicio" class="med-brand">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="med-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div>
+                <div class="med-brand-name">Clínica Internacional</div>
+                <div class="med-brand-sub">Portal del médico</div>
+            </div>
+        </a>
+        <nav class="med-nav">
+            <a href="${pageContext.request.contextPath}/medico/inicio" class="med-nav-item">
+                <i data-lucide="home"></i> Inicio
             </a>
-            <a href="${pageContext.request.contextPath}/medico/agenda" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px;"></i> Mi Agenda
+            <a href="${pageContext.request.contextPath}/medico/agenda" class="med-nav-item">
+                <i data-lucide="calendar"></i> Mi agenda
             </a>
-            <a href="${pageContext.request.contextPath}/medico/atencion" class="nav-item active">
-                <i data-lucide="stethoscope" style="width: 18px;"></i> Atención Paciente
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
+            <a href="${pageContext.request.contextPath}/medico/atencion" class="med-nav-item active">
+                <i data-lucide="stethoscope"></i> Atención de paciente actual
             </a>
         </nav>
-        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
-            <div class="avatar-initials"><%= inicialesMedico %></div>
-            <div style="flex: 1;">
-                <div class="user-name-sm"><%= nombreMedico %></div>
-                <div class="user-role-sm">Médico Especialista</div>
-            </div>
-            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
-        </a>
+        <div class="med-user-footer">
+            <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link">
+                <div class="med-avatar"><%= inicialesMedico %></div>
+                <div style="flex: 1; min-width: 0;">
+                    <div class="med-user-name"><%= nombreMedico %></div>
+                    <div class="med-user-role">Médico Especialista</div>
+                </div>
+            </a>
+            <a href="${pageContext.request.contextPath}/logout" class="med-logout-btn" title="Cerrar sesión">
+                <i data-lucide="log-out"></i>
+            </a>
+        </div>
     </aside>
 
     <main class="main-content">
@@ -195,6 +200,20 @@
             </div>
         <% } %>
 
+        <%
+            java.util.Map<String, Object> cita = (java.util.Map<String, Object>) request.getAttribute("cita");
+            String pacienteNombre = cita != null && cita.get("pacienteNombre") != null ? (String) cita.get("pacienteNombre") : "Paciente de Consulta";
+            String dni = cita != null && cita.get("dni") != null ? (String) cita.get("dni") : "--";
+            String telefono = cita != null && cita.get("telefono") != null ? (String) cita.get("telefono") : "--";
+            String edad = cita != null && cita.get("edad") != null ? (String) cita.get("edad") : "Edad no registrada";
+            String fechaFormateada = cita != null && cita.get("fechaFormateada") != null ? (String) cita.get("fechaFormateada") : "Fecha programada";
+            String sede = cita != null && cita.get("sede") != null ? (String) cita.get("sede") : "Sede San Borja";
+            String consultorio = cita != null && cita.get("consultorio") != null ? (String) cita.get("consultorio") : "Consultorio 102";
+            String motivo = cita != null && cita.get("motivo") != null ? (String) cita.get("motivo") : "Control general";
+            String especialidad = cita != null && cita.get("especialidad") != null ? (String) cita.get("especialidad") : "Medicina General";
+            String estadoCita = cita != null && cita.get("estado") != null ? (String) cita.get("estado") : "CONFIRMADA";
+        %>
+
         <form action="${pageContext.request.contextPath}/medico/atencion" method="POST">
             <input type="hidden" name="idCita" value="<%= idCita %>">
 
@@ -208,17 +227,17 @@
                     <div>
                         <div class="info-group">
                             <div class="info-label">Paciente / Historia Clínica</div>
-                            <div class="info-val">Juan Alberto Pérez Gómez (HC #89281)</div>
+                            <div class="info-val"><%= pacienteNombre %> (HC #<%= idCita %>089)</div>
                         </div>
 
                         <div class="info-group">
-                            <div class="info-label">Documento y Datos</div>
-                            <div class="info-val">DNI 72345678 &nbsp;•&nbsp; 54 Años &nbsp;•&nbsp; Masculino</div>
+                            <div class="info-label">Documento y Teléfono</div>
+                            <div class="info-val">DNI <%= dni %> &nbsp;•&nbsp; <%= edad %> &nbsp;•&nbsp; Tel: <%= telefono %></div>
                         </div>
 
                         <div class="info-group">
-                            <div class="info-label">Cobertura</div>
-                            <div class="info-val">Plan EPS Regular — Aseguradora Convenio</div>
+                            <div class="info-label">Cobertura / Estado de Cita</div>
+                            <div class="info-val"><span style="font-weight: 700; color: #0284c7;"><%= estadoCita %></span> &nbsp;•&nbsp; Plan Regular Convenio</div>
                         </div>
 
                         <div class="info-group">
@@ -230,22 +249,22 @@
                     <div>
                         <div class="info-group">
                             <div class="info-label">Fecha y Hora Programada</div>
-                            <div class="info-val">Jueves 24 de Octubre de 2026 — 09:30 AM</div>
+                            <div class="info-val"><%= fechaFormateada %></div>
                         </div>
 
                         <div class="info-group">
                             <div class="info-label">Sede y Consultorio</div>
-                            <div class="info-val">Sede Central — Consultorio 302 (Pabellón B)</div>
+                            <div class="info-val"><%= sede %> — <%= consultorio %></div>
                         </div>
 
                         <div class="info-group">
                             <div class="info-label">Médico Tratante</div>
-                            <div class="info-val"><%= nombreMedico %> (Cardiología)</div>
+                            <div class="info-val"><%= nombreMedico %> (<%= especialidad %>)</div>
                         </div>
 
                         <div class="info-group">
                             <div class="info-label">Motivo de Consulta</div>
-                            <div class="info-val">Chequeo preventivo / Molestia torácica leve al esfuerzo</div>
+                            <div class="info-val"><%= motivo %></div>
                         </div>
                     </div>
                 </div>

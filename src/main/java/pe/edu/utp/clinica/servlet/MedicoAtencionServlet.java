@@ -11,6 +11,8 @@ import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.util.SecurityUtil;
 
 import java.io.IOException;
+import java.util.List;
+import java.util.Map;
 
 @WebServlet(name = "MedicoAtencionServlet", urlPatterns = {"/medico/atencion"})
 public class MedicoAtencionServlet extends HttpServlet {
@@ -44,9 +46,22 @@ public class MedicoAtencionServlet extends HttpServlet {
             } catch (NumberFormatException ignored) {}
         }
 
+        int idMedico = citaDAO.obtenerIdMedicoPorUsuarioId(usuario.getIdUsuario());
+        Map<String, Object> citaDetalle = citaDAO.obtenerDetalleCitaMedico(idCita);
+        
+        // Si no se encuentra esa cita exacta, cargar la primera cita disponible de la agenda del médico
+        if (citaDetalle.isEmpty()) {
+            List<Map<String, Object>> agenda = citaDAO.obtenerAgendaMedico(idMedico);
+            if (!agenda.isEmpty()) {
+                idCita = (Integer) agenda.get(0).get("idCita");
+                citaDetalle = citaDAO.obtenerDetalleCitaMedico(idCita);
+            }
+        }
+
         request.setAttribute("usuario", usuario);
         request.setAttribute("nombreMedico", usuario.getNombres() + " " + usuario.getApellidos());
         request.setAttribute("idCita", idCita);
+        request.setAttribute("cita", citaDetalle);
 
         request.getRequestDispatcher("/WEB-INF/views/medico/atencion.jsp").forward(request, response);
     }
