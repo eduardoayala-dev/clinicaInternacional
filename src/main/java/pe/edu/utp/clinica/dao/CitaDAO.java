@@ -5,6 +5,7 @@ import pe.edu.utp.clinica.config.DatabaseConfig;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -1083,13 +1084,13 @@ public class CitaDAO {
             ps.setInt(6, 0); // Pendiente
             ps.addBatch();
 
-            // Fila 2: Lista de espera (Leído)
+            // Fila 2: Lista de espera (Pendiente)
             ps.setInt(1, idUsuario);
             ps.setNull(2, java.sql.Types.INTEGER);
             ps.setString(3, "Lista de espera");
             ps.setString(4, "Registro en lista de espera de Dermatología confirmado");
             ps.setTimestamp(5, Timestamp.valueOf("2026-10-05 10:12:00"));
-            ps.setInt(6, 1); // Leído
+            ps.setInt(6, 0); // Pendiente
             ps.addBatch();
 
             // Fila 3: Reserva registrada (Leído)
@@ -1108,13 +1109,24 @@ public class CitaDAO {
     }
 
     public int contarNotificacionesSinLeer(int idUsuario) {
+        if (idUsuario <= 0) return 0;
         String sql = "SELECT COUNT(*) FROM notificacion WHERE id_usuario = ? AND leida = 0";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idUsuario);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt(1);
+        try (Connection conn = DatabaseConfig.getConnection()) {
+            String sqlCheck = "SELECT COUNT(*) FROM notificacion WHERE id_usuario = ?";
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheck)) {
+                psCheck.setInt(1, idUsuario);
+                try (ResultSet rsCheck = psCheck.executeQuery()) {
+                    if (rsCheck.next() && rsCheck.getInt(1) == 0) {
+                        sincronizarNotificacionesIniciales(idUsuario);
+                    }
+                }
+            }
+            try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                ps.setInt(1, idUsuario);
+                try (ResultSet rs = ps.executeQuery()) {
+                    if (rs.next()) {
+                        return rs.getInt(1);
+                    }
                 }
             }
         } catch (Exception e) {
@@ -1345,6 +1357,248 @@ public class CitaDAO {
         } catch (Exception e) {
             e.printStackTrace();
             return false;
+        }
+    }
+
+    /**
+     * Obtiene los datos detallados de una cita para su reprogramación o consulta
+     */
+    public Map<String, Object> obtenerCitaPorId(int idCita) {
+        Map<String, Object> map = new HashMap<>();
+        String sql = "SELECT c.id_cita, c.id_paciente, c.id_medico, c.id_motivo, c.fecha_hora, c.estado, c.nivel_urgencia, " +
+                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, m.cmp, " +
+                     "m.id_especialidad, e.nombre AS especialidad, " +
+                     "m.id_sede, s.nombre AS sede, s.direccion AS sede_direccion, " +
+                     "mc.descripcion AS motivo " +
+                     "FROM cita c " +
+                     "JOIN medico m ON c.id_medico = m.id_medico " +
+                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
+                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
+                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
+                     "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
+                     "WHERE c.id_cita = ?";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idCita);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) {
+                    map.put("idCita", rs.getInt("id_cita"));
+                    map.put("idPaciente", rs.getInt("id_paciente"));
+                    map.put("idMedico", rs.getInt("id_medico"));
+                    map.put("idEspecialidad", rs.getInt("id_especialidad"));
+                    map.put("idSede", rs.getInt("id_sede"));
+                    map.put("idMotivo", rs.getObject("id_motivo"));
+                    map.put("estado", rs.getString("estado"));
+                    map.put("nivelUrgencia", rs.getString("nivel_urgencia"));
+
+                    String medN = rs.getString("medico_nombres");
+                    String medA = rs.getString("medico_apellidos");
+                    String rawNombre = ((medN != null ? medN : "") + " " + (medA != null ? medA : "")).trim();
+                    String cleanNombre = rawNombre.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "").replaceAll("\\s+", " ").trim();
+                    String nombreMed = "Dr. " + cleanNombre;
+                    map.put("medico", nombreMed);
+                    map.put("cmp", normalizarCmp(rs.getString("cmp")));
+
+                    String esp = rs.getString("especialidad");
+                    map.put("especialidad", esp != null ? esp : "Medicina General");
+
+                    String sed = rs.getString("sede");
+                    map.put("sede", sed != null ? sed : "Sede Lima");
+
+                    String mot = rs.getString("motivo");
+                    map.put("motivo", mot != null ? mot : "");
+
+                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+                    if (ldt != null) {
+                        map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")));
+                        map.put("fecha", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
+                        map.put("hora", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
+                        
+                        // Formato idéntico al banner: "mié 14 oct, 16:00"
+                        String bannerFecha = ldt.format(DateTimeFormatter.ofPattern("EEE dd MMM, HH:mm", Locale.forLanguageTag("es"))).replace(".", "");
+                        map.put("fechaFormateadaBanner", bannerFecha);
+                        
+                        String extendidaFecha = ldt.format(DateTimeFormatter.ofPattern("EEEE dd/MM/yyyy", Locale.forLanguageTag("es"))).replace(".", "");
+                        map.put("fechaFormateadaExtendida", extendidaFecha);
+                    }
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return map;
+    }
+
+    /**
+     * Obtiene los motivos de consulta disponibles según especialidad
+     */
+    public List<Map<String, Object>> obtenerMotivosPorEspecialidad(int idEspecialidad) {
+        List<Map<String, Object>> lista = new ArrayList<>();
+        String sql = "SELECT id_motivo, descripcion FROM motivo_cita WHERE id_especialidad = ? AND estado = 'ACTIVO'";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEspecialidad);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> m = new HashMap<>();
+                    m.put("idMotivo", rs.getInt("id_motivo"));
+                    m.put("descripcion", rs.getString("descripcion"));
+                    lista.add(m);
+                }
+            }
+        } catch (Exception e) {
+            // Manejo silencioso
+        }
+
+        if (lista.isEmpty()) {
+            Map<Integer, String[]> motivosMap = new HashMap<>();
+            motivosMap.put(1, new String[]{"Control de hipertensión arterial", "Chequeo cardiovascular preventivo", "Evaluación por dolor torácico", "Lectura de electrocardiograma / holter"});
+            motivosMap.put(2, new String[]{"Consulta por acné o dermatitis", "Revisión preventiva de lunares y manchas", "Caída de cabello / alopecia", "Alergia o erupción cutánea"});
+            motivosMap.put(3, new String[]{"Control de crecimiento y desarrollo", "Fiebre y malestar pediátrico general", "Vacunación y chequeo preventivo", "Evaluación respiratoria infantil"});
+            motivosMap.put(4, new String[]{"Chequeo médico integral de adulto", "Evaluación de fatiga o malestar general", "Revisión de análisis de laboratorio clínico", "Control de glucosa / diabetes"});
+            motivosMap.put(5, new String[]{"Medición y descarte de miopía / astigmatismo", "Dolor o irritación ocular", "Fondo de ojo y presión intraocular", "Chequeo visual preventivo"});
+
+            String[] seleccion = motivosMap.getOrDefault(idEspecialidad, new String[]{
+                "Consulta médica general",
+                "Evaluación preventiva anual",
+                "Revisión de síntomas recientes",
+                "Lectura de exámenes de laboratorio",
+                "Renovación o ajuste de medicación"
+            });
+
+            for (int i = 0; i < seleccion.length; i++) {
+                Map<String, Object> m = new HashMap<>();
+                m.put("idMotivo", (i + 1));
+                m.put("descripcion", seleccion[i]);
+                lista.add(m);
+            }
+        }
+        return lista;
+    }
+
+    /**
+     * Reprograma una cita médica respetando el flujo y precauciones clínicas:
+     * Transacción atómica: se valida disponibilidad futura, se libera la cita previa (marcada como REPROGRAMADA)
+     * y se crea el nuevo cupo confirmado con notificación al paciente.
+     */
+    public boolean reprogramarCita(int idCitaAnterior, int idPaciente, int idNuevoMedico, String nuevaFecha, String nuevaHora, Integer idMotivo, String nivelUrgencia) {
+        String sqlVerificar = "SELECT id_cita, id_paciente, estado FROM cita WHERE id_cita = ? AND id_paciente = ?";
+        String sqlActualizarVieja = "UPDATE cita SET estado = 'REPROGRAMADA' WHERE id_cita = ?";
+        String sqlInsertNueva = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, id_motivo, fecha_hora, estado, riesgo_cancelacion, nivel_urgencia) VALUES (?, ?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
+        
+        Connection conn = null;
+        try {
+            conn = DatabaseConfig.getConnection();
+            conn.setAutoCommit(false); // Transacción atómica integral
+
+            // 1. Validar que la cita pertenece al paciente y está en estado activo
+            try (PreparedStatement psVer = conn.prepareStatement(sqlVerificar)) {
+                psVer.setInt(1, idCitaAnterior);
+                psVer.setInt(2, idPaciente);
+                try (ResultSet rs = psVer.executeQuery()) {
+                    if (!rs.next()) {
+                        conn.rollback();
+                        return false;
+                    }
+                    String estadoActual = rs.getString("estado");
+                    if ("CANCELADA".equalsIgnoreCase(estadoActual) || "ATENDIDA".equalsIgnoreCase(estadoActual) || "REPROGRAMADA".equalsIgnoreCase(estadoActual)) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+            }
+
+            // 2. Validar que el médico no tenga ya una cita confirmada en esa misma fecha y hora
+            String fechaHoraStr = nuevaFecha + " " + (nuevaHora.length() == 5 ? nuevaHora + ":00" : nuevaHora);
+            String sqlCheckOcupado = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
+            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckOcupado)) {
+                psCheck.setInt(1, idNuevoMedico);
+                psCheck.setString(2, fechaHoraStr);
+                try (ResultSet rsCheck = psCheck.executeQuery()) {
+                    if (rsCheck.next() && rsCheck.getInt(1) > 0) {
+                        conn.rollback();
+                        return false; // Horario ya tomado
+                    }
+                }
+            }
+
+            // 3. Obtener o asignar id_disponibilidad
+            int idDisp = 1;
+            String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? LIMIT 1";
+            try (PreparedStatement psDisp = conn.prepareStatement(sqlDisp)) {
+                psDisp.setInt(1, idNuevoMedico);
+                try (ResultSet rsDisp = psDisp.executeQuery()) {
+                    if (rsDisp.next()) {
+                        idDisp = rsDisp.getInt("id_disponibilidad");
+                    }
+                }
+            }
+
+            // 4. Marcar como REPROGRAMADA la cita anterior liberando su cupo
+            try (PreparedStatement psUpd = conn.prepareStatement(sqlActualizarVieja)) {
+                psUpd.setInt(1, idCitaAnterior);
+                psUpd.executeUpdate();
+            }
+
+            // 5. Insertar la nueva cita con estado CONFIRMADA
+            String riesgo = calcularRiesgoCancelacion(idPaciente);
+            int idNuevaCita = 0;
+
+            try (PreparedStatement psIns = conn.prepareStatement(sqlInsertNueva, java.sql.Statement.RETURN_GENERATED_KEYS)) {
+                psIns.setInt(1, idPaciente);
+                psIns.setInt(2, idNuevoMedico);
+                psIns.setInt(3, idDisp);
+                if (idMotivo != null && idMotivo > 0) {
+                    psIns.setInt(4, idMotivo);
+                } else {
+                    psIns.setNull(4, java.sql.Types.INTEGER);
+                }
+                psIns.setString(5, fechaHoraStr);
+                psIns.setString(6, riesgo);
+                psIns.setString(7, nivelUrgencia != null ? nivelUrgencia : "BAJA");
+
+                int affected = psIns.executeUpdate();
+                if (affected <= 0) {
+                    conn.rollback();
+                    return false;
+                }
+
+                try (ResultSet gk = psIns.getGeneratedKeys()) {
+                    if (gk.next()) {
+                        idNuevaCita = gk.getInt(1);
+                    }
+                }
+            }
+
+            // 6. Generar notificación de confirmación para el paciente
+            int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
+            Map<String, Object> detMed = obtenerDetallesMedico(idNuevoMedico);
+            String nombreMed = detMed.get("nombreMedico") != null ? (String) detMed.get("nombreMedico") : "tu médico especialista";
+            String espMed = detMed.get("especialidad") != null ? (String) detMed.get("especialidad") : "Consulta Médica";
+            String msg = "Cita Reprogramada con éxito: Tu consulta con " + nombreMed + " (" + espMed + ") fue reagendada para el " + nuevaFecha + " a las " + nuevaHora + ". Tu cita previa fue cancelada y liberada.";
+
+            String sqlNotif = "INSERT INTO notificacion (id_usuario, id_cita, tipo, canal, mensaje, estado_envio, leida) VALUES (?, ?, 'Citas', 'PLATAFORMA', ?, 'ENVIADA', 0)";
+            try (PreparedStatement psNot = conn.prepareStatement(sqlNotif)) {
+                psNot.setInt(1, idUsuario);
+                psNot.setInt(2, idNuevaCita > 0 ? idNuevaCita : idCitaAnterior);
+                psNot.setString(3, msg);
+                psNot.executeUpdate();
+            } catch (Exception exNot) {
+                // Notificación accesoria no anula la transacción
+            }
+
+            conn.commit();
+            return true;
+        } catch (Exception e) {
+            if (conn != null) {
+                try { conn.rollback(); } catch (SQLException ex) {}
+            }
+            e.printStackTrace();
+            return false;
+        } finally {
+            if (conn != null) {
+                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) {}
+            }
         }
     }
 }
