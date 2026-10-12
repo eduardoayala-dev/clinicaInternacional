@@ -34,9 +34,13 @@ public class PacientePerfilServlet extends HttpServlet {
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
         Paciente paciente = usuarioDAO.obtenerPacientePorUsuarioId(usuario.getIdUsuario());
 
+        pe.edu.utp.clinica.dao.CitaDAO citaDAO = new pe.edu.utp.clinica.dao.CitaDAO();
+        int numNotifSinLeer = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
+
         request.setAttribute("usuario", usuario);
         request.setAttribute("paciente", paciente);
         request.setAttribute("nombrePaciente", usuario.getNombres() + " " + usuario.getApellidos());
+        request.setAttribute("numNotifSinLeer", numNotifSinLeer);
 
         request.getRequestDispatcher("/WEB-INF/views/paciente/perfil.jsp").forward(request, response);
     }

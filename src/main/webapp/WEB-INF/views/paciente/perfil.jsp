@@ -35,7 +35,8 @@
     String mensajeError = (String) request.getAttribute("mensajeError");
 
     pe.edu.utp.clinica.dao.CitaDAO citaDAO_bell = new pe.edu.utp.clinica.dao.CitaDAO();
-    boolean tieneNotifSinLeer = usuario != null && citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) > 0;
+    int numNotifSinLeer = request.getAttribute("numNotifSinLeer") != null ? (Integer) request.getAttribute("numNotifSinLeer") : (usuario != null ? citaDAO_bell.contarNotificacionesSinLeer(usuario.getIdUsuario()) : 0);
+    boolean tieneNotifSinLeer = numNotifSinLeer > 0;
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -47,6 +48,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <style>
         :root {
             --primary: #2563eb;
@@ -177,42 +179,51 @@
 
     <aside class="sidebar">
         <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="brand-text">
+                <span class="brand-title">Clínica Internacional</span>
+                <span class="brand-subtitle">Portal del paciente</span>
+            </div>
         </div>
         <nav class="nav-menu">
             <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px;"></i> Inicio
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/panel" class="nav-item">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Panel
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/medicos" class="nav-item">
-                <i data-lucide="users" style="width: 18px;"></i> Médicos
+                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
+                <span>Inicio</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px;"></i> Citas
+                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
+                <span>Buscar cita</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="clipboard-list" style="width: 18px;"></i> Historial
+                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
+                <span>Mis citas</span>
             </a>
-            <a href="${pageContext.request.contextPath}/paciente/reportes" class="nav-item">
-                <i data-lucide="bar-chart-2" style="width: 18px;"></i> Reportes
+            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
+                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
+                <span>Lista de espera</span>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px;"></i> Alertas
+                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
+                <span>Notificaciones</span>
+                <% if (numNotifSinLeer > 0) { %>
+                    <span class="badge-count"><%= numNotifSinLeer %></span>
+                <% } %>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item active">
-                <i data-lucide="user" style="width: 18px;"></i> Mi perfil
+                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
+                <span>Perfil</span>
             </a>
         </nav>
-        <a href="${pageContext.request.contextPath}/logout" class="user-profile-bottom">
-            <div class="avatar-initials"><%= inicialesPaciente %></div>
-            <div style="flex: 1;">
-                <div class="user-name-sm"><%= nombrePaciente %></div>
-                <div class="user-role-sm">Paciente</div>
+        <div class="user-profile">
+            <div class="avatar"><%= inicialesPaciente %></div>
+            <div class="user-info">
+                <span class="user-name"><%= nombrePaciente %></span>
+                <span class="user-role">Paciente</span>
             </div>
-            <i data-lucide="log-out" style="width: 16px; color: var(--text-gray);"></i>
-        </a>
+            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
+            </a>
+        </div>
     </aside>
 
     <main class="main-content">
