@@ -32,11 +32,13 @@ public class SysAdminServlet extends HttpServlet {
 
     private UsuarioDAO usuarioDAO;
     private CitaDAO citaDAO;
+    private pe.edu.utp.clinica.dao.SedeDAO sedeDAO;
 
     @Override
     public void init() throws ServletException {
         this.usuarioDAO = new UsuarioDAO();
         this.citaDAO = new CitaDAO();
+        this.sedeDAO = new pe.edu.utp.clinica.dao.SedeDAO();
     }
 
     @Override
@@ -71,6 +73,10 @@ public class SysAdminServlet extends HttpServlet {
                 break;
 
             case "/sysadmin/sedes":
+                List<pe.edu.utp.clinica.model.Sede> listaSedes = sedeDAO.listarTodas();
+                Map<String, Object> metricasSedes = sedeDAO.obtenerMetricasSedes();
+                request.setAttribute("listaSedes", listaSedes);
+                request.setAttribute("metricasSedes", metricasSedes);
                 request.getRequestDispatcher("/WEB-INF/views/sysadmin/sedes.jsp").forward(request, response);
                 break;
 
@@ -231,6 +237,82 @@ public class SysAdminServlet extends HttpServlet {
         if ("guardarPriorizacion".equals(action)) {
             session.setAttribute("flashMessage", "Parámetros de priorización y tiempo límite de respuesta actualizados correctamente.");
             response.sendRedirect(request.getContextPath() + "/sysadmin/priorizacion");
+            return;
+        }
+
+        if ("crearSede".equals(action)) {
+            String codigo = request.getParameter("codigo");
+            String nombre = request.getParameter("nombre");
+            String direccion = request.getParameter("direccion");
+            String telefono = request.getParameter("telefono");
+            String estado = request.getParameter("estado");
+
+            pe.edu.utp.clinica.model.Sede s = new pe.edu.utp.clinica.model.Sede(
+                0,
+                codigo != null ? codigo.trim() : "",
+                nombre != null ? nombre.trim() : "",
+                direccion != null ? direccion.trim() : "",
+                telefono != null ? telefono.trim() : "",
+                null,
+                estado != null ? estado.trim() : "ACTIVO"
+            );
+
+            boolean ok = sedeDAO.crearSede(s);
+            if (ok) {
+                session.setAttribute("flashMessage", "¡Sede " + s.getNombre() + " (" + s.getCodigo() + ") guardada exitosamente en la Base de Datos!");
+            } else {
+                session.setAttribute("flashError", "Error al crear la sede. Verifica que el código no esté duplicado.");
+            }
+            response.sendRedirect(request.getContextPath() + "/sysadmin/sedes");
+            return;
+        }
+
+        if ("editarSede".equals(action)) {
+            try {
+                int idSede = Integer.parseInt(request.getParameter("idSede"));
+                String codigo = request.getParameter("codigo");
+                String nombre = request.getParameter("nombre");
+                String direccion = request.getParameter("direccion");
+                String telefono = request.getParameter("telefono");
+                String estado = request.getParameter("estado");
+
+                pe.edu.utp.clinica.model.Sede s = new pe.edu.utp.clinica.model.Sede(
+                    idSede,
+                    codigo != null ? codigo.trim() : "",
+                    nombre != null ? nombre.trim() : "",
+                    direccion != null ? direccion.trim() : "",
+                    telefono != null ? telefono.trim() : "",
+                    null,
+                    estado != null ? estado.trim() : "ACTIVO"
+                );
+
+                boolean ok = sedeDAO.actualizarSede(s);
+                if (ok) {
+                    session.setAttribute("flashMessage", "Sede " + s.getNombre() + " actualizada correctamente.");
+                } else {
+                    session.setAttribute("flashError", "No se pudo actualizar la sede.");
+                }
+            } catch (Exception e) {
+                session.setAttribute("flashError", "Datos inválidos para actualizar la sede.");
+            }
+            response.sendRedirect(request.getContextPath() + "/sysadmin/sedes");
+            return;
+        }
+
+        if ("cambiarEstadoSede".equals(action)) {
+            try {
+                int idSede = Integer.parseInt(request.getParameter("idSede"));
+                String nuevoEstado = request.getParameter("estado");
+                boolean ok = sedeDAO.cambiarEstado(idSede, nuevoEstado);
+                if (ok) {
+                    session.setAttribute("flashMessage", "Estado de la sede #" + idSede + " cambiado a " + nuevoEstado + ".");
+                } else {
+                    session.setAttribute("flashError", "No se pudo cambiar el estado de la sede.");
+                }
+            } catch (Exception e) {
+                session.setAttribute("flashError", "Error al procesar cambio de estado de sede.");
+            }
+            response.sendRedirect(request.getContextPath() + "/sysadmin/sedes");
             return;
         }
 
