@@ -121,6 +121,13 @@
                 <p class="citas-subtitle">Tus citas médicas programadas</p>
             </section>
 
+            <% if ("ok".equals(request.getParameter("reprogramada"))) { %>
+                <div style="background-color: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 12px; padding: 14px 20px; margin-bottom: 20px; display: flex; align-items: center; gap: 12px; color: #065f46;">
+                    <i data-lucide="check-circle" style="width: 20px; height: 20px; color: #10b981; flex-shrink: 0;"></i>
+                    <span style="font-size: 14px; font-weight: 500;"><strong>¡Cita reprogramada con éxito!</strong> Tu nuevo horario ha sido agendado y la cita anterior se liberó en el sistema.</span>
+                </div>
+            <% } %>
+
             <!-- TABS / PESTAÑAS DE FILTRO -->
             <div class="citas-tabs-nav">
                 <button type="button" class="citas-tab-btn active" id="tabBtnActivas" onclick="cambiarPestana('activas')">
@@ -188,7 +195,7 @@
                                         </td>
                                         <td class="actions-cell">
                                             <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver detalle</button>
-                                            <a href="${pageContext.request.contextPath}/paciente/citas?medicoId=<%= c.get("idMedico") %>" class="action-link">Reprogramar</a>
+                                            <a href="${pageContext.request.contextPath}/paciente/reprogramar?idCita=<%= c.get("idCita") %>" class="action-link">Reprogramar</a>
                                             <button type="button" class="action-link danger btn-trigger-cancelar"
                                                     data-id="<%= c.get("idCita") %>"
                                                     data-especialidad="<%= c.get("especialidad") %>"
