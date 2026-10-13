@@ -4,20 +4,56 @@
    ========================================================================== */
 
 :root {
-    --primary: #2563eb;
-    --primary-hover: #1d4ed8;
-    --primary-light: #eff6ff;
+    /* Paleta Institucional Clínica Internacional (Portal del Paciente) */
+    --primary: #0077c8;
+    --primary-hover: #005a9c;
+    --primary-active: #004071;
+    --primary-focus: #003d6d;
+    --primary-disabled: #dbeefe;
+    --primary-disabled-text: #8fa0b5;
+    --primary-light: #eaf4fd;
+
+    /* Botón Secundario */
+    --secondary-bg: #ffffff;
+    --secondary-border: #cbd5e1;
+    --secondary-text: #0077c8;
+    --secondary-hover-bg: #f0f7ff;
+    --secondary-hover-border: #93c5fd;
+    --secondary-active-bg: #dbeafe;
+
+    /* Acción Crítica */
+    --critical-border: #fca5a5;
+    --critical-text: #ef4444;
+    --critical-hover-bg: #fef2f2;
+    --critical-hover-border: #ef4444;
+    --critical-confirm-bg: #dc2626;
+    --critical-confirm-hover-bg: #b91c1c;
+    --critical-confirm-text: #ffffff;
+
+    /* Enlaces */
+    --link-color: #0077c8;
+    --link-hover: #005a9c;
+
+    /* Superficies, Textos y Bordes */
     --bg-page: #f8fafc; 
     --bg-card: #ffffff;
     --text-dark: #0f172a;
     --text-gray: #64748b;
     --text-light: #94a3b8;
     --border-light: #e2e8f0;
-    --border-focus: #3b82f6;
+    --border-focus: #0077c8;
     --radius-lg: 16px;
-    --radius-md: 12px;
+    --radius-md: 10px;
+    --radius-sm: 8px;
     --sidebar-width: 260px;
 }
+
+/* Foco con teclado visible (anillo azul marino de 3px, contraste > 3:1) */
+:focus-visible {
+    outline: 3px solid var(--primary-focus) !important;
+    outline-offset: 2px !important;
+}
+
 
 * {
     margin: 0;
@@ -322,30 +358,461 @@ body {
 }
 
 /* ==========================================================================
-   BOTONES BASE
+   SISTEMA DE COMPONENTES - CLÍNICA INTERNACIONAL (PORTAL PACIENTE)
    ========================================================================== */
+
+/* 1. BOTÓN PRINCIPAL */
 .btn-primary {
     background-color: var(--primary);
-    color: white;
-    border: none;
-    padding: 12px 20px;
-    border-radius: var(--radius-md);
+    color: #ffffff;
+    border: 1px solid var(--primary);
+    padding: 10px 22px;
+    border-radius: var(--radius-sm, 8px);
     font-size: 14px;
     font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0, 119, 200, 0.2);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover:not(:disabled):not(.btn-disabled) {
+        background-color: var(--primary-hover);
+        border-color: var(--primary-hover);
+    }
+}
+
+.btn-primary:active:not(:disabled):not(.btn-disabled) {
+    background-color: var(--primary-active);
+    border-color: var(--primary-active);
+}
+
+.btn-primary:focus-visible {
+    outline: 3px solid var(--primary-focus) !important;
+    outline-offset: 2px !important;
+}
+
+.btn-primary:disabled,
+.btn-primary.btn-disabled {
+    background-color: var(--primary-disabled) !important;
+    border-color: var(--primary-disabled) !important;
+    color: var(--primary-disabled-text) !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+}
+
+.btn-disabled-hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--text-gray);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.btn-loading {
+    background-color: var(--primary-hover) !important;
+    cursor: wait !important;
+    pointer-events: none;
+}
+
+.btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: btnSpin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes btnSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* 2. BOTÓN SECUNDARIO Y ACCIÓN CRÍTICA */
+.btn-secondary {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--secondary-border);
+    color: var(--secondary-text);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover {
+        background-color: var(--secondary-hover-bg);
+        border-color: var(--secondary-hover-border);
+        color: var(--primary-hover);
+    }
+}
+
+.btn-secondary:active {
+    background-color: var(--secondary-active-bg);
+    border-color: var(--primary);
+}
+
+.btn-critical {
+    background-color: #ffffff;
+    border: 1px solid var(--critical-border);
+    color: var(--critical-text);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-critical:hover {
+        background-color: var(--critical-hover-bg);
+        border-color: var(--critical-hover-border);
+        color: #dc2626;
+    }
+}
+
+.btn-critical-confirm {
+    background-color: var(--critical-confirm-bg);
+    border: 1px solid var(--critical-confirm-bg);
+    color: var(--critical-confirm-text);
+    padding: 10px 22px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-critical-confirm:hover {
+        background-color: var(--critical-confirm-hover-bg);
+        border-color: var(--critical-confirm-hover-bg);
+    }
+}
+
+.link-action {
+    color: var(--link-color);
+    font-weight: 600;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .link-action:hover {
+        color: var(--link-hover);
+        text-decoration: underline;
+    }
+}
+
+/* 3. COMPONENTES DE SELECCIÓN */
+.select-card {
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm, 8px);
+    padding: 14px 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .select-card:hover {
+        border-color: #93c5fd;
+        background-color: #f8fafc;
+    }
+}
+
+.select-card.selected {
+    border: 2px solid var(--primary) !important;
+    background-color: #f0f7ff !important;
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+/* Slots de Horario */
+.time-slot-btn {
+    border-radius: var(--radius-sm, 8px);
+    padding: 10px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    user-select: none;
+}
+
+.time-slot-btn .slot-time {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.time-slot-btn .slot-label {
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+.time-slot-btn.free {
+    background: #ffffff;
+    border-color: var(--border-light);
+    color: var(--text-dark);
+}
+
+.time-slot-btn.free .slot-label {
+    color: var(--text-gray);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .time-slot-btn.free:hover {
+        border-color: var(--primary);
+        background: #f0f7ff;
+    }
+}
+
+.time-slot-btn.chosen,
+.time-slot-btn.selected {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.time-slot-btn.chosen .slot-label,
+.time-slot-btn.selected .slot-label {
+    color: #e0f2fe !important;
+}
+
+.time-slot-btn.disabled,
+.time-slot-btn.no-cupo {
+    background: #f1f5f9 !important;
+    border-color: var(--border-light) !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+}
+
+.time-slot-btn.disabled .slot-time,
+.time-slot-btn.no-cupo .slot-time {
+    text-decoration: line-through;
+}
+
+.time-slot-btn.disabled .slot-label,
+.time-slot-btn.no-cupo .slot-label {
+    color: #94a3b8 !important;
+}
+
+/* 4. CAMPOS DE FORMULARIO (INPUTS) */
+.form-field-group {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-field-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    color: #0f172a;
+    outline: none;
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field-input::placeholder {
+    color: #94a3b8;
+}
+
+.form-field-input:focus {
+    border: 2px solid var(--primary) !important;
+    padding: 9px 13px; /* mantiene el tamaño compensando el borde de 2px */
+    box-shadow: 0 0 0 3px rgba(0, 119, 200, 0.15);
+}
+
+.form-field-input.has-error,
+.form-field-input.error {
+    border: 2px solid #ef4444 !important;
+    padding: 9px 13px;
+}
+
+.form-field-error-text {
+    font-size: 11.5px;
+    color: #ef4444;
+    font-weight: 500;
+    margin-top: 5px;
+}
+
+.form-field-input[readonly],
+.form-field-input.readonly {
+    background-color: #f8fafc;
+    border-color: var(--border-light);
+    color: #64748b;
+    cursor: default;
+}
+
+/* 5. PROGRESO, CARGA Y MENSAJES */
+/* Stepper Pasos de Reserva */
+.stepper-steps-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.step-badge {
     display: flex;
     align-items: center;
     gap: 8px;
-    text-decoration: none;
-    box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.2);
-    transition: all 0.2s;
-    cursor: pointer;
+    font-size: 13.5px;
 }
 
-.btn-primary:hover {
-    background-color: var(--primary-hover);
-    transform: translateY(-1px);
-    box-shadow: 0 6px 8px -1px rgba(37, 99, 235, 0.3);
+.step-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
 }
+
+.step-badge.done .step-circle {
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+.step-badge.done .step-label {
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.step-badge.active .step-circle {
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+.step-badge.active .step-label {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.step-badge.pending .step-circle {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #94a3b8;
+}
+
+.step-badge.pending .step-label {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Skeleton Loader */
+.skeleton-box {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: skeletonAnim 1.5s infinite ease-in-out;
+    border-radius: 8px;
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+}
+
+@keyframes skeletonAnim {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Feedback Banners */
+.banner-feedback {
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+}
+
+.banner-feedback-title {
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.banner-feedback-desc {
+    font-size: 12.5px;
+    margin-top: 2px;
+    opacity: 0.9;
+}
+
+.banner-feedback.success {
+    background-color: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.banner-feedback.error {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.banner-feedback.warning,
+.banner-feedback.timer {
+    background-color: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+}
+
 
 /* ==========================================================================
    TOP BAR INSTITUCIONAL COMPARTIDA (HEADER)
