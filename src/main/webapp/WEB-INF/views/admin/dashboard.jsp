@@ -2,372 +2,629 @@
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="java.time.LocalDateTime" %>
+<%@ page import="java.time.format.DateTimeFormatter" %>
+<%@ page import="java.util.Locale" %>
 <%
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombrePersonal = (String) request.getAttribute("nombrePersonal");
     if (nombrePersonal == null && usuario != null) {
         nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
     }
-    if (nombrePersonal == null) nombrePersonal = "Lic. Marina Salvatierra";
+    if (nombrePersonal == null || nombrePersonal.trim().isEmpty()) {
+        nombrePersonal = "Lucía Ramírez";
+    }
+
+    String inicialesPersonal = "LR";
+    if (nombrePersonal != null && !nombrePersonal.trim().isEmpty()) {
+        String cleanNom = nombrePersonal.replaceAll("(?i)\\b(Lic\\.|Ing\\.|Sr\\.|Sra\\.)\\b", "").trim();
+        String[] partes = cleanNom.split("\\s+");
+        if (partes.length >= 2) {
+            inicialesPersonal = partes[0].substring(0, 1).toUpperCase() + partes[1].substring(0, 1).toUpperCase();
+        } else if (partes.length == 1 && !partes[0].isEmpty()) {
+            inicialesPersonal = partes[0].substring(0, Math.min(2, partes[0].length())).toUpperCase();
+        }
+    }
 
     List<Map<String, Object>> listaCitas = (List<Map<String, Object>>) request.getAttribute("listaCitas");
+    List<Map<String, Object>> sedes = (List<Map<String, Object>>) request.getAttribute("sedes");
+    List<Map<String, String>> ultimasOperaciones = (List<Map<String, String>>) request.getAttribute("ultimasOperaciones");
+
+    Integer totalCitas = (Integer) request.getAttribute("totalCitas");
+    if (totalCitas == null) totalCitas = 126;
+
+    Integer cancelaciones = (Integer) request.getAttribute("cancelaciones");
+    if (cancelaciones == null) cancelaciones = 38;
+
+    Integer cuposLibres = (Integer) request.getAttribute("cuposLibres");
+    if (cuposLibres == null) cuposLibres = 74;
+
+    Integer reasignacionesPendientes = (Integer) request.getAttribute("reasignacionesPendientes");
+    if (reasignacionesPendientes == null) reasignacionesPendientes = 12;
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
         session.removeAttribute("flashMessage");
     }
+
+    String flashError = (String) session.getAttribute("flashError");
+    if (flashError != null) {
+        session.removeAttribute("flashError");
+    }
+
+    LocalDateTime ahora = LocalDateTime.now();
+    DateTimeFormatter dtfDia = DateTimeFormatter.ofPattern("EEE dd MMM yyyy", new Locale("es", "PE"));
+    DateTimeFormatter dtfHora = DateTimeFormatter.ofPattern("HH:mm");
+    String fechaHoyFormateada = ahora.format(dtfDia);
+    fechaHoyFormateada = fechaHoyFormateada.substring(0, 1).toUpperCase() + fechaHoyFormateada.substring(1);
+    String horaUltima = ahora.format(dtfHora);
 %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tablero de Control Operativo - Clínica Internacional</title>
+    <title>Tablero de Control Operativo Diario — Clínica Internacional</title>
+    <!-- TIPOGRAFÍAS INSTITUCIONALES: Inter + Playfair Display -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+    <!-- ICONOS LUCIDE -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <style>
-        :root {
-            --primary: #2563eb;
-            --primary-light: #eff6ff;
-            --bg-body: #f8fafc;
-            --bg-surface: #ffffff;
-            --text-main: #0f172a;
-            --text-muted: #64748b;
-            --border-light: #e2e8f0;
-            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-            --radius-md: 8px;
-            --radius-lg: 12px;
-        }
-
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
-        body { display: flex; flex-direction: column; height: 100vh; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
-
-        .topbar {
-            height: 64px; flex-shrink: 0; background-color: var(--bg-surface);
-            border-bottom: 1px solid var(--border-light); display: flex;
-            align-items: center; justify-content: space-between; padding: 0 32px; z-index: 10;
-        }
-        .topbar-brand { display: flex; align-items: center; gap: 12px; }
-        .topbar-brand img { height: 36px; }
-        .topbar-right { display: flex; align-items: center; gap: 16px; }
-        .user-info { display: flex; flex-direction: column; align-items: flex-end; }
-        .user-name { font-weight: 700; font-size: 13px; color: var(--text-main); }
-        .user-role { font-size: 11px; color: var(--primary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
-        .user-avatar { width: 36px; height: 36px; border-radius: 50%; background-color: var(--primary-light); color: var(--primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; }
-        .btn-logout { display: flex; align-items: center; gap: 6px; padding: 8px 12px; border-radius: var(--radius-md); font-size: 13px; font-weight: 500; color: var(--text-muted); text-decoration: none; transition: all 0.2s; }
-        .btn-logout:hover { color: #ef4444; background: #fef2f2; }
-
-        .app-body { display: flex; height: calc(100vh - 64px); overflow: hidden; }
-
-        .sidebar {
-            width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border-light);
-            padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow-y: auto;
-        }
-        .nav-item {
-            padding: 12px 16px; display: flex; align-items: center; gap: 12px;
-            color: var(--text-muted); text-decoration: none; font-size: 14px; font-weight: 500;
-            border-radius: var(--radius-md); transition: all 0.2s ease;
-        }
-        .nav-item:hover { background-color: var(--bg-body); color: var(--text-main); }
-        .nav-item.active { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
-
-        .main-content { flex: 1; height: 100%; overflow-y: auto; padding: 32px 40px; }
-        .page-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
-        .page-title { font-size: 24px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; letter-spacing: -0.5px; }
-        .page-subtitle { font-size: 14px; color: var(--text-muted); }
-
-        .header-actions { display: flex; gap: 12px; }
-        .btn-header {
-            padding: 9px 16px; border-radius: var(--radius-md); font-size: 13px; font-weight: 600;
-            border: 1px solid var(--border-light); background: #ffffff; color: var(--text-main); cursor: pointer;
-            display: inline-flex; align-items: center; gap: 8px; text-decoration: none; transition: all 0.2s;
-        }
-        .btn-header:hover { background: var(--bg-body); color: var(--primary); }
-
-        .flash-alert {
-            background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 14px 18px;
-            border-radius: var(--radius-md); font-weight: 600; margin-bottom: 24px; font-size: 14px; display: flex; align-items: center; gap: 10px;
-        }
-
-        .metrics-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 24px; }
-        .metric-card {
-            background: var(--bg-surface); padding: 20px; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
-            box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between;
-        }
-        .metric-title { font-size: 11px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; display: flex; justify-content: space-between; align-items: center; }
-        .metric-value { font-size: 28px; font-weight: 700; color: var(--text-main); margin: 10px 0 4px 0; }
-        .metric-sub { font-size: 12px; color: var(--text-muted); }
-
-        .grid-2col { display: grid; grid-template-columns: 1fr 340px; gap: 24px; margin-bottom: 24px; }
-        .panel { background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-light); padding: 24px; box-shadow: var(--shadow-sm); }
-        .panel-title { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
-
-        table { width: 100%; border-collapse: collapse; text-align: left; }
-        th { padding: 12px 14px; font-size: 11px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; border-bottom: 1px solid var(--border-light); }
-        td { padding: 14px; font-size: 13px; color: var(--text-main); border-bottom: 1px solid var(--border-light); vertical-align: middle; }
-        tr:last-child td { border-bottom: none; }
-        tr:hover { background: #f8fafc; }
-
-        .badge-status { padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; display: inline-block; }
-        .badge-espera { background: #dcfce7; color: #166534; }
-        .badge-admision { background: #eff6ff; color: #2563eb; }
-        .badge-pendiente { background: #fef3c7; color: #92400e; }
-
-        .btn-action-sm {
-            padding: 6px 14px; border-radius: 20px; font-size: 12px; font-weight: 600; text-decoration: none;
-            transition: all 0.2s; display: inline-flex; align-items: center; gap: 6px; border: none; cursor: pointer;
-            background: var(--primary); color: #ffffff;
-        }
-        .btn-action-sm:hover { background: #1d4ed8; }
-
-        .feed-list { display: flex; flex-direction: column; gap: 14px; }
-        .feed-item { font-size: 13px; border-bottom: 1px solid var(--border-light); padding-bottom: 10px; }
-        .feed-item:last-child { border-bottom: none; padding-bottom: 0; }
-        .feed-time { font-weight: 700; color: var(--primary); font-size: 12px; margin-bottom: 2px; }
-
-        .quick-actions-bar {
-            background: var(--bg-surface); border-radius: var(--radius-lg); border: 1px solid var(--border-light);
-            padding: 20px 24px; box-shadow: var(--shadow-sm); display: flex; justify-content: space-between; align-items: center; gap: 16px;
-        }
-        .btn-quick {
-            padding: 12px 24px; border-radius: 20px; font-size: 13px; font-weight: 600; text-decoration: none;
-            transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--border-light); cursor: pointer;
-        }
-        .btn-quick-primary { background: var(--primary); color: #ffffff; border-color: var(--primary); }
-        .btn-quick-primary:hover { background: #1d4ed8; }
-
-        /* MODAL STYLING */
-        .modal-overlay {
-            position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(15, 23, 42, 0.5); backdrop-filter: blur(4px);
-            display: none; align-items: center; justify-content: center; z-index: 100;
-        }
-        .modal-box {
-            background: #ffffff; border-radius: var(--radius-lg); width: 100%; max-width: 500px;
-            padding: 28px; box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1);
-        }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .modal-title { font-size: 18px; font-weight: 700; }
-        .form-group { margin-bottom: 16px; }
-        .form-group label { display: block; font-size: 12px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
-        .form-group input, .form-group select {
-            width: 100%; padding: 10px 12px; border: 1px solid var(--border-light); border-radius: var(--radius-md); font-size: 13px; outline: none;
-        }
-        .form-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px; }
-    </style>
+    <!-- ESTILOS INSTITUCIONALES DEL PORTAL Y DEL TABLERO -->
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
 </head>
 <body>
 
-    <header class="topbar">
-        <div class="topbar-brand">
-            <img src="${pageContext.request.contextPath}/assets/images/logoClinical.png" alt="Clínica Internacional">
-        </div>
-        <div class="topbar-right">
-            <div class="user-info">
-                <span class="user-name"><%= nombrePersonal %></span>
-                <span class="user-role">PERSONAL ADMINISTRATIVO</span>
+    <!-- ==========================================================================
+         PANEL LATERAL INSTITUCIONAL (PORTAL ADMINISTRATIVO)
+         ========================================================================== -->
+    <aside class="adm-sidebar">
+        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div>
+                <div class="adm-brand-name">Clínica Internacional</div>
+                <div class="adm-brand-sub">Portal administrativo</div>
             </div>
-            <div class="user-avatar"><i data-lucide="user" style="width: 18px; height: 18px;"></i></div>
-            <div style="width: 1px; height: 24px; background: var(--border-light); margin: 0 4px;"></div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Salir</a>
-        </div>
-    </header>
+        </a>
 
-    <div class="app-body">
-        <aside class="sidebar">
-            <a href="${pageContext.request.contextPath}/admin/dashboard" class="nav-item active">
-                <i data-lucide="layout-dashboard" style="width: 18px;"></i> Inicio
+        <nav class="adm-nav">
+            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item active">
+                <i data-lucide="home"></i> Inicio
             </a>
-            <a href="${pageContext.request.contextPath}/admin/medicos" class="nav-item">
-                <i data-lucide="stethoscope" style="width: 18px;"></i> Médicos y Especialidades
+            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item">
+                <i data-lucide="stethoscope"></i> Médicos y especialidades
             </a>
-            <a href="${pageContext.request.contextPath}/admin/pacientes" class="nav-item">
-                <i data-lucide="users" style="width: 18px;"></i> Pacientes
+            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
+                <i data-lucide="users"></i> Pacientes
             </a>
-            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="nav-item">
-                <i data-lucide="refresh-cw" style="width: 18px;"></i> Reasignaciones
+            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
+                <i data-lucide="refresh-cw"></i> Reasignaciones y excepciones
             </a>
-            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="nav-item">
-                <i data-lucide="bar-chart-2" style="width: 18px;"></i> Dashboard Operativo
+            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
+                <i data-lucide="trending-up"></i> Dashboard operativo
             </a>
-            <a href="#" class="nav-item" style="margin-top: auto; border-top: 1px solid var(--border-light); border-radius: 0; padding-top: 16px;">
-                <i data-lucide="user" style="width: 18px;"></i> Mi Perfil
-            </a>
-        </aside>
+        </nav>
 
-        <main class="main-content">
-            <div class="page-header">
+        <div class="adm-user-footer">
+            <div class="adm-user-info-link">
+                <div class="adm-avatar"><%= inicialesPersonal %></div>
                 <div>
-                    <h1 class="page-title">Tablero de Control Operativo Diario</h1>
-                    <p class="page-subtitle">Supervisión inmediata de citas en ventanilla, disponibilidad y reasignaciones en curso</p>
-                </div>
-                <div class="header-actions">
-                    <a href="${pageContext.request.contextPath}/admin/export?format=csv" class="btn-header"><i data-lucide="file-spreadsheet" style="width: 15px;"></i> Exportar Reporte (CSV)</a>
-                    <a href="${pageContext.request.contextPath}/admin/export?format=pdf" target="_blank" class="btn-header" style="background: var(--primary); color: #fff; border-color: var(--primary);"><i data-lucide="printer" style="width: 15px;"></i> Imprimir / PDF</a>
+                    <div class="adm-user-name"><%= nombrePersonal %></div>
+                    <div class="adm-user-role">Personal administrativo</div>
                 </div>
             </div>
+            <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
+                <i data-lucide="log-out"></i>
+            </a>
+        </div>
+    </aside>
 
+    <!-- ==========================================================================
+         ÁREA DE CONTENIDO Y TOPBAR
+         ========================================================================== -->
+    <div class="adm-main-wrapper">
+        <!-- TOPBAR CON BREADCRUMB -->
+        <header class="adm-topbar">
+            <div class="adm-breadcrumb">
+                Personal administrativo / <span>Inicio</span>
+            </div>
+        </header>
+
+        <!-- CONTENEDOR CON SCROLL -->
+        <main class="adm-content-scroll">
+
+            <!-- MENSAJES FLASH -->
             <% if (flashMessage != null) { %>
-                <div class="flash-alert">
-                    <i data-lucide="check-circle" style="width: 18px;"></i>
-                    <%= flashMessage %>
+                <div style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="check-circle" style="width: 18px; color: #16a34a;"></i>
+                    <span><%= flashMessage %></span>
                 </div>
             <% } %>
 
-            <!-- METRIC CARDS 4 COLUMNS -->
-            <div class="metrics-grid">
-                <div class="metric-card">
-                    <div class="metric-title">Citas del Día <i data-lucide="calendar" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">420</div>
-                    <div class="metric-sub">310 Confirmadas | 65 En espera | 45 Completadas</div>
+            <% if (flashError != null) { %>
+                <div style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+                    <i data-lucide="alert-circle" style="width: 18px; color: #dc2626;"></i>
+                    <span><%= flashError %></span>
+                </div>
+            <% } %>
+
+            <!-- 1. CABECERA DEL TABLERO Y BOTONES DE ACCIÓN -->
+            <div class="tablero-header-row">
+                <div class="tablero-title-block">
+                    <h1 class="tablero-page-title">Tablero de control operativo diario</h1>
+                    <p class="tablero-page-subtitle">
+                        <%= fechaHoyFormateada %> · Sede San Borja · Se actualiza cada 5 min · Última: <%= horaUltima %>
+                    </p>
                 </div>
 
-                <div class="metric-card">
-                    <div class="metric-title">Cancelaciones <i data-lucide="user-x" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">38</div>
-                    <div class="metric-sub">28 Notificadas | 10 Inmediatas ventanilla</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">Cupos Libres en Red <i data-lucide="check-circle" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">74</div>
-                    <div class="metric-sub">52 Regulares | 22 En proceso oferta</div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">Reasignaciones Pendientes <i data-lucide="clock" style="width: 16px; color: var(--primary);"></i></div>
-                    <div class="metric-value">12</div>
-                    <div class="metric-sub">8 En ventana | 4 Requieren manual</div>
+                <div class="tablero-actions-group">
+                    <button type="button" class="tablero-btn-outline" onclick="exportarExcel()">
+                        <i data-lucide="download"></i>
+                        <span>Exportar Excel</span>
+                    </button>
+                    <button type="button" class="tablero-btn-outline" onclick="exportarCSV()">
+                        <i data-lucide="download"></i>
+                        <span>Exportar CSV</span>
+                    </button>
+                    <button type="button" class="tablero-btn-primary" onclick="actualizarAhora()">
+                        <i data-lucide="refresh-cw"></i>
+                        <span>Actualizar ahora</span>
+                    </button>
                 </div>
             </div>
 
-            <!-- GRID 2 COLUMNS -->
-            <div class="grid-2col">
-                <div class="panel">
-                    <h3 class="panel-title">Citas de Atención Prioritaria en Ventanilla / Sala de Espera</h3>
-                    <table>
+            <!-- 2. TARJETAS DE MÉTRICAS (4 COLUMNAS) -->
+            <div class="tablero-metrics-grid">
+                <!-- Citas del día -->
+                <div class="tablero-stat-card">
+                    <div class="tablero-stat-top">
+                        <span class="tablero-stat-label">Citas del día</span>
+                        <div class="tablero-stat-icon-wrap">
+                            <i data-lucide="calendar"></i>
+                        </div>
+                    </div>
+                    <div class="tablero-stat-number"><%= totalCitas %></div>
+                    <div class="tablero-stat-subtext">En las sedes de la red</div>
+                </div>
+
+                <!-- Cancelaciones registradas -->
+                <div class="tablero-stat-card">
+                    <div class="tablero-stat-top">
+                        <span class="tablero-stat-label">Cancelaciones registradas</span>
+                        <div class="tablero-stat-icon-wrap">
+                            <i data-lucide="x"></i>
+                        </div>
+                    </div>
+                    <div class="tablero-stat-number"><%= cancelaciones %></div>
+                    <div class="tablero-stat-subtext">Hoy, en la red</div>
+                </div>
+
+                <!-- Cupos disponibles en red -->
+                <div class="tablero-stat-card">
+                    <div class="tablero-stat-top">
+                        <span class="tablero-stat-label">Cupos disponibles en red</span>
+                        <div class="tablero-stat-icon-wrap">
+                            <i data-lucide="calendar"></i>
+                        </div>
+                    </div>
+                    <div class="tablero-stat-number"><%= cuposLibres %></div>
+                    <div class="tablero-stat-subtext">Para los próximos 7 días</div>
+                </div>
+
+                <!-- Reasignaciones pendientes -->
+                <div class="tablero-stat-card">
+                    <div class="tablero-stat-top">
+                        <span class="tablero-stat-label">Reasignaciones pendientes</span>
+                        <div class="tablero-stat-icon-wrap">
+                            <i data-lucide="refresh-cw"></i>
+                        </div>
+                    </div>
+                    <div class="tablero-stat-number"><%= reasignacionesPendientes %></div>
+                    <span class="badge-ofertas-curso">Ofertas en curso</span>
+                </div>
+            </div>
+
+            <!-- 3. SECCIÓN PRINCIPAL: CITAS DEL DÍA EN SALA DE ESPERA -->
+            <div class="tablero-main-card">
+                <div class="tablero-card-head">
+                    <h2 class="tablero-card-title">Citas del día en sala de espera</h2>
+
+                    <div class="tablero-filters-bar">
+                        <!-- Buscador en tiempo real -->
+                        <div class="tablero-search-wrap">
+                            <input type="text" id="filtroTexto" class="tablero-search-input" placeholder="Buscar paciente, DNI o médico" oninput="filtrarCitas()">
+                            <i data-lucide="search" class="tablero-search-icon"></i>
+                        </div>
+
+                        <!-- Filtro Sedes -->
+                        <select id="filtroSede" class="tablero-select" onchange="filtrarCitas()">
+                            <option value="">Todas las sedes</option>
+                            <% if (sedes != null) {
+                                for (Map<String, Object> s : sedes) { %>
+                                    <option value="<%= s.get("nombre") %>"><%= s.get("nombre") %></option>
+                            <%  }
+                               } else { %>
+                                <option value="Sede San Borja">Sede San Borja</option>
+                                <option value="Sede Lima">Sede Lima</option>
+                                <option value="Sede La Molina">Sede La Molina</option>
+                            <% } %>
+                        </select>
+
+                        <!-- Filtro Estado -->
+                        <select id="filtroEstado" class="tablero-select" onchange="filtrarCitas()">
+                            <option value="">Filtro: en sala</option>
+                            <option value="En sala">En sala</option>
+                            <option value="Llegó tarde">Llegó tarde</option>
+                            <option value="Confirmada - Web">Confirmada - Web</option>
+                            <option value="Sin confirmar">Sin confirmar</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Tabla de Citas -->
+                <div class="tablero-table-wrap">
+                    <table class="tablero-table" id="tablaCitas">
                         <thead>
                             <tr>
-                                <th>Hora</th>
-                                <th>Paciente</th>
-                                <th>Sede / Cons.</th>
-                                <th>Médico</th>
-                                <th>Estado</th>
-                                <th>Acción</th>
+                                <th>HORA</th>
+                                <th>PACIENTE</th>
+                                <th>SEDE / CONSULTORIO</th>
+                                <th>MÉDICO</th>
+                                <th>ESTADO</th>
+                                <th>ACCIÓN</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="tbodyCitas">
                             <% if (listaCitas != null && !listaCitas.isEmpty()) { 
-                                for (Map<String, Object> c : listaCitas) {
+                                for (Map<String, Object> c : listaCitas) { 
                                     String hora = (String) c.get("hora");
-                                    if (hora == null) hora = "08:30";
-                                    String paciente = (String) c.get("paciente");
-                                    String dni = (String) c.get("dni");
-                                    String sede = (String) c.get("sede");
-                                    String cons = (String) c.get("consultorio");
-                                    String medico = (String) c.get("medico");
+                                    String pacienteNom = (String) c.get("pacienteNombre");
+                                    String dni = (String) c.get("pacienteDni");
+                                    String tel = (String) c.get("pacienteTelefono");
+                                    String sedeNom = (String) c.get("sedeNombre");
+                                    String consultorio = (String) c.get("consultorio");
+                                    String medicoNom = (String) c.get("medicoNombre");
                                     String estado = (String) c.get("estado");
-                                    String badgeClass = (String) c.get("badgeClass");
-                                    if (badgeClass == null) badgeClass = "badge-espera";
-                                    String btnTexto = (String) c.get("btnTexto");
-                                    if (btnTexto == null) btnTexto = "Atender";
-                                    int idCita = c.get("idCita") != null ? (Integer) c.get("idCita") : 1;
+                                    String accionTexto = (String) c.get("accionTexto");
+                                    Object idCitaObj = c.get("idCita");
+                                    int idCita = idCitaObj != null ? Integer.parseInt(idCitaObj.toString()) : 0;
+
+                                    String pillClass = "pill-ensala";
+                                    if ("Llegó tarde".equalsIgnoreCase(estado)) pillClass = "pill-tarde";
+                                    else if ("Confirmada - Web".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado)) pillClass = "pill-confirmada";
+                                    else if ("Sin confirmar".equalsIgnoreCase(estado) || "Cancelada".equalsIgnoreCase(estado)) pillClass = "pill-sinconfirmar";
                             %>
-                                <tr>
-                                    <td><strong><%= hora %></strong></td>
-                                    <td><%= paciente %><br><span style="font-size: 11px; color: var(--text-muted);">DNI: <%= dni != null ? dni : "10492837" %></span></td>
-                                    <td><%= sede != null ? sede : "Sede Central" %><br><span style="font-size: 11px; color: var(--text-muted);"><%= cons != null ? cons : "Cons. 101" %></span></td>
-                                    <td><%= medico %></td>
-                                    <td><span class="badge-status <%= badgeClass %>"><%= estado %></span></td>
-                                    <td>
-                                        <form method="POST" action="${pageContext.request.contextPath}/admin/dashboard" style="display:inline;">
-                                            <input type="hidden" name="action" value="cambiar_estado">
-                                            <input type="hidden" name="idCita" value="<%= idCita %>">
-                                            <input type="hidden" name="nuevoEstado" value="ATENDIDA">
-                                            <button type="submit" class="btn-action-sm"><%= btnTexto %></button>
-                                        </form>
-                                    </td>
-                                </tr>
-                            <%  }
+                            <tr class="cita-fila"
+                                data-paciente="<%= pacienteNom != null ? pacienteNom.toLowerCase() : "" %>"
+                                data-dni="<%= dni != null ? dni : "" %>"
+                                data-medico="<%= medicoNom != null ? medicoNom.toLowerCase() : "" %>"
+                                data-sede="<%= sedeNom != null ? sedeNom : "" %>"
+                                data-estado="<%= estado != null ? estado : "" %>">
+                                <td>
+                                    <span class="tablero-td-hora"><%= hora %></span>
+                                </td>
+                                <td>
+                                    <div class="tablero-paciente-box">
+                                        <span class="tablero-paciente-name"><%= pacienteNom %></span>
+                                        <span class="tablero-paciente-sub">DNI <%= dni %> · <%= tel %></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="tablero-sede-box">
+                                        <span class="tablero-sede-name"><%= sedeNom %></span>
+                                        <span class="tablero-sede-cons"><%= consultorio %></span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="tablero-medico-name"><%= medicoNom %></span>
+                                </td>
+                                <td>
+                                    <span class="pill-status <%= pillClass %>"><%= estado %></span>
+                                </td>
+                                <td>
+                                    <% if (accionTexto != null && !accionTexto.trim().isEmpty()) { %>
+                                        <span class="tablero-action-done"><%= accionTexto %></span>
+                                    <% } else { %>
+                                        <button type="button" class="btn-action-admitir" onclick="admitirCita(<%= idCita %>, '<%= pacienteNom %>')">Admitir</button>
+                                        <button type="button" class="btn-action-cancelar" onclick="cancelarCita(<%= idCita %>, '<%= pacienteNom %>')">Cancelar</button>
+                                    <% } %>
+                                </td>
+                            </tr>
+                            <%  } 
                                } %>
                         </tbody>
                     </table>
                 </div>
 
-                <div class="panel">
-                    <h3 class="panel-title">Operaciones Recientes en Ventanilla</h3>
-                    <div class="feed-list">
-                        <div class="feed-item">
-                            <div class="feed-time">08:24 AM</div>
-                            <div>Admisión manual: Paciente P-8830 registrado en Sede Central.</div>
-                        </div>
-                        <div class="feed-item">
-                            <div class="feed-time">08:19 AM</div>
-                            <div>Notificación de liberación de cupo enviada (Dr. Silva).</div>
-                        </div>
-                        <div class="feed-item">
-                            <div class="feed-time">08:12 AM</div>
-                            <div>Paciente llamado a consultorio 102 (P-1092).</div>
-                        </div>
+                <!-- Paginación de la Tabla -->
+                <div class="tablero-footer-bar">
+                    <span id="tableroPaginationInfo">Mostrando 4 de 18 citas en sala</span>
+                    <div class="tablero-pagination-ctrls">
+                        <button type="button" class="btn-tablero-page" id="btnPrevPage" onclick="cambiarPagina(-1)">&lt; Anterior</button>
+                        <span id="tableroPageNum" style="font-weight: 500; color: #334155; padding: 0 4px;">Página 1 de 3</span>
+                        <button type="button" class="btn-tablero-page btn-tablero-page-next" id="btnNextPage" onclick="cambiarPagina(1)">Siguiente &gt;</button>
                     </div>
                 </div>
             </div>
 
-            <!-- QUICK ACTIONS BAR -->
-            <div class="quick-actions-bar">
-                <span style="font-size: 15px; font-weight: 700;">Acciones Rápidas de Admisión</span>
-                <div style="display: flex; gap: 12px;">
-                    <button onclick="openModal()" class="btn-quick btn-quick-primary"><i data-lucide="plus-circle" style="width: 16px;"></i> Registrar Cita Manual en Ventanilla</button>
-                    <a href="${pageContext.request.contextPath}/admin/pacientes" class="btn-quick"><i data-lucide="user-plus" style="width: 16px;"></i> Registrar Nuevo Paciente en Padrón</a>
+            <!-- 4. GRILLA INFERIOR: ÚLTIMAS OPERACIONES + ACCIONES RÁPIDAS -->
+            <div class="tablero-bottom-grid">
+                <!-- Últimas Operaciones Registradas -->
+                <div class="tablero-feed-card">
+                    <div class="tablero-feed-head">
+                        <h3 class="tablero-feed-title">Últimas operaciones registradas</h3>
+                        <div class="tablero-live-badge">
+                            <span class="tablero-live-dot"></span>
+                            <span>En vivo</span>
+                        </div>
+                    </div>
+
+                    <div class="tablero-feed-list" id="feedOperaciones">
+                        <% if (ultimasOperaciones != null && !ultimasOperaciones.isEmpty()) { 
+                            for (Map<String, String> op : ultimasOperaciones) { %>
+                            <div class="tablero-feed-item">
+                                <span class="tablero-feed-time"><%= op.get("hora") %></span>
+                                <span><%= op.get("texto") %></span>
+                            </div>
+                        <%  } 
+                           } else { %>
+                            <div class="tablero-feed-item">
+                                <span class="tablero-feed-time">08:53</span>
+                                <span>Admisión: Rosa Díaz Paredes llegó tarde (cita 08:40) - Consultorio 102</span>
+                            </div>
+                            <div class="tablero-feed-item">
+                                <span class="tablero-feed-time">08:47</span>
+                                <span>Cancelación: cita de Cardiología de las 12:40 - cupo ofertado a la lista de espera</span>
+                            </div>
+                            <div class="tablero-feed-item">
+                                <span class="tablero-feed-time">08:41</span>
+                                <span>Confirmación: Raúl Chávez Pinto confirmó por WhatsApp (cita 12:00)</span>
+                            </div>
+                        <% } %>
+                    </div>
+                </div>
+
+                <!-- Acciones Rápidas -->
+                <div class="tablero-quick-card">
+                    <div class="tablero-quick-head">
+                        <i data-lucide="zap"></i>
+                        <span>Acciones rápidas</span>
+                    </div>
+
+                    <button type="button" class="btn-quick-paciente" onclick="abrirModalRegistrarPaciente()">
+                        <i data-lucide="user-plus"></i>
+                        <span>+ Registrar nuevo paciente en padrón</span>
+                    </button>
                 </div>
             </div>
+
         </main>
     </div>
 
-    <!-- MODAL REGISTRO CITA MANUAL -->
-    <div id="modalCita" class="modal-overlay">
-        <div class="modal-box">
-            <div class="modal-header">
-                <h3 class="modal-title">Registrar Cita Manual en Ventanilla</h3>
-                <button onclick="closeModal()" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+    <!-- ==========================================================================
+         FORMULARIOS OCULTOS PARA ACCIONES OPERATIVAS DIRECTAS
+         ========================================================================== -->
+    <form id="formAdmitir" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
+        <input type="hidden" name="action" value="admitir_cita">
+        <input type="hidden" name="idCita" id="formAdmitirIdCita" value="">
+    </form>
+
+    <form id="formCancelar" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
+        <input type="hidden" name="action" value="cancelar_cita">
+        <input type="hidden" name="idCita" id="formCancelarIdCita" value="">
+    </form>
+
+    <!-- ==========================================================================
+         MODAL: REGISTRO RÁPIDO DE PACIENTE EN PADRÓN
+         ========================================================================== -->
+    <div class="tablero-modal-overlay" id="modalRegistrarPaciente" onclick="cerrarModalFondo(event)">
+        <div class="tablero-modal-card">
+            <div class="tablero-modal-head">
+                <h3 class="tablero-modal-title">Registrar nuevo paciente en padrón</h3>
+                <button type="button" class="tablero-modal-close" onclick="cerrarModalRegistrarPaciente()">&times;</button>
             </div>
-            <form method="POST" action="${pageContext.request.contextPath}/admin/dashboard">
-                <input type="hidden" name="action" value="registrar_cita_ventanilla">
-                <div class="form-group">
-                    <label>DNI del Paciente</label>
-                    <input type="text" name="dni" placeholder="Ingrese DNI (e.g. 72345678)" required>
+
+            <form action="${pageContext.request.contextPath}/admin/dashboard" method="POST" id="formNuevoPaciente">
+                <input type="hidden" name="action" value="registrar_paciente">
+
+                <div class="tablero-form-grid">
+                    <div class="tablero-form-group">
+                        <label for="paciNombres">Nombres</label>
+                        <input type="text" id="paciNombres" name="nombres" class="tablero-form-input" required placeholder="Ej. Carlos">
+                    </div>
+
+                    <div class="tablero-form-group">
+                        <label for="paciApellidos">Apellidos</label>
+                        <input type="text" id="paciApellidos" name="apellidos" class="tablero-form-input" required placeholder="Ej. Mendoza">
+                    </div>
+
+                    <div class="tablero-form-group">
+                        <label for="paciDni">DNI / Documento</label>
+                        <input type="text" id="paciDni" name="dni" class="tablero-form-input" required maxlength="8" placeholder="8 dígitos">
+                    </div>
+
+                    <div class="tablero-form-group">
+                        <label for="paciTelefono">Teléfono celular</label>
+                        <input type="text" id="paciTelefono" name="telefono" class="tablero-form-input" required placeholder="987 654 321">
+                    </div>
+
+                    <div class="tablero-form-group full">
+                        <label for="paciEmail">Correo electrónico (Opcional)</label>
+                        <input type="email" id="paciEmail" name="email" class="tablero-form-input" placeholder="paciente@correo.com">
+                    </div>
+
+                    <div class="tablero-form-group full">
+                        <label for="paciDireccion">Dirección</label>
+                        <input type="text" id="paciDireccion" name="direccion" class="tablero-form-input" placeholder="Av. Javier Prado 1200">
+                    </div>
+
+                    <div class="tablero-form-group full">
+                        <label for="paciSede">Sede de preferencia</label>
+                        <select id="paciSede" name="sede_preferida" class="tablero-form-select">
+                            <option value="Sede San Borja">Sede San Borja</option>
+                            <option value="Sede Lima Norte">Sede Lima Norte</option>
+                            <option value="Sede Central Garcilaso">Sede Central Garcilaso</option>
+                            <option value="Sede Lima Principal">Sede Lima Principal</option>
+                        </select>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label>Médico Facultativo</label>
-                    <select name="medico" required>
-                        <option value="Dr. Carlos Mendoza (Cardiología)">Dr. Carlos Mendoza (Cardiología - Sede Norte)</option>
-                        <option value="Dra. Elena Rostova (Medicina Interna)">Dra. Elena Rostova (Medicina Interna - Sede Central)</option>
-                        <option value="Dr. Fernando Solís (Cardiología)">Dr. Fernando Solís (Cardiología - Sede Norte)</option>
-                        <option value="Dra. Valeria Rivas (Cardiología)">Dra. Valeria Rivas (Cardiología - Sede Sur)</option>
-                    </select>
-                </div>
-                <div class="form-group">
-                    <label>Fecha de Cita</label>
-                    <input type="date" name="fecha" value="2026-10-07" required>
-                </div>
-                <div class="form-group">
-                    <label>Hora de Atención</label>
-                    <input type="time" name="hora" value="10:30" required>
-                </div>
-                <div class="form-actions">
-                    <button type="button" onclick="closeModal()" class="btn-header">Cancelar</button>
-                    <button type="submit" class="btn-header" style="background:var(--primary); color:#fff; border-color:var(--primary);">Registrar Cita</button>
+
+                <div class="tablero-modal-foot">
+                    <button type="button" class="tablero-btn-outline" onclick="cerrarModalRegistrarPaciente()">Cancelar</button>
+                    <button type="submit" class="tablero-btn-primary">Guardar en padrón</button>
                 </div>
             </form>
         </div>
     </div>
 
+    <!-- ==========================================================================
+         LÓGICA JAVASCRIPT DEL TABLERO (FILTRADO EN VIVO, ACCIONES, EXPORTACIONES)
+         ========================================================================== -->
     <script>
-        lucide.createIcons();
-        function openModal() { document.getElementById('modalCita').style.display = 'flex'; }
-        function closeModal() { document.getElementById('modalCita').style.display = 'none'; }
+        let paginaActual = 1;
+        const filasPorPagina = 4;
+
+        document.addEventListener("DOMContentLoaded", function () {
+            if (window.lucide) {
+                lucide.createIcons();
+            }
+            filtrarCitas();
+        });
+
+        // Filtrado en vivo de citas en sala de espera
+        function filtrarCitas() {
+            const texto = document.getElementById("filtroTexto").value.toLowerCase().trim();
+            const sede = document.getElementById("filtroSede").value;
+            const estado = document.getElementById("filtroEstado").value;
+
+            const filas = document.querySelectorAll("#tbodyCitas .cita-fila");
+            let visibles = [];
+
+            filas.forEach(fila => {
+                const fPaciente = fila.getAttribute("data-paciente") || "";
+                const fDni = fila.getAttribute("data-dni") || "";
+                const fMedico = fila.getAttribute("data-medico") || "";
+                const fSede = fila.getAttribute("data-sede") || "";
+                const fEstado = fila.getAttribute("data-estado") || "";
+
+                const matchTexto = !texto || fPaciente.includes(texto) || fDni.includes(texto) || fMedico.includes(texto);
+                const matchSede = !sede || fSede === sede;
+                const matchEstado = !estado || fEstado.toLowerCase().includes(estado.toLowerCase());
+
+                if (matchTexto && matchSede && matchEstado) {
+                    visibles.push(fila);
+                } else {
+                    fila.style.display = "none";
+                }
+            });
+
+            // Paginación visual
+            const totalVisibles = visibles.length;
+            const totalPaginas = Math.max(1, Math.ceil(totalVisibles / filasPorPagina));
+            if (paginaActual > totalPaginas) paginaActual = 1;
+
+            const inicio = (paginaActual - 1) * filasPorPagina;
+            const fin = inicio + filasPorPagina;
+
+            visibles.forEach((fila, idx) => {
+                if (idx >= inicio && idx < fin) {
+                    fila.style.display = "";
+                } else {
+                    fila.style.display = "none";
+                }
+            });
+
+            // Actualizar etiquetas
+            const mostrandoHasta = Math.min(fin, totalVisibles);
+            const totalCitasLabel = totalVisibles;
+            document.getElementById("tableroPaginationInfo").innerText = "Mostrando " + (totalVisibles === 0 ? "0" : (inicio + 1) + " - " + mostrandoHasta) + " de " + totalCitasLabel + " citas en sala";
+            document.getElementById("tableroPageNum").innerText = "Página " + paginaActual + " de " + totalPaginas;
+
+            document.getElementById("btnPrevPage").disabled = (paginaActual <= 1);
+            document.getElementById("btnNextPage").disabled = (paginaActual >= totalPaginas);
+        }
+
+        function cambiarPagina(delta) {
+            paginaActual += delta;
+            filtrarCitas();
+        }
+
+        // Acciones sobre citas
+        function admitirCita(idCita, pacienteNom) {
+            if (confirm("¿Confirmar ingreso a sala de espera de " + pacienteNom + "?")) {
+                document.getElementById("formAdmitirIdCita").value = idCita;
+                document.getElementById("formAdmitir").submit();
+            }
+        }
+
+        function cancelarCita(idCita, pacienteNom) {
+            if (confirm("¿Desea cancelar la cita de " + pacienteNom + "? El cupo será ofrecido inmediatamente a los pacientes en lista de espera.")) {
+                document.getElementById("formCancelarIdCita").value = idCita;
+                document.getElementById("formCancelar").submit();
+            }
+        }
+
+        function actualizarAhora() {
+            window.location.reload();
+        }
+
+        // Exportación de Citas a Excel y CSV
+        function exportarCSV() {
+            exportarArchivo("csv");
+        }
+
+        function exportarExcel() {
+            exportarArchivo("excel");
+        }
+
+        function exportarArchivo(formato) {
+            const filas = document.querySelectorAll("#tbodyCitas .cita-fila");
+            let csv = "\uFEFF"; // UTF-8 BOM para apertura correcta con tildes en Excel
+            csv += "HORA;PACIENTE;DNI;SEDE;CONSULTORIO;MEDICO;ESTADO\r\n";
+
+            filas.forEach(f => {
+                const cols = f.querySelectorAll("td");
+                if (cols.length >= 5) {
+                    const hora = cols[0].innerText.trim();
+                    const paciente = cols[1].querySelector(".tablero-paciente-name") ? cols[1].querySelector(".tablero-paciente-name").innerText.trim() : cols[1].innerText.trim();
+                    const dniSub = cols[1].querySelector(".tablero-paciente-sub") ? cols[1].querySelector(".tablero-paciente-sub").innerText.trim() : "";
+                    const sede = cols[2].querySelector(".tablero-sede-name") ? cols[2].querySelector(".tablero-sede-name").innerText.trim() : cols[2].innerText.trim();
+                    const cons = cols[2].querySelector(".tablero-sede-cons") ? cols[2].querySelector(".tablero-sede-cons").innerText.trim() : "";
+                    const medico = cols[3].innerText.trim();
+                    const estado = cols[4].innerText.trim();
+
+                    csv += '"' + hora + '";"' + paciente + '";"' + dniSub + '";"' + sede + '";"' + cons + '";"' + medico + '";"' + estado + '"\r\n';
+                }
+            });
+
+            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = formato === "excel" ? "tablero_citas_sala_espera.csv" : "citas_operativas_diarias.csv";
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Modal de Registro de Pacientes
+        function abrirModalRegistrarPaciente() {
+            document.getElementById("modalRegistrarPaciente").style.display = "flex";
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function cerrarModalRegistrarPaciente() {
+            document.getElementById("modalRegistrarPaciente").style.display = "none";
+        }
+
+        function cerrarModalFondo(event) {
+            if (event.target === document.getElementById("modalRegistrarPaciente")) {
+                cerrarModalRegistrarPaciente();
+            }
+        }
     </script>
 </body>
 </html>
