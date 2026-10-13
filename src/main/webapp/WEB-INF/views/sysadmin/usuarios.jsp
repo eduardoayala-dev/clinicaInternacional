@@ -337,10 +337,10 @@
                         </select>
                     </div>
 
-                    <div class="form-field full">
-                        <label for="formSede">Sede principal asignada</label>
-                        <select id="formSede" name="id_sede">
-                            <option value="">Multisede (Acceso global)</option>
+                    <div class="form-field full" id="groupSede">
+                        <label for="formSede">Sede asignada</label>
+                        <select id="formSede" name="id_sede" required>
+                            <option value="" disabled selected>Seleccione la sede asignada...</option>
                             <% if (sedes != null) { 
                                 for (Map<String, Object> s : sedes) { %>
                                     <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
@@ -572,16 +572,32 @@
             const rol = document.getElementById("formRol").value;
             const boxMedico = document.getElementById("boxMedico");
             const boxPersonal = document.getElementById("boxPersonal");
+            const groupSede = document.getElementById("groupSede");
+            const formSede = document.getElementById("formSede");
 
             if (rol === "MEDICO") {
                 boxMedico.style.display = "block";
                 boxPersonal.style.display = "none";
+                if (groupSede) {
+                    groupSede.style.display = "flex";
+                    formSede.required = true;
+                }
             } else if (rol === "PERSONAL_ADMINISTRATIVO") {
                 boxMedico.style.display = "none";
                 boxPersonal.style.display = "block";
+                if (groupSede) {
+                    groupSede.style.display = "flex";
+                    formSede.required = true;
+                }
             } else {
+                // ADMINISTRADOR
                 boxMedico.style.display = "none";
                 boxPersonal.style.display = "none";
+                if (groupSede) {
+                    groupSede.style.display = "none";
+                    formSede.required = false;
+                    formSede.value = "";
+                }
             }
         }
     </script>

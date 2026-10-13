@@ -219,13 +219,19 @@ public class SysAdminServlet extends HttpServlet {
             if ("MEDICO".equals(rol)) {
                 cmp = request.getParameter("cmp");
                 String espStr = request.getParameter("id_especialidad");
-                if (espStr != null && !espStr.isEmpty()) idEspecialidad = Integer.parseInt(espStr);
+                if (espStr != null && !espStr.trim().isEmpty()) {
+                    try { idEspecialidad = Integer.parseInt(espStr.trim()); } catch (Exception ignored) {}
+                }
                 String sedeStr = request.getParameter("id_sede_medico");
-                if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
+                if (sedeStr != null && !sedeStr.trim().isEmpty()) {
+                    try { idSede = Integer.parseInt(sedeStr.trim()); } catch (Exception ignored) {}
+                }
             } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
                 cargo = request.getParameter("cargo");
                 String sedeStr = request.getParameter("id_sede_personal");
-                if (sedeStr != null && !sedeStr.isEmpty()) idSede = Integer.parseInt(sedeStr);
+                if (sedeStr != null && !sedeStr.trim().isEmpty()) {
+                    try { idSede = Integer.parseInt(sedeStr.trim()); } catch (Exception ignored) {}
+                }
             }
 
             if ("editar".equals(action)) {
