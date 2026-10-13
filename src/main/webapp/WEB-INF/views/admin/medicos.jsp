@@ -24,6 +24,7 @@
     List<Map<String, Object>> listaMedicos = (List<Map<String, Object>>) request.getAttribute("listaMedicos");
     List<Map<String, Object>> sedes = (List<Map<String, Object>>) request.getAttribute("sedes");
     List<Map<String, Object>> especialidades = (List<Map<String, Object>>) request.getAttribute("especialidades");
+    List<Map<String, Object>> listaDisponibilidades = (List<Map<String, Object>>) request.getAttribute("listaDisponibilidades");
 
     Integer totalMedicos = (Integer) request.getAttribute("totalMedicos");
     if (totalMedicos == null) totalMedicos = (listaMedicos != null ? listaMedicos.size() : 84);
@@ -73,7 +74,9 @@
     <!-- PANEL LATERAL INSTITUCIONAL (UNIFICADO) -->
     <aside class="adm-sidebar">
         <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="adm-brand-logo-wrap">
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            </div>
             <div>
                 <div class="adm-brand-name">Clínica Internacional</div>
                 <div class="adm-brand-sub">Portal administrativo</div>
@@ -82,32 +85,32 @@
 
         <nav class="adm-nav">
             <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item">
-                <i data-lucide="home"></i> Inicio
+                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item active">
-                <i data-lucide="stethoscope"></i> Médicos y especialidades
+                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
-                <i data-lucide="users"></i> Pacientes
+                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw"></i> Reasignaciones y excepciones
+                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up"></i> Dashboard operativo
+                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
             </a>
         </nav>
 
         <div class="adm-user-footer">
             <div class="adm-user-info-link">
                 <div class="adm-avatar"><%= inicialesPersonal %></div>
-                <div style="flex: 1; min-width: 0;">
-                    <div class="adm-user-name"><%= nombrePersonal %></div>
+                <div class="adm-user-text">
+                    <div class="adm-user-name" title="<%= nombrePersonal %>"><%= nombrePersonal %></div>
                     <div class="adm-user-role">Personal administrativo</div>
                 </div>
             </div>
             <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
-                <i data-lucide="log-out"></i>
+                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
             </a>
         </div>
     </aside>
@@ -222,17 +225,19 @@
                     <thead>
                         <tr>
                             <th style="width: 10%;">CMP</th>
-                            <th style="width: 25%;">NOMBRE Y APELLIDOS</th>
-                            <th style="width: 20%;">ESPECIALIDAD(ES)</th>
-                            <th style="width: 20%;">SEDE(S) ASIGNADA(S)</th>
-                            <th style="width: 11%;">HORAS / SEMANA</th>
+                            <th style="width: 22%;">NOMBRE Y APELLIDOS</th>
+                            <th style="width: 18%;">ESPECIALIDAD(ES)</th>
+                            <th style="width: 18%;">SEDE(S) ASIGNADA(S)</th>
+                            <th style="width: 10%;">HORAS / SEMANA</th>
                             <th style="width: 8%;">ESTADO</th>
-                            <th style="width: 6%; text-align: right;">ACCIONES</th>
+                            <th style="width: 14%; text-align: right;">ACCIONES</th>
                         </tr>
                     </thead>
                     <tbody>
                         <% if (listaMedicos != null && !listaMedicos.isEmpty()) { 
                             for (Map<String, Object> m : listaMedicos) {
+                                Object idMedObj = m.get("idMedico");
+                                int idMedico = idMedObj != null ? ((Number) idMedObj).intValue() : 1;
                                 String cmp = (String) m.get("cmp");
                                 String dni = (String) m.get("dni");
                                 String nombre = (String) m.get("nombre");
@@ -258,8 +263,11 @@
                                         <span class="adm-badge-status inactivo">Inactivo</span>
                                     <% } %>
                                 </td>
-                                <td style="text-align: right;">
-                                    <a href="javascript:void(0)" class="adm-btn-action-edit" onclick="editarMedico('<%= cmp %>', '<%= nombre %>')">
+                                <td style="text-align: right; white-space: nowrap;">
+                                    <button type="button" class="adm-btn-action-turnos" onclick="abrirModalTurnos('<%= idMedico %>', '<%= nombre != null ? nombre.replace("'", "\\'") : "" %>', '<%= cmp %>', '<%= especialidad != null ? especialidad.replace("'", "\\'") : "" %>', '<%= sede != null ? sede.replace("'", "\\'") : "" %>')">
+                                        <i data-lucide="calendar" style="width: 13px; height: 13px;"></i> Turnos
+                                    </button>
+                                    <a href="javascript:void(0)" class="adm-btn-action-edit" onclick="editarMedico('<%= cmp %>', '<%= nombre != null ? nombre.replace("'", "\\'") : "" %>')">
                                         Editar
                                     </a>
                                 </td>
@@ -400,9 +408,152 @@
         </div>
     </div>
 
+    <!-- MODAL DE GESTIÓN: TURNOS Y DISPONIBILIDAD -->
+    <div class="adm-modal-overlay" id="modalGestionarTurnos" style="display: none;">
+        <div class="adm-modal-box" style="max-width: 780px; width: 95%; max-height: 92vh; overflow-y: auto; padding: 26px;">
+            <div class="adm-modal-head" style="margin-bottom: 14px;">
+                <div>
+                    <div class="adm-modal-title" style="display: flex; align-items: center; gap: 8px;">
+                        <i data-lucide="calendar-clock" style="color: #0077c8; width: 22px; height: 22px;"></i>
+                        Gestionar Turnos y Disponibilidad
+                    </div>
+                    <div style="font-size: 13px; color: #64748b; margin-top: 4px;">
+                        Configure los bloques de atención presencial y habilitación de cupos para citas médicas.
+                    </div>
+                </div>
+                <button type="button" class="adm-modal-close" onclick="cerrarModalTurnos()">&times;</button>
+            </div>
+
+            <!-- Resumen del Médico Seleccionado -->
+            <div style="background: #f0f7ff; border: 1px solid #bae0fd; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                    <div style="font-size: 14.5px; font-weight: 700; color: #0369a1;" id="turnoDocNombre">Dr. Carlos Mendoza</div>
+                    <div style="font-size: 12.5px; color: #0284c7; margin-top: 2px;">
+                        CMP: <span id="turnoDocCmp" style="font-weight: 600;">045821</span> &nbsp;•&nbsp; <span id="turnoDocEsp">Cardiología · Sede San Borja</span>
+                    </div>
+                </div>
+                <span style="background: #e0f2fe; color: #0284c7; font-size: 11.5px; font-weight: 700; padding: 4px 10px; border-radius: 6px;">
+                    Padrón Activo
+                </span>
+            </div>
+
+            <!-- Listado de Bloques de Turnos Existentes -->
+            <div style="margin-bottom: 22px;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
+                    <i data-lucide="layers" style="width: 15px; height: 15px; color: #475569;"></i>
+                    Turnos y Cupos Configurados
+                </div>
+
+                <div id="tableWrapTurnos" style="border: 1px solid #e2e8f0; border-radius: 8px; overflow: hidden;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 12.5px; text-align: left;">
+                        <thead style="background: #f8fafc; border-bottom: 1px solid #e2e8f0; color: #475569; font-weight: 700;">
+                            <tr>
+                                <th style="padding: 10px;">FECHA</th>
+                                <th style="padding: 10px;">HORARIO (BLOQUES)</th>
+                                <th style="padding: 10px;">SEDE</th>
+                                <th style="padding: 10px; text-align: center;">CITAS AGENDADAS</th>
+                                <th style="padding: 10px; text-align: center;">ESTADO</th>
+                                <th style="padding: 10px; text-align: right;">ACCIÓN</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tbodyTurnosMedico">
+                            <!-- Inyectado por JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <div id="emptyTurnosMensaje" style="display: none; padding: 24px; text-align: center; background: #fafafa; border: 1px dashed #cbd5e1; border-radius: 8px; color: #64748b; font-size: 13px;">
+                    <i data-lucide="calendar-x" style="width: 28px; height: 28px; margin: 0 auto 8px auto; color: #94a3b8; display: block;"></i>
+                    Este médico no registra turnos de atención para los próximos días.<br>
+                    Habilite un bloque horario con el formulario inferior para permitir agendar citas.
+                </div>
+            </div>
+
+            <!-- Formulario de Publicación de Nuevo Turno -->
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
+                <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
+                    <i data-lucide="calendar-plus" style="width: 16px; height: 16px; color: #0077c8;"></i>
+                    Publicar Nuevo Bloque de Horarios
+                </div>
+
+                <form action="${pageContext.request.contextPath}/admin/medicos" method="POST">
+                    <input type="hidden" name="action" value="publicar_horario_medico">
+                    <input type="hidden" id="formTurnoIdMedico" name="idMedico" value="">
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-bottom: 12px;">
+                        <div class="adm-form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Fecha de Atención</label>
+                            <input type="date" id="formTurnoFecha" name="fecha" class="adm-form-input" required style="font-size: 13px; padding: 8px 10px;">
+                        </div>
+                        <div class="adm-form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Hora Inicio</label>
+                            <input type="time" name="horaInicio" value="08:00" class="adm-form-input" required style="font-size: 13px; padding: 8px 10px;">
+                        </div>
+                        <div class="adm-form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Hora Fin</label>
+                            <input type="time" name="horaFin" value="13:00" class="adm-form-input" required style="font-size: 13px; padding: 8px 10px;">
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px;">
+                        <div class="adm-form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Sede Hospitalaria</label>
+                            <select id="formTurnoSede" name="idSede" class="adm-form-select" required style="font-size: 13px; padding: 8px 10px;">
+                                <% if (sedes != null) { 
+                                    for (Map<String, Object> s : sedes) { %>
+                                        <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
+                                <%  } 
+                                   } %>
+                            </select>
+                        </div>
+                        <div class="adm-form-group" style="margin-bottom: 0;">
+                            <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Duración por Paciente</label>
+                            <select name="duracion" class="adm-form-select" style="font-size: 13px; padding: 8px 10px;">
+                                <option value="20">20 minutos (Alta rotación)</option>
+                                <option value="30" selected>30 minutos (Estándar)</option>
+                                <option value="45">45 minutos (Especializada)</option>
+                                <option value="60">60 minutos (Procedimiento)</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                        <button type="button" class="adm-btn-outline" onclick="cerrarModalTurnos()" style="font-size: 13px; padding: 8px 16px;">Cerrar</button>
+                        <button type="submit" class="adm-btn-primary" style="font-size: 13px; padding: 8px 18px;">
+                            <i data-lucide="check-circle" style="width: 15px; height: 15px;"></i> Publicar Bloque de Turnos
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- SCRIPTS -->
     <script>
         lucide.createIcons();
+
+        // Datos de disponibilidades pasados desde el backend
+        const turnosData = [
+            <% if (listaDisponibilidades != null) {
+                for (int i = 0; i < listaDisponibilidades.size(); i++) {
+                    Map<String, Object> d = listaDisponibilidades.get(i);
+                    if (i > 0) out.print(",");
+            %>
+            {
+                idDisponibilidad: <%= d.get("idDisponibilidad") %>,
+                idMedico: <%= d.get("idMedico") %>,
+                idSede: <%= d.get("idSede") %>,
+                sedeNombre: "<%= d.get("sedeNombre") %>",
+                fecha: "<%= d.get("fecha") %>",
+                horaInicio: "<%= d.get("horaInicio") %>",
+                horaFin: "<%= d.get("horaFin") %>",
+                duracionMinutos: <%= d.get("duracionMinutos") %>,
+                estado: "<%= d.get("estado") %>",
+                citasAgendadas: <%= d.get("citasAgendadas") %>
+            }
+            <%  }
+               } %>
+        ];
 
         function abrirModalNuevoMedico() {
             document.getElementById('modalNuevoMedico').style.display = 'flex';
@@ -410,6 +561,85 @@
 
         function cerrarModalNuevoMedico() {
             document.getElementById('modalNuevoMedico').style.display = 'none';
+        }
+
+        function abrirModalTurnos(idMedico, nombre, cmp, especialidad, sede) {
+            document.getElementById('formTurnoIdMedico').value = idMedico;
+            document.getElementById('turnoDocNombre').textContent = nombre;
+            document.getElementById('turnoDocCmp').textContent = cmp;
+            document.getElementById('turnoDocEsp').textContent = especialidad + (sede ? ' · ' + sede : '');
+            
+            const hoyStr = new Date().toISOString().split('T')[0];
+            const fechaInput = document.getElementById('formTurnoFecha');
+            if (fechaInput && !fechaInput.value) {
+                fechaInput.value = hoyStr;
+                fechaInput.min = hoyStr;
+            }
+
+            const selSede = document.getElementById('formTurnoSede');
+            if (selSede && sede) {
+                for (let i = 0; i < selSede.options.length; i++) {
+                    if (selSede.options[i].text.toLowerCase().includes(sede.toLowerCase())) {
+                        selSede.selectedIndex = i;
+                        break;
+                    }
+                }
+            }
+
+            renderizarTurnosMedico(idMedico);
+            document.getElementById('modalGestionarTurnos').style.display = 'flex';
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function renderizarTurnosMedico(idMedico) {
+            const list = turnosData.filter(t => t.idMedico == idMedico);
+            const tbody = document.getElementById('tbodyTurnosMedico');
+            const emptyDiv = document.getElementById('emptyTurnosMensaje');
+            const tableDiv = document.getElementById('tableWrapTurnos');
+            
+            if (list.length === 0) {
+                tbody.innerHTML = '';
+                tableDiv.style.display = 'none';
+                emptyDiv.style.display = 'block';
+            } else {
+                tableDiv.style.display = 'block';
+                emptyDiv.style.display = 'none';
+                
+                let html = '';
+                list.forEach(t => {
+                    const esPub = (t.estado === 'PUBLICADO');
+                    const badgeClass = esPub ? 'badge-turno-pub' : 'badge-turno-bloq';
+                    const badgeText = esPub ? 'PUBLICADO' : 'BLOQUEADO';
+                    const proxEstado = esPub ? 'CANCELADO' : 'PUBLICADO';
+                    const btnColor = esPub ? '#b91c1c' : '#166534';
+                    const btnBorder = esPub ? '#fca5a5' : '#86efac';
+                    const btnBg = esPub ? '#fef2f2' : '#f0fdf4';
+                    const btnText = esPub ? 'Bloquear' : 'Habilitar';
+                    
+                    html += '<tr style="border-bottom: 1px solid #f1f5f9;">' +
+                        '<td style="padding: 10px; font-weight: 600; color: #1e293b;">' + t.fecha + '</td>' +
+                        '<td style="padding: 10px; color: #334155;">' + t.horaInicio + ' - ' + t.horaFin + ' <span style="font-size: 11px; color:#64748b;">(' + t.duracionMinutos + ' min)</span></td>' +
+                        '<td style="padding: 10px; color: #475569;">' + t.sedeNombre + '</td>' +
+                        '<td style="padding: 10px; text-align: center;"><span style="font-weight: 700; color:' + (t.citasAgendadas > 0 ? '#0284c7' : '#94a3b8') + ';">' + t.citasAgendadas + '</span></td>' +
+                        '<td style="padding: 10px; text-align: center;"><span class="' + badgeClass + '">' + badgeText + '</span></td>' +
+                        '<td style="padding: 10px; text-align: right;">' +
+                            '<form method="POST" action="${pageContext.request.contextPath}/admin/medicos" style="margin: 0; display: inline;">' +
+                                '<input type="hidden" name="action" value="cambiar_estado_horario">' +
+                                '<input type="hidden" name="idDisponibilidad" value="' + t.idDisponibilidad + '">' +
+                                '<input type="hidden" name="nuevoEstado" value="' + proxEstado + '">' +
+                                '<button type="submit" style="background: ' + btnBg + '; color: ' + btnColor + '; border: 1px solid ' + btnBorder + '; border-radius: 4px; padding: 4px 10px; font-size: 11.5px; font-weight: 600; cursor: pointer; transition: all 0.15s ease;">' +
+                                    btnText +
+                                '</button>' +
+                            '</form>' +
+                        '</td>' +
+                    '</tr>';
+                });
+                tbody.innerHTML = html;
+            }
+        }
+
+        function cerrarModalTurnos() {
+            document.getElementById('modalGestionarTurnos').style.display = 'none';
         }
 
         function editarMedico(cmp, nombre) {
@@ -422,7 +652,10 @@
 
         // Cerrar modal al pulsar escape
         window.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') cerrarModalNuevoMedico();
+            if (e.key === 'Escape') {
+                cerrarModalNuevoMedico();
+                cerrarModalTurnos();
+            }
         });
     </script>
 </body>

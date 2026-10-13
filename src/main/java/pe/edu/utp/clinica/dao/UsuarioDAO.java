@@ -257,20 +257,25 @@ public class UsuarioDAO {
                         int userId = rs.getInt(1);
                         
                         if ("MEDICO".equals(u.getRol())) {
+                            int sedeFinal = (idSede != null && idSede > 0) ? idSede : 1;
+                            int espFinal = (idEspecialidad != null && idEspecialidad > 0) ? idEspecialidad : 1;
+                            String cmpFinal = (cmp != null && !cmp.trim().isEmpty()) ? cmp.trim() : ("CMP-" + userId + (int)(Math.random() * 900 + 100));
                             try (PreparedStatement stmtM = conn.prepareStatement(sqlMedico)) {
                                 stmtM.setInt(1, userId);
-                                stmtM.setString(2, cmp);
-                                stmtM.setInt(3, idEspecialidad);
-                                stmtM.setInt(4, idSede);
+                                stmtM.setString(2, cmpFinal);
+                                stmtM.setInt(3, espFinal);
+                                stmtM.setInt(4, sedeFinal);
                                 stmtM.executeUpdate();
                             }
                         } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
-                            String codGenerado = "ADM-" + String.format("%03d", userId);
+                            int sedeFinal = (idSede != null && idSede > 0) ? idSede : 1;
+                            String codGenerado = "ADM-" + userId + "-" + (System.currentTimeMillis() % 10000);
+                            String cargoFinal = (cargo != null && !cargo.trim().isEmpty()) ? cargo.trim() : "Personal de Admisión";
                             try (PreparedStatement stmtP = conn.prepareStatement(sqlPersonal)) {
                                 stmtP.setInt(1, userId);
-                                stmtP.setInt(2, idSede);
+                                stmtP.setInt(2, sedeFinal);
                                 stmtP.setString(3, codGenerado);
-                                stmtP.setString(4, cargo);
+                                stmtP.setString(4, cargoFinal);
                                 stmtP.executeUpdate();
                             }
                         } else if ("ADMINISTRADOR".equals(u.getRol())) {
@@ -318,17 +323,22 @@ public class UsuarioDAO {
             }
 
             if ("MEDICO".equals(u.getRol())) {
+                int sedeFinal = (idSede != null && idSede > 0) ? idSede : 1;
+                int espFinal = (idEspecialidad != null && idEspecialidad > 0) ? idEspecialidad : 1;
+                String cmpFinal = (cmp != null && !cmp.trim().isEmpty()) ? cmp.trim() : ("CMP-" + u.getIdUsuario());
                 try (PreparedStatement stmtM = conn.prepareStatement(sqlMedico)) {
-                    stmtM.setString(1, cmp);
-                    stmtM.setInt(2, idEspecialidad);
-                    stmtM.setInt(3, idSede);
+                    stmtM.setString(1, cmpFinal);
+                    stmtM.setInt(2, espFinal);
+                    stmtM.setInt(3, sedeFinal);
                     stmtM.setInt(4, u.getIdUsuario());
                     stmtM.executeUpdate();
                 }
             } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
+                int sedeFinal = (idSede != null && idSede > 0) ? idSede : 1;
+                String cargoFinal = (cargo != null && !cargo.trim().isEmpty()) ? cargo.trim() : "Personal de Admisión";
                 try (PreparedStatement stmtP = conn.prepareStatement(sqlPersonal)) {
-                    stmtP.setInt(1, idSede);
-                    stmtP.setString(2, cargo);
+                    stmtP.setInt(1, sedeFinal);
+                    stmtP.setString(2, cargoFinal);
                     stmtP.setInt(3, u.getIdUsuario());
                     stmtP.executeUpdate();
                 }
