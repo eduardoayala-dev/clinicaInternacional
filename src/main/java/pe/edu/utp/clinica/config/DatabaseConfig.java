@@ -154,6 +154,7 @@ public class DatabaseConfig {
             try { stmt.execute("ALTER TABLE paciente ADD COLUMN sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja'"); } catch (Exception ignored) {}
             try { stmt.execute("ALTER TABLE paciente ADD COLUMN alergias VARCHAR(100) DEFAULT ''"); } catch (Exception ignored) {}
             try { stmt.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'"); } catch (Exception ignored) {}
+            try { stmt.execute("ALTER TABLE cita MODIFY COLUMN estado ENUM('SOLICITADA','CONFIRMADA','EN_SALA','ATENDIDA','NO_ASISTIO','REPROGRAMADA','CANCELADA') DEFAULT 'SOLICITADA'"); } catch (Exception ignored) {}
 
             // Inserciones iniciales
             String defaultBcrypt = "$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa"; // Password123! / admin123
