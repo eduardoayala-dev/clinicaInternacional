@@ -16,11 +16,15 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 
+import java.util.logging.Logger;
+
 /**
  * DAO para gestión clínica integral de Citas Médicas, Reservas, Reprogramaciones y Reasignación Inteligente.
  * Delega en MedicoDAO, NotificacionDAO y ListaEsperaDAO para mantener alta cohesión y bajo acoplamiento.
  */
 public class CitaDAO {
+
+    private static final Logger LOGGER = Logger.getLogger(CitaDAO.class.getName());
 
     private final MedicoDAO medicoDAO = new MedicoDAO();
     private final NotificacionDAO notificacionDAO = new NotificacionDAO();
@@ -97,19 +101,40 @@ public class CitaDAO {
             idPaciente = 1;
         }
 
+        String fechaHoraStr = fecha + " " + (hora.length() == 5 ? hora + ":00" : hora);
+
+        // 1. VALIDACIÓN ESTRICTA ANTI-COLISIÓN (BLOQUEO DE ESPACIO)
+        // Ningún médico puede tener más de una cita activa en la misma fecha y hora.
+        String sqlCheckColision = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
+        try (Connection conn = DatabaseConfig.getConnection();
+             PreparedStatement psColision = conn.prepareStatement(sqlCheckColision)) {
+            psColision.setInt(1, idMedico);
+            psColision.setString(2, fechaHoraStr);
+            try (ResultSet rsColision = psColision.executeQuery()) {
+                if (rsColision.next() && rsColision.getInt(1) > 0) {
+                    LOGGER.warning("⚠️ Bloqueo de espacio: El médico " + idMedico + " ya tiene un turno ocupado para " + fechaHoraStr);
+                    return -1; // Horario ya ocupado / bloqueado
+                }
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         int idDisp = 1;
-        String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? LIMIT 1";
+        String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? AND fecha = ? LIMIT 1";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sqlDisp)) {
             ps.setInt(1, idMedico);
+            ps.setString(2, fecha);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     idDisp = rs.getInt("id_disponibilidad");
                 } else {
                     String sqlInsDisp = "INSERT INTO disponibilidad (id_medico, id_sede, fecha, hora_inicio, hora_fin, duracion_minutos, estado) " +
-                                        "VALUES (?, 1, CURDATE(), '08:00:00', '18:00:00', 30, 'PUBLICADO')";
+                                        "VALUES (?, 1, ?, '08:00:00', '18:00:00', 30, 'PUBLICADO')";
                     try (PreparedStatement psIns = conn.prepareStatement(sqlInsDisp, java.sql.Statement.RETURN_GENERATED_KEYS)) {
                         psIns.setInt(1, idMedico);
+                        psIns.setString(2, fecha);
                         psIns.executeUpdate();
                         try (ResultSet gk = psIns.getGeneratedKeys()) {
                             if (gk.next()) idDisp = gk.getInt(1);
@@ -121,7 +146,6 @@ public class CitaDAO {
             idDisp = 1;
         }
 
-        String fechaHoraStr = fecha + " " + (hora.length() == 5 ? hora + ":00" : hora);
         String riesgo = calcularRiesgoCancelacion(idPaciente);
 
         String sql = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, fecha_hora, estado, nivel_urgencia, riesgo_cancelacion) " +

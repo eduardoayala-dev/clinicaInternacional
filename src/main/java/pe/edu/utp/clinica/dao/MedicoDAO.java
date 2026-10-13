@@ -160,7 +160,7 @@ public class MedicoDAO {
     public List<String> obtenerFechasDisponibles(int idMedico) {
         List<String> fechas = new ArrayList<>();
         String sql = "SELECT DISTINCT fecha FROM disponibilidad " +
-                     "WHERE id_medico = ? AND fecha >= CURDATE() " +
+                     "WHERE id_medico = ? AND fecha >= CURDATE() AND estado = 'PUBLICADO' " +
                      "ORDER BY fecha ASC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -191,7 +191,7 @@ public class MedicoDAO {
     public List<String> obtenerHorariosDisponibles(int idMedico, String fecha) {
         List<String> horariosDisponibles = new ArrayList<>();
         String sqlDisponibilidad = "SELECT hora_inicio, hora_fin, duracion_minutos FROM disponibilidad " +
-                                   "WHERE id_medico = ? AND fecha = ?";
+                                   "WHERE id_medico = ? AND fecha = ? AND estado = 'PUBLICADO'";
         java.util.Set<java.time.LocalTime> todosLosHorarios = new java.util.TreeSet<>();
         
         try (Connection conn = DatabaseConfig.getConnection();
