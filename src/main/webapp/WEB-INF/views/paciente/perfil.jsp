@@ -120,24 +120,26 @@
     <!-- ÁREA PRINCIPAL -->
     <main class="perfil-main-container">
         
-        <!-- BARRA SUPERIOR CON BREADCRUMB Y BOTÓN DE AVISOS -->
-        <header class="perfil-top-header">
-            <div class="perfil-breadcrumb">
+        <!-- BARRA SUPERIOR INSTITUCIONAL (ESTÁNDAR COMPARTIDO) -->
+        <header class="dash-top-header">
+            <div class="breadcrumb-trail">
                 <span>Paciente</span>
-                <span style="color: #cbd5e1;">/</span>
-                <span class="active-crumb">Perfil</span>
+                <span class="bc-sep">/</span>
+                <strong>Perfil</strong>
             </div>
 
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-header" title="Centro de Avisos">
-                <i data-lucide="bell" style="width: 16px; height: 16px; color: #475569;"></i>
+            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill" title="Centro de Avisos">
+                <i data-lucide="bell" style="width: 16px; height: 16px; color: #64748b;"></i>
                 <span>Avisos</span>
                 <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-avisos-pill"><%= numNotifSinLeer %></span>
+                    <span class="badge-avisos-count"><%= numNotifSinLeer %></span>
                 <% } %>
             </a>
         </header>
 
-        <div class="perfil-content-inner">
+        <!-- CONTENEDOR CON SCROLL -->
+        <div class="perfil-scroll-container">
+            <div class="perfil-content-inner">
 
             <% if (mensajeExito != null) { %>
                 <div class="perfil-alert perfil-alert-success">
@@ -311,6 +313,7 @@
                 </div>
 
             </form>
+            </div>
         </div>
     </main>
 
