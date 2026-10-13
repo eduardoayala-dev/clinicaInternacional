@@ -74,7 +74,9 @@
     <!-- PANEL LATERAL INSTITUCIONAL (UNIFICADO) -->
     <aside class="adm-sidebar">
         <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            <div class="adm-brand-logo-wrap">
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+            </div>
             <div>
                 <div class="adm-brand-name">Clínica Internacional</div>
                 <div class="adm-brand-sub">Portal administrativo</div>
@@ -83,32 +85,32 @@
 
         <nav class="adm-nav">
             <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item">
-                <i data-lucide="home"></i> Inicio
+                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item active">
-                <i data-lucide="stethoscope"></i> Médicos y especialidades
+                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
-                <i data-lucide="users"></i> Pacientes
+                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw"></i> Reasignaciones y excepciones
+                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
             </a>
             <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up"></i> Dashboard operativo
+                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
             </a>
         </nav>
 
         <div class="adm-user-footer">
             <div class="adm-user-info-link">
                 <div class="adm-avatar"><%= inicialesPersonal %></div>
-                <div style="flex: 1; min-width: 0;">
-                    <div class="adm-user-name"><%= nombrePersonal %></div>
+                <div class="adm-user-text">
+                    <div class="adm-user-name" title="<%= nombrePersonal %>"><%= nombrePersonal %></div>
                     <div class="adm-user-role">Personal administrativo</div>
                 </div>
             </div>
             <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
-                <i data-lucide="log-out"></i>
+                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
             </a>
         </div>
     </aside>
