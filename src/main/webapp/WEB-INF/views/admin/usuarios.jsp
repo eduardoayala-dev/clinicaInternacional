@@ -49,7 +49,7 @@
 
         /* SIDEBAR BLANCO */
         .sidebar {
-            width: 260px; background-color: var(--bg-surface); border-right: 1px solid var(--border-light);
+            width: 280px; background-color: var(--bg-surface); border-right: 1px solid var(--border-light);
             padding: 24px 16px; display: flex; flex-direction: column; gap: 6px; flex-shrink: 0; overflow-y: auto;
         }
         .nav-item {

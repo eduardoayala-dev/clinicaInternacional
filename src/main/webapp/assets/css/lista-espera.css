@@ -1,0 +1,597 @@
+/* ==========================================================================
+   LISTA DE ESPERA - CLÍNICA INTERNACIONAL
+   Portal del Paciente: Formulario de inscripción y estado de cupos
+   ========================================================================== */
+
+/* BARRA SUPERIOR */
+.dash-top-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-light, #e2e8f0);
+    height: 64px;
+    padding: 0 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+}
+
+.breadcrumb-trail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-gray, #64748b);
+}
+
+.breadcrumb-trail .bc-sep {
+    color: #cbd5e1;
+}
+
+.breadcrumb-trail strong {
+    color: var(--text-dark, #0f172a);
+    font-weight: 600;
+}
+
+.btn-avisos-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 18px;
+    background: #ffffff;
+    border: 1px solid var(--border-light, #e2e8f0);
+    border-radius: 9999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dark, #0f172a);
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-avisos-pill:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.badge-avisos-count {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* CONTENEDOR CON SCROLL */
+.espera-scroll-container {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 40px 48px 40px;
+    background-color: var(--bg-page, #f8fafc);
+}
+
+/* ENCABEZADO DE PÁGINA */
+.page-title-section {
+    margin-bottom: 24px;
+}
+
+.espera-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 32px;
+    font-weight: 700;
+    color: var(--text-dark, #0f172a);
+    letter-spacing: -0.4px;
+    margin-bottom: 6px;
+    line-height: 1.2;
+}
+
+.espera-subtitle {
+    font-size: 14px;
+    color: var(--text-gray, #64748b);
+}
+
+/* GRID PRINCIPAL (2 COLUMNAS) */
+.espera-layout-grid {
+    display: flex;
+    gap: 24px;
+    align-items: flex-start;
+}
+
+/* TARJETA FORMULARIO */
+.card-formulario-espera {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 32px 36px;
+    border: 1px solid var(--border-light, #e2e8f0);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+    flex: 1;
+    min-width: 0;
+}
+
+.form-card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-dark, #0f172a);
+    margin-bottom: 24px;
+}
+
+.form-two-cols {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.field-label {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #1e293b;
+    margin-bottom: 8px;
+}
+
+/* SELECTS ESTILIZADOS */
+.select-field-wrap {
+    position: relative;
+    width: 100%;
+}
+
+.espera-select-control {
+    width: 100%;
+    height: 44px;
+    padding: 0 38px 0 16px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    font-size: 14px;
+    font-weight: 500;
+    color: #0284c7;
+    appearance: none;
+    -webkit-appearance: none;
+    cursor: pointer;
+    outline: none;
+    transition: all 0.2s ease;
+    font-family: inherit;
+    box-sizing: border-box;
+}
+
+.espera-select-control:focus {
+    border-color: #0284c7;
+    box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.12);
+}
+
+.espera-select-control option {
+    color: #0f172a;
+}
+
+.select-chevron-icon {
+    position: absolute;
+    right: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: #0284c7;
+    pointer-events: none;
+}
+
+/* PÍLDORAS DE SEDES */
+.pills-group-sedes {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.btn-pill-sede {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 9px 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 9999px;
+    background: #ffffff;
+    color: #0284c7;
+    font-size: 13.5px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: inherit;
+}
+
+.btn-pill-sede:hover {
+    border-color: #0284c7;
+    background: #f0f9ff;
+}
+
+.btn-pill-sede.active {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+    font-weight: 600;
+}
+
+.pill-check-icon {
+    width: 15px;
+    height: 15px;
+    display: none;
+}
+
+.btn-pill-sede.active .pill-check-icon {
+    display: inline-block;
+}
+
+/* GRUPOS DE CHECKBOXES HORARIOS Y CANALES */
+.checkboxes-row-group {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.horario-card, .canal-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    font-size: 13.5px;
+    color: #0f172a;
+    font-weight: 500;
+}
+
+.horario-card:hover, .canal-card:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.horario-card.active, .canal-card.active {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    color: #0284c7;
+    font-weight: 600;
+}
+
+.horario-card input[type="checkbox"], .canal-card input[type="checkbox"] {
+    display: none;
+}
+
+.custom-checkbox {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 5px;
+    background: #ffffff;
+    color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.horario-card.active .custom-checkbox, .canal-card.active .custom-checkbox {
+    background: #0284c7;
+    border-color: #0284c7;
+    color: #ffffff;
+}
+
+.canal-device-icon {
+    width: 17px;
+    height: 17px;
+    color: #0284c7;
+    flex-shrink: 0;
+}
+
+/* RADIOS DE DISPONIBILIDAD */
+.radios-col-group {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.disponibilidad-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 11px 16px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    user-select: none;
+    font-size: 13px;
+    color: #334155;
+    line-height: 1.35;
+}
+
+.disponibilidad-card:hover {
+    border-color: #94a3b8;
+    background: #f8fafc;
+}
+
+.disponibilidad-card.active {
+    border-color: #0284c7;
+    background: #f0f9ff;
+    color: #0284c7;
+    font-weight: 500;
+}
+
+.disponibilidad-card input[type="radio"] {
+    display: none;
+}
+
+.custom-radio {
+    width: 18px;
+    height: 18px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 50%;
+    background: #ffffff;
+    position: relative;
+    flex-shrink: 0;
+    transition: all 0.2s ease;
+}
+
+.disponibilidad-card.active .custom-radio {
+    border-color: #0284c7;
+}
+
+.disponibilidad-card.active .custom-radio::after {
+    content: '';
+    width: 10px;
+    height: 10px;
+    background: #0284c7;
+    border-radius: 50%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+/* BOTONES DE ACCIÓN DEL FORMULARIO */
+.form-actions-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 32px;
+    padding-top: 24px;
+    border-top: 1px solid #f1f5f9;
+    flex-wrap: wrap;
+    gap: 14px;
+}
+
+.btn-cancelar-espera {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 11px 20px;
+    border: 1.5px solid #cbd5e1;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #0284c7;
+    font-size: 14px;
+    font-weight: 600;
+    text-decoration: none;
+    transition: all 0.2s ease;
+}
+
+.btn-cancelar-espera:hover {
+    background: #f8fafc;
+    border-color: #94a3b8;
+}
+
+.btn-submit-espera {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    background: #0284c7;
+    color: #ffffff;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 1px 3px rgba(2, 132, 199, 0.3);
+    font-family: inherit;
+}
+
+.btn-submit-espera:hover {
+    background: #0369a1;
+    box-shadow: 0 2px 6px rgba(2, 132, 199, 0.4);
+}
+
+/* COLUMNA LATERAL (WIDGETS) */
+.espera-sidebar-widgets {
+    width: 360px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.widget-card {
+    background: #ffffff;
+    border-radius: 16px;
+    padding: 24px 26px;
+    border: 1px solid var(--border-light, #e2e8f0);
+    box-shadow: 0 1px 3px rgba(15, 23, 42, 0.04);
+}
+
+.widget-card-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-dark, #0f172a);
+    margin-bottom: 18px;
+}
+
+.widget-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 18px;
+}
+
+.badge-activo-pill {
+    background: #e0f2fe;
+    color: #0284c7;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 9999px;
+}
+
+/* PASOS CÓMO FUNCIONA */
+.pasos-como-funciona {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.paso-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+}
+
+.paso-num-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    background: #e0f2fe;
+    color: #0284c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12.5px;
+    font-weight: 700;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.paso-text {
+    font-size: 13.5px;
+    color: #475569;
+    line-height: 1.45;
+}
+
+/* REGISTROS ACTIVOS */
+.detalles-activo-list {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.detalle-activo-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 13.5px;
+    line-height: 1.4;
+}
+
+.detalle-activo-label {
+    color: #64748b;
+}
+
+.detalle-activo-val {
+    color: #0f172a;
+    font-weight: 600;
+    text-align: right;
+}
+
+.badge-status-oferta {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 9999px;
+    font-size: 12px;
+    font-weight: 600;
+}
+
+.badge-status-oferta.pendiente {
+    background: #fef3c7;
+    color: #b45309;
+    border: 1px solid #fde68a;
+}
+
+.badge-status-oferta.activa {
+    background: #dcfce7;
+    color: #15803d;
+    border: 1px solid #bbf7d0;
+}
+
+.btn-retirarme-outline {
+    width: 100%;
+    padding: 10px 18px;
+    border: 1.5px solid #fecaca;
+    border-radius: 10px;
+    background: #ffffff;
+    color: #ef4444;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    font-family: inherit;
+}
+
+.btn-retirarme-outline:hover {
+    background: #fef2f2;
+    border-color: #ef4444;
+}
+
+.empty-activo-state {
+    text-align: center;
+    padding: 20px 10px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.empty-activo-text {
+    font-size: 13.5px;
+    color: #475569;
+    font-weight: 500;
+    margin-bottom: 4px;
+}
+
+.empty-activo-hint {
+    font-size: 12px;
+    color: #94a3b8;
+}
+
+/* RESPONSIVE */
+@media (max-width: 1080px) {
+    .espera-layout-grid {
+        flex-direction: column;
+    }
+    .espera-sidebar-widgets {
+        width: 100%;
+    }
+}
+
+@media (max-width: 768px) {
+    .form-two-cols {
+        grid-template-columns: 1fr;
+    }
+    .espera-scroll-container {
+        padding: 24px 20px;
+    }
+    .dash-top-header {
+        padding: 0 20px;
+    }
+}

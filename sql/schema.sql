@@ -57,6 +57,10 @@ CREATE TABLE paciente (
     fecha_nacimiento DATE NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     direccion VARCHAR(255) NOT NULL,
+    canal_aviso VARCHAR(20) DEFAULT 'WhatsApp',
+    sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja',
+    alergias VARCHAR(100) DEFAULT NULL,
+    tipo_cobertura VARCHAR(50) DEFAULT 'EPS',
     CONSTRAINT fk_paciente_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario) ON DELETE CASCADE,
     INDEX idx_paciente_dni (dni)
 ) ENGINE=InnoDB;
@@ -158,7 +162,7 @@ CREATE TABLE cita (
     id_disponibilidad INT NOT NULL,
     id_motivo INT DEFAULT NULL,
     fecha_hora DATETIME NOT NULL,
-    estado ENUM('SOLICITADA', 'CONFIRMADA', 'ATENDIDA', 'NO_ASISTIO', 'REPROGRAMADA', 'CANCELADA') DEFAULT 'SOLICITADA',
+    estado ENUM('SOLICITADA', 'CONFIRMADA', 'EN_SALA', 'ATENDIDA', 'NO_ASISTIO', 'REPROGRAMADA', 'CANCELADA') DEFAULT 'SOLICITADA',
     nivel_urgencia ENUM('ALTA', 'MEDIA', 'BAJA') DEFAULT 'BAJA',
     fecha_recomendada_proxima DATE DEFAULT NULL,
     riesgo_cancelacion ENUM('BAJO', 'MEDIO', 'ALTO', 'SIN_HISTORIAL') DEFAULT 'SIN_HISTORIAL',
@@ -296,29 +300,281 @@ CREATE TABLE auditoria_seguridad (
 ) ENGINE=InnoDB;
 
 -- =============================================================================
--- DATOS SINTÉTICOS DE PRUEBA INITIAL SEED
+-- DATOS SINTÉTICOS DE PRUEBA INITIAL SEED (CLÍNICA INTERNACIONAL - SEDE SAN BORJA)
 -- =============================================================================
 
-INSERT INTO sede (codigo, nombre, direccion, telefono, estado) VALUES
-('SED-NORTE', 'Sede Lima Norte', 'Av. Alfredo Mendiola 1400, Los Olivos', '01-610-3333', 'ACTIVO'),
-('SED-CENTRO', 'Sede Central Garcilaso', 'Av. Garcilaso de la Vega 1420, Lima', '01-610-1111', 'ACTIVO'),
-('SED-SUR', 'Sede San Borja', 'Av. Guardia Civil 385, San Borja', '01-610-2222', 'ACTIVO');
+-- 1. SEDE (ÚNICA SEDE ACTIVA: SAN BORJA)
+INSERT INTO sede (id_sede, codigo, nombre, direccion, telefono, estado) VALUES
+(1, 'SED-SB', 'Sede San Borja', 'Av. Guardia Civil 385, San Borja, Lima', '01-610-2222', 'ACTIVO');
 
-INSERT INTO especialidad (nombre, descripcion, estado) VALUES
-('Cardiología', 'Atención y diagnóstico especializado en salud cardiovascular', 'ACTIVO'),
-('Dermatología', 'Cuidado de la piel, cabello y uñas', 'ACTIVO'),
-('Pediatría', 'Atención médica integral infantil', 'ACTIVO'),
-('Medicina Interna', 'Atención del adulto y enfermedades complejas', 'ACTIVO');
+-- 2. ESPECIALIDADES MÉDICAS (12 ESPECIALIDADES INSTITUCIONALES)
+INSERT INTO especialidad (id_especialidad, nombre, descripcion, estado) VALUES
+(1, 'Cardiología', 'Diagnóstico y tratamiento integral de salud cardiovascular, arritmias e hipertensión.', 'ACTIVO'),
+(2, 'Pediatría', 'Atención médica integral pediátrica, control de crecimiento y vacunas.', 'ACTIVO'),
+(3, 'Dermatología', 'Cuidado y diagnóstico clínico de piel, lunares, acné, cabello y uñas.', 'ACTIVO'),
+(4, 'Medicina Interna', 'Atención integral del adulto, enfermedades metabólicas y chequeos preventivos.', 'ACTIVO'),
+(5, 'Traumatología y Ortopedia', 'Manejo de lesiones articulares, columna, fracturas y medicina deportiva.', 'ACTIVO'),
+(6, 'Ginecología y Obstetricia', 'Salud integral de la mujer, control ginecológico anual y salud prenatal.', 'ACTIVO'),
+(7, 'Oftalmología', 'Salud ocular integral, refracción, glaucoma, cataratas y fondo de ojo.', 'ACTIVO'),
+(8, 'Gastroenterología', 'Aparato digestivo, gastritis, colon irritable, reflujo y endoscopías.', 'ACTIVO'),
+(9, 'Neurología', 'Tratamiento de cefaleas, migrañas, trastornos del sueño y neuropatías.', 'ACTIVO'),
+(10, 'Otorrinolaringología', 'Patologías de oído, nariz, garganta, rinitis, sinusitis y vértigo.', 'ACTIVO'),
+(11, 'Endocrinología', 'Control de tiroides, diabetes mellitus, obesidad y metabolismo.', 'ACTIVO'),
+(12, 'Urología', 'Salud urológica integral, despistaje prostático y litiasis renal.', 'ACTIVO');
 
-INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES
-('Roberto', 'Vargas', 'admin@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'ADMINISTRADOR', 1),
-('Marina', 'Salvatierra', 'personal@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PERSONAL_ADMINISTRATIVO', 1),
-('Carlos', 'Mendoza', 'cmendoza@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
-('Elena', 'Rostova', 'erostova@clinicainternacional.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
-('Juan Alberto', 'Pérez Gómez', 'juan.perez@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
-('Jhenifer', 'Monterroso', 'jmonterroso@gmail.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1);
+-- 3. MOTIVOS DE CONSULTA FRECUENTES POR ESPECIALIDAD
+INSERT INTO motivo_cita (id_motivo, id_especialidad, descripcion, estado) VALUES
+-- Cardiología (1)
+(1, 1, 'Consulta cardiológica preventiva', 'ACTIVO'),
+(2, 1, 'Control de hipertensión arterial', 'ACTIVO'),
+(3, 1, 'Evaluación de riesgo prequirúrgico', 'ACTIVO'),
+(4, 1, 'Evaluación de arritmias y palpitaciones', 'ACTIVO'),
+-- Pediatría (2)
+(5, 2, 'Control de crecimiento y desarrollo (CRED)', 'ACTIVO'),
+(6, 2, 'Consulta pediátrica por fiebre o malestar', 'ACTIVO'),
+(7, 2, 'Evaluación de vacunas y nutrición infantil', 'ACTIVO'),
+(8, 2, 'Infección respiratoria pediátrica', 'ACTIVO'),
+-- Dermatología (3)
+(9, 3, 'Evaluación de lunares y manchas solares', 'ACTIVO'),
+(10, 3, 'Tratamiento de acné y rosácea', 'ACTIVO'),
+(11, 3, 'Dermatitis, alergias y eccemas', 'ACTIVO'),
+(12, 3, 'Alopecia y caída del cabello', 'ACTIVO'),
+-- Medicina Interna (4)
+(13, 4, 'Chequeo médico integral de rutina', 'ACTIVO'),
+(14, 4, 'Control de diabetes mellitus tipo 2', 'ACTIVO'),
+(15, 4, 'Evaluación de síndrome metabólico', 'ACTIVO'),
+(16, 4, 'Evaluación clínica preoperatoria', 'ACTIVO'),
+-- Traumatología (5)
+(17, 5, 'Dolor de espalda y lumbalgia', 'ACTIVO'),
+(18, 5, 'Lesiones deportivas y esguinces', 'ACTIVO'),
+(19, 5, 'Dolor articular de rodilla / Artrosis', 'ACTIVO'),
+(20, 5, 'Evaluación post-traumatismo o caída', 'ACTIVO'),
+-- Ginecología (6)
+(21, 6, 'Chequeo ginecológico anual / Papanicoláu', 'ACTIVO'),
+(22, 6, 'Control prenatal y ecografía obstétrica', 'ACTIVO'),
+(23, 6, 'Orientación en planificación familiar', 'ACTIVO'),
+(24, 6, 'Alteraciones menstruales o dolor pélvico', 'ACTIVO'),
+-- Oftalmología (7)
+(25, 7, 'Medida de la vista computarizada', 'ACTIVO'),
+(26, 7, 'Despistaje de glaucoma y cataratas', 'ACTIVO'),
+(27, 7, 'Síndrome de ojo seco e irritación', 'ACTIVO'),
+(28, 7, 'Fondo de ojo diabético o hipertensivo', 'ACTIVO'),
+-- Gastroenterología (8)
+(29, 8, 'Reflujo gastroesofágico y acidez', 'ACTIVO'),
+(30, 8, 'Gastritis y dolor estomacal', 'ACTIVO'),
+(31, 8, 'Colon irritable y distensión abdominal', 'ACTIVO'),
+(32, 8, 'Evaluación para video-endoscopía', 'ACTIVO'),
+-- Neurología (9)
+(33, 9, 'Cefalea tensional y migraña recurrente', 'ACTIVO'),
+(34, 9, 'Trastornos del sueño e insomnio', 'ACTIVO'),
+(35, 9, 'Evaluación de memoria y concentración', 'ACTIVO'),
+(36, 9, 'Neuropatías y adormecimiento de extremidades', 'ACTIVO'),
+-- Otorrinolaringología (10)
+(37, 10, 'Rinitis alérgica y sinusitis crónica', 'ACTIVO'),
+(38, 10, 'Dolor de oído y disminución auditiva', 'ACTIVO'),
+(39, 10, 'Vértigo, mareos e inestabilidad', 'ACTIVO'),
+(40, 10, 'Ronquido nocturno y apnea del sueño', 'ACTIVO'),
+-- Endocrinología (11)
+(41, 11, 'Control de tiroides / Hipotiroidismo', 'ACTIVO'),
+(42, 11, 'Control integral de diabetes y glucosa', 'ACTIVO'),
+(43, 11, 'Sobrepeso, obesidad y resistencia a insulina', 'ACTIVO'),
+(44, 11, 'Evaluación y descarte de osteoporosis', 'ACTIVO'),
+-- Urología (12)
+(45, 12, 'Chequeo preventivo de próstata', 'ACTIVO'),
+(46, 12, 'Infección urinaria recurrente', 'ACTIVO'),
+(47, 12, 'Litiasis renal (cálculos en las vías)', 'ACTIVO'),
+(48, 12, 'Consulta urológica general', 'ACTIVO');
 
-INSERT INTO administrador (id_usuario, estado) VALUES (1, 'ACTIVO');
-INSERT INTO personal_administrativo (id_usuario, id_sede, codigo_empleado, cargo) VALUES (2, 1, 'ADM-001', 'Coordinador de Admisión');
-INSERT INTO medico (id_usuario, cmp, id_especialidad, id_sede, estado) VALUES (3, 'CMP-45211', 1, 1, 'ACTIVO'), (4, 'CMP-45892', 2, 2, 'ACTIVO');
-INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (5, '72345678', '1988-05-14', '987654321', 'Av. Las Flores 123, Los Olivos'), (6, '74125896', '1995-09-20', '955889901', 'Av. Javier Prado 450, San Borja');
+-- 4. USUARIOS DEL SISTEMA (ADMIN, PERSONAL ADM, PACIENTES Y 48 MÉDICOS)
+-- PasswordHash: $2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa (Password123!)
+INSERT INTO usuario (id_usuario, nombres, apellidos, email, password_hash, rol, activo) VALUES
+-- Roles Institucionales Solicitados:
+(1, 'Eduardo', 'Ayala', 'eduardo@admin.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'ADMINISTRADOR', 1),
+(2, 'Eduardo', 'Ayala', 'eduardo@padmin.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PERSONAL_ADMINISTRATIVO', 1),
+(3, 'Eduardo', 'Ayala', 'eduardo@paciente.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+
+-- 48 Médicos (4 por cada especialidad, todos en Sede San Borja):
+-- Especialidad 1: Cardiología
+(4, 'Eduardo', 'Ayala', 'eduardo@medico.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(5, 'Valeria', 'Rivas Montoya', 'vrivas@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(6, 'Carlos', 'Mendoza Valdivia', 'cmendoza@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(7, 'Roberto', 'Salas Gómez', 'rsalas@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 2: Pediatría
+(8, 'Fernando', 'Solís Bravo', 'fsolis@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(9, 'Lucía', 'Benavides Carranza', 'lbenavides@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(10, 'Mariana', 'Castro Alva', 'mcastro@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(11, 'Gonzalo', 'Paredes Zegarra', 'gparedes@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 3: Dermatología
+(12, 'Elena', 'Rostova Kovalska', 'erostova@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(13, 'Javier', 'Barrenechea Ugarte', 'jbarrenechea@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(14, 'Sofía', 'Málaga Cisneros', 'smalaga@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(15, 'Andrés', 'De la Puente Silva', 'adelapuente@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 4: Medicina Interna
+(16, 'Alberto', 'Rivera González', 'arivera@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(17, 'Carmen Rosa', 'Palacios Bellido', 'cpalacios@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(18, 'Mauricio', 'Thorne Pardo', 'mthorne@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(19, 'Claudia', 'Forsyth Romero', 'cforsyth@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 5: Traumatología y Ortopedia
+(20, 'Ricardo', 'Miró Quesada', 'rmiroquesada@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(21, 'César', 'Hildebrandt Luna', 'childebrandt@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(22, 'Patricia', 'Del Río Vega', 'pdelrio@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(23, 'Diego', 'Bustamante Romero', 'dbustamante@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 6: Ginecología y Obstetricia
+(24, 'Beatriz', 'Sandoval Ramos', 'bsandoval@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(25, 'Cecilia', 'Valenzuela Ponce', 'cvalenzuela@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(26, 'Martín', 'Belaúnde Terry', 'mbelaunde@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(27, 'Gisela', 'Ortiz Morán', 'gortiz@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 7: Oftalmología
+(28, 'Juan Carlos', 'Tafur Roca', 'jctafur@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(29, 'Rosa María', 'Palacios McBride', 'rmpalacios@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(30, 'Aldo', 'Mariátegui Flores', 'amariategui@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(31, 'Roxana', 'Cueva Mejía', 'rcueva@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 8: Gastroenterología
+(32, 'Renato', 'Cisneros Campodónico', 'rcisneros@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(33, 'Milagros', 'Leiva Gálvez', 'mleiva@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(34, 'Jaime', 'Bayly Letts', 'jbayly@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(35, 'Beto', 'Ortiz Pajuelo', 'bortiz@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 9: Neurología
+(36, 'Daniel', 'Alarcón Pease', 'dalarcon@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(37, 'Gabriela', 'Wiener Ramos', 'gwiener@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(38, 'Santiago', 'Roncagliolo Lohmann', 'sroncagliolo@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(39, 'Karina', 'Pacheco Medrano', 'kpacheco@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 10: Otorrinolaringología
+(40, 'Alonso', 'Cueto Fernandini', 'acueto@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(41, 'Claudia', 'Llosa Bueno', 'cllosa@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(42, 'Francisco', 'Lombardi García', 'flombardi@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(43, 'Josué', 'Méndez Barrenechea', 'jmendez@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 11: Endocrinología
+(44, 'Salvador', 'Del Solar Labarthe', 'sdelsolar@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(45, 'Mónica', 'Sánchez Cuadros', 'msanchez@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(46, 'Christian', 'Meier Zender', 'cmeier@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(47, 'Stephanie', 'Cayo Sanguinetti', 'scayo@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Especialidad 12: Urología
+(48, 'Marco', 'Zunino Costa', 'mzunino@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(49, 'Bruno', 'Ascenzo Bravo', 'bascenzo@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(50, 'Carlos', 'Carlín González', 'ccarlin@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+(51, 'Giovanni', 'Ciccia Ridoutt', 'gciccia@clinica.pe', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'MEDICO', 1),
+
+-- Pacientes adicionales:
+(52, 'Jorge', 'Valdivia Núñez', 'jorge.valdivia@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(53, 'Juan Alberto', 'Pérez Gómez', 'juan.perez@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(54, 'Elena', 'Marroquín Silva', 'elena.m@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(55, 'Rosa María', 'Chávez Quispe', 'rosa.chavez@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(56, 'Miguel Ángel', 'Huamán Flores', 'miguel.huaman@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(57, 'Carla Jimena', 'Ríos Barreto', 'carla.rios@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(58, 'Luis Fernando', 'Castillo Benítez', 'luis.castillo@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(59, 'Diana Patricia', 'Vargas Morales', 'diana.vargas@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(60, 'Víctor Hugo', 'Navarro Paredes', 'victor.navarro@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(61, 'Luciana', 'García Miró', 'luciana.gm@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(62, 'Raúl Ernesto', 'Tello Sotomayor', 'raul.tello@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(63, 'Andrea', 'Salazar Corbacho', 'andrea.salazar@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(64, 'Héctor', 'Villanueva Prado', 'hector.v@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1),
+(65, 'Camila', 'Montesinos León', 'camila.m@correo.com', '$2a$10$uY5I1bYkV5SnupobyT1meePKeOzUYs8qlsNZeZ0UWGRxgPGkNVVQa', 'PACIENTE', 1);
+
+-- 5. ADMINISTRADOR
+INSERT INTO administrador (id_administrador, id_usuario, estado) VALUES
+(1, 1, 'ACTIVO');
+
+-- 6. PERSONAL ADMINISTRATIVO (SEDE SAN BORJA)
+INSERT INTO personal_administrativo (id_personal, id_usuario, id_sede, codigo_empleado, cargo) VALUES
+(1, 2, 1, 'ADM-001', 'Coordinador de Admisión y Operaciones');
+
+-- 7. MÉDICOS (48 MÉDICOS ASIGNADOS 100% A SEDE SAN BORJA)
+INSERT INTO medico (id_medico, id_usuario, cmp, id_especialidad, id_sede, estado) VALUES
+-- Cardiología (id_especialidad = 1, id_sede = 1)
+(1, 4, 'CMP-10001', 1, 1, 'ACTIVO'),
+(2, 5, 'CMP-10002', 1, 1, 'ACTIVO'),
+(3, 6, 'CMP-10003', 1, 1, 'ACTIVO'),
+(4, 7, 'CMP-10004', 1, 1, 'ACTIVO'),
+-- Pediatría (id_especialidad = 2, id_sede = 1)
+(5, 8, 'CMP-10005', 2, 1, 'ACTIVO'),
+(6, 9, 'CMP-10006', 2, 1, 'ACTIVO'),
+(7, 10, 'CMP-10007', 2, 1, 'ACTIVO'),
+(8, 11, 'CMP-10008', 2, 1, 'ACTIVO'),
+-- Dermatología (id_especialidad = 3, id_sede = 1)
+(9, 12, 'CMP-10009', 3, 1, 'ACTIVO'),
+(10, 13, 'CMP-10010', 3, 1, 'ACTIVO'),
+(11, 14, 'CMP-10011', 3, 1, 'ACTIVO'),
+(12, 15, 'CMP-10012', 3, 1, 'ACTIVO'),
+-- Medicina Interna (id_especialidad = 4, id_sede = 1)
+(13, 16, 'CMP-10013', 4, 1, 'ACTIVO'),
+(14, 17, 'CMP-10014', 4, 1, 'ACTIVO'),
+(15, 18, 'CMP-10015', 4, 1, 'ACTIVO'),
+(16, 19, 'CMP-10016', 4, 1, 'ACTIVO'),
+-- Traumatología y Ortopedia (id_especialidad = 5, id_sede = 1)
+(17, 20, 'CMP-10017', 5, 1, 'ACTIVO'),
+(18, 21, 'CMP-10018', 5, 1, 'ACTIVO'),
+(19, 22, 'CMP-10019', 5, 1, 'ACTIVO'),
+(20, 23, 'CMP-10020', 5, 1, 'ACTIVO'),
+-- Ginecología y Obstetricia (id_especialidad = 6, id_sede = 1)
+(21, 24, 'CMP-10021', 6, 1, 'ACTIVO'),
+(22, 25, 'CMP-10022', 6, 1, 'ACTIVO'),
+(23, 26, 'CMP-10023', 6, 1, 'ACTIVO'),
+(24, 27, 'CMP-10024', 6, 1, 'ACTIVO'),
+-- Oftalmología (id_especialidad = 7, id_sede = 1)
+(25, 28, 'CMP-10025', 7, 1, 'ACTIVO'),
+(26, 29, 'CMP-10026', 7, 1, 'ACTIVO'),
+(27, 30, 'CMP-10027', 7, 1, 'ACTIVO'),
+(28, 31, 'CMP-10028', 7, 1, 'ACTIVO'),
+-- Gastroenterología (id_especialidad = 8, id_sede = 1)
+(29, 32, 'CMP-10029', 8, 1, 'ACTIVO'),
+(30, 33, 'CMP-10030', 8, 1, 'ACTIVO'),
+(31, 34, 'CMP-10031', 8, 1, 'ACTIVO'),
+(32, 35, 'CMP-10032', 8, 1, 'ACTIVO'),
+-- Neurología (id_especialidad = 9, id_sede = 1)
+(33, 36, 'CMP-10033', 9, 1, 'ACTIVO'),
+(34, 37, 'CMP-10034', 9, 1, 'ACTIVO'),
+(35, 38, 'CMP-10035', 9, 1, 'ACTIVO'),
+(36, 39, 'CMP-10036', 9, 1, 'ACTIVO'),
+-- Otorrinolaringología (id_especialidad = 10, id_sede = 1)
+(37, 40, 'CMP-10037', 10, 1, 'ACTIVO'),
+(38, 41, 'CMP-10038', 10, 1, 'ACTIVO'),
+(39, 42, 'CMP-10039', 10, 1, 'ACTIVO'),
+(40, 43, 'CMP-10040', 10, 1, 'ACTIVO'),
+-- Endocrinología (id_especialidad = 11, id_sede = 1)
+(41, 44, 'CMP-10041', 11, 1, 'ACTIVO'),
+(42, 45, 'CMP-10042', 11, 1, 'ACTIVO'),
+(43, 46, 'CMP-10043', 11, 1, 'ACTIVO'),
+(44, 47, 'CMP-10044', 11, 1, 'ACTIVO'),
+-- Urología (id_especialidad = 12, id_sede = 1)
+(45, 48, 'CMP-10045', 12, 1, 'ACTIVO'),
+(46, 49, 'CMP-10046', 12, 1, 'ACTIVO'),
+(47, 50, 'CMP-10047', 12, 1, 'ACTIVO'),
+(48, 51, 'CMP-10048', 12, 1, 'ACTIVO');
+
+-- 8. PACIENTES (SEDE PREFERIDA SAN BORJA)
+INSERT INTO paciente (id_paciente, id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES
+(1, 3, '72345678', '1994-06-15', '+51 987 112 334', 'Av. San Borja Sur 420, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(2, 52, '10492837', '1976-05-14', '+51 987 654 321', 'Av. Aviación 2850, San Borja', 'WhatsApp', 'Sede San Borja', 'Penicilina', 'EPS'),
+(3, 53, '44091234', '1982-08-20', '+51 944 112 098', 'Jr. Monterrico 120, Surco', 'WhatsApp', 'Sede San Borja', 'AINEs', 'PARTICULAR'),
+(4, 54, '29841029', '1969-01-22', '+51 977 432 110', 'Av. Primavera 650, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(5, 55, '41238910', '1985-03-12', '+51 961 223 445', 'Calle Las Artes 140, San Borja', 'WhatsApp', 'Sede San Borja', 'Sulfas', 'EPS'),
+(6, 56, '47891230', '1991-11-05', '+51 954 887 112', 'Av. Javier Prado Este 2450, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(7, 57, '70981245', '1998-04-18', '+51 932 445 667', 'Jr. Rousseau 320, San Borja', 'WhatsApp', 'Sede San Borja', 'Polvo/Acaros', 'PARTICULAR'),
+(8, 58, '09823411', '1965-09-30', '+51 981 776 554', 'Av. San Luis 1890, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(9, 59, '72109843', '1995-12-08', '+51 923 118 990', 'Calle Carpaccio 210, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(10, 60, '18293041', '1973-07-25', '+51 945 667 889', 'Av. Guardia Civil 680, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'PARTICULAR'),
+(11, 61, '74892019', '2000-02-14', '+51 998 776 112', 'Calle Morelli 180, San Borja', 'WhatsApp', 'Sede San Borja', 'Lactosa', 'EPS'),
+(12, 62, '43120984', '1983-10-10', '+51 966 332 119', 'Jr. Bellini 450, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(13, 63, '76128938', '1997-06-28', '+51 955 889 001', 'Av. Gálvez Barrenechea 890, San Borja', 'WhatsApp', 'Sede San Borja', 'Mariscos', 'PARTICULAR'),
+(14, 64, '08192847', '1960-01-15', '+51 912 334 556', 'Calle Pietro Marchand 110, San Borja', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS'),
+(15, 65, '73819204', '1996-08-04', '+51 978 990 123', 'Av. Angamos Este 1800, Surquillo', 'WhatsApp', 'Sede San Borja', 'Ninguna', 'EPS');
+
+
+-- =============================================================================
+-- FIN DEL SEED INICIAL (TABLAS TRANSACCIONALES LIMPIAS PARA PRUEBAS DEL USUARIO)
+-- =============================================================================
+
+
+

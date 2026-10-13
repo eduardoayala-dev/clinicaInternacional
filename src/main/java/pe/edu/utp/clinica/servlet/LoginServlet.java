@@ -39,7 +39,10 @@ public class LoginServlet extends HttpServlet {
         HttpSession existingSession = request.getSession(false);
         if (existingSession != null && existingSession.getAttribute("usuarioLogueado") != null) {
             String rol = (String) existingSession.getAttribute("rol");
-            if ("ADMINISTRADOR".equals(rol) || "PERSONAL_ADMINISTRATIVO".equals(rol)) {
+            if ("ADMINISTRADOR".equals(rol)) {
+                response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
+                return;
+            } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
                 response.sendRedirect(request.getContextPath() + "/admin/dashboard");
                 return;
             } else if ("MEDICO".equals(rol)) {
@@ -71,12 +74,25 @@ public class LoginServlet extends HttpServlet {
         String path = request.getServletPath();
 
         String requestCsrfToken = request.getParameter("csrfToken");
-        if (session == null || requestCsrfToken == null || !requestCsrfToken.equals(session.getAttribute("csrfToken"))) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Petición rechazada: Token CSRF inválido.");
+        String sessionCsrfToken = (session != null) ? (String) session.getAttribute("csrfToken") : null;
+
+        if (session == null || requestCsrfToken == null || !requestCsrfToken.equals(sessionCsrfToken)) {
+            HttpSession freshSession = request.getSession(true);
+            freshSession.setAttribute("csrfToken", UUID.randomUUID().toString());
+            request.setAttribute("errorMessage", "Tu sesión previa expiró por inactividad. Por favor, ingresa tus credenciales nuevamente.");
+
+            if ("/login/personal".equals(path)) {
+                request.setAttribute("tipoPortal", "PERSONAL");
+                request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
+            } else {
+                request.setAttribute("tipoPortal", "PACIENTE");
+                request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
+            }
             return;
         }
 
-        String identificador = SecurityUtil.sanitizeInput(request.getParameter("identificador"));
+        String rawIdentificador = request.getParameter("identificador");
+        String identificador = (rawIdentificador != null) ? SecurityUtil.sanitizeInput(rawIdentificador).trim() : "";
         String password = request.getParameter("password");
         String ipOrigen = request.getRemoteAddr();
 
@@ -100,7 +116,9 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            session.invalidate();
+            if (session != null) {
+                session.invalidate();
+            }
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("usuarioLogueado", usuario);
             newSession.setAttribute("rol", usuario.getRol());
@@ -115,8 +133,10 @@ public class LoginServlet extends HttpServlet {
                     response.sendRedirect(request.getContextPath() + "/medico/agenda");
                     break;
                 case "PERSONAL_ADMINISTRATIVO":
-                case "ADMINISTRADOR":
                     response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+                    break;
+                case "ADMINISTRADOR":
+                    response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
                     break;
                 default:
                     response.sendRedirect(request.getContextPath() + "/login?error=rol_invalido");

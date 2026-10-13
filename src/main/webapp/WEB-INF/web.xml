@@ -6,6 +6,15 @@
 
     <display-name>Clinica Internacional</display-name>
 
+    <!-- Configuración para evitar bloqueo de archivos estáticos en Windows con Jetty -->
+    <servlet>
+        <servlet-name>default</servlet-name>
+        <init-param>
+            <param-name>useFileMappedBuffer</param-name>
+            <param-value>false</param-value>
+        </init-param>
+    </servlet>
+
     <!-- Error Pages -->
     <error-page>
         <error-code>404</error-code>

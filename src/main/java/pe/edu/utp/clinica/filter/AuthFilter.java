@@ -14,7 +14,7 @@ import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
 
-@WebFilter(filterName = "AuthFilter", urlPatterns = {"/paciente/*", "/medico/*", "/admin/*"})
+@WebFilter(filterName = "AuthFilter", urlPatterns = {"/paciente/*", "/medico/*", "/admin/*", "/sysadmin/*"})
 public class AuthFilter implements Filter {
 
     @Override
@@ -40,17 +40,22 @@ public class AuthFilter implements Filter {
         String rol = usuario.getRol();
 
         if (uri.contains("/paciente/") && !"PACIENTE".equals(rol)) {
-            res.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso no autorizado al módulo de Pacientes.");
+            redirigirSegunRol(res, req.getContextPath(), rol);
             return;
         }
 
         if (uri.contains("/medico/") && !"MEDICO".equals(rol)) {
-            res.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso no autorizado al módulo de Médicos.");
+            redirigirSegunRol(res, req.getContextPath(), rol);
             return;
         }
 
-        if (uri.contains("/admin/") && !"ADMINISTRADOR".equals(rol) && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
-            res.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso no autorizado al módulo Administrativo.");
+        if (uri.contains("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
+            redirigirSegunRol(res, req.getContextPath(), rol);
+            return;
+        }
+
+        if (uri.contains("/admin/") && !uri.contains("/sysadmin/") && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
+            redirigirSegunRol(res, req.getContextPath(), rol);
             return;
         }
 
@@ -61,6 +66,20 @@ public class AuthFilter implements Filter {
         res.setHeader("X-Content-Type-Options", "nosniff");
 
         chain.doFilter(request, response);
+    }
+
+    private void redirigirSegunRol(HttpServletResponse res, String contextPath, String rol) throws IOException {
+        if ("PACIENTE".equals(rol)) {
+            res.sendRedirect(contextPath + "/paciente/dashboard");
+        } else if ("MEDICO".equals(rol)) {
+            res.sendRedirect(contextPath + "/medico/agenda");
+        } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
+            res.sendRedirect(contextPath + "/admin/dashboard");
+        } else if ("ADMINISTRADOR".equals(rol)) {
+            res.sendRedirect(contextPath + "/sysadmin/dashboard");
+        } else {
+            res.sendRedirect(contextPath + "/login?error=rol_invalido");
+        }
     }
 
     @Override

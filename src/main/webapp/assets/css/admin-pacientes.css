@@ -1,0 +1,591 @@
+/* ==========================================================================
+   PADRÓN MAESTRO DE PACIENTES - CLÍNICA INTERNACIONAL (PORTAL ADMINISTRATIVO)
+   Diseño institucional fiel a la maqueta:
+   - Header con título serif 'Playfair Display' y botones de Exportar Excel / CSV
+   - Barra de filtros con buscador, cobertura, sede preferida, + Nuevo paciente y Reiniciar filtros
+   - Tabla estilizada de 8 columnas con doble línea por celda (DNI, Nombre, Edad/Fecha, Zona, Tel/Correo, Canal/Confirma, Citas activas, Acciones)
+   - Paginación dinámica (Mostrando X de Y pacientes, Anterior / Siguiente)
+   - Tarjetas KPI inferiores (Total de pacientes registrados, Con contacto verificado)
+   - Modal institucional para Registrar y Editar pacientes
+   ========================================================================== */
+
+/* Cabecera de Página */
+.pacientes-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 24px;
+}
+
+.pacientes-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 30px;
+    font-weight: 700;
+    color: #0c2340;
+    line-height: 1.2;
+    margin-bottom: 4px;
+    letter-spacing: -0.3px;
+}
+
+.pacientes-subtitle {
+    font-size: 13.5px;
+    color: #6b7c93;
+    font-weight: 400;
+}
+
+.pacientes-header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.btn-export-outline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #ffffff;
+    border: 1px solid #d0dbe7;
+    color: #0c2340;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-export-outline:hover {
+    background-color: #f4f8fc;
+    border-color: #0077c8;
+    color: #0077c8;
+}
+
+.btn-export-outline i {
+    width: 15px;
+    height: 15px;
+    stroke-width: 2;
+}
+
+/* Panel de Filtros */
+.pacientes-filter-card {
+    background: #ffffff;
+    border: 1px solid #e2eaf2;
+    border-radius: 12px;
+    padding: 20px 24px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(12, 35, 64, 0.02);
+}
+
+.pacientes-filter-row-top {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr;
+    gap: 20px;
+    margin-bottom: 18px;
+}
+
+.pacientes-field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pacientes-field-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0c2340;
+}
+
+.pacientes-input-search-wrap {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pacientes-input-search {
+    width: 100%;
+    height: 42px;
+    padding: 0 40px 0 14px;
+    border: 1px solid #d0dbe7;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #0c2340;
+    outline: none;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.pacientes-input-search:focus {
+    border-color: #0077c8;
+    box-shadow: 0 0 0 3px rgba(0, 119, 200, 0.1);
+}
+
+.pacientes-search-icon {
+    position: absolute;
+    right: 14px;
+    width: 16px;
+    height: 16px;
+    color: #8fa0b5;
+    pointer-events: none;
+}
+
+.pacientes-select {
+    width: 100%;
+    height: 42px;
+    padding: 0 14px;
+    border: 1px solid #d0dbe7;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #0c2340;
+    background-color: #ffffff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.15s ease;
+}
+
+.pacientes-select:focus {
+    border-color: #0077c8;
+}
+
+.pacientes-filter-row-bottom {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.btn-nuevo-paciente {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: #0077c8;
+    color: #ffffff;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background-color 0.15s ease;
+}
+
+.btn-nuevo-paciente:hover {
+    background-color: #005a9c;
+}
+
+.btn-nuevo-paciente i {
+    width: 16px;
+    height: 16px;
+    stroke-width: 2.2;
+}
+
+.btn-reiniciar-filtros {
+    color: #0077c8;
+    font-size: 13px;
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 6px 4px;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.btn-reiniciar-filtros:hover {
+    text-decoration: underline;
+    color: #005a9c;
+}
+
+/* Tarjeta Principal de la Tabla */
+.pacientes-table-card {
+    background: #ffffff;
+    border: 1px solid #e2eaf2;
+    border-radius: 12px;
+    overflow: hidden;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(12, 35, 64, 0.02);
+}
+
+.pacientes-table-wrap {
+    overflow-x: auto;
+}
+
+.pacientes-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+
+.pacientes-table th {
+    padding: 14px 20px;
+    font-size: 11px;
+    font-weight: 700;
+    color: #6b7c93;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    border-bottom: 1px solid #eef3f8;
+    background-color: #ffffff;
+    white-space: nowrap;
+}
+
+.pacientes-table td {
+    padding: 16px 20px;
+    border-bottom: 1px solid #f1f6fa;
+    font-size: 13.5px;
+    vertical-align: middle;
+}
+
+.pacientes-table tr:last-child td {
+    border-bottom: none;
+}
+
+.pacientes-table tbody tr:hover td {
+    background-color: #f9fbfd;
+}
+
+/* Contenido de celdas */
+.td-dni {
+    font-weight: 700;
+    color: #0c2340;
+    font-size: 14px;
+}
+
+.td-nombre {
+    font-weight: 600;
+    color: #0c2340;
+}
+
+.td-edad-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.td-edad-val {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #0c2340;
+}
+
+.td-fnac-val {
+    font-size: 12px;
+    color: #0077c8;
+    font-weight: 400;
+}
+
+.td-zona {
+    color: #0c2340;
+    font-size: 13.5px;
+}
+
+.td-contacto-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.td-tel-val {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #0c2340;
+}
+
+.td-correo-val {
+    font-size: 12px;
+    color: #6b7c93;
+}
+
+.td-canal-box {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.td-canal-val {
+    font-size: 13.5px;
+    font-weight: 500;
+    color: #0c2340;
+}
+
+.td-confirma-val {
+    font-size: 12px;
+    color: #6b7c93;
+}
+
+.td-citas-activas {
+    font-weight: 700;
+    color: #0c2340;
+    font-size: 14px;
+}
+
+.btn-action-editar {
+    color: #0077c8;
+    font-size: 13.5px;
+    font-weight: 600;
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 6px;
+    text-decoration: none;
+    transition: color 0.15s ease;
+}
+
+.btn-action-editar:hover {
+    text-decoration: underline;
+    color: #005a9c;
+}
+
+/* Pie de Tabla y Paginación */
+.pacientes-table-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-top: 1px solid #eef3f8;
+    background-color: #ffffff;
+    font-size: 12.5px;
+    color: #6b7c93;
+}
+
+.pacientes-pagination-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.btn-pagination {
+    padding: 6px 14px;
+    border: 1px solid #d0dbe7;
+    background-color: #ffffff;
+    border-radius: 6px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: #0c2340;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.btn-pagination:hover:not(:disabled) {
+    background-color: #f4f8fc;
+    border-color: #0077c8;
+    color: #0077c8;
+}
+
+.btn-pagination:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.pagination-page-indicator {
+    font-size: 12.5px;
+    color: #6b7c93;
+    font-weight: 500;
+}
+
+/* Tarjetas KPI Inferiores (2 columnas) */
+.pacientes-kpi-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+}
+
+.pacientes-kpi-card {
+    background: #ffffff;
+    border: 1px solid #e2eaf2;
+    border-radius: 12px;
+    padding: 22px 24px;
+    box-shadow: 0 1px 3px rgba(12, 35, 64, 0.02);
+    display: flex;
+    flex-direction: column;
+}
+
+.pacientes-kpi-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.pacientes-kpi-title {
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #0c2340;
+}
+
+.pacientes-kpi-icon-badge {
+    width: 36px;
+    height: 36px;
+    border-radius: 8px;
+    background-color: #eaf4fd;
+    color: #0077c8;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.pacientes-kpi-icon-badge i {
+    width: 18px;
+    height: 18px;
+    stroke-width: 2.2;
+}
+
+.pacientes-kpi-number {
+    font-size: 32px;
+    font-weight: 800;
+    color: #0c2340;
+    line-height: 1.1;
+    margin-bottom: 6px;
+    letter-spacing: -0.5px;
+}
+
+.pacientes-kpi-sub {
+    font-size: 12.5px;
+    color: #6b7c93;
+}
+
+/* Modal Institucional (Nuevo y Editar) */
+.adm-modal-backdrop {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(12, 35, 64, 0.45);
+    backdrop-filter: blur(4px);
+    z-index: 1000;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+}
+
+.adm-modal-box {
+    background: #ffffff;
+    border-radius: 14px;
+    width: 100%;
+    max-width: 620px;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+    overflow: hidden;
+    animation: modalFadeIn 0.2s ease-out;
+}
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(-10px) scale(0.98); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.adm-modal-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #eef3f8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.adm-modal-title {
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 20px;
+    font-weight: 700;
+    color: #0c2340;
+}
+
+.adm-modal-close {
+    background: none;
+    border: none;
+    color: #7b8e9f;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+.adm-modal-close:hover {
+    color: #0c2340;
+    background: #f1f6fa;
+}
+
+.adm-modal-body {
+    padding: 24px;
+    max-height: 75vh;
+    overflow-y: auto;
+}
+
+.adm-modal-grid-2 {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.adm-modal-field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+}
+
+.adm-modal-label {
+    font-size: 12.5px;
+    font-weight: 600;
+    color: #0c2340;
+}
+
+.adm-modal-input,
+.adm-modal-select {
+    width: 100%;
+    height: 40px;
+    padding: 0 12px;
+    border: 1px solid #d0dbe7;
+    border-radius: 8px;
+    font-size: 13.5px;
+    color: #0c2340;
+    outline: none;
+    background-color: #ffffff;
+    transition: border-color 0.15s ease;
+}
+
+.adm-modal-input:focus,
+.adm-modal-select:focus {
+    border-color: #0077c8;
+}
+
+.adm-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #eef3f8;
+    background: #fbfcfe;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.btn-modal-cancel {
+    background: #ffffff;
+    border: 1px solid #d0dbe7;
+    color: #6b7c93;
+    padding: 9px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-modal-cancel:hover {
+    background: #f1f6fa;
+    color: #0c2340;
+}
+
+.btn-modal-submit {
+    background: #0077c8;
+    border: none;
+    color: #ffffff;
+    padding: 9px 20px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.btn-modal-submit:hover {
+    background: #005a9c;
+}

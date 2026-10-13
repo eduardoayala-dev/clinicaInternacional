@@ -39,6 +39,9 @@ public class RegistroPacienteServlet extends HttpServlet {
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
+        String canalAviso = SecurityUtil.sanitizeInput(request.getParameter("canalAviso"));
+        String alergias = SecurityUtil.sanitizeInput(request.getParameter("alergias"));
+        String cobertura = SecurityUtil.sanitizeInput(request.getParameter("cobertura"));
         String password = request.getParameter("password");
         String terminos = request.getParameter("terminos");
 
@@ -82,16 +85,42 @@ public class RegistroPacienteServlet extends HttpServlet {
 
         Paciente p = new Paciente();
         p.setDni(dni);
-        p.setFechaNacimiento(LocalDate.parse(fechaNacimiento));
+        if (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty()) {
+            p.setFechaNacimiento(LocalDate.parse(fechaNacimiento.trim()));
+        }
         p.setTelefono(telefono);
         p.setDireccion(direccion);
+        p.setCanalAviso((canalAviso != null && !canalAviso.trim().isEmpty()) ? canalAviso : "WhatsApp");
+        p.setSedePreferida("Sede San Borja");
+        p.setAlergias(alergias != null ? alergias.trim() : "");
+        p.setTipoCobertura((cobertura != null && !cobertura.trim().isEmpty()) ? cobertura : "EPS");
 
         boolean exito = authService.registrarPaciente(u, p);
 
         if (exito) {
-            response.sendRedirect(request.getContextPath() + "/login?msg=registro_exitoso");
+            // Asegurar que el objeto Usuario en sesión tenga el ID asignado
+            if (u.getIdUsuario() <= 0) {
+                Usuario uPersistido = new pe.edu.utp.clinica.dao.UsuarioDAO().buscarPorEmailODni(u.getEmail());
+                if (uPersistido != null) {
+                    u = uPersistido;
+                }
+            }
+
+            jakarta.servlet.http.HttpSession oldSession = request.getSession(false);
+            if (oldSession != null) {
+                oldSession.invalidate();
+            }
+            jakarta.servlet.http.HttpSession newSession = request.getSession(true);
+            newSession.setAttribute("usuarioLogueado", u);
+            newSession.setAttribute("rol", "PACIENTE");
+            newSession.setAttribute("nombreUsuario", u.getNombreCompleto());
+            
+            newSession.setAttribute("canalPreferido", p.getCanalAviso());
+            newSession.setMaxInactiveInterval(30 * 60);
+
+            response.sendRedirect(request.getContextPath() + "/paciente/dashboard?bienvenida=1");
         } else {
-            request.getSession().setAttribute("registerError", "Ocurrió un error al crear la cuenta. Inténtelo de nuevo.");
+            request.getSession(true).setAttribute("registerError", "Ocurrió un error al crear la cuenta. Inténtelo de nuevo.");
             response.sendRedirect(request.getContextPath() + "/login?action=register");
         }
     }

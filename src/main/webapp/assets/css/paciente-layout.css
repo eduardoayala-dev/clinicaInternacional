@@ -1,0 +1,902 @@
+/* ==========================================================================
+   PORTAL DEL PACIENTE - CLÍNICA INTERNACIONAL
+   Diseño institucional: Sistema de tokens, layout, navegación y componentes comunes
+   ========================================================================== */
+
+:root {
+    /* Paleta Institucional Clínica Internacional (Portal del Paciente) */
+    --primary: #0077c8;
+    --primary-hover: #005a9c;
+    --primary-active: #004071;
+    --primary-focus: #003d6d;
+    --primary-disabled: #dbeefe;
+    --primary-disabled-text: #8fa0b5;
+    --primary-light: #eaf4fd;
+
+    /* Botón Secundario */
+    --secondary-bg: #ffffff;
+    --secondary-border: #cbd5e1;
+    --secondary-text: #0077c8;
+    --secondary-hover-bg: #f0f7ff;
+    --secondary-hover-border: #93c5fd;
+    --secondary-active-bg: #dbeafe;
+
+    /* Acción Crítica */
+    --critical-border: #fca5a5;
+    --critical-text: #ef4444;
+    --critical-hover-bg: #fef2f2;
+    --critical-hover-border: #ef4444;
+    --critical-confirm-bg: #dc2626;
+    --critical-confirm-hover-bg: #b91c1c;
+    --critical-confirm-text: #ffffff;
+
+    /* Enlaces */
+    --link-color: #0077c8;
+    --link-hover: #005a9c;
+
+    /* Superficies, Textos y Bordes */
+    --bg-page: #f8fafc; 
+    --bg-card: #ffffff;
+    --text-dark: #0f172a;
+    --text-gray: #64748b;
+    --text-light: #94a3b8;
+    --border-light: #e2e8f0;
+    --border-focus: #0077c8;
+    --radius-lg: 16px;
+    --radius-md: 10px;
+    --radius-sm: 8px;
+    --sidebar-width: 260px;
+}
+
+/* Foco con teclado visible (anillo azul marino de 3px, contraste > 3:1) */
+:focus-visible {
+    outline: 3px solid var(--primary-focus) !important;
+    outline-offset: 2px !important;
+}
+
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+body {
+    background-color: var(--bg-page);
+    color: var(--text-dark);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* ==========================================================================
+   SIDEBAR & BRANDING
+   ========================================================================== */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-card);
+    border-right: 1px solid var(--border-light);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    flex-shrink: 0;
+    z-index: 10;
+}
+
+.brand-container {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 32px;
+    padding: 2px 8px;
+}
+
+.brand-logo-img {
+    width: 36px;
+    height: 36px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-title {
+    font-size: 14.5px;
+    font-weight: 700;
+    color: var(--text-dark);
+    line-height: 1.2;
+}
+
+.brand-subtitle {
+    font-size: 11.5px;
+    color: var(--text-gray);
+    font-weight: 500;
+}
+
+.nav-menu {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    flex: 1;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    color: var(--text-gray);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.nav-item:hover {
+    background-color: #f8fafc;
+    color: var(--text-dark);
+}
+
+.nav-item.active {
+    background-color: #eff6ff;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.nav-item .badge-count {
+    margin-left: auto;
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* Bottom User Profile Card */
+.user-profile {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background-color: #f1f5f9;
+    border-radius: 12px;
+    border: 1px solid #e2e8f0;
+}
+
+.user-profile .avatar {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    background-color: #0284c7;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 13px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    letter-spacing: 0.5px;
+}
+
+.user-profile .user-info {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+}
+
+.user-profile .user-name {
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--text-dark);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.25;
+}
+
+.user-profile .user-role {
+    font-size: 11.5px;
+    color: var(--text-gray);
+    margin-top: 2px;
+}
+
+.user-profile .btn-logout {
+    color: #0284c7;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 6px;
+    border-radius: 8px;
+    text-decoration: none;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+
+.user-profile .btn-logout:hover {
+    color: #ef4444;
+    background-color: #fee2e2;
+}
+
+.user-profile-bottom {
+    margin-top: auto;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 8px 8px 8px;
+    border-top: 1px solid var(--border-light);
+    cursor: pointer;
+    text-decoration: none;
+}
+
+.avatar-initials {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    font-weight: 600;
+    color: var(--primary);
+    background-color: #eff6ff;
+}
+
+.avatar-lg {
+    width: 48px;
+    height: 48px;
+    font-size: 16px;
+    border: 2px solid #fff;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+.avatar-sm {
+    width: 36px;
+    height: 36px;
+    font-size: 13px;
+    flex-shrink: 0;
+}
+
+.user-name-sm {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-dark);
+    line-height: 1.3;
+}
+
+.user-role-sm {
+    font-size: 11px;
+    color: var(--text-gray);
+}
+
+/* ==========================================================================
+   MAIN CONTENT & HEADER
+   ========================================================================== */
+.main-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+    padding: 0;
+    background-color: var(--bg-page);
+}
+
+.page-header, .header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 32px;
+}
+
+.header-date {
+    font-size: 13px;
+    color: var(--text-gray);
+    font-weight: 500;
+    margin-bottom: 8px;
+    text-transform: capitalize;
+}
+
+.header-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--text-dark);
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+}
+
+.header-subtitle {
+    font-size: 14px;
+    color: var(--text-gray);
+}
+
+/* ==========================================================================
+   NOTIFICACIÓN / CAMPANITA DE ALERTAS (PUNTO ROJO CONDICIONAL)
+   ========================================================================== */
+.btn-bell {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-gray);
+    position: relative;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.btn-bell:hover {
+    background: #f8fafc;
+    color: var(--text-dark);
+}
+
+.btn-bell.has-unread::after {
+    content: '';
+    position: absolute;
+    top: 10px;
+    right: 12px;
+    width: 8px;
+    height: 8px;
+    background: #ef4444;
+    border-radius: 50%;
+    border: 2px solid #ffffff;
+}
+
+/* ==========================================================================
+   SISTEMA DE COMPONENTES - CLÍNICA INTERNACIONAL (PORTAL PACIENTE)
+   ========================================================================== */
+
+/* 1. BOTÓN PRINCIPAL */
+.btn-primary {
+    background-color: var(--primary);
+    color: #ffffff;
+    border: 1px solid var(--primary);
+    padding: 10px 22px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    box-shadow: 0 1px 3px rgba(0, 119, 200, 0.2);
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-primary:hover:not(:disabled):not(.btn-disabled) {
+        background-color: var(--primary-hover);
+        border-color: var(--primary-hover);
+    }
+}
+
+.btn-primary:active:not(:disabled):not(.btn-disabled) {
+    background-color: var(--primary-active);
+    border-color: var(--primary-active);
+}
+
+.btn-primary:focus-visible {
+    outline: 3px solid var(--primary-focus) !important;
+    outline-offset: 2px !important;
+}
+
+.btn-primary:disabled,
+.btn-primary.btn-disabled {
+    background-color: var(--primary-disabled) !important;
+    border-color: var(--primary-disabled) !important;
+    color: var(--primary-disabled-text) !important;
+    cursor: not-allowed !important;
+    box-shadow: none !important;
+}
+
+.btn-disabled-hint {
+    display: block;
+    font-size: 11.5px;
+    color: var(--text-gray);
+    margin-top: 4px;
+    font-weight: 500;
+}
+
+.btn-loading {
+    background-color: var(--primary-hover) !important;
+    cursor: wait !important;
+    pointer-events: none;
+}
+
+.btn-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.35);
+    border-top-color: #ffffff;
+    border-radius: 50%;
+    animation: btnSpin 0.7s linear infinite;
+    display: inline-block;
+}
+
+@keyframes btnSpin {
+    to { transform: rotate(360deg); }
+}
+
+/* 2. BOTÓN SECUNDARIO Y ACCIÓN CRÍTICA */
+.btn-secondary {
+    background-color: var(--secondary-bg);
+    border: 1px solid var(--secondary-border);
+    color: var(--secondary-text);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-secondary:hover {
+        background-color: var(--secondary-hover-bg);
+        border-color: var(--secondary-hover-border);
+        color: var(--primary-hover);
+    }
+}
+
+.btn-secondary:active {
+    background-color: var(--secondary-active-bg);
+    border-color: var(--primary);
+}
+
+.btn-critical {
+    background-color: #ffffff;
+    border: 1px solid var(--critical-border);
+    color: var(--critical-text);
+    padding: 10px 20px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+    cursor: pointer;
+    user-select: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-critical:hover {
+        background-color: var(--critical-hover-bg);
+        border-color: var(--critical-hover-border);
+        color: #dc2626;
+    }
+}
+
+.btn-critical-confirm {
+    background-color: var(--critical-confirm-bg);
+    border: 1px solid var(--critical-confirm-bg);
+    color: var(--critical-confirm-text);
+    padding: 10px 22px;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .btn-critical-confirm:hover {
+        background-color: var(--critical-confirm-hover-bg);
+        border-color: var(--critical-confirm-hover-bg);
+    }
+}
+
+.link-action {
+    color: var(--link-color);
+    font-weight: 600;
+    font-size: 13.5px;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .link-action:hover {
+        color: var(--link-hover);
+        text-decoration: underline;
+    }
+}
+
+/* 3. COMPONENTES DE SELECCIÓN */
+.select-card {
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    border-radius: var(--radius-sm, 8px);
+    padding: 14px 18px;
+    font-weight: 600;
+    color: var(--text-dark);
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .select-card:hover {
+        border-color: #93c5fd;
+        background-color: #f8fafc;
+    }
+}
+
+.select-card.selected {
+    border: 2px solid var(--primary) !important;
+    background-color: #f0f7ff !important;
+    color: var(--primary) !important;
+    font-weight: 700;
+}
+
+/* Slots de Horario */
+.time-slot-btn {
+    border-radius: var(--radius-sm, 8px);
+    padding: 10px 14px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 90px;
+    background: #ffffff;
+    border: 1px solid var(--border-light);
+    user-select: none;
+}
+
+.time-slot-btn .slot-time {
+    font-size: 14px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+
+.time-slot-btn .slot-label {
+    font-size: 11px;
+    font-weight: 500;
+    margin-top: 3px;
+}
+
+.time-slot-btn.free {
+    background: #ffffff;
+    border-color: var(--border-light);
+    color: var(--text-dark);
+}
+
+.time-slot-btn.free .slot-label {
+    color: var(--text-gray);
+}
+
+@media (hover: hover) and (pointer: fine) {
+    .time-slot-btn.free:hover {
+        border-color: var(--primary);
+        background: #f0f7ff;
+    }
+}
+
+.time-slot-btn.chosen,
+.time-slot-btn.selected {
+    background: var(--primary) !important;
+    border-color: var(--primary) !important;
+    color: #ffffff !important;
+}
+
+.time-slot-btn.chosen .slot-label,
+.time-slot-btn.selected .slot-label {
+    color: #e0f2fe !important;
+}
+
+.time-slot-btn.disabled,
+.time-slot-btn.no-cupo {
+    background: #f1f5f9 !important;
+    border-color: var(--border-light) !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+}
+
+.time-slot-btn.disabled .slot-time,
+.time-slot-btn.no-cupo .slot-time {
+    text-decoration: line-through;
+}
+
+.time-slot-btn.disabled .slot-label,
+.time-slot-btn.no-cupo .slot-label {
+    color: #94a3b8 !important;
+}
+
+/* 4. CAMPOS DE FORMULARIO (INPUTS) */
+.form-field-group {
+    margin-bottom: 18px;
+    display: flex;
+    flex-direction: column;
+}
+
+.form-field-label {
+    font-size: 12px;
+    font-weight: 700;
+    color: #334155;
+    margin-bottom: 6px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.form-field-input {
+    width: 100%;
+    padding: 10px 14px;
+    border: 1px solid #cbd5e1;
+    border-radius: var(--radius-sm, 8px);
+    font-size: 14px;
+    color: #0f172a;
+    outline: none;
+    background: #ffffff;
+    transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.form-field-input::placeholder {
+    color: #94a3b8;
+}
+
+.form-field-input:focus {
+    border: 2px solid var(--primary) !important;
+    padding: 9px 13px; /* mantiene el tamaño compensando el borde de 2px */
+    box-shadow: 0 0 0 3px rgba(0, 119, 200, 0.15);
+}
+
+.form-field-input.has-error,
+.form-field-input.error {
+    border: 2px solid #ef4444 !important;
+    padding: 9px 13px;
+}
+
+.form-field-error-text {
+    font-size: 11.5px;
+    color: #ef4444;
+    font-weight: 500;
+    margin-top: 5px;
+}
+
+.form-field-input[readonly],
+.form-field-input.readonly {
+    background-color: #f8fafc;
+    border-color: var(--border-light);
+    color: #64748b;
+    cursor: default;
+}
+
+/* 5. PROGRESO, CARGA Y MENSAJES */
+/* Stepper Pasos de Reserva */
+.stepper-steps-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.step-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+}
+
+.step-circle {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.step-badge.done .step-circle {
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+.step-badge.done .step-label {
+    color: var(--text-dark);
+    font-weight: 500;
+}
+
+.step-badge.active .step-circle {
+    background-color: var(--primary);
+    color: #ffffff;
+}
+
+.step-badge.active .step-label {
+    color: var(--primary);
+    font-weight: 700;
+}
+
+.step-badge.pending .step-circle {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #94a3b8;
+}
+
+.step-badge.pending .step-label {
+    color: #94a3b8;
+    font-weight: 500;
+}
+
+/* Skeleton Loader */
+.skeleton-box {
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: skeletonAnim 1.5s infinite ease-in-out;
+    border-radius: 8px;
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+}
+
+@keyframes skeletonAnim {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Feedback Banners */
+.banner-feedback {
+    border-radius: 8px;
+    padding: 14px 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+}
+
+.banner-feedback-title {
+    font-weight: 700;
+    line-height: 1.3;
+}
+
+.banner-feedback-desc {
+    font-size: 12.5px;
+    margin-top: 2px;
+    opacity: 0.9;
+}
+
+.banner-feedback.success {
+    background-color: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+}
+
+.banner-feedback.error {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+}
+
+.banner-feedback.warning,
+.banner-feedback.timer {
+    background-color: #fef3c7;
+    border: 1px solid #fcd34d;
+    color: #92400e;
+}
+
+
+/* ==========================================================================
+   TOP BAR INSTITUCIONAL COMPARTIDA (HEADER)
+   ========================================================================== */
+.dash-top-header {
+    background-color: #ffffff;
+    border-bottom: 1px solid var(--border-light, #e2e8f0);
+    height: 64px;
+    padding: 0 40px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-shrink: 0;
+    z-index: 5;
+}
+
+.breadcrumb-trail {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13.5px;
+    color: var(--text-gray, #64748b);
+}
+
+.breadcrumb-trail .bc-sep {
+    color: #cbd5e1;
+}
+
+.breadcrumb-trail strong {
+    color: var(--text-dark, #0f172a);
+    font-weight: 600;
+}
+
+.btn-avisos-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 7px 18px;
+    background: #ffffff;
+    border: 1px solid var(--border-light, #e2e8f0);
+    border-radius: 9999px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--text-dark, #0f172a);
+    text-decoration: none;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.btn-avisos-pill:hover {
+    border-color: #cbd5e1;
+    background: #f8fafc;
+}
+
+.badge-avisos-count {
+    background: #ef4444;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 5px;
+    border-radius: 9999px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+}
+
+/* ==========================================================================
+   RESPONSIVE DESIGN
+   ========================================================================== */
+@media (max-width: 900px) {
+    body {
+        flex-direction: column;
+        overflow-y: auto;
+    }
+    .sidebar {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .main-content {
+        padding: 24px 20px;
+    }
+}
