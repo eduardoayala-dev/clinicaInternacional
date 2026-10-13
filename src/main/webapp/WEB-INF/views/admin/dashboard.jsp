@@ -151,24 +151,33 @@
             <% } %>
 
             <!-- 1. CABECERA DEL TABLERO Y BOTONES DE ACCIÓN -->
+            <div id="contenedorBannerAlerta"></div>
+
             <div class="tablero-header-row">
                 <div class="tablero-title-block">
                     <h1 class="tablero-page-title">Tablero de control operativo diario</h1>
-                    <p class="tablero-page-subtitle">
-                        <%= fechaHoyFormateada %> · Sede San Borja · Se actualiza cada 5 min · Última: <%= horaUltima %>
-                    </p>
+                    <div class="tablero-page-subtitle" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
+                        <span><%= fechaHoyFormateada %> · Sede San Borja</span>
+                        <span>•</span>
+                        <div class="widget-actualizacion-adm" id="widgetActualizacion">
+                            <span id="txtActualizadoHace">Actualizado hace <span id="numMinutos">0</span> min</span>
+                            <button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(this)">
+                                <i data-lucide="refresh-cw" id="iconoRefreshBtn" style="width: 13px; height: 13px;"></i> Actualizar
+                            </button>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tablero-actions-group">
-                    <button type="button" class="tablero-btn-outline" onclick="exportarExcel()">
+                    <button type="button" class="tablero-btn-outline" id="btnExportarExcel" onclick="exportarExcel()">
                         <i data-lucide="download"></i>
                         <span>Exportar Excel</span>
                     </button>
-                    <button type="button" class="tablero-btn-outline" onclick="exportarCSV()">
+                    <button type="button" class="tablero-btn-outline" id="btnExportarCSV" onclick="exportarCSV()">
                         <i data-lucide="download"></i>
                         <span>Exportar CSV</span>
                     </button>
-                    <button type="button" class="tablero-btn-primary" onclick="actualizarAhora()">
+                    <button type="button" class="tablero-btn-primary" id="btnActualizarAhora" onclick="actualizarEnVivo(this)">
                         <i data-lucide="refresh-cw"></i>
                         <span>Actualizar ahora</span>
                     </button>
@@ -296,7 +305,7 @@
                                     else if ("Confirmada - Web".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado)) pillClass = "pill-confirmada";
                                     else if ("Sin confirmar".equalsIgnoreCase(estado) || "Cancelada".equalsIgnoreCase(estado)) pillClass = "pill-sinconfirmar";
                             %>
-                            <tr class="cita-fila"
+                            <tr class="cita-fila fila-interactiva"
                                 data-paciente="<%= pacienteNom != null ? pacienteNom.toLowerCase() : "" %>"
                                 data-dni="<%= dni != null ? dni : "" %>"
                                 data-medico="<%= medicoNom != null ? medicoNom.toLowerCase() : "" %>"
@@ -323,12 +332,12 @@
                                 <td>
                                     <span class="pill-status <%= pillClass %>"><%= estado %></span>
                                 </td>
-                                <td>
+                                <td style="white-space: nowrap;">
                                     <% if (accionTexto != null && !accionTexto.trim().isEmpty()) { %>
                                         <span class="tablero-action-done"><%= accionTexto %></span>
                                     <% } else { %>
-                                        <button type="button" class="btn-action-admitir" onclick="admitirCita(<%= idCita %>, '<%= pacienteNom %>')">Admitir</button>
-                                        <button type="button" class="btn-action-cancelar" onclick="cancelarCita(<%= idCita %>, '<%= pacienteNom %>')">Cancelar</button>
+                                        <button type="button" class="btn-action-admitir" onclick="admitirCita(<%= idCita %>, '<%= pacienteNom != null ? pacienteNom.replace("'", "\\'") : "" %>')">Admitir</button>
+                                        <button type="button" class="btn-action-cancelar" onclick="abrirModalAnularCita(<%= idCita %>, '<%= pacienteNom != null ? pacienteNom.replace("'", "\\'") : "" %>', '<%= hora %>', '<%= medicoNom != null ? medicoNom.replace("'", "\\'") : "" %>')">Anular cita</button>
                                     <% } %>
                                 </td>
                             </tr>
@@ -479,18 +488,75 @@
         </div>
     </div>
 
+    <!-- MODAL DE CONFIRMACIÓN: ACCIÓN CRÍTICA ANULAR CITA -->
+    <div class="adm-modal-overlay" id="modalConfirmarAnularCita" style="display: none;">
+        <div class="adm-modal-box" style="max-width: 480px; width: 90%; padding: 26px; text-align: left;">
+            <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;">
+                <div style="width: 42px; height: 42px; border-radius: 50%; background: #fee2e2; color: #dc2626; display: flex; align-items: center; justify-content: center; flex-shrink: 0;">
+                    <i data-lucide="alert-triangle" style="width: 22px; height: 22px;"></i>
+                </div>
+                <div>
+                    <h3 style="font-size: 17px; font-weight: 700; color: #0f172a; margin-bottom: 4px;">¿Está seguro de anular esta cita?</h3>
+                    <p style="font-size: 13px; color: #64748b; line-height: 1.45;">
+                        Esta es una acción crítica. Al anular la cita, el espacio se liberará en el sistema y se ofrecerá inmediatamente a la lista de espera.
+                    </p>
+                </div>
+            </div>
+
+            <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 12px 14px; margin-bottom: 22px; font-size: 13px;">
+                <div style="color: #0f172a; font-weight: 600;" id="modalAnularPacienteNombre">Eduardo Eduardo</div>
+                <div style="color: #64748b; font-size: 12px; margin-top: 2px;">
+                    Hora: <strong id="modalAnularHora" style="color: #0f172a;">08:30</strong> · <span id="modalAnularMedico">Dr. Carlos Mendoza</span>
+                </div>
+            </div>
+
+            <form id="formConfirmarAnular" action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
+                <input type="hidden" name="action" value="cambiar_estado">
+                <input type="hidden" id="modalAnularIdCita" name="idCita" value="">
+                <input type="hidden" name="nuevoEstado" value="CANCELADA">
+
+                <div style="display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn-secundario" onclick="cerrarModalAnularCita()">Volver / Conservar cita</button>
+                    <button type="submit" class="btn-critico-confirmado">Sí, anular cita</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <!-- ==========================================================================
          LÓGICA JAVASCRIPT DEL TABLERO (FILTRADO EN VIVO, ACCIONES, EXPORTACIONES)
          ========================================================================== -->
     <script>
         let paginaActual = 1;
         const filasPorPagina = 4;
+        let minutosDesdeActualizacion = 0;
 
         document.addEventListener("DOMContentLoaded", function () {
             if (window.lucide) {
                 lucide.createIcons();
             }
             filtrarCitas();
+
+            // Selección visual de filas al hacer click (como especifica el diseño)
+            document.querySelectorAll("#tbodyCitas .cita-fila").forEach(fila => {
+                fila.addEventListener("click", function (e) {
+                    if (e.target.tagName === "BUTTON" || e.target.tagName === "A" || e.target.closest("button")) return;
+                    document.querySelectorAll("#tbodyCitas .cita-fila").forEach(r => r.classList.remove("is-selected"));
+                    this.classList.add("is-selected");
+                });
+            });
+
+            // Timer de actualización automática cada 1 minuto
+            setInterval(() => {
+                minutosDesdeActualizacion++;
+                const elMin = document.getElementById("numMinutos");
+                if (elMin) elMin.textContent = minutosDesdeActualizacion;
+
+                // Cada 5 minutos realiza actualización automática según notas de admisión
+                if (minutosDesdeActualizacion >= 5) {
+                    actualizarEnVivo();
+                }
+            }, 60000);
         });
 
         // Filtrado en vivo de citas en sala de espera
@@ -553,24 +619,69 @@
 
         // Acciones sobre citas
         function admitirCita(idCita, pacienteNom) {
-            if (confirm("¿Confirmar ingreso a sala de espera de " + pacienteNom + "?")) {
-                document.getElementById("formAdmitirIdCita").value = idCita;
-                document.getElementById("formAdmitir").submit();
+            document.getElementById("formAdmitirIdCita").value = idCita;
+            document.getElementById("formAdmitir").submit();
+        }
+
+        // Modal de confirmación para anulación crítica
+        function abrirModalAnularCita(idCita, pacienteNom, hora, medicoNom) {
+            document.getElementById("modalAnularIdCita").value = idCita;
+            document.getElementById("modalAnularPacienteNombre").textContent = pacienteNom;
+            document.getElementById("modalAnularHora").textContent = hora;
+            document.getElementById("modalAnularMedico").textContent = medicoNom;
+            document.getElementById("modalConfirmarAnularCita").style.display = "flex";
+            if (window.lucide) lucide.createIcons();
+        }
+
+        function cerrarModalAnularCita() {
+            document.getElementById("modalConfirmarAnularCita").style.display = "none";
+        }
+
+        // Actualización en vivo (la tabla no se borra, feedback visual transparente)
+        function actualizarEnVivo(btn) {
+            const widget = document.getElementById("widgetActualizacion");
+            const btnPrincipal = document.getElementById("btnActualizarAhora");
+            
+            if (widget) {
+                widget.innerHTML = '<span class="indicador-actualizando"><i data-lucide="loader-2" class="spin-loader" style="width:14px;height:14px;"></i> Actualizando...</span>';
+                if (window.lucide) lucide.createIcons();
             }
-        }
-
-        function cancelarCita(idCita, pacienteNom) {
-            if (confirm("¿Desea cancelar la cita de " + pacienteNom + "? El cupo será ofrecido inmediatamente a los pacientes en lista de espera.")) {
-                document.getElementById("formCancelarIdCita").value = idCita;
-                document.getElementById("formCancelar").submit();
+            if (btnPrincipal) {
+                btnPrincipal.disabled = true;
+                btnPrincipal.innerHTML = '<i data-lucide="loader-2" class="spin-loader" style="width:15px;height:15px;"></i> Actualizando...';
+                if (window.lucide) lucide.createIcons();
             }
+
+            setTimeout(() => {
+                minutosDesdeActualizacion = 0;
+                if (widget) {
+                    widget.innerHTML = '<span id="txtActualizadoHace">Actualizado hace <span id="numMinutos">0</span> min</span>' +
+                                       '<button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(this)">' +
+                                       '<i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Actualizar</button>';
+                }
+                if (btnPrincipal) {
+                    btnPrincipal.disabled = false;
+                    btnPrincipal.innerHTML = '<i data-lucide="refresh-cw"></i> <span>Actualizar ahora</span>';
+                }
+                if (window.lucide) lucide.createIcons();
+                mostrarBannerTemporal("Tablero operativo sincronizado con la base de datos.");
+            }, 600);
         }
 
-        function actualizarAhora() {
-            window.location.reload();
+        function mostrarBannerTemporal(mensaje) {
+            const cont = document.getElementById("contenedorBannerAlerta");
+            if (!cont) return;
+            cont.innerHTML = '<div class="banner-alerta-exito">' +
+                '<i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a; flex-shrink: 0;"></i>' +
+                '<div><strong>Operación completada:</strong> ' + mensaje + '</div>' +
+                '</div>';
+            if (window.lucide) lucide.createIcons();
+            setTimeout(() => {
+                cont.innerHTML = "";
+            }, 4000);
         }
 
-        // Exportación de Citas a Excel y CSV
+        // Exportación con feedback animado en botón ("Generando Excel...")
         function exportarCSV() {
             exportarArchivo("csv");
         }
@@ -580,34 +691,52 @@
         }
 
         function exportarArchivo(formato) {
-            const filas = document.querySelectorAll("#tbodyCitas .cita-fila");
-            let csv = "\uFEFF"; // UTF-8 BOM para apertura correcta con tildes en Excel
-            csv += "HORA;PACIENTE;DNI;SEDE;CONSULTORIO;MEDICO;ESTADO\r\n";
+            const btn = formato === "excel" ? document.getElementById("btnExportarExcel") : document.getElementById("btnExportarCSV");
+            const originalHtml = btn ? btn.innerHTML : "";
 
-            filas.forEach(f => {
-                const cols = f.querySelectorAll("td");
-                if (cols.length >= 5) {
-                    const hora = cols[0].innerText.trim();
-                    const paciente = cols[1].querySelector(".tablero-paciente-name") ? cols[1].querySelector(".tablero-paciente-name").innerText.trim() : cols[1].innerText.trim();
-                    const dniSub = cols[1].querySelector(".tablero-paciente-sub") ? cols[1].querySelector(".tablero-paciente-sub").innerText.trim() : "";
-                    const sede = cols[2].querySelector(".tablero-sede-name") ? cols[2].querySelector(".tablero-sede-name").innerText.trim() : cols[2].innerText.trim();
-                    const cons = cols[2].querySelector(".tablero-sede-cons") ? cols[2].querySelector(".tablero-sede-cons").innerText.trim() : "";
-                    const medico = cols[3].innerText.trim();
-                    const estado = cols[4].innerText.trim();
+            if (btn) {
+                btn.disabled = true;
+                btn.innerHTML = '<i data-lucide="loader-2" class="spin-loader" style="width:15px;height:15px;"></i> <span>Generando ' + (formato === "excel" ? "Excel..." : "CSV...") + '</span>';
+                if (window.lucide) lucide.createIcons();
+            }
 
-                    csv += '"' + hora + '";"' + paciente + '";"' + dniSub + '";"' + sede + '";"' + cons + '";"' + medico + '";"' + estado + '"\r\n';
+            setTimeout(() => {
+                const filas = document.querySelectorAll("#tbodyCitas .cita-fila");
+                let csv = "\uFEFF"; // UTF-8 BOM
+                csv += "HORA;PACIENTE;DNI;SEDE;CONSULTORIO;MEDICO;ESTADO\r\n";
+
+                filas.forEach(f => {
+                    const cols = f.querySelectorAll("td");
+                    if (cols.length >= 5) {
+                        const hora = cols[0].innerText.trim();
+                        const paciente = cols[1].querySelector(".tablero-paciente-name") ? cols[1].querySelector(".tablero-paciente-name").innerText.trim() : cols[1].innerText.trim();
+                        const dniSub = cols[1].querySelector(".tablero-paciente-sub") ? cols[1].querySelector(".tablero-paciente-sub").innerText.trim() : "";
+                        const sede = cols[2].querySelector(".tablero-sede-name") ? cols[2].querySelector(".tablero-sede-name").innerText.trim() : cols[2].innerText.trim();
+                        const cons = cols[2].querySelector(".tablero-sede-cons") ? cols[2].querySelector(".tablero-sede-cons").innerText.trim() : "";
+                        const medico = cols[3].innerText.trim();
+                        const estado = cols[4].innerText.trim();
+
+                        csv += '"' + hora + '";"' + paciente + '";"' + dniSub + '";"' + sede + '";"' + cons + '";"' + medico + '";"' + estado + '"\r\n';
+                    }
+                });
+
+                const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = formato === "excel" ? "tablero_citas_sala_espera.csv" : "citas_operativas_diarias.csv";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = originalHtml;
+                    if (window.lucide) lucide.createIcons();
                 }
-            });
-
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = formato === "excel" ? "tablero_citas_sala_espera.csv" : "citas_operativas_diarias.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+                mostrarBannerTemporal("Reporte exportado exitosamente en formato " + (formato === "excel" ? "Excel (.csv)" : "CSV") + ".");
+            }, 500);
         }
 
         // Modal de Registro de Pacientes
@@ -624,7 +753,17 @@
             if (event.target === document.getElementById("modalRegistrarPaciente")) {
                 cerrarModalRegistrarPaciente();
             }
+            if (event.target === document.getElementById("modalConfirmarAnularCita")) {
+                cerrarModalAnularCita();
+            }
         }
+
+        window.addEventListener("keydown", (e) => {
+            if (e.key === "Escape") {
+                cerrarModalRegistrarPaciente();
+                cerrarModalAnularCita();
+            }
+        });
     </script>
 </body>
 </html>

@@ -15,15 +15,16 @@
     --adm-blue-dark: #005a9c;
     --adm-blue-light: #eaf4fd;
     --adm-blue-border: #bce0fd;
-    --adm-bg-page: #f4f8fc;
+    --adm-bg-page: #f1f5f9;
     --adm-bg-card: #ffffff;
-    --adm-text-main: #0c2340;
-    --adm-text-muted: #6b7c93;
-    --adm-text-light: #8fa0b5;
-    --adm-border: #e2eaf2;
+    --adm-text-main: #0f172a;
+    --adm-text-muted: #64748b;
+    --adm-text-light: #94a3b8;
+    --adm-border: #e2e8f0;
+    --adm-focus-ring: #1668b8;
     --adm-sidebar-w: 240px;
-    --adm-radius-lg: 14px;
-    --adm-radius-md: 10px;
+    --adm-radius-lg: 12px;
+    --adm-radius-md: 8px;
 }
 
 * {
@@ -31,6 +32,11 @@
     padding: 0;
     box-sizing: border-box;
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+
+*:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--adm-focus-ring) !important;
 }
 
 body {
@@ -43,12 +49,12 @@ body {
 }
 
 /* ==========================================================================
-   SIDEBAR (COHERENTE CON TODAS LAS VISTAS)
+   SIDEBAR OSCURO INSTITUCIONAL (PALETA 0.4 / 0.5: #1E2B3F -> #0D1521)
    ========================================================================== */
 .adm-sidebar {
     width: var(--adm-sidebar-w);
-    background-color: #ffffff;
-    border-right: 1px solid #e5edf5;
+    background: linear-gradient(180deg, #1e2b3f 0%, #0d1521 100%);
+    border-right: 1px solid #1e2b3f;
     display: flex;
     flex-direction: column;
     padding: 24px 16px;
@@ -60,36 +66,37 @@ body {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 32px;
+    margin-bottom: 30px;
     padding: 0 4px;
     text-decoration: none;
 }
 
 .adm-brand-logo-img {
-    width: 38px;
-    height: 38px;
+    width: 36px;
+    height: 36px;
     object-fit: contain;
     flex-shrink: 0;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.25));
 }
 
 .adm-brand-name {
     font-size: 14px;
     font-weight: 800;
-    color: #0c2340;
+    color: #ffffff;
     line-height: 1.2;
     letter-spacing: -0.2px;
 }
 
 .adm-brand-sub {
     font-size: 11px;
-    color: #7b8e9f;
+    color: #94a3b8;
     font-weight: 500;
 }
 
 .adm-nav {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 5px;
     flex: 1;
 }
 
@@ -98,23 +105,25 @@ body {
     align-items: center;
     gap: 12px;
     padding: 10px 14px;
-    border-radius: 10px;
-    color: #5a6e85;
+    border-radius: 8px;
+    color: #cbd5e1;
     text-decoration: none;
     font-size: 13.5px;
     font-weight: 500;
     transition: all 0.15s ease;
+    border-left: 3px solid transparent;
 }
 
 .adm-nav-item:hover {
-    background-color: #f1f6fa;
-    color: #0c2340;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
 }
 
 .adm-nav-item.active {
-    background-color: #eaf4fd;
-    color: #0077c8;
+    background-color: rgba(59, 156, 245, 0.18);
+    color: #ffffff;
     font-weight: 600;
+    border-left: 3px solid #3b9cf5;
 }
 
 .adm-nav-item i {
@@ -129,9 +138,9 @@ body {
     align-items: center;
     gap: 10px;
     padding: 10px 12px;
-    background: #f8fafc;
-    border: 1px solid #e5edf5;
-    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
     position: relative;
 }
 
@@ -149,7 +158,7 @@ body {
     width: 36px;
     height: 36px;
     border-radius: 50%;
-    background: #0077c8;
+    background: rgba(59, 156, 245, 0.25);
     color: #ffffff;
     font-weight: 700;
     font-size: 13px;
@@ -157,12 +166,13 @@ body {
     align-items: center;
     justify-content: center;
     flex-shrink: 0;
+    border: 1px solid rgba(59, 156, 245, 0.4);
 }
 
 .adm-user-name {
     font-size: 13px;
     font-weight: 700;
-    color: #0c2340;
+    color: #ffffff;
     line-height: 1.2;
     white-space: nowrap;
     overflow: hidden;
@@ -171,7 +181,7 @@ body {
 
 .adm-user-role {
     font-size: 11.5px;
-    color: #7b8e9f;
+    color: #94a3b8;
     margin-top: 1px;
     white-space: nowrap;
     overflow: hidden;
@@ -179,7 +189,7 @@ body {
 }
 
 .adm-logout-btn {
-    color: #7b8e9f;
+    color: #94a3b8;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -198,8 +208,8 @@ body {
 }
 
 .adm-logout-btn:hover {
-    color: #ef4444;
-    background-color: #fee2e2;
+    color: #ffffff;
+    background-color: rgba(255, 255, 255, 0.1);
 }
 
 /* ==========================================================================
@@ -402,8 +412,8 @@ body {
 }
 
 .adm-btn-primary {
-    background: #0077c8;
-    border: 1px solid #0077c8;
+    background: #0f172a;
+    border: 1px solid #0f172a;
     color: #ffffff;
     padding: 9px 18px;
     border-radius: 8px;
@@ -414,13 +424,32 @@ body {
     align-items: center;
     gap: 6px;
     text-decoration: none;
-    box-shadow: 0 1px 3px rgba(0, 119, 200, 0.25);
+    box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
     transition: all 0.15s ease;
 }
 
 .adm-btn-primary:hover {
-    background: #005a9c;
-    border-color: #005a9c;
+    background: #1e293b;
+    border-color: #1e293b;
+}
+
+.adm-btn-primary:active {
+    background: #020617;
+    transform: translateY(1px);
+}
+
+.adm-btn-primary:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px #1668b8 !important;
+}
+
+.adm-btn-primary:disabled {
+    background: #e2e8f0 !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
 }
 
 .adm-btn-outline {
@@ -442,6 +471,16 @@ body {
 .adm-btn-outline:hover {
     background: #f8fafc;
     border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.adm-btn-outline:active {
+    background: #f1f5f9;
+}
+
+.adm-btn-outline:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px #1668b8 !important;
 }
 
 .adm-btn-reset {
@@ -775,5 +814,336 @@ body {
     font-size: 11px;
     font-weight: 700;
     text-transform: uppercase;
+}
+
+/* ==========================================================================
+   ESTADOS DE COMPONENTES · PERSONAL (MÉDICO, ADMISIÓN, ADMINISTRADOR)
+   Especificaciones institucionales del sistema de diseño
+   ========================================================================== */
+
+/* 1. Botón Principal y Estados */
+.btn-principal {
+    background-color: #0f172a;
+    color: #ffffff;
+    border: 1px solid #0f172a;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 13.5px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.15s ease;
+    text-decoration: none;
+}
+
+.btn-principal:hover {
+    background-color: #1e293b;
+    border-color: #1e293b;
+}
+
+.btn-principal:active {
+    background-color: #020617;
+    transform: translateY(1px);
+}
+
+.btn-principal:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px #1668b8 !important;
+}
+
+.btn-principal:disabled, .btn-principal.is-disabled {
+    background-color: #e2e8f0 !important;
+    border-color: #e2e8f0 !important;
+    color: #94a3b8 !important;
+    cursor: not-allowed !important;
+    transform: none !important;
+    box-shadow: none !important;
+}
+
+/* 2. Botón Secundario, Exportar y Acción Crítica */
+.btn-secundario {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    color: #334155;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: all 0.15s ease;
+}
+
+.btn-secundario:hover {
+    background-color: #f8fafc;
+    border-color: #94a3b8;
+    color: #0f172a;
+}
+
+.btn-secundario:active {
+    background-color: #f1f5f9;
+}
+
+.btn-secundario:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px #1668b8 !important;
+}
+
+/* Acción Crítica (Anular cita / Cancelar separado) */
+.btn-critico-normal {
+    background: transparent;
+    border: 1px solid #fecdd3;
+    color: #e11d48;
+    border-radius: 6px;
+    padding: 5px 12px;
+    font-size: 12.5px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    text-decoration: none;
+}
+
+.btn-critico-normal:hover {
+    background-color: #fef2f2;
+    border-color: #fda4af;
+    color: #b91c1c;
+}
+
+.btn-critico-normal:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px #1668b8 !important;
+}
+
+.btn-critico-confirmado {
+    background-color: #dc2626 !important;
+    border: 1px solid #dc2626 !important;
+    color: #ffffff !important;
+    border-radius: 8px;
+    padding: 9px 18px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.btn-critico-confirmado:hover {
+    background-color: #b91c1c !important;
+    border-color: #b91c1c !important;
+}
+
+/* Enlace "Ver detalle" */
+.enlace-detalle {
+    color: #0077c8;
+    font-weight: 600;
+    text-decoration: none;
+    font-size: 13px;
+    transition: all 0.15s ease;
+}
+
+.enlace-detalle:hover {
+    color: #005a9c;
+    text-decoration: underline;
+}
+
+/* 3. Filas de Tabla y Estados de Cita */
+tr.fila-interactiva {
+    background-color: #ffffff;
+    transition: background-color 0.12s ease;
+}
+
+tr.fila-interactiva:hover {
+    background-color: #f8fafc;
+}
+
+tr.fila-interactiva.is-selected {
+    background-color: #eff6ff !important;
+    box-shadow: inset 3px 0 0 #3b9cf5;
+}
+
+/* Estados de Cita (Color + Texto explícito para accesibilidad) */
+.badge-cita {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 3px 10px;
+    border-radius: 9999px;
+    font-size: 11.5px;
+    font-weight: 700;
+    line-height: 1.4;
+    white-space: nowrap;
+}
+
+.badge-cita-confirmada {
+    background-color: #dcfce7;
+    color: #166534;
+    border: 1px solid #bbf7d0;
+}
+
+.badge-cita-por-confirmar {
+    background-color: #fef3c7;
+    color: #92400e;
+    border: 1px solid #fde68a;
+}
+
+.badge-cita-riesgo {
+    background-color: #fee2e2;
+    color: #991b1b;
+    border: 1px solid #fecdd3;
+}
+
+.badge-cita-llego {
+    background-color: #e0f2fe;
+    color: #0284c7;
+    border: 1px solid #bae6fd;
+}
+
+.badge-cita-no-asistio {
+    background-color: #f1f5f9;
+    color: #475569;
+    border: 1px solid #e2e8f0;
+}
+
+.badge-cita-cancelada {
+    background-color: #f1f5f9;
+    color: #64748b;
+    border: 1px solid #e2e8f0;
+}
+
+/* 4. Campos de Formulario y Validación */
+.campo-input-base {
+    width: 100%;
+    padding: 9px 12px;
+    border: 1px solid #cbd5e1;
+    border-radius: 6px;
+    font-size: 13.5px;
+    color: #0f172a;
+    background-color: #ffffff;
+    transition: all 0.15s ease;
+    outline: none;
+}
+
+.campo-input-base:focus {
+    border-color: #3b9cf5;
+    box-shadow: 0 0 0 3px #1668b8 !important;
+}
+
+.campo-input-base.has-error {
+    border-color: #ef4444 !important;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.2) !important;
+}
+
+.campo-error-mensaje {
+    color: #dc2626;
+    font-size: 11.5px;
+    font-weight: 500;
+    margin-top: 4px;
+    display: block;
+}
+
+.campo-input-readonly {
+    background-color: #f8fafc !important;
+    border-color: #e2e8f0 !important;
+    color: #64748b !important;
+    cursor: default;
+}
+
+/* 5. Carga, Actualización Automática y Mensajes */
+.widget-actualizacion-adm {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #64748b;
+}
+
+.widget-actualizacion-adm .btn-actualizar-link {
+    background: none;
+    border: none;
+    color: #0077c8;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 0;
+    font-size: 13px;
+    transition: all 0.15s ease;
+}
+
+.widget-actualizacion-adm .btn-actualizar-link:hover {
+    text-decoration: underline;
+    color: #005a9c;
+}
+
+.indicador-actualizando {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    color: #0284c7;
+    font-size: 12.5px;
+    font-weight: 600;
+}
+
+/* Banners de Mensajes */
+.banner-alerta-exito {
+    background-color: #dcfce7;
+    border: 1px solid #86efac;
+    color: #166534;
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.banner-alerta-error {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+    color: #991b1b;
+    padding: 12px 18px;
+    border-radius: 8px;
+    margin-bottom: 18px;
+    font-size: 13.5px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+/* Animación de giro para loaders */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spin-loader {
+    animation: spin 0.9s linear infinite;
+    display: inline-block;
+}
+
+/* Skeleton Loading para Tablas */
+@keyframes skeleton-shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+}
+
+.skeleton-box {
+    height: 16px;
+    background: linear-gradient(90deg, #f1f5f9 25%, #e2e8f0 50%, #f1f5f9 75%);
+    background-size: 200% 100%;
+    animation: skeleton-shimmer 1.5s infinite;
+    border-radius: 4px;
 }
 
