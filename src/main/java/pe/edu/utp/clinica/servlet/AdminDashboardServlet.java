@@ -971,8 +971,8 @@ public class AdminDashboardServlet extends HttpServlet {
         Map<String, Object> m1 = new HashMap<>();
         m1.put("idMedico", 1);
         m1.put("cmp", "CMP 45211"); m1.put("dni", "09482711"); m1.put("rne", "24109");
-        m1.put("nombre", "Dr. Carlos Mendoza Valdivia"); m1.put("especialidades", Arrays.asList("Cardiología"));
-        m1.put("sede", "Sede Lima"); m1.put("horas", "36 hrs"); m1.put("estado", "ACTIVO");
+        m1.put("nombre", "Dr. Eduardo Ayala"); m1.put("especialidades", Arrays.asList("Cardiología"));
+        m1.put("sede", "Sede San Borja"); m1.put("horas", "36 hrs"); m1.put("estado", "ACTIVO");
         list.add(m1);
         return list;
     }
@@ -980,19 +980,19 @@ public class AdminDashboardServlet extends HttpServlet {
     private List<Map<String, Object>> obtenerPacientesPadrónFallback() {
         List<Map<String, Object>> list = new ArrayList<>();
         Map<String, Object> p1 = new HashMap<>();
-        p1.put("idPaciente", 74); p1.put("dni", "45879632"); p1.put("nombres", "María"); p1.put("apellidos", "Pérez");
-        p1.put("nombreCompleto", "María Pérez"); p1.put("edad", "41 años"); p1.put("fechaNac", "14/03/1985"); p1.put("fechaNacInput", "1985-03-14");
-        p1.put("zona", "San Borja"); p1.put("direccion", "San Borja"); p1.put("telefono", "+51 987 654 482"); p1.put("telefonoRaw", "987654482");
-        p1.put("email", "maria.perez@correo.com"); p1.put("canalAviso", "WhatsApp"); p1.put("confirmaCanal", "Confirma: Web");
+        p1.put("idPaciente", 74); p1.put("dni", "72345678"); p1.put("nombres", "Eduardo"); p1.put("apellidos", "Ayala");
+        p1.put("nombreCompleto", "Eduardo Ayala"); p1.put("edad", "32 años"); p1.put("fechaNac", "15/06/1994"); p1.put("fechaNacInput", "1994-06-15");
+        p1.put("zona", "San Borja"); p1.put("direccion", "Av. San Borja Sur 420"); p1.put("telefono", "+51 987 112 334"); p1.put("telefonoRaw", "987112334");
+        p1.put("email", "eduardo@paciente.com"); p1.put("canalAviso", "WhatsApp"); p1.put("confirmaCanal", "Confirma: WhatsApp");
         p1.put("sedePreferida", "Sede San Borja"); p1.put("tipoCobertura", "EPS"); p1.put("citasActivas", 3);
         list.add(p1);
 
         Map<String, Object> p2 = new HashMap<>();
         p2.put("idPaciente", 75); p2.put("dni", "45120378"); p2.put("nombres", "Luis"); p2.put("apellidos", "Torres Vega");
         p2.put("nombreCompleto", "Luis Torres Vega"); p2.put("edad", "52 años"); p2.put("fechaNac", "05/08/1974"); p2.put("fechaNacInput", "1974-08-05");
-        p2.put("zona", "Surquillo"); p2.put("direccion", "Surquillo"); p2.put("telefono", "+51 986 112 340"); p2.put("telefonoRaw", "986112340");
+        p2.put("zona", "San Borja"); p2.put("direccion", "Av. Guardia Civil 450"); p2.put("telefono", "+51 986 112 340"); p2.put("telefonoRaw", "986112340");
         p2.put("email", "ltorres@correo.pe"); p2.put("canalAviso", "WhatsApp"); p2.put("confirmaCanal", "Confirma: WhatsApp");
-        p2.put("sedePreferida", "Sede Lima Norte"); p2.put("tipoCobertura", "Particular"); p2.put("citasActivas", 1);
+        p2.put("sedePreferida", "Sede San Borja"); p2.put("tipoCobertura", "Particular"); p2.put("citasActivas", 1);
         list.add(p2);
 
         Map<String, Object> p3 = new HashMap<>();
@@ -1006,17 +1006,17 @@ public class AdminDashboardServlet extends HttpServlet {
         Map<String, Object> p4 = new HashMap<>();
         p4.put("idPaciente", 77); p4.put("dni", "70214589"); p4.put("nombres", "Ana"); p4.put("apellidos", "Quispe Huamán");
         p4.put("nombreCompleto", "Ana Quispe Huamán"); p4.put("edad", "28 años"); p4.put("fechaNac", "17/11/1997"); p4.put("fechaNacInput", "1997-11-17");
-        p4.put("zona", "La Victoria"); p4.put("direccion", "La Victoria"); p4.put("telefono", "+51 912 337 905"); p4.put("telefonoRaw", "912337905");
+        p4.put("zona", "San Borja"); p4.put("direccion", "Calle Las Artes 230"); p4.put("telefono", "+51 912 337 905"); p4.put("telefonoRaw", "912337905");
         p4.put("email", "aquispe@correo.pe"); p4.put("canalAviso", "WhatsApp"); p4.put("confirmaCanal", "Confirma: SMS");
-        p4.put("sedePreferida", "Sede Lima Norte"); p4.put("tipoCobertura", "EPS"); p4.put("citasActivas", 2);
+        p4.put("sedePreferida", "Sede San Borja"); p4.put("tipoCobertura", "EPS"); p4.put("citasActivas", 2);
         list.add(p4);
 
         Map<String, Object> p5 = new HashMap<>();
         p5.put("idPaciente", 78); p5.put("dni", "46932017"); p5.put("nombres", "Jorge"); p5.put("apellidos", "Salas Ramos");
         p5.put("nombreCompleto", "Jorge Salas Ramos"); p5.put("edad", "45 años"); p5.put("fechaNac", "30/06/1981"); p5.put("fechaNacInput", "1981-06-30");
-        p5.put("zona", "Santiago de Surco"); p5.put("direccion", "Santiago de Surco"); p5.put("telefono", "+51 965 781 044"); p5.put("telefonoRaw", "965781044");
+        p5.put("zona", "San Borja"); p5.put("direccion", "Av. San Luis 1420"); p5.put("telefono", "+51 965 781 044"); p5.put("telefonoRaw", "965781044");
         p5.put("email", "jsalas@correo.pe"); p5.put("canalAviso", "Correo"); p5.put("confirmaCanal", "Confirma: Web");
-        p5.put("sedePreferida", "Sede Surco"); p5.put("tipoCobertura", "Particular"); p5.put("citasActivas", 1);
+        p5.put("sedePreferida", "Sede San Borja"); p5.put("tipoCobertura", "Particular"); p5.put("citasActivas", 1);
         list.add(p5);
 
         return list;

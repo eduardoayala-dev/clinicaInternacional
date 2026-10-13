@@ -17,6 +17,20 @@ public class AuthService {
     private static final Map<String, Integer> intentosFallidos = new ConcurrentHashMap<>();
     private static final Map<String, Long> bloqueosTemporales = new ConcurrentHashMap<>();
 
+    /**
+     * Modo demostración: habilita usuarios sintéticos y contraseñas de prueba.
+     * Desactivado por defecto. Activar SOLO en desarrollo local con
+     * la variable de entorno DEMO_MODE=true o la propiedad -Ddemo.mode=true.
+     */
+    private static final boolean DEMO_MODE = Boolean.parseBoolean(
+            System.getenv().getOrDefault("DEMO_MODE", System.getProperty("demo.mode", "false")));
+
+    static {
+        if (DEMO_MODE) {
+            LOGGER.warning("⚠️ DEMO_MODE activo: credenciales de prueba habilitadas. NO usar en producción.");
+        }
+    }
+
     private final UsuarioDAO usuarioDAO;
 
     public AuthService() {
@@ -43,25 +57,25 @@ public class AuthService {
             LOGGER.warning("Autenticando usuario sintético de demostración local");
         }
 
-        if (usuario == null) {
-            boolean passValida = "Password123!".equals(password) || "Admin123!".equals(password);
+        if (usuario == null && DEMO_MODE) {
+            boolean passValida = esPasswordDemo(password);
             if (passValida) {
-                if ("paciente@clinica.pe".equals(idLimpio) || "paciente".equals(idLimpio) || "juan.perez@correo.com".equals(idLimpio) || "72345678".equals(idLimpio) || "73910284".equals(idLimpio)) {
-                    return new Usuario(1, "Eduardo", "Ayala", "paciente@clinica.pe", "", "PACIENTE", null, true);
-                } else if ("medico@clinica.pe".equals(idLimpio) || "medico".equals(idLimpio) || "cmendoza@clinicainternacional.pe".equals(idLimpio)) {
-                    return new Usuario(2, "Carlos", "Mendoza", "medico@clinica.pe", "", "MEDICO", null, true);
-                } else if ("personal@clinica.pe".equals(idLimpio) || "personal".equals(idLimpio)) {
-                    return new Usuario(3, "Ana María", "Torres", "personal@clinica.pe", "", "PERSONAL_ADMINISTRATIVO", null, true);
-                } else if ("admin@clinica.pe".equals(idLimpio) || "admin".equals(idLimpio) || "admin@clinicainternacional.pe".equals(idLimpio)) {
-                    return new Usuario(4, "Roberto", "Vargas", "admin@clinica.pe", "", "ADMINISTRADOR", null, true);
+                if ("eduardo@paciente.com".equals(idLimpio) || "paciente@clinica.pe".equals(idLimpio) || "paciente".equals(idLimpio) || "juan.perez@correo.com".equals(idLimpio) || "72345678".equals(idLimpio) || "73910284".equals(idLimpio)) {
+                    return new Usuario(3, "Eduardo", "Ayala", "eduardo@paciente.com", "", "PACIENTE", null, true);
+                } else if ("eduardo@medico.com".equals(idLimpio) || "medico@clinica.pe".equals(idLimpio) || "medico".equals(idLimpio) || "cmendoza@clinicainternacional.pe".equals(idLimpio)) {
+                    return new Usuario(4, "Eduardo", "Ayala", "eduardo@medico.com", "", "MEDICO", null, true);
+                } else if ("eduardo@padmin.com".equals(idLimpio) || "personal@clinica.pe".equals(idLimpio) || "personal".equals(idLimpio)) {
+                    return new Usuario(2, "Eduardo", "Ayala", "eduardo@padmin.com", "", "PERSONAL_ADMINISTRATIVO", null, true);
+                } else if ("eduardo@admin.com".equals(idLimpio) || "admin@clinica.pe".equals(idLimpio) || "admin".equals(idLimpio) || "admin@clinicainternacional.pe".equals(idLimpio)) {
+                    return new Usuario(1, "Eduardo", "Ayala", "eduardo@admin.com", "", "ADMINISTRADOR", null, true);
                 }
             }
         }
 
         if (usuario != null && usuario.isActivo()) {
             boolean validPassword = SecurityUtil.checkPassword(password, usuario.getPasswordHash());
-            if (!validPassword && ("Password123!".equals(password) || "Admin123!".equals(password))) {
-                validPassword = true; // Fallback para la DB de pruebas
+            if (!validPassword && DEMO_MODE && esPasswordDemo(password)) {
+                validPassword = true; // Fallback para la DB de pruebas (solo DEMO_MODE)
             }
             
             if (validPassword) {
@@ -77,6 +91,10 @@ public class AuthService {
         usuarioDAO.registrarAuditoria(usuario != null ? usuario.getIdUsuario() : null, ipOrigen, "LOGIN_FALLIDO", "Credenciales incorrectas para: " + idLimpio, false);
 
         return null;
+    }
+
+    private boolean esPasswordDemo(String password) {
+        return "Password123!".equals(password) || "Admin123!".equals(password);
     }
 
     private boolean estaBloqueado(String key) {
