@@ -33,3 +33,12 @@ replay_pid*
 .project
 .settings/
 jsp/
+
+# Configuración privada y material TLS
+.env
+.env.*
+!.env.example
+certs/
+*.p12
+*.jks
+*.key

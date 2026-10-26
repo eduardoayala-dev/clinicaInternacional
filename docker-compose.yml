@@ -1,38 +1,52 @@
-version: '3.8'
-
+# Entorno local. Producción requiere VERIFY_IDENTITY y la CA del servidor MySQL.
 services:
   app:
     build: .
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_NAME=clinica_db
-      - DB_USER=root
-      - DB_PASSWORD=root
+      APP_ENV: development
+      DB_MODE: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: clinica_db
+      DB_USER: clinica_app
+      DB_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
+      DB_SSL_MODE: REQUIRED
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   db:
     image: mysql:8.0
-    restart: always
+    restart: unless-stopped
+    command: ["--require-secure-transport=ON"]
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:?Define MYSQL_ROOT_PASSWORD en .env}
       MYSQL_DATABASE: clinica_db
-    ports:
-      - "3306:3306"
+      MYSQL_USER: clinica_app
+      MYSQL_PASSWORD: ${DB_PASSWORD:?Define DB_PASSWORD en .env}
     volumes:
-      - ./sql/schema.sql:/docker-entrypoint-initdb.d/schema.sql
+      - mysql_data:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./sql/init/20-app-permissions.sql:/docker-entrypoint-initdb.d/20-app-permissions.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
 
   phpmyadmin:
-    image: phpmyadmin:latest
-    restart: always
+    image: phpmyadmin:5
+    profiles: ["tools"]
     ports:
-      - "8081:80"
+      - "127.0.0.1:8081:80"
     environment:
-      - PMA_HOST=db
-      - PMA_USER=root
-      - PMA_PASSWORD=root
+      PMA_HOST: db
     depends_on:
-      - db
+      db:
+        condition: service_healthy
+
+volumes:
+  mysql_data:

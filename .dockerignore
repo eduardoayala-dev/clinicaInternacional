@@ -4,3 +4,8 @@ target/
 .vscode/
 *.log
 .env
+.env.*
+certs/
+*.p12
+*.jks
+*.key
