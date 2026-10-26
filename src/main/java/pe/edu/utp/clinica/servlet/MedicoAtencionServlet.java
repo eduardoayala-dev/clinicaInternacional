@@ -19,9 +19,13 @@ public class MedicoAtencionServlet extends HttpServlet {
 
     private CitaDAO citaDAO;
 
+    protected CitaDAO crearCitaDAO() {
+        return new CitaDAO();
+    }
+
     @Override
     public void init() throws ServletException {
-        this.citaDAO = new CitaDAO();
+        this.citaDAO = crearCitaDAO();
     }
 
     @Override
@@ -44,12 +48,20 @@ public class MedicoAtencionServlet extends HttpServlet {
         if (idCitaStr != null && !idCitaStr.trim().isEmpty()) {
             try {
                 idCita = Integer.parseInt(idCitaStr);
-            } catch (NumberFormatException ignored) {}
+                if (idCita <= 0) throw new NumberFormatException();
+            } catch (NumberFormatException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
         }
 
         Map<String, Object> citaDetalle = null;
         if (idCita > 0) {
-            citaDetalle = citaDAO.obtenerDetalleCitaMedico(idCita);
+            citaDetalle = citaDAO.obtenerDetalleCitaMedico(idCita, idMedico);
+            if (citaDetalle == null || citaDetalle.isEmpty()) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
         }
 
         request.setAttribute("usuario", usuario);
@@ -68,28 +80,35 @@ public class MedicoAtencionServlet extends HttpServlet {
             return;
         }
 
-        String idCitaStr = request.getParameter("idCita");
-        String accion = SecurityUtil.sanitizeInput(request.getParameter("accion"));
-        String prioridad = SecurityUtil.sanitizeInput(request.getParameter("prioridad"));
-        String fechaProxima = SecurityUtil.sanitizeInput(request.getParameter("fechaProxima"));
-        String indicaciones = SecurityUtil.sanitizeInput(request.getParameter("indicaciones"));
-
-        int idCita = 1;
-        if (idCitaStr != null && !idCitaStr.isEmpty()) {
-            try {
-                idCita = Integer.parseInt(idCitaStr);
-            } catch (NumberFormatException ignored) {}
+        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        if (!"MEDICO".equals(usuario.getRol())) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
         }
-
-        if ("no_asistio".equalsIgnoreCase(accion)) {
-            citaDAO.actualizarAtencionMedica(idCita, "NO_ASISTIO", "BAJA", null, "Paciente no se presentó al llamado en consultorio.");
-            request.setAttribute("mensajeExito", "Estado actualizado: Marcado como 'No se presentó al llamado'.");
-        } else {
-            String nuevoEstado = "ATENDIDA";
-            citaDAO.actualizarAtencionMedica(idCita, nuevoEstado, prioridad != null ? prioridad : "MEDIA", fechaProxima, indicaciones);
-            request.setAttribute("mensajeExito", "¡Registro de atención guardado con éxito! Cita finalizada y plan de seguimiento registrado.");
+        int idCita;
+        try {
+            idCita = Integer.parseInt(request.getParameter("idCita"));
+            if (idCita <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
         }
-
-        doGet(request, response);
+        String accion = request.getParameter("accion");
+        if (!"no_asistio".equals(accion) && !"guardar".equals(accion)) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        String prioridad = request.getParameter("prioridad");
+        if ("no_asistio".equals(accion)) prioridad = "BAJA";
+        String fechaProxima = request.getParameter("fechaProxima");
+        int idMedico = citaDAO.obtenerIdMedicoPorUsuarioId(usuario.getIdUsuario());
+        boolean ok = citaDAO.actualizarAtencionMedica(idCita, idMedico,
+                "no_asistio".equals(accion) ? "NO_ASISTIO" : "ATENDIDA", prioridad,
+                fechaProxima, SecurityUtil.sanitizeInput(request.getParameter("indicaciones")));
+        if (!ok) {
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        response.sendRedirect(request.getContextPath() + "/medico/atencion?idCita=" + idCita);
     }
 }
