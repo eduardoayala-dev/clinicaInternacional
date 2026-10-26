@@ -11,6 +11,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Indicadores y Analítica Global - Clínica Internacional</title>
@@ -183,9 +184,12 @@
                     <span class="user-full-name"><%= nombreAdmin %></span>
                     <span class="user-role-desc">Administrador</span>
                 </div>
-                <a href="${pageContext.request.contextPath}/logout" class="btn-sidebar-logout" title="Cerrar sesión">
+                <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="btn-sidebar-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                     <i data-lucide="log-out"></i>
-                </a>
+                </button>
+</form>
             </div>
         </div>
     </aside>

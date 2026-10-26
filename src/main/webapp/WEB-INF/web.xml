@@ -6,6 +6,24 @@
 
     <display-name>Clinica Internacional</display-name>
 
+    <filter>
+        <filter-name>CsrfFilter</filter-name>
+        <filter-class>pe.edu.utp.clinica.filter.CsrfFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>CsrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+    </filter-mapping>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
     <!-- Configuración para evitar bloqueo de archivos estáticos en Windows con Jetty -->
     <servlet>
         <servlet-name>default</servlet-name>

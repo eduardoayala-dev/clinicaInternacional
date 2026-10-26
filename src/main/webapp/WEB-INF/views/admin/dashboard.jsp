@@ -62,6 +62,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero de Control Operativo Diario — Clínica Internacional</title>
@@ -117,9 +118,12 @@
                     <div class="adm-user-role">Personal administrativo</div>
                 </div>
             </div>
-            <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
+            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="adm-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                 <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </a>
+            </button>
+</form>
         </div>
     </aside>
 
@@ -418,11 +422,13 @@
          FORMULARIOS OCULTOS PARA ACCIONES OPERATIVAS DIRECTAS
          ========================================================================== -->
     <form id="formAdmitir" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
         <input type="hidden" name="action" value="admitir_cita">
         <input type="hidden" name="idCita" id="formAdmitirIdCita" value="">
     </form>
 
     <form id="formCancelar" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
         <input type="hidden" name="action" value="cancelar_cita">
         <input type="hidden" name="idCita" id="formCancelarIdCita" value="">
     </form>
@@ -438,6 +444,7 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/admin/dashboard" method="POST" id="formNuevoPaciente">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="registrar_paciente">
 
                 <div class="tablero-form-grid">
@@ -513,6 +520,7 @@
             </div>
 
             <form id="formConfirmarAnular" action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="cambiar_estado">
                 <input type="hidden" id="modalAnularIdCita" name="idCita" value="">
                 <input type="hidden" name="nuevoEstado" value="CANCELADA">

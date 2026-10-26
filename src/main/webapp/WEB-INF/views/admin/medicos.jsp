@@ -57,6 +57,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médicos y Especialidades — Clínica Internacional</title>
@@ -109,9 +110,12 @@
                     <div class="adm-user-role">Personal administrativo</div>
                 </div>
             </div>
-            <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
+            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="adm-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                 <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </a>
+            </button>
+</form>
         </div>
     </aside>
 
@@ -349,6 +353,7 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/admin/medicos" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="registrarMedico">
 
                 <div class="adm-form-group">
@@ -477,6 +482,7 @@
                 </div>
 
                 <form action="${pageContext.request.contextPath}/admin/medicos" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="action" value="publicar_horario_medico">
                     <input type="hidden" id="formTurnoIdMedico" name="idMedico" value="">
 
@@ -624,6 +630,7 @@
                         '<td style="padding: 10px; text-align: center;"><span class="' + badgeClass + '">' + badgeText + '</span></td>' +
                         '<td style="padding: 10px; text-align: right;">' +
                             '<form method="POST" action="${pageContext.request.contextPath}/admin/medicos" style="margin: 0; display: inline;">' +
+                                '<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">' +
                                 '<input type="hidden" name="action" value="cambiar_estado_horario">' +
                                 '<input type="hidden" name="idDisponibilidad" value="' + t.idDisponibilidad + '">' +
                                 '<input type="hidden" name="nuevoEstado" value="' + proxEstado + '">' +

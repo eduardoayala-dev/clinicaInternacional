@@ -112,6 +112,8 @@ public class RegistroPacienteServlet extends HttpServlet {
             }
             jakarta.servlet.http.HttpSession newSession = request.getSession(true);
             newSession.setAttribute("usuarioLogueado", u);
+            pe.edu.utp.clinica.util.CsrfToken.getOrCreate(newSession);
+            newSession.setAttribute("usuarioId", u.getIdUsuario());
             newSession.setAttribute("rol", "PACIENTE");
             newSession.setAttribute("nombreUsuario", u.getNombreCompleto());
             

@@ -29,6 +29,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notificaciones y Ofertas - Clínica Internacional</title>
@@ -87,9 +88,12 @@
                 <span class="user-name"><%= nombrePaciente %></span>
                 <span class="user-role">Paciente</span>
             </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                 <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </a>
+            </button>
+</form>
         </div>
     </aside>
 
@@ -180,6 +184,7 @@
 
                     <!-- BOTONES DE ACCIÓN -->
                     <form method="post" action="${pageContext.request.contextPath}/paciente/notificaciones" style="margin: 0;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                         <input type="hidden" name="idListaEspera" value="${ofertaCupo.idListaEspera}">
                         <div class="oferta-actions-row">
                             <button type="submit" name="accion" value="rechazar" class="btn-rechazar-oferta">
@@ -270,9 +275,13 @@
                                         <td style="text-align: center;">
                                             <c:choose>
                                                 <c:when test="${n.accion == 'Confirmar'}">
-                                                    <a href="${pageContext.request.contextPath}/paciente/notificaciones?action=confirmar&id=${n.idNotificacion}" class="btn-tb-confirmar" title="Confirmar asistencia">
+                                                    <form method="POST" action="${pageContext.request.contextPath}/paciente/notificaciones" style="margin:0;">
+<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<input type="hidden" name="action" value="confirmar">
+<input type="hidden" name="id" value="${n.idNotificacion}">
+<button type="submit" class="btn-tb-confirmar" title="Confirmar asistencia">
                                                         Confirmar
-                                                    </a>
+                                                    </button></form>
                                                 </c:when>
                                                 <c:otherwise>
                                                     <button type="button" class="btn-tb-ver" onclick="abrirModalDetalle('${n.idNotificacion}', '${n.categoria}', '${n.detalle}', '${n.fecha} ${n.hora}')" title="Ver detalle">
@@ -320,9 +329,13 @@
                 <button type="button" onclick="cerrarModalDetalle()" style="background: #ffffff; border: 1px solid #cbd5e1; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569;">
                     Cerrar
                 </button>
-                <a id="modalNotifMarcarLeidaBtn" href="#" style="background: #0284c7; color: #ffffff; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-block;">
+                <form method="POST" action="${pageContext.request.contextPath}/paciente/notificaciones">
+<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<input type="hidden" name="action" value="marcarLeida">
+<input type="hidden" name="id" id="modalNotifId">
+<button type="submit" id="modalNotifMarcarLeidaBtn" style="background: #0284c7; color: #ffffff; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-block;">
                     Marcar como leído
-                </a>
+                </button></form>
             </div>
         </div>
     </div>
@@ -404,7 +417,7 @@
             document.getElementById('modalNotifCat').textContent = cat || 'Detalle de notificación';
             document.getElementById('modalNotifFecha').textContent = fecha || '';
             document.getElementById('modalNotifMensaje').textContent = msg || '';
-            document.getElementById('modalNotifMarcarLeidaBtn').href = '${pageContext.request.contextPath}/paciente/notificaciones?action=marcarLeida&id=' + encodeURIComponent(id);
+            document.getElementById('modalNotifId').value = id;
             document.getElementById('modalDetalleNotif').style.display = 'flex';
         }
 
