@@ -26,6 +26,11 @@ public class CitaDAO {
 
     private static final Logger LOGGER = Logger.getLogger(CitaDAO.class.getName());
 
+    protected Connection abrirConexion() throws SQLException {
+        return DatabaseConfig.getConnection();
+    }
+
+
     private final MedicoDAO medicoDAO = new MedicoDAO();
     private final NotificacionDAO notificacionDAO = new NotificacionDAO();
     private final ListaEsperaDAO listaEsperaDAO = new ListaEsperaDAO();
@@ -84,21 +89,18 @@ public class CitaDAO {
 
     public int reservarCitaConId(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
         int idPaciente = idPacienteParam;
-        if (idPaciente <= 0) {
-            idPaciente = 1;
-        }
+        if (idPaciente <= 0 || idMedico <= 0) return -1;
 
         String sqlCheckPaciente = "SELECT id_paciente FROM paciente WHERE id_paciente = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sqlCheckPaciente)) {
             ps.setInt(1, idPaciente);
             try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) {
-                    idPaciente = 1;
-                }
+                if (!rs.next()) return -1;
             }
-        } catch (Exception ignored) {
-            idPaciente = 1;
+        } catch (SQLException e) {
+            LOGGER.log(java.util.logging.Level.WARNING, "No se pudo verificar el paciente de la reserva", e);
+            return -1;
         }
 
         String fechaHoraStr = fecha + " " + (hora.length() == 5 ? hora + ":00" : hora);
@@ -106,7 +108,7 @@ public class CitaDAO {
         // 1. VALIDACIÓN ESTRICTA ANTI-COLISIÓN (BLOQUEO DE ESPACIO)
         // Ningún médico puede tener más de una cita activa en la misma fecha y hora.
         String sqlCheckColision = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement psColision = conn.prepareStatement(sqlCheckColision)) {
             psColision.setInt(1, idMedico);
             psColision.setString(2, fechaHoraStr);
@@ -122,7 +124,7 @@ public class CitaDAO {
 
         int idDisp = 1;
         String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? AND fecha = ? LIMIT 1";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sqlDisp)) {
             ps.setInt(1, idMedico);
             ps.setString(2, fecha);
@@ -150,7 +152,7 @@ public class CitaDAO {
 
         String sql = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, fecha_hora, estado, nivel_urgencia, riesgo_cancelacion) " +
                      "VALUES (?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, idPaciente);
             ps.setInt(2, idMedico);
@@ -183,7 +185,7 @@ public class CitaDAO {
 
     private String calcularRiesgoCancelacion(int idPaciente) {
         String sql = "SELECT COUNT(*) FROM cita WHERE id_paciente = ? AND estado = 'CANCELADA'";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPaciente);
             try (ResultSet rs = ps.executeQuery()) {
@@ -250,7 +252,7 @@ public class CitaDAO {
 
     private List<Map<String, Object>> ejecutarConsultaCitas(String sql, int idPaciente) {
         List<Map<String, Object>> list = new ArrayList<>();
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPaciente);
             try (ResultSet rs = ps.executeQuery()) {
@@ -316,7 +318,7 @@ public class CitaDAO {
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
                      "WHERE c.id_cita = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idCita);
             try (ResultSet rs = ps.executeQuery()) {
@@ -357,7 +359,7 @@ public class CitaDAO {
         
         Connection conn = null;
         try {
-            conn = DatabaseConfig.getConnection();
+            conn = abrirConexion();
             conn.setAutoCommit(false);
 
             try (PreparedStatement psVer = conn.prepareStatement(sqlVerificar)) {
@@ -470,7 +472,7 @@ public class CitaDAO {
 
     public boolean actualizarEstadoCita(int idCita, String nuevoEstado) {
         String sql = "UPDATE cita SET estado = ? WHERE id_cita = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setInt(2, idCita);
@@ -481,49 +483,81 @@ public class CitaDAO {
         }
     }
 
-    public boolean actualizarAtencionMedica(int idCita, String nuevoEstado, String prioridad, String indicaciones) {
-        return actualizarAtencionMedica(idCita, nuevoEstado, prioridad, null, indicaciones);
-    }
-
-    public boolean actualizarAtencionMedica(int idCita, String nuevoEstado, String prioridad, String fechaRecomendada, String indicaciones) {
-        String sql = "UPDATE cita SET estado = ?, nivel_urgencia = ?" +
-                     (fechaRecomendada != null && !fechaRecomendada.trim().isEmpty() ? ", fecha_recomendada_proxima = ? " : " ") +
-                     "WHERE id_cita = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nuevoEstado != null ? nuevoEstado : "ATENDIDA");
-            ps.setString(2, prioridad != null ? prioridad : "MEDIA");
-            int paramIdx = 3;
-            if (fechaRecomendada != null && !fechaRecomendada.trim().isEmpty()) {
-                ps.setDate(paramIdx++, java.sql.Date.valueOf(fechaRecomendada));
-            }
-            ps.setInt(paramIdx, idCita);
-            int rows = ps.executeUpdate();
-
-            // Registrar en historial_asistencia si existe la cita
-            if (rows > 0) {
-                try {
-                    String sqlHist = "INSERT INTO historial_asistencia (id_paciente, id_cita, asistio, observacion) " +
-                                     "SELECT id_paciente, id_cita, ?, ? FROM cita WHERE id_cita = ?";
-                    try (PreparedStatement psHist = conn.prepareStatement(sqlHist)) {
-                        psHist.setInt(1, "NO_ASISTIO".equalsIgnoreCase(nuevoEstado) ? 0 : 1);
-                        psHist.setString(2, indicaciones != null ? indicaciones : "Atención completada");
-                        psHist.setInt(3, idCita);
-                        psHist.executeUpdate();
-                    }
-                } catch (Exception exHist) {
-                    // Si ya existe o tabla no disponible, no bloquear la actualización principal
-                    System.err.println("Advertencia registrando historial_asistencia: " + exHist.getMessage());
-                }
-            }
-
-            return rows > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
+    /** Actualización condicionada al propietario y al estado actual de la cita. */
+    public boolean actualizarEstadoCitaPaciente(int idCita, int idPaciente, String nuevoEstado) {
+        if (idCita <= 0 || idPaciente <= 0) return false;
+        String estadosPermitidos;
+        if ("CONFIRMADA".equals(nuevoEstado)) estadosPermitidos = "('SOLICITADA')";
+        else if ("CANCELADA".equals(nuevoEstado)) estadosPermitidos = "('SOLICITADA','CONFIRMADA')";
+        else return false;
+        String sql = "UPDATE cita SET estado = ? WHERE id_cita = ? AND id_paciente = ? AND estado IN "
+                + estadosPermitidos;
+        try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, nuevoEstado);
+            ps.setInt(2, idCita);
+            ps.setInt(3, idPaciente);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
             return false;
         }
     }
 
+    /** Cita e historial se modifican juntos y solo por el médico asignado. */
+    public boolean actualizarAtencionMedica(int idCita, int idMedico, String nuevoEstado,
+            String prioridad, String fechaRecomendada, String indicaciones) {
+        if (idCita <= 0 || idMedico <= 0
+                || !("ATENDIDA".equals(nuevoEstado) || "NO_ASISTIO".equals(nuevoEstado))
+                || !("ALTA".equals(prioridad) || "MEDIA".equals(prioridad) || "BAJA".equals(prioridad))) {
+            return false;
+        }
+        java.sql.Date proxima = null;
+        try {
+            if (fechaRecomendada != null && !fechaRecomendada.isBlank()) {
+                proxima = java.sql.Date.valueOf(fechaRecomendada);
+            }
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
+        String sql = "UPDATE cita SET estado = ?, nivel_urgencia = ?"
+                + (proxima != null ? ", fecha_recomendada_proxima = ?" : "")
+                + " WHERE id_cita = ? AND id_medico = ? AND estado IN ('CONFIRMADA','EN_SALA')";
+        try (Connection conn = abrirConexion()) {
+            conn.setAutoCommit(false);
+            try {
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nuevoEstado);
+                    ps.setString(2, prioridad);
+                    int param = 3;
+                    if (proxima != null) ps.setDate(param++, proxima);
+                    ps.setInt(param++, idCita);
+                    ps.setInt(param, idMedico);
+                    if (ps.executeUpdate() != 1) {
+                        conn.rollback();
+                        return false;
+                    }
+                }
+                String historial = "INSERT INTO historial_asistencia (id_paciente, id_cita, asistio, observacion) "
+                        + "SELECT id_paciente, id_cita, ?, ? FROM cita WHERE id_cita = ? AND id_medico = ?";
+                try (PreparedStatement ps = conn.prepareStatement(historial)) {
+                    ps.setBoolean(1, !"NO_ASISTIO".equals(nuevoEstado));
+                    ps.setString(2, indicaciones);
+                    ps.setInt(3, idCita);
+                    ps.setInt(4, idMedico);
+                    if (ps.executeUpdate() != 1) throw new SQLException("No se registró el historial");
+                }
+                conn.commit();
+                return true;
+            } catch (SQLException e) {
+                conn.rollback();
+                LOGGER.log(java.util.logging.Level.WARNING, "No se pudo guardar la atención médica", e);
+                return false;
+            }
+        } catch (SQLException e) {
+            LOGGER.log(java.util.logging.Level.WARNING, "No se pudo abrir la transacción de atención", e);
+            return false;
+        }
+    }
 
     public List<Map<String, Object>> obtenerAgendaMedico(int idMedico) {
         List<Map<String, Object>> lista = new ArrayList<>();
@@ -538,7 +572,7 @@ public class CitaDAO {
                      "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
                      "WHERE c.id_medico = ? AND DATE(c.fecha_hora) = CURDATE() AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') " +
                      "ORDER BY c.fecha_hora ASC";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idMedico);
             try (ResultSet rs = ps.executeQuery()) {
@@ -563,7 +597,7 @@ public class CitaDAO {
                                  "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
                                  "WHERE c.id_medico = ? AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') " +
                                  "ORDER BY c.fecha_hora DESC LIMIT 10";
-            try (Connection conn = DatabaseConfig.getConnection();
+            try (Connection conn = abrirConexion();
                  PreparedStatement ps = conn.prepareStatement(sqlFallback)) {
                 ps.setInt(1, idMedico);
                 try (ResultSet rs = ps.executeQuery()) {
@@ -617,7 +651,7 @@ public class CitaDAO {
                      "WHERE c.estado = 'CONFIRMADA' AND c.fecha_hora >= CURRENT_TIMESTAMP() " +
                      "ORDER BY CASE c.riesgo_cancelacion WHEN 'ALTO' THEN 1 WHEN 'MEDIO' THEN 2 ELSE 3 END, c.fecha_hora ASC " +
                      "LIMIT 10";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -646,7 +680,7 @@ public class CitaDAO {
                          "WHERE c.id_cita = ?";
         int idEspecialidad = 1;
         int idDisp = 1;
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sqlCita)) {
             ps.setInt(1, idCitaOriginal);
             try (ResultSet rs = ps.executeQuery()) {
@@ -666,7 +700,7 @@ public class CitaDAO {
                           "WHERE le.id_especialidad = ? AND le.estado = 'ACTIVA' " +
                           "ORDER BY CASE le.nivel_urgencia WHEN 'ALTA' THEN 1 WHEN 'MEDIA' THEN 2 ELSE 3 END, le.posicion ASC " +
                           "LIMIT 1";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sqlLista)) {
             ps.setInt(1, idEspecialidad);
             try (ResultSet rs = ps.executeQuery()) {
@@ -760,8 +794,9 @@ public class CitaDAO {
         return listaEsperaDAO.rechazarOfertaCupo(idPaciente, idListaEspera, idUsuario);
     }
 
-    public Map<String, Object> obtenerDetalleCitaMedico(int idCita) {
+    public Map<String, Object> obtenerDetalleCitaMedico(int idCita, int idMedico) {
         Map<String, Object> map = new HashMap<>();
+        if (idCita <= 0 || idMedico <= 0) return map;
         String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, c.riesgo_cancelacion, c.fecha_recomendada_proxima, c.fecha_creacion, " +
                      "u.nombres AS pac_nombres, u.apellidos AS pac_apellidos, u.email AS pac_email, " +
                      "p.id_paciente, p.dni, p.telefono, p.fecha_nacimiento, p.direccion, p.alergias, p.tipo_cobertura, p.canal_aviso, " +
@@ -776,10 +811,11 @@ public class CitaDAO {
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
                      "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
-                     "WHERE c.id_cita = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+                     "WHERE c.id_cita = ? AND c.id_medico = ?";
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idCita);
+            ps.setInt(2, idMedico);
             try (ResultSet rs = ps.executeQuery()) {
                 if (rs.next()) {
                     map.put("idCita", rs.getInt("id_cita"));
@@ -854,7 +890,7 @@ public class CitaDAO {
 
     public int obtenerIdMedicoPorUsuarioId(int usuarioId) {
         String sql = "SELECT id_medico FROM medico WHERE id_usuario = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, usuarioId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -865,14 +901,14 @@ public class CitaDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return 1;
+        return -1;
     }
 
     public int obtenerIdPacientePorUsuarioId(int usuarioId) {
         if (usuarioId <= 0) return -1;
 
         String sqlSelect = "SELECT id_paciente FROM paciente WHERE id_usuario = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
             ps.setInt(1, usuarioId);
             try (ResultSet rs = ps.executeQuery()) {
@@ -884,46 +920,12 @@ public class CitaDAO {
             e.printStackTrace();
         }
 
-        String sqlCheckUser = "SELECT dni FROM usuario WHERE id_usuario = ?";
-        String dniUsuario = null;
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlCheckUser)) {
-            ps.setInt(1, usuarioId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    dniUsuario = rs.getString("dni");
-                } else {
-                    return -1;
-                }
-            }
-        } catch (Exception e) {
-            return -1;
-        }
-
-        if (dniUsuario == null || dniUsuario.trim().isEmpty()) {
-            dniUsuario = "DNI" + usuarioId + String.valueOf(System.currentTimeMillis() % 10000);
-        }
-
-        String sqlInsert = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, '1995-01-01', '999999999', 'Av. Javier Prado Este 1066')";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlInsert, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, usuarioId);
-            ps.setString(2, dniUsuario);
-            ps.executeUpdate();
-            try (ResultSet keys = ps.getGeneratedKeys()) {
-                if (keys.next()) {
-                    return keys.getInt(1);
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
         return -1;
     }
 
     public int obtenerIdUsuarioPorPacienteId(int idPaciente) {
         String sql = "SELECT id_usuario FROM paciente WHERE id_paciente = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPaciente);
             try (ResultSet rs = ps.executeQuery()) {
@@ -934,7 +936,7 @@ public class CitaDAO {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        return 1;
+        return -1;
     }
 
     // =========================================================================

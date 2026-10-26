@@ -30,6 +30,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mis Citas - Portal del Paciente | Clínica Internacional</title>
@@ -88,9 +89,12 @@
                 <span class="user-name"><%= nombrePaciente %></span>
                 <span class="user-role">Paciente</span>
             </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                 <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </a>
+            </button>
+</form>
         </div>
     </aside>
 
@@ -185,6 +189,7 @@
                                                 <span class="badge-status pendiente">Pendiente de confirmar</span>
                                                 <span class="cell-secondary">Plazo: 24h antes</span>
                                                 <form method="POST" action="${pageContext.request.contextPath}/paciente/historial" style="margin-top: 4px;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                     <input type="hidden" name="action" value="confirmar">
                                                     <input type="hidden" name="idCita" value="<%= c.get("idCita") %>">
                                                     <button type="submit" class="btn-confirmar-asistencia">Confirmar asistencia</button>
@@ -433,6 +438,7 @@
             </div>
 
             <form id="formCancelarCita" method="POST" action="${pageContext.request.contextPath}/paciente/historial">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="cancelar">
                 <input type="hidden" name="idCita" id="modalCancelarIdCita" value="">
 

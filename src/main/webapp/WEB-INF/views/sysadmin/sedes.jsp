@@ -24,6 +24,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de sedes - Portal del Administrador | Clínica Internacional</title>
@@ -627,9 +628,12 @@
                 <span class="user-name"><%= nombreAdmin %></span>
                 <span class="user-role">Administrador</span>
             </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
+            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                 <i data-lucide="log-out"></i>
-            </a>
+            </button>
+</form>
         </div>
     </aside>
 
@@ -902,6 +906,7 @@
                 </button>
             </div>
             <form action="${pageContext.request.contextPath}/sysadmin/sedes" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="crearSede">
                 <div class="modal-box-body">
                     <div class="modal-input-group">
@@ -947,6 +952,7 @@
                 </button>
             </div>
             <form action="${pageContext.request.contextPath}/sysadmin/sedes" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="editarSede">
                 <input type="hidden" name="idSede" id="editIdSede">
                 <div class="modal-box-body">

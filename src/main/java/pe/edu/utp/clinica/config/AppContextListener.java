@@ -13,6 +13,12 @@ public class AppContextListener implements ServletContextListener {
 
     @Override
     public void contextInitialized(ServletContextEvent sce) {
+        jakarta.servlet.SessionCookieConfig cookie = sce.getServletContext().getSessionCookieConfig();
+        cookie.setHttpOnly(true);
+        cookie.setAttribute("SameSite", "Lax");
+        boolean produccion = System.getenv("RAILWAY_ENVIRONMENT") != null
+                || "production".equalsIgnoreCase(System.getenv("APP_ENV"));
+        cookie.setSecure(produccion);
         LOGGER.info("Aplicación Clínica Internacional iniciada correctamente.");
     }
 

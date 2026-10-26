@@ -10,6 +10,7 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Clínica Internacional - Portal del Paciente</title>
@@ -209,6 +210,7 @@
                 </div>
 
                 <form id="registerForm" action="${pageContext.request.contextPath}/registro" method="POST" autocomplete="off">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="terminos" value="on">
 
                     <!-- SECCIÓN 01: DATOS PERSONALES -->

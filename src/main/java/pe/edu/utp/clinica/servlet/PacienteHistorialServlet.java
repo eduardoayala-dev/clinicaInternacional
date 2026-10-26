@@ -17,6 +17,10 @@ import java.util.Map;
 @WebServlet(name = "PacienteHistorialServlet", urlPatterns = {"/paciente/historial"})
 public class PacienteHistorialServlet extends HttpServlet {
 
+    protected CitaDAO crearCitaDAO() {
+        return new CitaDAO();
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
@@ -28,7 +32,7 @@ public class PacienteHistorialServlet extends HttpServlet {
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
         int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
 
-        CitaDAO citaDAO = new CitaDAO();
+        CitaDAO citaDAO = crearCitaDAO();
         int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
 
         List<Map<String, Object>> citasActivas = idPaciente > 0 ? citaDAO.obtenerProximasCitasPaciente(idPaciente) : new ArrayList<>();
@@ -55,35 +59,39 @@ public class PacienteHistorialServlet extends HttpServlet {
             return;
         }
 
+        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        if (!"PACIENTE".equals(usuario.getRol())) {
+            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            return;
+        }
         String action = request.getParameter("action");
-        String idCitaStr = request.getParameter("idCita");
-        String motivo = request.getParameter("motivo");
-        if (idCitaStr != null && !idCitaStr.isEmpty()) {
-            try {
-                int idCita = Integer.parseInt(idCitaStr);
-                CitaDAO citaDAO = new CitaDAO();
-                if ("confirmar".equals(action)) {
-                    citaDAO.actualizarEstadoCita(idCita, "CONFIRMADA");
-                } else if ("cancelar".equals(action)) {
-                    try {
-                        citaDAO.ejecutarReasignacionInteligente(idCita);
-                    } catch (Exception ignored) {}
-                    citaDAO.actualizarEstadoCita(idCita, "CANCELADA");
-
-                    Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
-                    if (usuario != null) {
-                        String msg = "Tu cita médica ha sido cancelada correctamente.";
-                        if (motivo != null && !motivo.trim().isEmpty()) {
-                            msg += " Motivo registrado: " + motivo.trim() + ".";
-                        }
-                        try {
-                            citaDAO.crearNotificacion(usuario.getIdUsuario(), idCita, "Cita Cancelada", msg);
-                        } catch (Exception ignored) {}
-                    }
-                }
-            } catch (NumberFormatException e) {
-                // Ignore parse error
-            }
+        String estado;
+        if ("confirmar".equals(action)) estado = "CONFIRMADA";
+        else if ("cancelar".equals(action)) estado = "CANCELADA";
+        else {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        int idCita;
+        try {
+            idCita = Integer.parseInt(request.getParameter("idCita"));
+            if (idCita <= 0) throw new NumberFormatException();
+        } catch (NumberFormatException e) {
+            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            return;
+        }
+        CitaDAO citaDAO = crearCitaDAO();
+        int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
+        if (!citaDAO.actualizarEstadoCitaPaciente(idCita, idPaciente, estado)) {
+            // Misma respuesta para cita ajena, inexistente o no modificable.
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            return;
+        }
+        if ("CANCELADA".equals(estado)) {
+            // Solo se oferta un cupo después de confirmar la cancelación autorizada.
+            citaDAO.ejecutarReasignacionInteligente(idCita);
+            citaDAO.crearNotificacion(usuario.getIdUsuario(), idCita, "Cita Cancelada",
+                    "Tu cita médica ha sido cancelada correctamente.");
         }
         response.sendRedirect(request.getContextPath() + "/paciente/historial");
     }

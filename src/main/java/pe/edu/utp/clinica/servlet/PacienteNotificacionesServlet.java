@@ -28,37 +28,14 @@ public class PacienteNotificacionesServlet extends HttpServlet {
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
         int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
 
-        CitaDAO citaDAO = new CitaDAO();
-        int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
-
-        String action = request.getParameter("action");
-        if ("marcarLeidas".equals(action)) {
-            citaDAO.marcarNotificacionesComoLeidas(usuarioId);
-            response.sendRedirect(request.getContextPath() + "/paciente/notificaciones");
-            return;
-        } else if ("marcarLeida".equals(action)) {
-            String notifIdStr = request.getParameter("id");
-            if (notifIdStr != null) {
-                try {
-                    int idNotif = Integer.parseInt(notifIdStr);
-                    citaDAO.marcarNotificacionIndividualLeida(idNotif, usuarioId);
-                } catch (NumberFormatException ignored) {}
-            }
-            response.sendRedirect(request.getContextPath() + "/paciente/notificaciones");
-            return;
-        } else if ("confirmar".equals(action)) {
-            String notifIdStr = request.getParameter("id");
-            if (notifIdStr != null) {
-                try {
-                    int idNotif = Integer.parseInt(notifIdStr);
-                    citaDAO.confirmarRecordatorioCita(idNotif, usuarioId);
-                    session.setAttribute("toastMsg", "Asistencia confirmada exitosamente. Tu cita ha quedado reconfirmada.");
-                    session.setAttribute("toastTipo", "success");
-                } catch (NumberFormatException ignored) {}
-            }
-            response.sendRedirect(request.getContextPath() + "/paciente/notificaciones");
+        if (request.getParameter("action") != null) {
+            response.setHeader("Allow", "POST");
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
+
+        CitaDAO citaDAO = new CitaDAO();
+        int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
 
         String estadoParam = request.getParameter("estado");
         String simularParam = request.getParameter("simular");
@@ -120,6 +97,34 @@ public class PacienteNotificacionesServlet extends HttpServlet {
         int usuarioId = usuario != null ? usuario.getIdUsuario() : -1;
         CitaDAO citaDAO = new CitaDAO();
         int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuarioId);
+
+        String action = request.getParameter("action");
+        if (action != null) {
+            boolean ok;
+            try {
+                if ("marcarLeidas".equals(action)) {
+                    ok = citaDAO.marcarNotificacionesComoLeidas(usuarioId);
+                } else if ("marcarLeida".equals(action) || "confirmar".equals(action)) {
+                    int id = Integer.parseInt(request.getParameter("id"));
+                    if (id <= 0) throw new NumberFormatException();
+                    ok = "confirmar".equals(action)
+                            ? citaDAO.confirmarRecordatorioCita(id, usuarioId)
+                            : citaDAO.marcarNotificacionIndividualLeida(id, usuarioId);
+                } else {
+                    response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                    return;
+                }
+            } catch (NumberFormatException e) {
+                response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+                return;
+            }
+            if (!ok) {
+                response.sendError(HttpServletResponse.SC_NOT_FOUND);
+                return;
+            }
+            response.sendRedirect(request.getContextPath() + "/paciente/notificaciones");
+            return;
+        }
 
         String accion = request.getParameter("accion");
         int idListaEspera = 0;

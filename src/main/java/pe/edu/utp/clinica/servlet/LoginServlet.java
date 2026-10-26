@@ -11,7 +11,7 @@ import pe.edu.utp.clinica.service.AuthService;
 import pe.edu.utp.clinica.util.SecurityUtil;
 
 import java.io.IOException;
-import java.util.UUID;
+import pe.edu.utp.clinica.util.CsrfToken;
 
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/login/paciente", "/login/personal", "/logout"})
 public class LoginServlet extends HttpServlet {
@@ -28,11 +28,8 @@ public class LoginServlet extends HttpServlet {
         String path = request.getServletPath();
 
         if ("/logout".equals(path)) {
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                session.invalidate();
-            }
-            response.sendRedirect(request.getContextPath() + "/login?msg=sesion_cerrada");
+            response.setHeader("Allow", "POST");
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
@@ -55,9 +52,7 @@ public class LoginServlet extends HttpServlet {
         }
 
         HttpSession session = request.getSession(true);
-        if (session.getAttribute("csrfToken") == null) {
-            session.setAttribute("csrfToken", UUID.randomUUID().toString());
-        }
+        CsrfToken.getOrCreate(session);
 
         if ("/login/personal".equals(path)) {
             request.setAttribute("tipoPortal", "PERSONAL");
@@ -73,21 +68,10 @@ public class LoginServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         String path = request.getServletPath();
 
-        String requestCsrfToken = request.getParameter("csrfToken");
-        String sessionCsrfToken = (session != null) ? (String) session.getAttribute("csrfToken") : null;
-
-        if (session == null || requestCsrfToken == null || !requestCsrfToken.equals(sessionCsrfToken)) {
-            HttpSession freshSession = request.getSession(true);
-            freshSession.setAttribute("csrfToken", UUID.randomUUID().toString());
-            request.setAttribute("errorMessage", "Tu sesión previa expiró por inactividad. Por favor, ingresa tus credenciales nuevamente.");
-
-            if ("/login/personal".equals(path)) {
-                request.setAttribute("tipoPortal", "PERSONAL");
-                request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
-            } else {
-                request.setAttribute("tipoPortal", "PACIENTE");
-                request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
-            }
+        // El filtro valida CSRF también para login, registro y cierre de sesión.
+        if ("/logout".equals(path)) {
+            if (session != null) session.invalidate();
+            response.sendRedirect(request.getContextPath() + "/login?msg=sesion_cerrada");
             return;
         }
 
@@ -121,6 +105,8 @@ public class LoginServlet extends HttpServlet {
             }
             HttpSession newSession = request.getSession(true);
             newSession.setAttribute("usuarioLogueado", usuario);
+            CsrfToken.getOrCreate(newSession);
+            newSession.setAttribute("usuarioId", usuario.getIdUsuario());
             newSession.setAttribute("rol", usuario.getRol());
             newSession.setAttribute("nombreUsuario", usuario.getNombreCompleto());
             newSession.setMaxInactiveInterval(30 * 60);
@@ -144,7 +130,7 @@ public class LoginServlet extends HttpServlet {
         } else {
             String errorMsg = authService.getLockoutMessage(identificador);
             request.setAttribute("errorMessage", errorMsg);
-            request.getSession(true).setAttribute("csrfToken", UUID.randomUUID().toString());
+            CsrfToken.getOrCreate(request.getSession(true));
             
             if ("/login/personal".equals(path)) {
                 request.setAttribute("tipoPortal", "PERSONAL");
