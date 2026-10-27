@@ -5,6 +5,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.io.StringReader;
+import java.io.BufferedReader;
 import java.lang.reflect.Proxy;
 import java.util.HashMap;
 import java.util.Map;
@@ -22,6 +24,9 @@ public class HttpExchange {
     public int status = 200;
     public String contentType;
     public String redirect;
+    public String requestBody = "";
+    public String requestContentType = "application/json";
+    public String remoteAddr = "127.0.0.1";
     public HttpSession session = newSession();
 
     public HttpSession newSession() {
@@ -45,6 +50,9 @@ public class HttpExchange {
             (proxy, m, args) -> {
                 switch (m.getName()) {
                     case "getMethod": return method;
+                    case "getReader": return new BufferedReader(new StringReader(requestBody));
+                    case "getContentType": return requestContentType;
+                    case "getRemoteAddr": return remoteAddr;
                     case "getServletPath": return path;
                     case "getRequestURI": return path;
                     case "getContextPath": return "";

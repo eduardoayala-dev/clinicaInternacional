@@ -33,3 +33,8 @@ replay_pid*
 .project
 .settings/
 jsp/
+
+# Configuración privada de servicios externos
+.env
+.env.*
+!.env.example
