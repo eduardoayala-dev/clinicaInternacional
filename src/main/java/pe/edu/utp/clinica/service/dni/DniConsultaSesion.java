@@ -7,35 +7,63 @@ import java.io.Serializable;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.locks.ReentrantLock;
 
 public final class DniConsultaSesion {
     private static final String ATTRIBUTE = DniConsultaSesion.class.getName();
     private static final long TTL = Duration.ofMinutes(10).toMillis();
     private static final int MAX_DOCUMENTS = 5;
+    private static final ReentrantLock CREATION_LOCK = new ReentrantLock();
     private record Consulta(DniDatos datos, long until) implements Serializable {}
+
     private static final class Cache implements Serializable {
         private static final long serialVersionUID = 1L;
         private final Map<String, Consulta> entries = new HashMap<>();
+        private final ReentrantLock lock = new ReentrantLock();
+
+        private DniDatos find(String numero, long now) {
+            entries.entrySet().removeIf(entry -> entry.getValue().until <= now);
+            Consulta entry = entries.get(numero);
+            return entry == null ? null : entry.datos;
+        }
+
+        private void store(DniDatos datos, long now) {
+            entries.entrySet().removeIf(entry -> entry.getValue().until <= now);
+            if (entries.size() >= MAX_DOCUMENTS && !entries.containsKey(datos.numero())) {
+                String oldest = entries.entrySet().stream()
+                        .min(Comparator.comparingLong(entry -> entry.getValue().until)).orElseThrow().getKey();
+                entries.remove(oldest);
+            }
+            entries.put(datos.numero(), new Consulta(datos, now + TTL));
+        }
     }
+
     private DniConsultaSesion() {}
+
+    private static Cache cacheFor(HttpSession session) {
+        CREATION_LOCK.lock();
+        try {
+            if (session.getAttribute(ATTRIBUTE) instanceof Cache cache) return cache;
+            Cache cache = new Cache();
+            session.setAttribute(ATTRIBUTE, cache);
+            return cache;
+        } finally {
+            CREATION_LOCK.unlock();
+        }
+    }
 
     public static void guardar(HttpSession session, DniDatos datos) {
         guardar(session, datos, Clock.systemUTC());
     }
 
     static void guardar(HttpSession session, DniDatos datos, Clock clock) {
-        synchronized (session) {
-            long now = clock.millis();
-            Cache cache = session.getAttribute(ATTRIBUTE) instanceof Cache existing ? existing : new Cache();
-            Map<String, Consulta> entries = cache.entries;
-            entries.entrySet().removeIf(e -> e.getValue().until <= now);
-            if (entries.size() >= MAX_DOCUMENTS && !entries.containsKey(datos.numero())) {
-                String oldest = entries.entrySet().stream().min(Comparator.comparingLong(e -> e.getValue().until))
-                        .orElseThrow().getKey();
-                entries.remove(oldest);
-            }
-            entries.put(datos.numero(), new Consulta(datos, now + TTL));
+        Cache cache = cacheFor(session);
+        cache.lock.lock();
+        try {
+            cache.store(datos, clock.millis());
             session.setAttribute(ATTRIBUTE, cache);
+        } finally {
+            cache.lock.unlock();
         }
     }
 
@@ -45,13 +73,31 @@ public final class DniConsultaSesion {
 
     static DniDatos obtener(HttpSession session, String numero, Clock clock) {
         if (session == null) return null;
-        synchronized (session) {
-            if (!(session.getAttribute(ATTRIBUTE) instanceof Cache cache)) return null;
-            cache.entries.entrySet().removeIf(e -> e.getValue().until <= clock.millis());
-            if (cache.entries.isEmpty()) session.removeAttribute(ATTRIBUTE);
-            else session.setAttribute(ATTRIBUTE, cache);
-            Consulta entry = cache.entries.get(numero);
-            return entry != null ? entry.datos : null;
+        Cache cache = cacheFor(session);
+        cache.lock.lock();
+        try {
+            DniDatos datos = cache.find(numero, clock.millis());
+            session.setAttribute(ATTRIBUTE, cache);
+            return datos;
+        } finally {
+            cache.lock.unlock();
+        }
+    }
+
+    public static DniDatos obtenerOConsultar(HttpSession session, String numero, DniProvider provider)
+            throws DniException {
+        Cache cache = cacheFor(session);
+        cache.lock.lock();
+        try {
+            DniDatos datos = cache.find(numero, System.currentTimeMillis());
+            if (datos == null) {
+                datos = provider.consultar(numero);
+                cache.store(datos, System.currentTimeMillis());
+            }
+            session.setAttribute(ATTRIBUTE, cache);
+            return datos;
+        } finally {
+            cache.lock.unlock();
         }
     }
 }
