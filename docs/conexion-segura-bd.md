@@ -7,7 +7,7 @@ Esta entrega prepara la aplicación para usar una cuenta limitada y verificar la
 | Variable | Regla |
 |---|---|
 | APP_ENV | development, test o production. Un valor desconocido se rechaza. |
-| DB_MODE | mysql por defecto. h2 solo si se selecciona expresamente fuera de producción. |
+| DB_MODE | mysql es el único valor admitido; se puede omitir. |
 | DB_HOST | Obligatoria. Nombre DNS, IPv4 o IPv6 entre corchetes; sin parámetros JDBC. |
 | DB_PORT | 3306 por defecto, entre 1 y 65535. |
 | DB_NAME | Obligatoria. Letras, números y guion bajo. |
@@ -20,7 +20,7 @@ Esta entrega prepara la aplicación para usar una cuenta limitada y verificar la
 
 La presencia de RAILWAY_ENVIRONMENT, RAILWAY_ENVIRONMENT_NAME o RAILWAY_PROJECT_ID también activa la política de producción. No basta poner APP_ENV=development para desactivarla en Railway.
 
-Las credenciales y opciones TLS se pasan al driver como propiedades separadas de la URL. No se habilita allowPublicKeyRetrieval. Un fallo de MySQL produce error de conexión y nunca activa H2. La aplicación mantiene reintentos en producción y pool de conexiones; no crea ni altera tablas al conectar a MySQL.
+Las credenciales y opciones TLS se pasan al driver como propiedades separadas de la URL. No se habilita allowPublicKeyRetrieval. Un fallo de MySQL produce error de conexión y nunca crea una base temporal. La aplicación mantiene reintentos en producción y pool de conexiones; no crea ni altera tablas al conectar a MySQL.
 
 Los archivos .env y truststores privados se excluyen del repositorio y del contexto Docker. Java no carga .env automáticamente: Compose lo lee; con Jetty hay que definir las variables del proceso desde la terminal o el IDE.
 
@@ -112,3 +112,9 @@ La prueba valida el cipher TLS de la sesión real, la cuenta conectada y sus gra
 - [Autenticación del servidor con Connector/J](https://dev.mysql.com/doc/connector-j/en/connector-j-server-authentication.html).
 - [Propiedades de seguridad del driver](https://dev.mysql.com/doc/connector-j/en/connector-j-connp-props-security.html).
 - [Inicialización de la imagen oficial MySQL](https://hub.docker.com/_/mysql/).
+
+## Persistencia local
+
+La aplicación solo utiliza MySQL. H2 tiene alcance Maven `test`: sirve para pruebas aisladas y no se incluye en el WAR. No existe un modo temporal de ejecución ni se cargan datos de demostración desde Java. Una configuración antigua con `DB_MODE=h2` se rechaza.
+
+Para trabajar con la base local persistente, usar la aplicación de Docker en `http://localhost:8080`. Cerrar Docker o reconstruir la aplicación conserva el volumen `mysql_data`. Eliminar ese volumen o ejecutar `sql/schema.sql` sobre la base elimina datos. Una instancia Java adicional solo comparte cuentas si apunta al mismo servidor y base de MySQL.

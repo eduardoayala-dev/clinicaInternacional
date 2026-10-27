@@ -59,7 +59,6 @@ class MySqlSecurityTest {
         assumeTrue("true".equalsIgnoreCase(System.getenv("MYSQL_SECURITY_TEST")),
                 "Requiere MySQL real y MYSQL_SECURITY_TEST=true; no simula una conexión TLS");
         DatabaseSettings settings = new DatabaseSettings(System.getenv());
-        assertFalse(settings.isH2());
         try (HikariDataSource pool = new HikariDataSource(settings.mysqlConfig());
                 var conn = pool.getConnection(); var statement = conn.createStatement()) {
             try (var result = statement.executeQuery("SHOW SESSION STATUS LIKE 'Ssl_cipher'")) {
