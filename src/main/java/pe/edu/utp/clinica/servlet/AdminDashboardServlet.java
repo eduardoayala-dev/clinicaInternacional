@@ -8,6 +8,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.config.DatabaseConfig;
 import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.dao.AgendaCitaDAO;
+import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.dao.MedicoDAO;
 import pe.edu.utp.clinica.dao.UsuarioDAO;
 import pe.edu.utp.clinica.model.Usuario;
@@ -29,6 +31,10 @@ import java.util.*;
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
+    private static final String ID_MEDICO = "idMedico";
+    private static final String ID_SEDE = "idSede";
+    private static final String FECHA_HORA = "fecha_hora";
+
 
     private CitaDAO citaDAO;
     private UsuarioDAO usuarioDAO;
@@ -306,7 +312,7 @@ public class AdminDashboardServlet extends HttpServlet {
                             idUsuarioPac = rs.getInt("id_usuario");
                             idPaciente = rs.getInt("id_paciente");
                             idMedico = rs.getInt("id_medico");
-                            Timestamp ts = rs.getTimestamp("fecha_hora");
+                            Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
                             if (ts != null) {
                                 horaCita = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
                             }
@@ -364,7 +370,7 @@ public class AdminDashboardServlet extends HttpServlet {
                             pacNom = rs.getString("pac_nom") + " " + rs.getString("pac_ape");
                             espNom = rs.getString("esp_nom") != null ? rs.getString("esp_nom") : "Medicina General";
                             idUsuarioPac = rs.getInt("id_usuario");
-                            Timestamp ts = rs.getTimestamp("fecha_hora");
+                            Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
                             if (ts != null) {
                                 horaCita = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
                             }
@@ -527,10 +533,10 @@ public class AdminDashboardServlet extends HttpServlet {
             String medicoStr = request.getParameter("medico");
             String fecha = request.getParameter("fecha");
             String hora = request.getParameter("hora");
-            int idMed = 1;
+            int idMed = -1;
             try { idMed = Integer.parseInt(medicoStr); } catch (Exception ignored) {}
 
-            int idPac = 1;
+            int idPac = -1;
             try (Connection conn = DatabaseConfig.getConnection();
                  PreparedStatement psPac = conn.prepareStatement("SELECT id_paciente FROM paciente WHERE dni = ?")) {
                 psPac.setString(1, dni != null ? dni.trim() : "");
@@ -549,56 +555,29 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         } else if ("publicar_horario_medico".equals(action)) {
             try {
-                int idMed = Integer.parseInt(request.getParameter("idMedico"));
-                int idSede = Integer.parseInt(request.getParameter("idSede"));
-                String fecha = request.getParameter("fecha");
-                String horaInicio = request.getParameter("horaInicio");
-                String horaFin = request.getParameter("horaFin");
-                int duracion = 30;
-                try {
-                    String durStr = request.getParameter("duracion");
-                    if (durStr != null && !durStr.trim().isEmpty()) {
-                        duracion = Integer.parseInt(durStr);
-                    }
-                } catch (Exception ignored) {}
-
-                if (horaInicio != null && horaInicio.length() == 5) horaInicio += ":00";
-                if (horaFin != null && horaFin.length() == 5) horaFin += ":00";
-
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                         "INSERT INTO disponibilidad (id_medico, id_sede, fecha, hora_inicio, hora_fin, duracion_minutos, estado) " +
-                         "VALUES (?, ?, ?, ?, ?, ?, 'PUBLICADO')")) {
-                    ps.setInt(1, idMed);
-                    ps.setInt(2, idSede);
-                    ps.setString(3, fecha);
-                    ps.setString(4, horaInicio);
-                    ps.setString(5, horaFin);
-                    ps.setInt(6, duracion);
-                    ps.executeUpdate();
-                }
-                request.getSession().setAttribute("flashMessage", "¡Nuevo turno de atención publicado exitosamente para el " + fecha + " (" + horaInicio + " - " + horaFin + ")!");
-            } catch (Exception e) {
-                e.printStackTrace();
-                request.getSession().setAttribute("flashMessage", "Error al publicar turno: " + e.getMessage());
+                int medico = Integer.parseInt(request.getParameter(ID_MEDICO));
+                int sede = Integer.parseInt(request.getParameter(ID_SEDE));
+                String duracion = request.getParameter("duracion");
+                int minutos = duracion == null || duracion.isBlank() ? 30 : Integer.parseInt(duracion);
+                new AgendaCitaDAO().publicar(medico, sede, request.getParameter("fecha"),
+                        request.getParameter("horaInicio"), request.getParameter("horaFin"), minutos);
+                request.getSession().setAttribute("flashMessage", "Turno de atención publicado correctamente.");
+            } catch (NumberFormatException e) {
+                request.getSession().setAttribute("flashError", "Los identificadores y la duración deben ser números válidos.");
+            } catch (AgendaException e) {
+                request.getSession().setAttribute("flashError", e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/admin/medicos");
             return;
         } else if ("cambiar_estado_horario".equals(action)) {
             try {
-                int idDisp = Integer.parseInt(request.getParameter("idDisponibilidad"));
-                String nuevoEstado = request.getParameter("nuevoEstado");
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement(
-                         "UPDATE disponibilidad SET estado = ? WHERE id_disponibilidad = ?")) {
-                    ps.setString(1, nuevoEstado);
-                    ps.setInt(2, idDisp);
-                    ps.executeUpdate();
-                }
-                request.getSession().setAttribute("flashMessage", "Estado del turno #" + idDisp + " actualizado a " + nuevoEstado + ".");
-            } catch (Exception e) {
-                e.printStackTrace();
-                request.getSession().setAttribute("flashMessage", "Error al actualizar turno: " + e.getMessage());
+                new AgendaCitaDAO().cambiarEstado(Integer.parseInt(request.getParameter("idDisponibilidad")),
+                        request.getParameter("nuevoEstado"));
+                request.getSession().setAttribute("flashMessage", "Estado del turno actualizado correctamente.");
+            } catch (NumberFormatException e) {
+                request.getSession().setAttribute("flashError", "El identificador del turno no es válido.");
+            } catch (AgendaException e) {
+                request.getSession().setAttribute("flashError", e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/admin/medicos");
             return;
@@ -628,7 +607,7 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             int idSede = 1;
             try {
-                String sedeStr = request.getParameter("idSede");
+                String sedeStr = request.getParameter(ID_SEDE);
                 if (sedeStr != null) idSede = Integer.parseInt(sedeStr);
             } catch (Exception ignored) {}
 
@@ -695,7 +674,7 @@ public class AdminDashboardServlet extends HttpServlet {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("idMedico", rs.getInt("id_medico"));
+                    m.put(ID_MEDICO, rs.getInt("id_medico"));
                     String rawCmp = rs.getString("cmp");
                     m.put("cmp", (rawCmp != null && !rawCmp.trim().isEmpty()) ? rawCmp : "045821");
                     m.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "09452178");
@@ -872,7 +851,7 @@ public class AdminDashboardServlet extends HttpServlet {
             while (rs.next()) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("idCita", rs.getInt("id_cita"));
-                Timestamp ts = rs.getTimestamp("fecha_hora");
+                Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
                 String hora = "08:00";
                 if (ts != null) {
                     java.time.LocalDateTime ldt = ts.toLocalDateTime();
@@ -917,19 +896,6 @@ public class AdminDashboardServlet extends HttpServlet {
             e.printStackTrace();
         }
 
-        if (list.isEmpty()) {
-            // Asegurar citas operativas para hoy trasladando fechas de prueba anteriores al día de hoy
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement psSeed = conn.prepareStatement(
-                     "UPDATE cita SET fecha_hora = TIMESTAMP(CURDATE(), TIME(fecha_hora)) " +
-                     "WHERE DATE(fecha_hora) < CURDATE() AND estado NOT IN ('CANCELADA') LIMIT 8")) {
-                int updated = psSeed.executeUpdate();
-                if (updated > 0) {
-                    return obtenerCitasSalaEsperaBD();
-                }
-            } catch (Exception ignored) {}
-        }
-
         return list;
     }
 
@@ -969,7 +935,7 @@ public class AdminDashboardServlet extends HttpServlet {
     private List<Map<String, Object>> obtenerMedicosPadrónFallback() {
         List<Map<String, Object>> list = new ArrayList<>();
         Map<String, Object> m1 = new HashMap<>();
-        m1.put("idMedico", 1);
+        m1.put(ID_MEDICO, 1);
         m1.put("cmp", "CMP 45211"); m1.put("dni", "09482711"); m1.put("rne", "24109");
         m1.put("nombre", "Dr. Eduardo Ayala"); m1.put("especialidades", Arrays.asList("Cardiología"));
         m1.put("sede", "Sede San Borja"); m1.put("horas", "36 hrs"); m1.put("estado", "ACTIVO");
@@ -1061,8 +1027,8 @@ public class AdminDashboardServlet extends HttpServlet {
             while (rs.next()) {
                 Map<String, Object> d = new HashMap<>();
                 d.put("idDisponibilidad", rs.getInt("id_disponibilidad"));
-                d.put("idMedico", rs.getInt("id_medico"));
-                d.put("idSede", rs.getInt("id_sede"));
+                d.put(ID_MEDICO, rs.getInt("id_medico"));
+                d.put(ID_SEDE, rs.getInt("id_sede"));
                 d.put("sedeNombre", rs.getString("sede_nombre"));
                 
                 java.sql.Date sqlFecha = rs.getDate("fecha");

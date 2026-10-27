@@ -1,3 +1,4 @@
+<%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
@@ -138,6 +139,13 @@
                     <%= flashMessage %>
                 </div>
             <% } %>
+
+            <c:if test="${not empty sessionScope.flashError}">
+                <p role="alert" style="padding: 14px; color: #991b1b; background: #fef2f2; border-radius: 10px;">
+                    <c:out value="${sessionScope.flashError}"/>
+                </p>
+                <c:remove var="flashError" scope="session"/>
+            </c:if>
 
             <!-- ENCABEZADO -->
             <div class="adm-header-block">

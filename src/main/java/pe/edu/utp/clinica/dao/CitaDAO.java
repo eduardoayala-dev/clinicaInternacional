@@ -23,6 +23,10 @@ import java.util.logging.Logger;
  * Delega en MedicoDAO, NotificacionDAO y ListaEsperaDAO para mantener alta cohesión y bajo acoplamiento.
  */
 public class CitaDAO {
+    private static final String ESTADO_CANCELADA = "CANCELADA";
+    private static final String ESTADO_SOLICITADA = "SOLICITADA";
+    private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
+    private static final String ESPECIALIDAD = "especialidad";
 
     private static final Logger LOGGER = Logger.getLogger(CitaDAO.class.getName());
 
@@ -87,121 +91,18 @@ public class CitaDAO {
         return reservarCitaConId(idPacienteParam, idMedico, fecha, hora, nivelUrgencia) > 0;
     }
 
-    public int reservarCitaConId(int idPacienteParam, int idMedico, String fecha, String hora, String nivelUrgencia) {
-        int idPaciente = idPacienteParam;
-        if (idPaciente <= 0 || idMedico <= 0) return -1;
-
-        String sqlCheckPaciente = "SELECT id_paciente FROM paciente WHERE id_paciente = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sqlCheckPaciente)) {
-            ps.setInt(1, idPaciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) return -1;
-            }
-        } catch (SQLException e) {
-            LOGGER.log(java.util.logging.Level.WARNING, "No se pudo verificar el paciente de la reserva", e);
+    public int reservarCitaConId(int idPaciente, int idMedico, String fecha, String hora, String urgencia) {
+        try {
+            return reservarCitaValidada(idPaciente, idMedico, fecha, hora, urgencia);
+        } catch (AgendaException e) {
             return -1;
         }
-
-        String fechaHoraStr = fecha + " " + (hora.length() == 5 ? hora + ":00" : hora);
-
-        // 1. VALIDACIÓN ESTRICTA ANTI-COLISIÓN (BLOQUEO DE ESPACIO)
-        // Ningún médico puede tener más de una cita activa en la misma fecha y hora.
-        String sqlCheckColision = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
-        try (Connection conn = abrirConexion();
-             PreparedStatement psColision = conn.prepareStatement(sqlCheckColision)) {
-            psColision.setInt(1, idMedico);
-            psColision.setString(2, fechaHoraStr);
-            try (ResultSet rsColision = psColision.executeQuery()) {
-                if (rsColision.next() && rsColision.getInt(1) > 0) {
-                    LOGGER.warning("⚠️ Bloqueo de espacio: El médico " + idMedico + " ya tiene un turno ocupado para " + fechaHoraStr);
-                    return -1; // Horario ya ocupado / bloqueado
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        int idDisp = 1;
-        String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? AND fecha = ? LIMIT 1";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sqlDisp)) {
-            ps.setInt(1, idMedico);
-            ps.setString(2, fecha);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    idDisp = rs.getInt("id_disponibilidad");
-                } else {
-                    String sqlInsDisp = "INSERT INTO disponibilidad (id_medico, id_sede, fecha, hora_inicio, hora_fin, duracion_minutos, estado) " +
-                                        "VALUES (?, 1, ?, '08:00:00', '18:00:00', 30, 'PUBLICADO')";
-                    try (PreparedStatement psIns = conn.prepareStatement(sqlInsDisp, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-                        psIns.setInt(1, idMedico);
-                        psIns.setString(2, fecha);
-                        psIns.executeUpdate();
-                        try (ResultSet gk = psIns.getGeneratedKeys()) {
-                            if (gk.next()) idDisp = gk.getInt(1);
-                        }
-                    }
-                }
-            }
-        } catch (Exception e) {
-            idDisp = 1;
-        }
-
-        String riesgo = calcularRiesgoCancelacion(idPaciente);
-
-        String sql = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, fecha_hora, estado, nivel_urgencia, riesgo_cancelacion) " +
-                     "VALUES (?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, idPaciente);
-            ps.setInt(2, idMedico);
-            ps.setInt(3, idDisp);
-            ps.setString(4, fechaHoraStr);
-            ps.setString(5, nivelUrgencia != null ? nivelUrgencia : "BAJA");
-            ps.setString(6, riesgo);
-
-            int affected = ps.executeUpdate();
-            if (affected > 0) {
-                try (ResultSet rs = ps.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        int idCitaGenerada = rs.getInt(1);
-                        int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
-                        Map<String, Object> detMed = obtenerDetallesMedico(idMedico);
-                        String nombreMed = detMed.get("nombreMedico") != null ? (String) detMed.get("nombreMedico") : "tu médico especialista";
-                        String espMed = detMed.get("especialidad") != null ? (String) detMed.get("especialidad") : "Consulta Médica";
-                        String msg = "Cita Agendada: Tu consulta con " + nombreMed + " (" + espMed + ") ha sido confirmada para el " + fecha + " a las " + hora + ".";
-                        crearNotificacion(idUsuario, idCitaGenerada, "Citas", msg);
-                        return idCitaGenerada;
-                    }
-                }
-                return 1;
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return -1;
     }
 
-    private String calcularRiesgoCancelacion(int idPaciente) {
-        String sql = "SELECT COUNT(*) FROM cita WHERE id_paciente = ? AND estado = 'CANCELADA'";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idPaciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int cancelaciones = rs.getInt(1);
-                    if (cancelaciones >= 3) return "ALTO";
-                    if (cancelaciones >= 1) return "MEDIO";
-                }
-            }
-        } catch (Exception ignored) {}
-        return "BAJO";
+    public int reservarCitaValidada(int idPaciente, int idMedico, String fecha, String hora, String urgencia) {
+        return new AgendaCitaDAO(this::abrirConexion).reservar(idPaciente, idMedico, fecha, hora, urgencia);
     }
 
-    // =========================================================================
-    // 3. CONSULTA DE CITAS DEL PACIENTE (Próximas, Historial, Canceladas/Reprogramadas)
-    // =========================================================================
 
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {
         String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
@@ -297,14 +198,14 @@ public class CitaDAO {
             map.put("fechaFormateadaBanner", "Por definir");
         }
         map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-        map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+        map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
         map.put("cmp", normalizarCmp(rs.getString("cmp")));
         map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
         map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
         map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
         map.put("modalidad", "Presencial");
         String est = rs.getString("estado");
-        map.put("estado", est != null ? est : "CONFIRMADA");
+        map.put("estado", est != null ? est : ESTADO_CONFIRMADA);
         return map;
     }
 
@@ -352,118 +253,16 @@ public class CitaDAO {
     // 4. REPROGRAMACIÓN DE CITAS MÉDICAS (Transacción Atómica Clínica)
     // =========================================================================
 
-    public boolean reprogramarCita(int idCitaAnterior, int idPaciente, int idNuevoMedico, String nuevaFecha, String nuevaHora, Integer idMotivo, String nivelUrgencia) {
-        String sqlVerificar = "SELECT id_cita, id_paciente, estado FROM cita WHERE id_cita = ? AND id_paciente = ?";
-        String sqlActualizarVieja = "UPDATE cita SET estado = 'REPROGRAMADA' WHERE id_cita = ?";
-        String sqlInsertNueva = "INSERT INTO cita (id_paciente, id_medico, id_disponibilidad, id_motivo, fecha_hora, estado, riesgo_cancelacion, nivel_urgencia) VALUES (?, ?, ?, ?, ?, 'CONFIRMADA', ?, ?)";
-        
-        Connection conn = null;
+    public boolean reprogramarCita(int anterior, int paciente, int medico, String fecha, String hora, Integer motivo, String urgencia) {
         try {
-            conn = abrirConexion();
-            conn.setAutoCommit(false);
-
-            try (PreparedStatement psVer = conn.prepareStatement(sqlVerificar)) {
-                psVer.setInt(1, idCitaAnterior);
-                psVer.setInt(2, idPaciente);
-                try (ResultSet rs = psVer.executeQuery()) {
-                    if (!rs.next()) {
-                        conn.rollback();
-                        return false;
-                    }
-                    String estadoActual = rs.getString("estado");
-                    if ("CANCELADA".equalsIgnoreCase(estadoActual) || "ATENDIDA".equalsIgnoreCase(estadoActual) || "REPROGRAMADA".equalsIgnoreCase(estadoActual)) {
-                        conn.rollback();
-                        return false;
-                    }
-                }
-            }
-
-            String fechaHoraStr = nuevaFecha + " " + (nuevaHora.length() == 5 ? nuevaHora + ":00" : nuevaHora);
-            String sqlCheckOcupado = "SELECT COUNT(*) FROM cita WHERE id_medico = ? AND fecha_hora = ? AND id_cita != ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
-            try (PreparedStatement psCheck = conn.prepareStatement(sqlCheckOcupado)) {
-                psCheck.setInt(1, idNuevoMedico);
-                psCheck.setString(2, fechaHoraStr);
-                psCheck.setInt(3, idCitaAnterior);
-                try (ResultSet rsCheck = psCheck.executeQuery()) {
-                    if (rsCheck.next() && rsCheck.getInt(1) > 0) {
-                        conn.rollback();
-                        return false;
-                    }
-                }
-            }
-
-            int idDisp = 1;
-            String sqlDisp = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico = ? LIMIT 1";
-            try (PreparedStatement psDisp = conn.prepareStatement(sqlDisp)) {
-                psDisp.setInt(1, idNuevoMedico);
-                try (ResultSet rsDisp = psDisp.executeQuery()) {
-                    if (rsDisp.next()) {
-                        idDisp = rsDisp.getInt("id_disponibilidad");
-                    }
-                }
-            }
-
-            try (PreparedStatement psUpd = conn.prepareStatement(sqlActualizarVieja)) {
-                psUpd.setInt(1, idCitaAnterior);
-                psUpd.executeUpdate();
-            }
-
-            String riesgo = calcularRiesgoCancelacion(idPaciente);
-            int idNuevaCita = 0;
-
-            try (PreparedStatement psIns = conn.prepareStatement(sqlInsertNueva, java.sql.Statement.RETURN_GENERATED_KEYS)) {
-                psIns.setInt(1, idPaciente);
-                psIns.setInt(2, idNuevoMedico);
-                psIns.setInt(3, idDisp);
-                if (idMotivo != null && idMotivo > 0) {
-                    psIns.setInt(4, idMotivo);
-                } else {
-                    psIns.setNull(4, java.sql.Types.INTEGER);
-                }
-                psIns.setString(5, fechaHoraStr);
-                psIns.setString(6, riesgo);
-                psIns.setString(7, nivelUrgencia != null ? nivelUrgencia : "BAJA");
-
-                int affected = psIns.executeUpdate();
-                if (affected <= 0) {
-                    conn.rollback();
-                    return false;
-                }
-
-                try (ResultSet gk = psIns.getGeneratedKeys()) {
-                    if (gk.next()) {
-                        idNuevaCita = gk.getInt(1);
-                    }
-                }
-            }
-
-            int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
-            Map<String, Object> detMed = obtenerDetallesMedico(idNuevoMedico);
-            String nombreMed = detMed.get("nombreMedico") != null ? (String) detMed.get("nombreMedico") : "tu médico especialista";
-            String espMed = detMed.get("especialidad") != null ? (String) detMed.get("especialidad") : "Consulta Médica";
-            String msg = "Cita Reprogramada con éxito: Tu consulta con " + nombreMed + " (" + espMed + ") fue reagendada para el " + nuevaFecha + " a las " + nuevaHora + ". Tu cita previa fue cancelada y liberada.";
-
-            String sqlNotif = "INSERT INTO notificacion (id_usuario, id_cita, tipo, canal, mensaje, estado_envio, leida) VALUES (?, ?, 'Citas', 'PLATAFORMA', ?, 'ENVIADA', 0)";
-            try (PreparedStatement psNot = conn.prepareStatement(sqlNotif)) {
-                psNot.setInt(1, idUsuario);
-                psNot.setInt(2, idNuevaCita > 0 ? idNuevaCita : idCitaAnterior);
-                psNot.setString(3, msg);
-                psNot.executeUpdate();
-            } catch (Exception ignored) {}
-
-            conn.commit();
-            return true;
-        } catch (Exception e) {
-            if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) {}
-            }
-            e.printStackTrace();
+            return reprogramarCitaValidada(anterior, paciente, medico, fecha, hora, motivo, urgencia);
+        } catch (AgendaException e) {
             return false;
-        } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException ex) {}
-            }
         }
+    }
+
+    public boolean reprogramarCitaValidada(int anterior, int paciente, int medico, String fecha, String hora, Integer motivo, String urgencia) {
+        return new AgendaCitaDAO(this::abrirConexion).reprogramar(anterior, paciente, medico, fecha, hora, motivo, urgencia);
     }
 
     // =========================================================================
@@ -471,14 +270,23 @@ public class CitaDAO {
     // =========================================================================
 
     public boolean actualizarEstadoCita(int idCita, String nuevoEstado) {
-        String sql = "UPDATE cita SET estado = ? WHERE id_cita = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        if (idCita <= 0 || nuevoEstado == null) return false;
+        String anterior = switch (nuevoEstado) {
+            case ESTADO_CONFIRMADA, ESTADO_CANCELADA -> ESTADO_SOLICITADA;
+            case "EN_SALA" -> ESTADO_CONFIRMADA;
+            default -> null;
+        };
+        if (anterior == null) return false;
+        String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : anterior;
+        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND (estado=? OR estado=?)";
+        try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setInt(2, idCita);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
+            ps.setString(3, anterior);
+            ps.setString(4, alternativo);
+            return ps.executeUpdate() == 1;
+        } catch (SQLException e) {
+            LOGGER.warning("No se pudo actualizar el estado de la cita.");
             return false;
         }
     }
@@ -486,16 +294,15 @@ public class CitaDAO {
     /** Actualización condicionada al propietario y al estado actual de la cita. */
     public boolean actualizarEstadoCitaPaciente(int idCita, int idPaciente, String nuevoEstado) {
         if (idCita <= 0 || idPaciente <= 0) return false;
-        String estadosPermitidos;
-        if ("CONFIRMADA".equals(nuevoEstado)) estadosPermitidos = "('SOLICITADA')";
-        else if ("CANCELADA".equals(nuevoEstado)) estadosPermitidos = "('SOLICITADA','CONFIRMADA')";
-        else return false;
-        String sql = "UPDATE cita SET estado = ? WHERE id_cita = ? AND id_paciente = ? AND estado IN "
-                + estadosPermitidos;
+        if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
+        String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
+        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?)";
         try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setInt(2, idCita);
             ps.setInt(3, idPaciente);
+            ps.setString(4, ESTADO_SOLICITADA);
+            ps.setString(5, alternativo);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
@@ -624,7 +431,7 @@ public class CitaDAO {
         map.put("paciente", rs.getString("paciente_nombres") + " " + rs.getString("paciente_apellidos"));
         map.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "10492837");
         map.put("telefono", rs.getString("telefono") != null ? rs.getString("telefono") : "+51 987 654 321");
-        map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Consulta General");
+        map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Consulta General");
         map.put("motivo", rs.getString("motivo_consulta") != null ? rs.getString("motivo_consulta") : "Control general");
         map.put("estado", rs.getString("estado"));
         map.put("urgencia", rs.getString("nivel_urgencia"));
@@ -661,7 +468,7 @@ public class CitaDAO {
                 map.put("fechaHora", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "12/10/2026 15:00");
                 map.put("paciente", rs.getString("paciente_nombres") + " " + rs.getString("paciente_apellidos"));
                 map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Cardiología");
+                map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Cardiología");
                 map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                 map.put("nivelUrgencia", rs.getString("nivel_urgencia") != null ? rs.getString("nivel_urgencia") : "BAJA");
                 map.put("riesgoCancelacion", rs.getString("riesgo_cancelacion") != null ? rs.getString("riesgo_cancelacion") : "MEDIO");
@@ -870,7 +677,7 @@ public class CitaDAO {
                     map.put("idMedico", rs.getInt("id_medico"));
                     map.put("cmp", rs.getString("cmp"));
                     map.put("medicoNombre", "Dr. " + rs.getString("med_nombres") + " " + rs.getString("med_apellidos"));
-                    map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+                    map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
                     String sedeStr = rs.getString("sede_nombre") != null ? rs.getString("sede_nombre") : "Sede San Borja";
                     map.put("sede", sedeStr);
                     map.put("sedeYConsultorio", sedeStr + " · Consultorio 102");

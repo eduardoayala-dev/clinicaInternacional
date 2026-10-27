@@ -12,8 +12,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.TreeMap;
 import pe.edu.utp.clinica.model.MedicoCatalogo;
 import pe.edu.utp.clinica.util.NombrePersona;
 import java.util.ArrayList;
@@ -184,20 +183,21 @@ public class MedicoDAO {
         LocalDate date = LocalDate.parse(fecha);
         if (date.isBefore(LocalDate.now(clock))) return List.of();
         try (Connection conn = connections.open()) {
-            Set<LocalTime> publicados = publishedSlots(conn, idMedico, date);
-            Set<LocalTime> ocupados = occupiedSlots(conn, idMedico, date);
+            Map<LocalTime, Integer> publicados = publishedSlots(conn, idMedico, date);
+            List<Ocupacion> ocupados = occupiedSlots(conn, idMedico, date);
             boolean today = date.equals(LocalDate.now(clock));
             LocalTime cutoff = LocalTime.now(clock);
-            return publicados.stream().filter(time -> !today || time.isAfter(cutoff))
-                    .filter(time -> !ocupados.contains(time)).map(time -> time.format(SLOT_FORMAT))
+            return publicados.entrySet().stream().filter(slot -> !today || slot.getKey().isAfter(cutoff))
+                    .filter(slot -> noSeCruza(slot.getKey(), slot.getValue(), ocupados))
+                    .map(slot -> slot.getKey().format(SLOT_FORMAT))
                     .toList();
         } catch (SQLException e) {
             throw new CatalogoDatosException(e);
         }
     }
 
-    private static Set<LocalTime> publishedSlots(Connection conn, int medico, LocalDate date) throws SQLException {
-        Set<LocalTime> slots = new TreeSet<>();
+    private static Map<LocalTime, Integer> publishedSlots(Connection conn, int medico, LocalDate date) throws SQLException {
+        Map<LocalTime, Integer> slots = new TreeMap<>();
         String sql = "SELECT d.hora_inicio, d.hora_fin, d.duracion_minutos FROM disponibilidad d "
                 + "JOIN medico m ON d.id_medico = m.id_medico " + ACTIVE_JOINS
                 + "WHERE d.id_medico = ? AND d.fecha = ? AND d.estado = 'PUBLICADO' "
@@ -212,7 +212,7 @@ public class MedicoDAO {
         return slots;
     }
 
-    private static void addSlots(Set<LocalTime> slots, ResultSet rs) throws SQLException {
+    private static void addSlots(Map<LocalTime, Integer> slots, ResultSet rs) throws SQLException {
         java.sql.Time start = rs.getTime("hora_inicio");
         java.sql.Time end = rs.getTime("hora_fin");
         int minutes = rs.getInt("duracion_minutos");
@@ -225,20 +225,34 @@ public class MedicoDAO {
         if (first >= last) throw new SQLException("Intervalo de disponibilidad inválido");
         long duration = minutes * 60L;
         for (long second = first; second + duration <= last; second += duration) {
-            slots.add(LocalTime.ofSecondOfDay(second));
+            slots.merge(LocalTime.ofSecondOfDay(second), minutes, Math::max);
         }
     }
 
-    private static Set<LocalTime> occupiedSlots(Connection conn, int medico, LocalDate date) throws SQLException {
-        Set<LocalTime> slots = new TreeSet<>();
-        String sql = "SELECT fecha_hora FROM cita WHERE id_medico = ? AND fecha_hora >= ? AND fecha_hora < ? "
-                + "AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
+    private record Ocupacion(int inicio, int fin) {}
+
+    private static boolean noSeCruza(LocalTime hora, int minutos, List<Ocupacion> ocupados) {
+        int inicio = hora.toSecondOfDay();
+        int fin = inicio + minutos * 60;
+        return ocupados.stream().noneMatch(cita -> inicio < cita.fin() && cita.inicio() < fin);
+    }
+
+    private static List<Ocupacion> occupiedSlots(Connection conn, int medico, LocalDate date) throws SQLException {
+        List<Ocupacion> slots = new ArrayList<>();
+        String sql = "SELECT c.fecha_hora,d.duracion_minutos FROM cita c JOIN disponibilidad d ON c.id_disponibilidad=d.id_disponibilidad "
+                + "WHERE c.id_medico = ? AND c.fecha_hora >= ? AND c.fecha_hora < ? "
+                + "AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, medico);
-            ps.setTimestamp(2, java.sql.Timestamp.valueOf(date.atStartOfDay()));
-            ps.setTimestamp(3, java.sql.Timestamp.valueOf(date.plusDays(1).atStartOfDay()));
+            ps.setObject(2, date.atStartOfDay());
+            ps.setObject(3, date.plusDays(1).atStartOfDay());
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) slots.add(rs.getTimestamp("fecha_hora").toLocalDateTime().toLocalTime());
+                while (rs.next()) {
+                    int inicio = rs.getObject(1, java.time.LocalDateTime.class).toLocalTime().toSecondOfDay();
+                    int minutos = rs.getInt(2);
+                    if (minutos <= 0 || minutos > 1440) throw new SQLException("La duración de la cita no es válida");
+                    slots.add(new Ocupacion(inicio, inicio + minutos * 60));
+                }
             }
         }
         return slots;

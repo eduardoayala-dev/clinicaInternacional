@@ -23,8 +23,8 @@ class MedicoCatalogoDaoTest {
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR)");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR)");
         sql("CREATE TABLE medico(id_medico INT PRIMARY KEY,id_usuario INT,id_especialidad INT,id_sede INT,cmp VARCHAR,estado VARCHAR)");
-        sql("CREATE TABLE disponibilidad(id_medico INT,id_sede INT DEFAULT 1,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR)");
-        sql("CREATE TABLE cita(id_medico INT,fecha_hora TIMESTAMP,estado VARCHAR)");
+        sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT DEFAULT 1,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR)");
+        sql("CREATE TABLE cita(id_medico INT,fecha_hora TIMESTAMP,estado VARCHAR,id_disponibilidad INT DEFAULT 1)");
         sql("INSERT INTO usuario VALUES (1,'MÉDICO','PRUEBA',TRUE),(2,'OTRO','MÉDICO',TRUE),(3,'INACTIVO','PRUEBA',FALSE)");
         sql("INSERT INTO especialidad VALUES(1,'ACTIVO'),(2,'INACTIVO')");
         sql("INSERT INTO sede VALUES(1,'ACTIVO'),(2,'ACTIVO'),(3,'INACTIVO')");
@@ -70,8 +70,15 @@ class MedicoCatalogoDaoTest {
 
     @Test void occupiedHoursAreExcludedAndCancelledAppointmentsReleaseTheirSlot() throws Exception {
         agenda("2026-10-28", "09:00", "11:00", 30, "PUBLICADO");
-        sql("INSERT INTO cita VALUES(42,'2026-10-28 09:00:00','PROGRAMADA'),(42,'2026-10-28 09:30:00','CANCELADA'),(42,'2026-10-28 10:00:00','REPROGRAMADA'),(43,'2026-10-28 10:30:00','PROGRAMADA')");
+        sql("INSERT INTO cita(id_medico,fecha_hora,estado) VALUES(42,'2026-10-28 09:00:00','PROGRAMADA'),(42,'2026-10-28 09:30:00','CANCELADA'),(42,'2026-10-28 10:00:00','REPROGRAMADA'),(43,'2026-10-28 10:30:00','PROGRAMADA')");
         assertEquals(List.of("09:30", "10:00", "10:30"), dao.obtenerHorariosDisponibles(42, "2026-10-28"));
+    }
+
+    @Test void anOccupiedIntervalHidesSlotsThatIntersectEvenWithDifferentStartTimes() throws Exception {
+        agenda("2026-10-28", "09:00", "11:00", 30, "PUBLICADO");
+        agenda("2026-10-28", "09:15", "09:45", 30, "PUBLICADO");
+        sql("INSERT INTO cita(id_medico,fecha_hora,estado,id_disponibilidad) VALUES(42,'2026-10-28 09:15:00','CONFIRMADA',2)");
+        assertEquals(List.of("10:00", "10:30"), dao.obtenerHorariosDisponibles(42, "2026-10-28"));
     }
 
     @Test void overlappingPublishedBlocksAreDeduplicatedAndTodayIsFilteredInClinicTimezone() throws Exception {
