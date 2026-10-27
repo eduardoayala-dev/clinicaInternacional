@@ -43,11 +43,13 @@ class DatabaseSettingsTest {
         }
     }
 
-    @Test void h2RequiresExplicitLocalMode() {
-        assertTrue(new DatabaseSettings(Map.of("DB_MODE", "h2")).isH2());
+    @Test void developmentRequiresMysqlAndRejectsTemporaryModes() {
+        for (String mode : new String[]{"h2", "sqlite", "desconocido"}) {
+            var local = valid(); local.put("APP_ENV", "development"); local.put("DB_MODE", mode);
+            assertThrows(IllegalArgumentException.class, () -> new DatabaseSettings(local));
+        }
         assertThrows(IllegalArgumentException.class, () -> new DatabaseSettings(Map.of()));
         var env = valid(); env.put("APP_ENV", "development");
-        assertFalse(new DatabaseSettings(env).isH2());
         assertEquals("REQUIRED", new DatabaseSettings(env).mysqlConfig().getDataSourceProperties().getProperty("sslMode"));
     }
 

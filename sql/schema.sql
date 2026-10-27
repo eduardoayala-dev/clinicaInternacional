@@ -4,6 +4,8 @@
 -- Requisitos: HU003, RNF-01, RNF-02, RNF-03, RNF-04, RNF-05
 -- =============================================================================
 
+SET NAMES utf8mb4;
+
 CREATE DATABASE IF NOT EXISTS clinica_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE clinica_db;
 

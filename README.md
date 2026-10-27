@@ -60,7 +60,7 @@ cd clinicaInternacional
 2. Abrir el gestor de base de datos (por ejemplo, phpMyAdmin o Workbench) y crear una base de datos llamada `clinica_db`.
 3. Solo en una base vacía de desarrollo, ejecutar `sql/schema.sql` para generar tablas y datos sintéticos.
 
-La aplicación exige `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`, con una cuenta distinta de `root`. En producción exige TLS con `DB_SSL_MODE=VERIFY_IDENTITY`. H2 solo se habilita expresamente con `DB_MODE=h2` fuera de producción; no se activa si MySQL falla.
+La aplicación exige `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`, con una cuenta distinta de `root`. En producción exige TLS con `DB_SSL_MODE=VERIFY_IDENTITY`. MySQL es la única base admitida por la aplicación. Si la conexión falla, se informa el error sin crear una base temporal.
 
 Para una base existente, aplicar `sql/migrations/V001__perfil_paciente.sql` con una cuenta de migración. `sql/schema.sql` recrea tablas y solo debe usarse para una base inicial de desarrollo.
 
@@ -110,10 +110,13 @@ en el servidor; el registro manual sigue disponible si la consulta falla.
 
 ## 🌿 Flujo de Trabajo (GitFlow)
 
+Los contratos y las pruebas de médicos y horarios están en
+[Contratos de catálogos médicos](docs/contratos-catalogos.md).
+
 El equipo de desarrollo sigue una estrategia basada en GitFlow:
 
 - `main`: Entorno de producción. Únicamente código estable.
 - `develop`: Entorno de integración.
 - `feature/*`: Desarrollo de nuevas historias de usuario o módulos.
-  
+
 Todo commit debe seguir el formato semántico convencional en español. Ej: `feat: implementar módulo de reservas` o `fix: corregir error en conexión a base de datos`.

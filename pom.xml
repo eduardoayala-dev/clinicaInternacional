@@ -64,11 +64,11 @@
             <version>8.3.0</version>
         </dependency>
 
-        <!-- H2 Database Engine (Embedded Fallback DB for Instant Execution) -->
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
             <version>2.2.224</version>
+            <scope>test</scope>
         </dependency>
 
         <!-- HikariCP Connection Pool -->

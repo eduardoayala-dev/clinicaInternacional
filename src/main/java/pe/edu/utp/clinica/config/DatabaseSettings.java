@@ -11,7 +11,6 @@ import java.util.Set;
 final class DatabaseSettings {
     private final Map<String, String> env;
     private final boolean production;
-    private final boolean h2;
     private final String host;
     private final int port;
     private final String database;
@@ -28,14 +27,7 @@ final class DatabaseSettings {
         production = "production".equals(appEnv) || env.containsKey("RAILWAY_ENVIRONMENT")
                 || env.containsKey("RAILWAY_ENVIRONMENT_NAME") || env.containsKey("RAILWAY_PROJECT_ID");
         String mode = value("DB_MODE", "mysql").toLowerCase(Locale.ROOT);
-        if (!Set.of("mysql", "h2").contains(mode)) throw new IllegalArgumentException("DB_MODE debe ser mysql o h2");
-        h2 = "h2".equals(mode);
-        if (production && h2) throw new IllegalArgumentException("H2 no está permitido en producción");
-        if (h2) {
-            host = database = user = password = sslMode = "";
-            port = 0;
-            return;
-        }
+        if (!"mysql".equals(mode)) throw new IllegalArgumentException("Solo se admite MySQL; DB_MODE debe ser mysql");
 
         host = required("DB_HOST");
         if (!host.matches("[A-Za-z0-9][A-Za-z0-9._-]*|\\[[0-9a-fA-F:]+\\]")) {
@@ -73,10 +65,8 @@ final class DatabaseSettings {
     }
 
     boolean isProduction() { return production; }
-    boolean isH2() { return h2; }
 
     HikariConfig mysqlConfig() {
-        if (h2) throw new IllegalStateException("La configuración seleccionada es H2");
         HikariConfig config = new HikariConfig();
         config.setDriverClassName("com.mysql.cj.jdbc.Driver");
         config.setJdbcUrl("jdbc:mysql://" + host + ":" + port + "/" + database);

@@ -1,0 +1,251 @@
+{
+  "info": {
+    "name": "Clínica - Contratos de catálogos",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Ejecutar en orden. Pruebas de lectura y rechazos de escritura; no crea pacientes ni consulta proveedores."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Obtener sesión y CSRF",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/login/paciente?action=register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);",
+              "pm.test(\"Token disponible\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Médicos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/medicos?idEspecialidad=1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Lista de médicos\",()=>{pm.expect(body.data).to.be.an(\"array\");body.data.forEach(m=>{pm.expect(m.idMedico).to.be.above(0);pm.expect(m.nombreCompleto).to.be.a(\"string\");pm.expect(m.cmp).to.be.a(\"string\");});});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Sede sin médicos",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/medicos?idEspecialidad=1&idSede=2147483647"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Sin reemplazar sede\",()=>pm.expect(body.data).to.eql([]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Falta especialidad",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/medicos"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Error sin datos\",()=>pm.expect(body.data).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Sede inválida",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/medicos?idEspecialidad=1&idSede=0"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Error sin datos\",()=>pm.expect(body.data).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Fecha inválida",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/horarios?idMedico=1&fecha=2026-02-30"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(400));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Error sin datos\",()=>pm.expect(body.data).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Fechas publicadas",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/horarios?idMedico=1"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Lista de fechas\",()=>{pm.expect(body.data).to.be.an(\"array\");body.data.forEach(d=>pm.expect(d).to.match(/^\\d{4}-\\d{2}-\\d{2}$/));});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Fecha pasada sin horarios",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/horarios?idMedico=1&fecha=2000-01-01"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(200));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Sin horarios ficticios\",()=>pm.expect(body.data).to.eql([]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - POST sin CSRF",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "url": "{{baseUrl}}/api/medicos"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(403));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - POST con CSRF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/medicos"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP esperado\", () => pm.response.to.have.status(405));",
+              "const body=pm.response.json();",
+              "pm.test(\"Contrato uniforme\",()=>pm.expect(Object.keys(body).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Metadatos\",()=>{pm.expect(body.code).to.be.a(\"string\");pm.expect(body.message).to.be.a(\"string\");});",
+              "pm.test(\"Método permitido\",()=>pm.expect(pm.response.headers.get(\"Allow\")).to.eql(\"GET\"));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

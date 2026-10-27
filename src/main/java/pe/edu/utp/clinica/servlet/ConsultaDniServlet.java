@@ -15,6 +15,8 @@ import pe.edu.utp.clinica.service.dni.DniRateLimiter;
 import pe.edu.utp.clinica.service.dni.DniService;
 import pe.edu.utp.clinica.util.CsrfToken;
 import java.io.IOException;
+import pe.edu.utp.clinica.api.ApiJson;
+import pe.edu.utp.clinica.api.ApiResponse;
 
 @WebServlet(name = "ConsultaDniServlet", urlPatterns = "/api/v1/documentos/dni/consulta")
 public class ConsultaDniServlet extends HttpServlet {
@@ -22,7 +24,6 @@ public class ConsultaDniServlet extends HttpServlet {
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     private static final int MAX_REQUEST_CHARS = 1024;
     private transient DniService service;
-    private record Result(String code, String message, DniDatos data) {}
 
     public ConsultaDniServlet() {}
     ConsultaDniServlet(DniService service) { this.service = service; }
@@ -71,11 +72,11 @@ public class ConsultaDniServlet extends HttpServlet {
             var session = req.getSession(false);
             DniDatos data = DniConsultaSesion.obtenerOConsultar(session, numero,
                     document -> service.consultar(document, req.getRemoteAddr(), session.getId()));
-            JSON.writeValue(res.getWriter(), new Result("DNI_ENCONTRADO", "Datos consultados correctamente.", data));
+            ApiJson.write(res, 200, new ApiResponse<>("DNI_ENCONTRADO", "Datos consultados correctamente.", data));
         } catch (DniException e) {
             res.setStatus(e.status());
             if (e.status() == 429) res.setHeader("Retry-After", Integer.toString(e.retryAfter()));
-            JSON.writeValue(res.getWriter(), new Result(e.code(), e.getMessage(), null));
+            ApiJson.write(res, e.status(), new ApiResponse<>(e.code(), e.getMessage(), null));
         }
     }
     private static JsonNode parseJson(String body) throws DniException {
