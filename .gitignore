@@ -34,7 +34,11 @@ replay_pid*
 .settings/
 jsp/
 
-# Configuración privada de servicios externos
+# Configuración privada y material TLS
 .env
 .env.*
 !.env.example
+certs/
+*.p12
+*.jks
+*.key
