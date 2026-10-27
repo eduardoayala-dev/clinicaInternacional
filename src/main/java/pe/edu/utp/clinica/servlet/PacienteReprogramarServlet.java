@@ -76,9 +76,6 @@ public class PacienteReprogramarServlet extends HttpServlet {
             List<Map<String, Object>> listaSedes = citaDAO.obtenerSedes();
             List<Map<String, Object>> listaEspecialidades = citaDAO.obtenerEspecialidades();
             List<Map<String, Object>> listaMedicos = citaDAO.obtenerMedicosDisponibles(idEspecialidad, idSede);
-            if (listaMedicos.isEmpty()) {
-                listaMedicos = citaDAO.obtenerMedicosPorEspecialidad(idEspecialidad);
-            }
             List<Map<String, Object>> listaMotivos = citaDAO.obtenerMotivosPorEspecialidad(idEspecialidad);
             int numNotifSinLeer = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
 

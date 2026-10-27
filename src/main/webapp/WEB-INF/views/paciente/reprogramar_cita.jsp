@@ -85,6 +85,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/mis-citas.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/reprogramar-cita.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
 </head>
 <body>
 
@@ -279,10 +280,11 @@
                                     %>
                                         <option value="<%= medId %>" <%= sel ? "selected" : "" %>><%= med.get("nombreCompleto") %></option>
                                     <%  }
-                                    } else if (cita != null && cita.get("idMedico") != null) { %>
-                                        <option value="<%= cita.get("idMedico") %>" selected><%= cita.get("medico") %></option>
+                                    } else { %>
+                                        <option value="">Sin médicos disponibles para estos filtros</option>
                                     <% } %>
                                 </select>
+                                <output id="medicosEstado" class="catalogo-ayuda" for="selectMedico" aria-live="polite"></output>
                             </div>
 
                             <!-- FECHA -->
@@ -478,6 +480,7 @@
 
     </main>
 
+    <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
     <script>
         // Inicializar iconos lucide
         lucide.createIcons();
@@ -502,9 +505,9 @@
         function cambiarFiltroStep2(nuevoTurno) {
             seleccionarTurno(nuevoTurno);
             const selectMed = document.getElementById('selectMedico');
-            const medId = selectMed ? selectMed.value : 1;
+            const medId = selectMed ? selectMed.value : '';
             const fecha = document.getElementById('inputFecha').value;
-            cargarHorariosDisponibles(medId, fecha);
+            void cargarHorariosDisponibles(medId, fecha);
         }
 
         function actualizarPillsStep2() {
@@ -516,38 +519,46 @@
             if (btnTarde) btnTarde.classList.toggle('active', turnoActual === 'tarde');
         }
 
+        let medicosRequest = 0;
+        let horariosRequest = 0;
+
         async function cargarMedicosDinamicos() {
+            const version = ++medicosRequest;
+            horariosRequest++;
             const espId = document.getElementById('selectEspecialidad').value;
             const sedeId = document.getElementById('selectSede').value;
-            const selectMed = document.getElementById('selectMedico');
-
+            const select = document.getElementById('selectMedico');
+            const info = document.getElementById('medicosEstado');
+            const previous = select.value;
+            select.disabled = true;
+            select.replaceChildren();
+            info.textContent = 'Consultando médicos…';
             try {
-                const res = await fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&idSede=' + sedeId);
-                if (res.ok) {
-                    const data = await res.json();
-                    selectMed.innerHTML = '';
-                    if (data && data.length > 0) {
-                        data.forEach(m => {
-                            const opt = document.createElement('option');
-                            opt.value = m.idMedico;
-                            opt.textContent = m.nombreCompleto || m.nombres;
-                            selectMed.appendChild(opt);
-                        });
-                    } else {
-                        const opt = document.createElement('option');
-                        opt.value = '1';
-                        opt.textContent = 'Médico de turno disponible';
-                        selectMed.appendChild(opt);
-                    }
-                }
-            } catch (e) {
-                console.warn('Error al cargar médicos dinámicos:', e);
+                const medicos = await ClinicaCatalogos.medicos('${pageContext.request.contextPath}', espId, sedeId);
+                if (version !== medicosRequest) return;
+                medicos.forEach(medico => {
+                    const option = document.createElement('option');
+                    option.value = medico.idMedico;
+                    option.textContent = medico.nombreCompleto || 'Nombre no registrado';
+                    option.selected = String(medico.idMedico) === previous;
+                    select.appendChild(option);
+                });
+                select.disabled = medicos.length === 0;
+                info.textContent = medicos.length ? '' : 'Sin médicos disponibles para estos filtros.';
+            } catch (error) {
+                if (version === medicosRequest) info.textContent = error.message;
             }
         }
 
         async function irAlPaso2() {
             const selectMed = document.getElementById('selectMedico');
             const medId = selectMed.value;
+            if (selectMed.disabled || !/^[1-9]\d*$/.test(medId)) {
+                document.getElementById('medicosEstado').textContent = 'Selecciona un médico disponible antes de continuar.';
+                return;
+            }
+            const dateInput = document.getElementById('inputFecha');
+            if (!dateInput.reportValidity()) return;
             const medNombre = selectMed.options[selectMed.selectedIndex] ? selectMed.options[selectMed.selectedIndex].text : 'Dr. Médico';
             
             const selectEsp = document.getElementById('selectEspecialidad');
@@ -595,20 +606,21 @@
             btnContinuar.style.opacity = '0.6';
             btnContinuar.style.cursor = 'not-allowed';
 
-            let slots = [];
+            const version = ++horariosRequest;
+            const turno = turnoActual;
+            seccionManana.style.display = 'none';
+            seccionTarde.style.display = 'none';
+            noSlots.style.display = 'block';
+            noSlots.textContent = 'Consultando horarios publicados…';
+            let slots;
             try {
-                const res = await fetch('${pageContext.request.contextPath}/api/horarios?idMedico=' + medId + '&fecha=' + encodeURIComponent(fecha));
-                if (res.ok) {
-                    slots = await res.json();
-                }
-            } catch (e) {
-                console.warn('Error al consultar horarios:', e);
+                slots = await ClinicaCatalogos.horarios('${pageContext.request.contextPath}', medId, fecha);
+                if (version !== horariosRequest) return;
+            } catch (error) {
+                if (version === horariosRequest) noSlots.textContent = error.message;
+                return;
             }
-
-            if (!slots || slots.length === 0) {
-                // Fallback clínico estándar de cupos
-                slots = ["08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"];
-            }
+            noSlots.textContent = 'No hay horarios publicados disponibles para ese día y turno.';
 
             let countManana = 0;
             let countTarde = 0;
@@ -617,8 +629,8 @@
                 const [hh] = h.split(':').map(Number);
                 const esManana = hh < 13;
 
-                if (turnoActual === 'manana' && !esManana) return;
-                if (turnoActual === 'tarde' && esManana) return;
+                if (turno === 'manana' && !esManana) return;
+                if (turno === 'tarde' && esManana) return;
 
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -645,8 +657,8 @@
                 }
             });
 
-            seccionManana.style.display = (turnoActual !== 'tarde' && countManana > 0) ? 'block' : 'none';
-            seccionTarde.style.display = (turnoActual !== 'manana' && countTarde > 0) ? 'block' : 'none';
+            seccionManana.style.display = (turno !== 'tarde' && countManana > 0) ? 'block' : 'none';
+            seccionTarde.style.display = (turno !== 'manana' && countTarde > 0) ? 'block' : 'none';
             noSlots.style.display = (countManana === 0 && countTarde === 0) ? 'block' : 'none';
         }
 

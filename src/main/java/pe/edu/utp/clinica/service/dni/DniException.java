@@ -1,8 +1,9 @@
 package pe.edu.utp.clinica.service.dni;
 
-public final class DniException extends Exception {
-    private final int status;
-    private final String code;
+import pe.edu.utp.clinica.api.ApiException;
+
+public final class DniException extends ApiException {
+    private static final long serialVersionUID = 1L;
     private final int retryAfter;
 
     public DniException(int status, String code, String message) {
@@ -10,13 +11,9 @@ public final class DniException extends Exception {
     }
 
     public DniException(int status, String code, String message, int retryAfter) {
-        super(message);
-        this.status = status;
-        this.code = code;
+        super(status, code, message);
         this.retryAfter = retryAfter;
     }
 
-    public int status() { return status; }
-    public String code() { return code; }
     public int retryAfter() { return retryAfter; }
 }

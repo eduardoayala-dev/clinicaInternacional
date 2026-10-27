@@ -47,6 +47,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
 </head>
 <body>
 
@@ -644,6 +645,7 @@
     </main>
 
     <!-- SCRIPTS Y LÓGICA DE CONTROL -->
+    <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
@@ -984,12 +986,8 @@
                     pillTurno.textContent = state.turno === 'MANANA' ? 'Turno mañana' : (state.turno === 'TARDE' ? 'Turno tarde' : 'Indiferente');
                 }
 
-                const cupos = renderizarSemana();
-                if (cupos === 0) {
-                    renderizarSinCupos();
-                } else {
-                    cargarGrillaHorarios();
-                }
+                renderizarSemana();
+                void cargarGrillaHorarios();
             } else if (num === 3) {
                 if (titleEl) titleEl.textContent = 'Finalizar reserva';
                 if (subEl) subEl.textContent = 'Revisa los datos y finaliza antes de que termine el tiempo';
@@ -1060,7 +1058,6 @@
             document.getElementById('inputFecha').value = today;
             const firstPill = document.querySelector('.turno-pill');
             if (firstPill) seleccionarTurno(firstPill, 'MANANA');
-            cachedMedicos = null;
         }
 
         function actualizarEspecialidadYMotivos() {
@@ -1135,81 +1132,41 @@
             actualizarMedicosPorEspecialidad();
         }
 
-        function normalizarNombreMedico(rawNombre) {
-            if (!rawNombre) return 'Dr. Médico Especialista';
-            let n = rawNombre.trim();
-            if (n.startsWith('Dr.') || n.startsWith('Dra.')) return n;
-            const nLower = n.toLowerCase();
-            const esDra = nLower.startsWith('elena') || nLower.startsWith('andrea') || 
-                          nLower.startsWith('mariana') || nLower.startsWith('marina') || 
-                          nLower.startsWith('maria') || nLower.startsWith('valeria') || 
-                          nLower.startsWith('claudia') || nLower.startsWith('rosa') || 
-                          nLower.startsWith('patricia') || nLower.startsWith('beatriz') ||
-                          nLower.startsWith('sofia') || nLower.startsWith('lucia') ||
-                          nLower.startsWith('carmen');
-            return (esDra ? 'Dra. ' : 'Dr. ') + n;
-        }
+        let medicosRequest = 0;
 
-        function actualizarMedicosPorEspecialidad(preIdMed) {
-            const selEsp = document.getElementById('selectEspecialidad');
-            const espId = selEsp ? selEsp.value : '';
-            const selSede = document.getElementById('selectSede') ? document.getElementById('selectSede').value : '';
-            const selMed = document.getElementById('selectMedico');
-
-            if (!espId) {
-                if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
+        async function actualizarMedicosPorEspecialidad(preIdMed) {
+            const version = ++medicosRequest;
+            const espId = document.getElementById('selectEspecialidad')?.value;
+            const sedeId = document.getElementById('selectSede')?.value;
+            const select = document.getElementById('selectMedico');
+            if (!select) return;
+            llenarOpcionesMedicos(select, [], null, 'Consultando médicos…');
+            if (!espId || espId === '0') {
+                llenarOpcionesMedicos(select, [], null, 'Selecciona una especialidad');
                 return;
             }
-
-            let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId;
-            if (selSede && selSede !== '0') {
-                url += '&idSede=' + selSede;
+            try {
+                const medicos = await ClinicaCatalogos.medicos('${pageContext.request.contextPath}', espId, sedeId);
+                if (version !== medicosRequest) return;
+                llenarOpcionesMedicos(select, medicos, preIdMed);
+            } catch (error) {
+                if (version === medicosRequest) llenarOpcionesMedicos(select, [], null, error.message);
             }
-
-            fetch(url + '&_t=' + Date.now())
-                .then(res => res.json())
-                .then(data => {
-                    if (selMed) {
-                        if (!data || data.length === 0) {
-                            fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + Date.now())
-                                .then(r => r.json())
-                                .then(fallbackData => {
-                                    llenarOpcionesMedicos(selMed, fallbackData, preIdMed);
-                                })
-                                .catch(() => {
-                                    llenarOpcionesMedicos(selMed, [], preIdMed);
-                                });
-                        } else {
-                            llenarOpcionesMedicos(selMed, data, preIdMed);
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.log('Carga de médicos local', err);
-                    if (selMed) {
-                        llenarOpcionesMedicos(selMed, [], preIdMed);
-                    }
-                });
         }
 
-        function llenarOpcionesMedicos(selMed, data, preIdMed) {
-            selMed.innerHTML = '<option value="0">Cualquier médico</option>';
-            if (!data || data.length === 0) {
-                data = [
-                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís" },
-                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales" },
-                    { idMedico: 3, nombreCompleto: "Dr. Carlos Mendoza Valdivia" }
-                ];
-            }
-            data.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.idMedico || m.id;
-                const nombre = m.nombreCompleto || m.nombres || '';
-                opt.textContent = normalizarNombreMedico(nombre);
-                if (preIdMed && String(opt.value) === String(preIdMed)) {
-                    opt.selected = true;
-                }
-                selMed.appendChild(opt);
+        function llenarOpcionesMedicos(select, medicos, preIdMed, message) {
+            select.replaceChildren();
+            const placeholder = document.createElement('option');
+            placeholder.value = '0';
+            placeholder.textContent = message || (medicos.length ? 'Cualquier médico' : 'Sin médicos para estos filtros');
+            select.appendChild(placeholder);
+            select.disabled = medicos.length === 0;
+            medicos.forEach(medico => {
+                const option = document.createElement('option');
+                option.value = medico.idMedico;
+                option.textContent = medico.nombreCompleto || 'Nombre no registrado';
+                option.selected = String(medico.idMedico) === String(preIdMed);
+                select.appendChild(option);
             });
         }
 
@@ -1244,7 +1201,6 @@
             const selMotivo = document.getElementById('selectMotivo');
             state.motivo = selMotivo ? selMotivo.value : '';
 
-            cachedMedicos = null;
             mostrarPaso(2);
         }
 
@@ -1294,122 +1250,47 @@
         function renderizarSemana() {
             const grid = document.getElementById('weekDaysGrid');
             const label = document.getElementById('weekRangeLabel');
-            if (!grid || !label) return 0;
-
-            grid.innerHTML = '';
-
-            let baseDate = parsearFechaLocal(state.fecha);
-            // Sincronizar state.fecha al formato canónico ISO
-            state.fecha = formatearIsoDate(baseDate);
-
-            let dayOfWeek = baseDate.getDay();
-            let diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-            
-            let monday = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + diffToMonday, 12, 0, 0);
-            let sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 12, 0, 0);
-
-            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            const mesNombre = meses[sunday.getMonth()];
-            label.textContent = 'Semana del ' + monday.getDate() + ' al ' + sunday.getDate() + ' de ' + mesNombre + ' de ' + sunday.getFullYear();
-
-            const nombresDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-            const cuposSimulados = [4, 0, 3, 6, 1, 2, 0];
-
-            let cuposSeleccionados = 0;
-
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i, 12, 0, 0);
-                const isoDate = formatearIsoDate(d);
-
-                const esActivo = isoDate === state.fecha;
-                const esDomingo = i === 6;
-                const cupos = esDomingo ? 0 : cuposSimulados[i];
-
-                if (esActivo) {
-                    cuposSeleccionados = cupos;
-                }
-
-                let cuposTexto = cupos + ' cupos';
-                let cuposClass = 'day-cupos';
-                if (esDomingo) {
-                    cuposTexto = 'No atención';
-                    cuposClass = 'day-cupos none';
-                } else if (cupos === 0) {
-                    cuposTexto = 'Sin cupos';
-                    cuposClass = 'day-cupos none';
-                } else if (cupos === 1) {
-                    cuposTexto = '1 cupo';
-                }
-
+            if (!grid || !label) return;
+            grid.replaceChildren();
+            const date = parsearFechaLocal(state.fecha);
+            state.fecha = formatearIsoDate(date);
+            const offset = date.getDay() === 0 ? -6 : 1 - date.getDay();
+            const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset, 12);
+            const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 12);
+            label.textContent = 'Semana del ' + monday.getDate() + ' al '
+                + sunday.toLocaleDateString('es-PE', {day: 'numeric', month: 'long', year: 'numeric'});
+            const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            labels.forEach((name, index) => {
+                const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index, 12);
+                const iso = formatearIsoDate(day);
                 const card = document.createElement('div');
-                card.className = 'day-card-item' + (esActivo ? ' active' : '') + (esDomingo ? ' disabled' : '');
-                card.innerHTML = 
-                    '<div class="day-name">' + nombresDias[i] + '</div>' +
-                    '<div class="day-number">' + d.getDate() + '</div>' +
-                    '<div class="' + cuposClass + '">' + cuposTexto + '</div>';
-
-                if (!esDomingo) {
-                    card.onclick = function() {
-                        seleccionarDiaSemana(isoDate, cupos);
-                    };
-                }
-
+                card.className = 'day-card-item' + (iso === state.fecha ? ' active' : '');
+                const title = document.createElement('div');
+                title.className = 'day-name';
+                title.textContent = name;
+                const number = document.createElement('div');
+                number.className = 'day-number';
+                number.textContent = day.getDate();
+                const count = document.createElement('div');
+                count.className = 'day-cupos';
+                count.textContent = 'Consultar';
+                card.append(title, number, count);
+                card.onclick = () => seleccionarDiaSemana(iso);
                 grid.appendChild(card);
-            }
-
-            return cuposSeleccionados;
+            });
         }
 
-        function seleccionarDiaSemana(fechaIso, cupos) {
+        function seleccionarDiaSemana(fechaIso) {
             state.fecha = fechaIso;
             state.hora = '';
-            state.medicoId = '0';
             renderizarSemana();
-            if (cupos === 0) {
-                renderizarSinCupos();
-            } else {
-                cargarGrillaHorarios();
-            }
+            void cargarGrillaHorarios();
         }
 
         function navegarSemana(delta) {
-            let cur = parsearFechaLocal(state.fecha);
-            cur.setDate(cur.getDate() + (delta * 7));
-            state.fecha = formatearIsoDate(cur);
-            state.hora = '';
-            state.medicoId = '0';
-            const cupos = renderizarSemana();
-            if (cupos === 0) {
-                renderizarSinCupos();
-            } else {
-                cargarGrillaHorarios();
-            }
-        }
-
-        function renderizarSinCupos() {
-            const container = document.getElementById('doctorResultsContainer');
-            if (!container) return;
-
-            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
-            state.hora = '';
-            state.medicoId = '0';
-
-            container.innerHTML = 
-                '<div style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 48px 24px; text-align: center; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">' +
-                    '<div style="width: 58px; height: 58px; border-radius: 50%; background: #fef2f2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">' +
-                        '<i data-lucide="calendar-x" style="width: 30px; height: 30px;"></i>' +
-                    '</div>' +
-                    '<h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No hay citas disponibles para este día</h3>' +
-                    '<p style="font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 20px auto; line-height: 1.5;">' +
-                        'Para el <strong>' + headerTurnoTexto + '</strong> no quedan cupos de atención médica libres. Por favor selecciona otro día con cupos en el calendario semanal o únete a la lista de espera para avisarte si se libera una cita.' +
-                    '</p>' +
-                    '<a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-waitlist-action" style="display: inline-flex; justify-content: center; margin: 0 auto;">' +
-                        '<i data-lucide="clock" style="width: 16px; height: 16px; margin-right: 8px;"></i>' +
-                        'Registrarme en lista de espera' +
-                    '</a>' +
-                '</div>';
-            
-            lucide.createIcons();
+            const day = parsearFechaLocal(state.fecha);
+            day.setDate(day.getDate() + delta * 7);
+            seleccionarDiaSemana(formatearIsoDate(day));
         }
 
         function formatearCabeceraTurno(fechaIso, turno) {
@@ -1424,205 +1305,118 @@
         }
 
         // --- CARGA Y RENDERIZADO DE MÉDICOS Y HORARIOS ---
-        let cachedMedicos = null;
+        let grillaRequest = 0;
 
-        function generarHorariosDoctor(idMed, fechaIso, turno) {
-            if (turno === 'TARDE') {
-                return (idMed % 2 === 0) 
-                    ? ["14:00", "14:40", "15:20", "16:00", "16:40"]
-                    : ["14:20", "15:00", "15:40", "16:20", "17:00"];
-            } else if (turno === 'MANANA') {
-                return (idMed % 2 === 0)
-                    ? ["08:00", "08:40", "09:20", "10:00", "10:40"]
-                    : ["08:30", "09:00", "09:40", "10:20", "11:00"];
-            } else {
-                // Indiferente
-                return (idMed % 2 === 0)
-                    ? ["08:00", "08:40", "09:20", "14:00", "14:40", "15:20"]
-                    : ["08:30", "09:10", "10:00", "14:20", "15:00", "16:00"];
-            }
-        }
-
-        function actualizarHorariosInPlace(medicos) {
-            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
-            state.hora = '';
-            state.medicoId = '0';
-
-            medicos.forEach(med => {
-                const idMed = med.idMedico || med.id;
-                const card = document.getElementById('docScheduleCard_' + idMed);
-                if (!card) return;
-
-                // Actualizar texto del turno sin saltos de altura ni recarga del contenedor
-                const kicker = card.querySelector('.doc-turn-kicker');
-                if (kicker) kicker.textContent = headerTurnoTexto;
-
-                // Desactivar botón de reserva
-                const btnRes = document.getElementById('btnReservar_' + idMed);
-                if (btnRes) btnRes.classList.remove('active-card');
-
-                // Actualizar chips de horarios directamente sin parpadeos
-                const wrap = document.getElementById('slotsWrap_' + idMed);
-                if (wrap) {
-                    const rawName = med.nombreCompleto || med.nombres || '';
-                    const nombreMed = normalizarNombreMedico(rawName);
-                    const horas = generarHorariosDoctor(idMed, state.fecha, state.turno);
-
-                    wrap.innerHTML = '';
-                    horas.forEach(h => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'slot-pill-btn';
-                        btn.textContent = h;
-                        btn.setAttribute('data-med', idMed);
-                        btn.setAttribute('data-hora', h);
-                        btn.onclick = function() {
-                            seleccionarSlot(btn, idMed, nombreMed, h);
-                        };
-                        wrap.appendChild(btn);
-                    });
-                }
-            });
-        }
-
-        function cargarGrillaHorarios() {
+        async function cargarGrillaHorarios() {
             const container = document.getElementById('doctorResultsContainer');
             if (!container) return;
-
-            // Si ya existen tarjetas en el DOM y tenemos la lista de médicos en caché, actualizar in-place
-            const existingCards = container.querySelectorAll('.doctor-schedule-card');
-            if (existingCards.length > 0 && cachedMedicos && cachedMedicos.length > 0) {
-                actualizarHorariosInPlace(cachedMedicos);
-                return;
-            }
-
-            // Si ya tenemos los médicos en memoria (ej. al volver de un día 'Sin cupos')
-            if (cachedMedicos && cachedMedicos.length > 0) {
-                renderizarMedicosConHorarios(cachedMedicos);
-                return;
-            }
-
-            // Carga inicial para la especialidad / sede
-            container.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 32px;">Consultando disponibilidad de médicos y turnos...</p>';
-
-            let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId;
-            if (state.sedeId && state.sedeId !== '0') {
-                url += '&idSede=' + state.sedeId;
-            }
-
-            fetch(url + '&_t=' + Date.now())
-                .then(res => res.json())
-                .then(medicos => {
-                    if (!medicos || medicos.length === 0) {
-                        fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId + '&_t=' + Date.now())
-                            .then(r => r.json())
-                            .then(fallbackMedicos => {
-                                cachedMedicos = (fallbackMedicos && fallbackMedicos.length > 0) ? fallbackMedicos : [
-                                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                                ];
-                                renderizarMedicosConHorarios(cachedMedicos);
-                            })
-                            .catch(() => {
-                                cachedMedicos = [
-                                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                                ];
-                                renderizarMedicosConHorarios(cachedMedicos);
-                            });
-                    } else {
-                        cachedMedicos = medicos;
-                        renderizarMedicosConHorarios(cachedMedicos);
-                    }
-                })
-                .catch(() => {
-                    cachedMedicos = [
-                        { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                        { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                    ];
-                    renderizarMedicosConHorarios(cachedMedicos);
-                });
-        }
-
-        function renderizarMedicosConHorarios(medicos) {
-            const container = document.getElementById('doctorResultsContainer');
-            container.innerHTML = '';
-
-            // Limpiar selección previa
+            const version = ++grillaRequest;
+            const fecha = state.fecha;
+            const turno = state.turno;
+            const elegido = state.medicoId;
             state.hora = '';
-
-            if (!medicos || medicos.length === 0) {
-                medicos = [
-                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                ];
-            }
-
-            if (state.medicoId && state.medicoId !== '0') {
-                const filtrados = medicos.filter(m => String(m.idMedico || m.id) === String(state.medicoId));
-                if (filtrados.length > 0) medicos = filtrados;
-            }
-
-            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
-
-            medicos.forEach((med, idx) => {
-                const idMed = med.idMedico || med.id || (idx + 1);
-                const rawName = med.nombreCompleto || med.nombres || 'Dr. Médico Especialista';
-                const nombreMed = normalizarNombreMedico(rawName);
-                const cmp = med.cmp || med.CMP || ('CMP 0' + (45000 + idx * 614));
-                const consultorio = med.consultorio || ('Consultorio ' + (302 + idx * 2));
-                const sedeNombre = state.sedeNombre && state.sedeNombre !== '0' ? state.sedeNombre : 'Sede San Borja';
-
-                // Iniciales limpias
-                const nombreLimpio = nombreMed.replace(/^Dr\.\s*|Dra\.\s*/i, '').trim();
-                const partes = nombreLimpio.split(/\s+/);
-                const initials = (partes.length >= 2 ? partes[0][0] + partes[1][0] : partes[0].substring(0, 2)).toUpperCase();
-
-                // Horarios generados sincrónicamente (sin saltos visuales ni flashes)
-                const horas = generarHorariosDoctor(idMed, state.fecha, state.turno);
-
-                const card = document.createElement('div');
-                card.className = 'doctor-schedule-card';
-                card.id = 'docScheduleCard_' + idMed;
-                card.setAttribute('data-cmp', cmp);
-                card.setAttribute('data-consultorio', consultorio);
-
-                let slotsHtml = '';
-                horas.forEach((h) => {
-                    slotsHtml += '<button type="button" class="slot-pill-btn" ' +
-                                 'data-med="' + idMed + '" data-hora="' + h + '" ' +
-                                 'onclick="seleccionarSlot(this, ' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\', \'' + h + '\')">' +
-                                 h +
-                                 '</button>';
+            const currentBadge = document.querySelector('#weekDaysGrid .day-card-item.active .day-cupos');
+            if (currentBadge) currentBadge.textContent = 'Consultando…';
+            mostrarEstadoCatalogo(container, 'Consultando médicos y horarios publicados…');
+            try {
+                const medicos = await ClinicaCatalogos.medicos('${pageContext.request.contextPath}',
+                    state.especialidadId, state.sedeId);
+                const seleccionados = medicos.filter(medico => !elegido || elegido === '0' || String(medico.idMedico) === String(elegido));
+                const agendas = await Promise.all(seleccionados.map(async medico => ({
+                    medico, horas: await ClinicaCatalogos.horarios('${pageContext.request.contextPath}', medico.idMedico, fecha)
+                })));
+                if (version !== grillaRequest) return;
+                container.replaceChildren();
+                let total = 0;
+                agendas.forEach(agenda => {
+                    const horas = agenda.horas.filter(hora => coincideTurno(hora, turno));
+                    if (horas.length) {
+                        total += horas.length;
+                        container.appendChild(tarjetaMedico(agenda.medico, horas, fecha, turno));
+                    }
                 });
-
-                card.innerHTML = 
-                    '<div class="doc-card-profile-col">' +
-                        '<div class="doc-avatar-circle">' + initials + '</div>' +
-                        '<div class="doc-meta-info">' +
-                            '<h4 class="doc-name">' + nombreMed + '</h4>' +
-                            '<div class="doc-spec-cmp">' + cmp + ' · ' + (state.especialidadNombre || 'Cardiología') + '</div>' +
-                            '<div class="doc-location">' +
-                                '<i data-lucide="map-pin" style="width: 13px; height: 13px;"></i>' +
-                                '<span>' + sedeNombre + ' · ' + consultorio + '</span>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="doc-card-slots-col">' +
-                        '<div class="doc-turn-kicker">' + headerTurnoTexto + '</div>' +
-                        '<div class="doc-slots-wrap" id="slotsWrap_' + idMed + '">' + slotsHtml + '</div>' +
-                    '</div>' +
-                    '<div class="doc-card-action-col">' +
-                        '<button type="button" class="btn-reservar-slot" id="btnReservar_' + idMed + '" onclick="reservarConDoctor(' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\')">' +
-                            'Reservar cita' +
-                        '</button>' +
-                    '</div>';
-
-                container.appendChild(card);
-            });
-
-            lucide.createIcons();
+                const badge = document.querySelector('#weekDaysGrid .day-card-item.active .day-cupos');
+                if (badge) badge.textContent = total + (total === 1 ? ' cupo' : ' cupos');
+                if (!total) mostrarEstadoCatalogo(container, 'No hay horarios publicados disponibles para estos filtros y fecha.', true);
+                lucide.createIcons();
+            } catch (error) {
+                if (version === grillaRequest) {
+                    if (currentBadge) currentBadge.textContent = 'Sin verificar';
+                    mostrarEstadoCatalogo(container, error.message);
+                }
+            }
         }
+
+        function coincideTurno(hora, turno) {
+            const hour = Number(hora.split(':')[0]);
+            if (turno === 'MANANA') return hour < 13;
+            if (turno === 'TARDE') return hour >= 13;
+            return true;
+        }
+
+        function mostrarEstadoCatalogo(container, message, empty = false) {
+            container.replaceChildren();
+            const text = document.createElement('p');
+            text.className = 'catalogo-estado';
+            text.setAttribute('role', 'alert');
+            text.textContent = message;
+            container.appendChild(text);
+            if (empty) {
+                const waiting = document.createElement('a');
+                waiting.href = '${pageContext.request.contextPath}/paciente/lista-espera';
+                waiting.className = 'btn-waitlist-action';
+                waiting.textContent = 'Registrarme en lista de espera';
+                container.appendChild(waiting);
+            }
+        }
+
+        function catalogoElemento(tag, className, text) {
+            const element = document.createElement(tag);
+            element.className = className;
+            if (text !== undefined) element.textContent = text;
+            return element;
+        }
+
+        function tarjetaMedico(medico, horas, fecha, turno) {
+            const id = medico.idMedico;
+            const nombre = medico.nombreCompleto || 'Nombre no registrado';
+            const cmp = medico.cmp || 'CMP no registrado';
+            const card = catalogoElemento('div', 'doctor-schedule-card');
+            card.id = 'docScheduleCard_' + id;
+            card.setAttribute('data-cmp', cmp);
+            card.setAttribute('data-consultorio', 'Consultorio por confirmar');
+            const profile = catalogoElemento('div', 'doc-card-profile-col');
+            const initials = nombre.split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase();
+            profile.appendChild(catalogoElemento('div', 'doc-avatar-circle', initials));
+            const info = catalogoElemento('div', 'doc-meta-info');
+            info.append(catalogoElemento('h4', 'doc-name', nombre),
+                catalogoElemento('div', 'doc-spec-cmp', cmp + ' · ' + state.especialidadNombre),
+                catalogoElemento('div', 'doc-location', state.sedeNombre || 'Sede seleccionada'));
+            profile.appendChild(info);
+            const slots = catalogoElemento('div', 'doc-card-slots-col');
+            slots.appendChild(catalogoElemento('div', 'doc-turn-kicker', formatearCabeceraTurno(fecha, turno)));
+            const wrapper = catalogoElemento('div', 'doc-slots-wrap');
+            wrapper.id = 'slotsWrap_' + id;
+            horas.forEach(hora => {
+                const button = catalogoElemento('button', 'slot-pill-btn', hora);
+                button.type = 'button';
+                button.setAttribute('data-med', id);
+                button.setAttribute('data-hora', hora);
+                button.onclick = () => seleccionarSlot(button, id, nombre, hora);
+                wrapper.appendChild(button);
+            });
+            slots.appendChild(wrapper);
+            const actions = catalogoElemento('div', 'doc-card-action-col');
+            const reserve = catalogoElemento('button', 'btn-reservar-slot', 'Reservar cita');
+            reserve.id = 'btnReservar_' + id;
+            reserve.type = 'button';
+            reserve.onclick = () => reservarConDoctor(id, nombre);
+            actions.appendChild(reserve);
+            card.append(profile, slots, actions);
+            return card;
+        }
+
+
 
         function seleccionarSlot(btn, idMed, nombreMed, hora) {
             // Deseleccionar todos los chips de todos los médicos

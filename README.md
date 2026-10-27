@@ -110,6 +110,9 @@ en el servidor; el registro manual sigue disponible si la consulta falla.
 
 ## 🌿 Flujo de Trabajo (GitFlow)
 
+Los contratos y las pruebas de médicos y horarios están en
+[Contratos de catálogos médicos](docs/contratos-catalogos.md).
+
 El equipo de desarrollo sigue una estrategia basada en GitFlow:
 
 - `main`: Entorno de producción. Únicamente código estable.

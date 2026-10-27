@@ -5,6 +5,17 @@ import pe.edu.utp.clinica.config.DatabaseConfig;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Date;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.util.Set;
+import java.util.TreeSet;
+import pe.edu.utp.clinica.model.MedicoCatalogo;
+import pe.edu.utp.clinica.util.NombrePersona;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -14,6 +25,23 @@ import java.util.Map;
  * DAO para gestión del cuerpo médico, sedes, especialidades y disponibilidad de horarios.
  */
 public class MedicoDAO {
+    private static final DateTimeFormatter SLOT_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
+    private static final String ACTIVE_JOINS = " JOIN usuario u ON m.id_usuario = u.id_usuario "
+            + "JOIN especialidad e ON m.id_especialidad = e.id_especialidad JOIN sede s ON m.id_sede = s.id_sede ";
+    private static final String ACTIVE_FILTER = "m.estado = 'ACTIVO' AND u.activo = TRUE "
+            + "AND e.estado = 'ACTIVO' AND s.estado = 'ACTIVO'";
+    @FunctionalInterface
+    interface ConnectionSource { Connection open() throws SQLException; }
+
+    private final ConnectionSource connections;
+    private final Clock clock;
+
+    public MedicoDAO() { this(DatabaseConfig::getConnection, Clock.system(ZoneId.of("America/Lima"))); }
+
+    MedicoDAO(ConnectionSource connections, Clock clock) {
+        this.connections = connections;
+        this.clock = clock;
+    }
 
     public List<Map<String, Object>> obtenerEspecialidades() {
         List<Map<String, Object>> lista = new ArrayList<>();
@@ -23,7 +51,7 @@ public class MedicoDAO {
                      "WHERE e.estado = 'ACTIVO' " +
                      "GROUP BY e.id_especialidad, e.nombre " +
                      "ORDER BY e.id_especialidad ASC";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -42,7 +70,7 @@ public class MedicoDAO {
     public List<Map<String, Object>> obtenerSedes() {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT id_sede, nombre, direccion FROM sede WHERE estado = 'ACTIVO'";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -59,68 +87,46 @@ public class MedicoDAO {
     }
 
     public List<Map<String, Object>> obtenerMedicosDisponibles(int idEspecialidad, int idSede) {
-        List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT m.id_medico, u.nombres, u.apellidos, m.cmp " +
-                     "FROM medico m " +
-                     "INNER JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "WHERE m.id_especialidad = ? AND m.id_sede = ? AND m.estado = 'ACTIVO' AND u.activo = 1";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idEspecialidad);
-            ps.setInt(2, idSede);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    lista.add(mapearMedicoBasico(rs));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return lista;
+        return legacyMedicos(consultarMedicos(idEspecialidad, idSede));
     }
 
     public List<Map<String, Object>> obtenerMedicosPorEspecialidad(int idEspecialidad) {
-        List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT m.id_medico, u.nombres, u.apellidos, m.cmp " +
-                     "FROM medico m " +
-                     "INNER JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "WHERE m.id_especialidad = ? AND m.estado = 'ACTIVO' AND u.activo = 1";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idEspecialidad);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    lista.add(mapearMedicoBasico(rs));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return lista;
+        return legacyMedicos(consultarMedicos(idEspecialidad, null));
     }
 
-    private Map<String, Object> mapearMedicoBasico(ResultSet rs) throws Exception {
-        Map<String, Object> map = new HashMap<>();
-        String nombres = rs.getString("nombres");
-        String apellidos = rs.getString("apellidos");
-        String cmp = rs.getString("cmp");
-
-        String nombreCompleto = ((nombres != null ? nombres : "") + " " + (apellidos != null ? apellidos : "")).trim();
-        if (nombreCompleto.isEmpty()) {
-            nombreCompleto = "Dr. Médico Especialista";
-        } else if (!nombreCompleto.startsWith("Dr.") && !nombreCompleto.startsWith("Dra.")) {
-            String nLower = nombreCompleto.toLowerCase();
-            String prefix = (nLower.startsWith("elena") || nLower.startsWith("andrea") || nLower.startsWith("mariana") || nLower.startsWith("marina") || nLower.startsWith("maria") || nLower.startsWith("rosa") || nLower.startsWith("claudia") || nLower.startsWith("patricia")) ? "Dra. " : "Dr. ";
-            nombreCompleto = prefix + nombreCompleto;
+    public List<MedicoCatalogo> consultarMedicos(int idEspecialidad, Integer idSede) {
+        String sql = "SELECT m.id_medico, u.nombres, u.apellidos, m.cmp FROM medico m " + ACTIVE_JOINS
+                + "WHERE m.id_especialidad = ? AND " + ACTIVE_FILTER;
+        if (idSede != null) sql += " AND m.id_sede = ?";
+        sql += " ORDER BY u.apellidos, u.nombres, m.id_medico";
+        List<MedicoCatalogo> medicos = new ArrayList<>();
+        try (Connection conn = connections.open(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, idEspecialidad);
+            if (idSede != null) ps.setInt(2, idSede);
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    String nombre = java.util.Objects.toString(rs.getString("nombres"), "") + " "
+                            + java.util.Objects.toString(rs.getString("apellidos"), "");
+                    medicos.add(new MedicoCatalogo(rs.getInt("id_medico"), NombrePersona.formatear(nombre),
+                            java.util.Objects.toString(rs.getString("cmp"), "")));
+                }
+            }
+        } catch (SQLException e) {
+            throw new CatalogoDatosException(e);
         }
-        if (cmp == null || cmp.trim().isEmpty()) cmp = "CMP-48291";
+        return List.copyOf(medicos);
+    }
 
-        map.put("idMedico", rs.getInt("id_medico"));
-        map.put("nombreCompleto", nombreCompleto);
-        map.put("nombres", nombreCompleto);
-        map.put("cmp", cmp);
-        map.put("CMP", cmp);
-        return map;
+    private static List<Map<String, Object>> legacyMedicos(List<MedicoCatalogo> medicos) {
+        return medicos.stream().map(medico -> {
+            Map<String, Object> entry = new HashMap<>();
+            entry.put("idMedico", medico.idMedico());
+            entry.put("nombreCompleto", medico.nombreCompleto());
+            entry.put("nombres", medico.nombreCompleto());
+            entry.put("cmp", medico.cmp());
+            entry.put("CMP", medico.cmp());
+            return entry;
+        }).toList();
     }
 
     public Map<String, Object> obtenerDetallesMedico(int idMedico) {
@@ -132,7 +138,7 @@ public class MedicoDAO {
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
                      "WHERE m.id_medico = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idMedico);
             try (ResultSet rs = ps.executeQuery()) {
@@ -158,112 +164,84 @@ public class MedicoDAO {
     }
 
     public List<String> obtenerFechasDisponibles(int idMedico) {
+        String sql = "SELECT DISTINCT d.fecha FROM disponibilidad d JOIN medico m ON d.id_medico = m.id_medico "
+                + ACTIVE_JOINS + "WHERE d.id_medico = ? AND d.fecha >= ? AND d.estado = 'PUBLICADO' "
+                + "AND d.id_sede = m.id_sede AND " + ACTIVE_FILTER + " ORDER BY d.fecha";
         List<String> fechas = new ArrayList<>();
-        String sql = "SELECT DISTINCT fecha FROM disponibilidad " +
-                     "WHERE id_medico = ? AND fecha >= CURDATE() AND estado = 'PUBLICADO' " +
-                     "ORDER BY fecha ASC";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
+        try (Connection conn = connections.open(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idMedico);
+            ps.setDate(2, Date.valueOf(LocalDate.now(clock)));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (rs.getDate("fecha") != null) {
-                        fechas.add(rs.getDate("fecha").toString());
-                    }
-                }
+                while (rs.next()) fechas.add(rs.getDate("fecha").toLocalDate().toString());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (SQLException e) {
+            throw new CatalogoDatosException(e);
         }
-
-        if (fechas.isEmpty()) {
-            java.time.LocalDate hoy = java.time.LocalDate.now();
-            for (int i = 1; i <= 10; i++) {
-                java.time.LocalDate d = hoy.plusDays(i);
-                if (d.getDayOfWeek().getValue() <= 6) {
-                    fechas.add(d.toString());
-                }
-            }
-        }
-        return fechas;
+        return List.copyOf(fechas);
     }
 
     public List<String> obtenerHorariosDisponibles(int idMedico, String fecha) {
-        List<String> horariosDisponibles = new ArrayList<>();
-        String sqlDisponibilidad = "SELECT hora_inicio, hora_fin, duracion_minutos FROM disponibilidad " +
-                                   "WHERE id_medico = ? AND fecha = ? AND estado = 'PUBLICADO'";
-        java.util.Set<java.time.LocalTime> todosLosHorarios = new java.util.TreeSet<>();
-        
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlDisponibilidad)) {
-            ps.setInt(1, idMedico);
-            ps.setString(2, fecha);
+        LocalDate date = LocalDate.parse(fecha);
+        if (date.isBefore(LocalDate.now(clock))) return List.of();
+        try (Connection conn = connections.open()) {
+            Set<LocalTime> publicados = publishedSlots(conn, idMedico, date);
+            Set<LocalTime> ocupados = occupiedSlots(conn, idMedico, date);
+            boolean today = date.equals(LocalDate.now(clock));
+            LocalTime cutoff = LocalTime.now(clock);
+            return publicados.stream().filter(time -> !today || time.isAfter(cutoff))
+                    .filter(time -> !ocupados.contains(time)).map(time -> time.format(SLOT_FORMAT))
+                    .toList();
+        } catch (SQLException e) {
+            throw new CatalogoDatosException(e);
+        }
+    }
+
+    private static Set<LocalTime> publishedSlots(Connection conn, int medico, LocalDate date) throws SQLException {
+        Set<LocalTime> slots = new TreeSet<>();
+        String sql = "SELECT d.hora_inicio, d.hora_fin, d.duracion_minutos FROM disponibilidad d "
+                + "JOIN medico m ON d.id_medico = m.id_medico " + ACTIVE_JOINS
+                + "WHERE d.id_medico = ? AND d.fecha = ? AND d.estado = 'PUBLICADO' "
+                + "AND d.id_sede = m.id_sede AND " + ACTIVE_FILTER;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, medico);
+            ps.setDate(2, Date.valueOf(date));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    java.time.LocalTime inicio = rs.getTime("hora_inicio").toLocalTime();
-                    java.time.LocalTime fin = rs.getTime("hora_fin").toLocalTime();
-                    int duracion = rs.getInt("duracion_minutos");
-                    if (duracion <= 0) duracion = 30;
-                    
-                    java.time.LocalTime actual = inicio;
-                    while (actual.plusMinutes(duracion).isBefore(fin) || actual.plusMinutes(duracion).equals(fin)) {
-                        todosLosHorarios.add(actual);
-                        actual = actual.plusMinutes(duracion);
-                    }
-                }
+                while (rs.next()) addSlots(slots, rs);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
         }
+        return slots;
+    }
 
-        List<java.time.LocalTime> horariosOcupados = new ArrayList<>();
-        String sqlCitas = "SELECT TIME(fecha_hora) as hora FROM cita " +
-                          "WHERE id_medico = ? AND DATE(fecha_hora) = ? AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlCitas)) {
-            ps.setInt(1, idMedico);
-            ps.setString(2, fecha);
+    private static void addSlots(Set<LocalTime> slots, ResultSet rs) throws SQLException {
+        java.sql.Time start = rs.getTime("hora_inicio");
+        java.sql.Time end = rs.getTime("hora_fin");
+        int minutes = rs.getInt("duracion_minutos");
+        if (start == null || end == null || minutes <= 0 || minutes > 1440) {
+            throw new SQLException("Intervalo de disponibilidad inválido");
+        }
+        long first = start.toLocalTime().toSecondOfDay();
+        long last = end.toLocalTime().toSecondOfDay();
+        if (first % 60 != 0 || last % 60 != 0) throw new SQLException("El intervalo debe usar minutos completos");
+        if (first >= last) throw new SQLException("Intervalo de disponibilidad inválido");
+        long duration = minutes * 60L;
+        for (long second = first; second + duration <= last; second += duration) {
+            slots.add(LocalTime.ofSecondOfDay(second));
+        }
+    }
+
+    private static Set<LocalTime> occupiedSlots(Connection conn, int medico, LocalDate date) throws SQLException {
+        Set<LocalTime> slots = new TreeSet<>();
+        String sql = "SELECT fecha_hora FROM cita WHERE id_medico = ? AND fecha_hora >= ? AND fecha_hora < ? "
+                + "AND estado NOT IN ('CANCELADA', 'REPROGRAMADA')";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, medico);
+            ps.setTimestamp(2, java.sql.Timestamp.valueOf(date.atStartOfDay()));
+            ps.setTimestamp(3, java.sql.Timestamp.valueOf(date.plusDays(1).atStartOfDay()));
             try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    if (rs.getTime("hora") != null) {
-                        horariosOcupados.add(rs.getTime("hora").toLocalTime());
-                    }
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        boolean esHoy = false;
-        try {
-            esHoy = java.time.LocalDate.parse(fecha).isEqual(java.time.LocalDate.now());
-        } catch (Exception ignored) {}
-        java.time.LocalTime ahora = java.time.LocalTime.now();
-
-        if (todosLosHorarios.isEmpty()) {
-            String[] std = {"08:00", "08:30", "09:00", "09:30", "10:00", "10:30", "11:00", "11:30", "12:00", "12:30", "14:00", "14:30", "15:00", "15:30", "16:00", "16:30", "17:00", "17:30", "18:00"};
-            for (String h : std) {
-                java.time.LocalTime lt = java.time.LocalTime.parse(h);
-                if (esHoy && lt.isBefore(ahora)) {
-                    continue;
-                }
-                if (!horariosOcupados.contains(lt)) {
-                    horariosDisponibles.add(h);
-                }
-            }
-            return horariosDisponibles;
-        }
-
-        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
-        for (java.time.LocalTime t : todosLosHorarios) {
-            if (esHoy && t.isBefore(ahora)) {
-                continue;
-            }
-            if (!horariosOcupados.contains(t)) {
-                horariosDisponibles.add(t.format(formatter));
+                while (rs.next()) slots.add(rs.getTimestamp("fecha_hora").toLocalDateTime().toLocalTime());
             }
         }
-        return horariosDisponibles;
+        return slots;
     }
 
     public List<Map<String, Object>> obtenerMedicosDePaciente(int idPaciente) {
@@ -275,7 +253,7 @@ public class MedicoDAO {
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
                      "WHERE c.id_paciente = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPaciente);
             try (ResultSet rs = ps.executeQuery()) {
@@ -303,7 +281,7 @@ public class MedicoDAO {
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
                      "ORDER BY m.id_medico ASC";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql);
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
@@ -344,7 +322,7 @@ public class MedicoDAO {
     public List<Map<String, Object>> obtenerMotivosPorEspecialidad(int idEspecialidad) {
         List<Map<String, Object>> lista = new ArrayList<>();
         String sql = "SELECT id_motivo, descripcion FROM motivo_consulta WHERE id_especialidad = ? AND estado = 'ACTIVO' ORDER BY id_motivo ASC";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = connections.open();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idEspecialidad);
             try (ResultSet rs = ps.executeQuery()) {
