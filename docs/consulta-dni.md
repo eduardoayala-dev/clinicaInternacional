@@ -7,6 +7,32 @@ Carné de Extranjería y registro manual continúan disponibles.
 
 ## Configuración privada
 
+### Preparación local en Windows
+
+El archivo privado `.env.dni` contiene únicamente la configuración de Decolecta,
+separada de las contraseñas de MySQL. Copiar las entradas de
+`config/decolecta.env.example` si el archivo aún no existe. Pegar la **nueva** clave
+después de `DECOLECTA_API_KEY=` y guardar, sin comillas ni prefijo `Bearer`.
+El archivo está excluido de Git y de la imagen Docker.
+
+El iniciador carga esas variables en Java sin mostrarlas ni incluirlas en los
+argumentos de los procesos. No cambia variables globales de Windows ni usa
+`Invoke-Expression` para leer la configuración:
+
+```powershell
+.\scripts\Iniciar-ConsultaDni.ps1 -SoloValidar
+.\scripts\Iniciar-ConsultaDni.ps1 -Reiniciar
+```
+
+El segundo comando reinicia únicamente Jetty de este proyecto en el puerto 8082,
+si ya está ejecutándose, y abre el servicio en
+`http://127.0.0.1:8082/login/paciente?action=register`.
+Usar esa dirección permite mantener separada su cookie de la aplicación en
+`localhost:8080`. No reinicia Docker ni configura MySQL. La validación del archivo
+no consulta Decolecta; la cuota solo se utiliza al pulsar **Consultar DNI**.
+
+### Docker y despliegue
+
 1. Revocar cualquier clave que se haya compartido y generar una nueva en Decolecta.
 2. Añadir las entradas de `config/decolecta.env.example` al `.env` privado existente,
    sin reemplazar sus contraseñas de MySQL. No versionar ese archivo.
@@ -122,7 +148,7 @@ Para previsualizar el formulario sin sustituir el servicio existente en 8080:
 mvn -Djetty.http.port=8082 jetty:run
 ```
 
-Abrir `http://localhost:8082/login/paciente?action=register`. Jetty queda enlazado
+Abrir `http://127.0.0.1:8082/login/paciente?action=register`. Jetty queda enlazado
 a `127.0.0.1`. Esta previsualización y las pruebas del endpoint no necesitan conexión
 a MySQL; los demás flujos funcionales sí requieren configurar su base de datos.
 
