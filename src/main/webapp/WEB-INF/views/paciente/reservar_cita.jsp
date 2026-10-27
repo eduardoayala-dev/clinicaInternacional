@@ -108,6 +108,11 @@
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
+        <c:if test="${not empty sessionScope.agendaError}">
+            <p role="alert" class="catalogo-estado"><c:out value="${sessionScope.agendaError}"/></p>
+            <c:remove var="agendaError" scope="session"/>
+        </c:if>
+
 
         <!-- HEADER INSTITUCIONAL -->
         <header class="dash-top-header">
@@ -509,7 +514,7 @@
                                         </div>
                                         <div class="resumen-row-item">
                                             <span class="resumen-row-label">Médico / CMP</span>
-                                            <span class="resumen-row-val" id="resumenMedicoCMP">Dr. Fernando Solís · 045218</span>
+                                            <span class="resumen-row-val" id="resumenMedicoCMP">—</span>
                                         </div>
                                         <div class="resumen-row-item">
                                             <span class="resumen-row-label">Sede y consultorio</span>
@@ -586,7 +591,7 @@
 
                                 <div class="success-code-pill">
                                     <span>Código de cita:</span>
-                                    <strong id="successCodigoCita">CI-2026-004821</strong>
+                                    <strong id="successCodigoCita">—</strong>
                                 </div>
 
                                 <div class="success-details-list">
@@ -596,7 +601,7 @@
                                     </div>
                                     <div class="success-row-item">
                                         <span class="success-row-label">Médico / CMP</span>
-                                        <span class="success-row-val" id="successMedicoCMP">Dr. Fernando Solís · 045218</span>
+                                        <span class="success-row-val" id="successMedicoCMP">—</span>
                                     </div>
                                     <div class="success-row-item">
                                         <span class="success-row-label">Sede y consultorio</span>
@@ -646,6 +651,7 @@
 
     <!-- SCRIPTS Y LÓGICA DE CONTROL -->
     <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
@@ -670,15 +676,6 @@
                 }
             } else {
                 actualizarEspecialidadYMotivos();
-            }
-
-            // Detectar si la página fue redirigida tras reserva exitosa
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('reserva') === 'ok') {
-                const cod = urlParams.get('codigo') || 'CI-2026-004821';
-                iniciarModoDirecto();
-                mostrarPantallaExito(cod);
-                return;
             }
 
             // Listener para motivo en Paso 3
@@ -710,33 +707,15 @@
                     const formData = new FormData(formFinal);
                     const params = new URLSearchParams(formData);
 
-                    fetch(formFinal.action, {
-                        method: 'POST',
-                        body: params,
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-Token': document.querySelector('meta[name="csrf-token"]').content,
-                            'Accept': 'application/json'
+                    ClinicaReservas.reservar(formFinal.action, params,
+                        document.querySelector('meta[name="csrf-token"]').content)
+                    .then(data => mostrarPantallaExito(data.codigoCita))
+                    .catch(error => {
+                        alert(error.message);
+                        if (btnSubmit) {
+                            btnSubmit.disabled = false;
+                            btnSubmit.textContent = 'Finalizar reserva';
                         }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data && data.success) {
-                            mostrarPantallaExito(data.codigoCita || ('CI-2026-' + String(data.idCita || 4821).padStart(6, '0')));
-                        } else {
-                            alert(data.error || 'No se pudo procesar la reserva. Por favor intenta nuevamente.');
-                            if (btnSubmit) {
-                                btnSubmit.disabled = false;
-                                btnSubmit.innerHTML = '<span>Finalizar reserva</span> <i data-lucide="check" style="width: 18px; height: 18px;"></i>';
-                                lucide.createIcons();
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error al reservar:', err);
-                        const codFallback = 'CI-2026-00' + Math.floor(1000 + Math.random() * 9000);
-                        mostrarPantallaExito(codFallback);
                     });
                 });
             }
@@ -980,7 +959,7 @@
                 const pillSede = document.getElementById('pillSede');
                 if (pillSede) pillSede.textContent = state.sedeNombre || 'Sede San Borja';
                 const pillEsp = document.getElementById('pillEspecialidad');
-                if (pillEsp) pillEsp.textContent = state.especialidadNombre || 'Cardiología';
+                if (pillEsp) pillEsp.textContent = state.especialidadNombre || 'Especialidad por confirmar';
                 const pillTurno = document.getElementById('pillTurno');
                 if (pillTurno) {
                     pillTurno.textContent = state.turno === 'MANANA' ? 'Turno mañana' : (state.turno === 'TARDE' ? 'Turno tarde' : 'Indiferente');
@@ -1609,19 +1588,19 @@
             }
 
             const elEsp = document.getElementById('resumenEspecialidad');
-            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Cardiología';
+            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Especialidad por confirmar';
 
             const elMed = document.getElementById('resumenMedicoCMP');
             if (elMed) {
-                const rawCmp = state.medicoCmp || '045218';
+                const rawCmp = state.medicoCmp || '';
                 const cmpNum = rawCmp.replace(/CMP[-:\s]*/i, '').trim();
-                elMed.textContent = state.medicoNombre + ' · ' + cmpNum;
+                elMed.textContent = state.medicoNombre + (cmpNum ? ' · ' + cmpNum : '');
             }
 
             const elSede = document.getElementById('resumenSedeConsultorio');
             if (elSede) {
                 const sedeNom = (state.sedeNombre && state.sedeNombre !== '0' && state.sedeNombre !== 'Todas las sedes') ? state.sedeNombre : 'Sede San Borja';
-                const consNom = state.consultorio || 'Consultorio 304';
+                const consNom = state.consultorio || 'Consultorio por confirmar';
                 elSede.textContent = sedeNom + ' · ' + consNom;
             }
 
@@ -1673,14 +1652,14 @@
 
             // Llenar datos en el comprobante
             const elCod = document.getElementById('successCodigoCita');
-            if (elCod) elCod.textContent = codigoCita || 'CI-2026-004821';
+            if (elCod) elCod.textContent = codigoCita;
 
             const elEsp = document.getElementById('successEspecialidad');
-            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Cardiología';
+            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Especialidad por confirmar';
 
             const elMed = document.getElementById('successMedicoCMP');
             const resMed = document.getElementById('resumenMedicoCMP');
-            if (elMed) elMed.textContent = resMed ? resMed.textContent : (state.medicoNombre + ' · 045218');
+            if (elMed) elMed.textContent = resMed ? resMed.textContent : state.medicoNombre;
 
             const elSede = document.getElementById('successSedeConsultorio');
             const resSede = document.getElementById('resumenSedeConsultorio');

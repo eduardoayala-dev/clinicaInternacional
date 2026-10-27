@@ -5,79 +5,64 @@ import jakarta.servlet.annotation.WebServlet;
 import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import pe.edu.utp.clinica.api.ApiJson;
+import pe.edu.utp.clinica.api.ApiResponse;
+import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
-
 import java.io.IOException;
+import java.time.Year;
+import java.time.ZoneId;
 
 @WebServlet(name = "ReservarCitaServlet", urlPatterns = {"/paciente/reservar"})
 public class ReservarCitaServlet extends HttpServlet {
+    private transient CitaDAO citaDAO;
+    private record ReservaCreada(int idCita, String codigoCita) {}
 
-    private CitaDAO citaDAO;
-
-    @Override
-    public void init() throws ServletException {
-        this.citaDAO = new CitaDAO();
-    }
+    protected CitaDAO crearCitaDAO() { return new CitaDAO(); }
+    @Override public void init() throws ServletException { citaDAO = crearCitaDAO(); }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        Usuario usuario = (session != null) ? (Usuario) session.getAttribute("usuarioLogueado") : null;
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+        var session = request.getSession(false);
+        Usuario usuario = session == null ? null : (Usuario) session.getAttribute("usuarioLogueado");
         if (usuario == null || !"PACIENTE".equals(usuario.getRol())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN, "Acceso denegado");
+            fallo(request, response, 403, "ACCESO_DENEGADO", "Acceso exclusivo para pacientes.");
             return;
         }
-
         try {
-            int idMedico = Integer.parseInt(request.getParameter("idMedico"));
-            String fecha = request.getParameter("fecha");
-            String hora = request.getParameter("hora");
-            String nivelUrgencia = request.getParameter("urgencia"); // ALTA, MEDIA, BAJA
-
-            // Obtener el id_paciente correspondiente al id_usuario de la sesión
-            int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
-
-            int idCita = citaDAO.reservarCitaConId(idPaciente, idMedico, fecha, hora, nivelUrgencia);
-            boolean exito = idCita > 0;
-
-            String accept = request.getHeader("Accept");
-            String requestedWith = request.getHeader("X-Requested-With");
-            boolean esAjax = "XMLHttpRequest".equals(requestedWith) 
-                          || (accept != null && accept.contains("application/json"))
-                          || "true".equals(request.getParameter("ajax"));
-
-            if (esAjax) {
-                response.setContentType("application/json;charset=UTF-8");
-                if (exito) {
-                    String anio = java.time.Year.now().toString();
-                    String codigoCita = "CI-" + anio + "-" + String.format("%06d", idCita);
-                    response.getWriter().write("{\"success\":true,\"idCita\":" + idCita + ",\"codigoCita\":\"" + codigoCita + "\"}");
-                } else {
-                    response.getWriter().write("{\"success\":false,\"error\":\"No se pudo completar la reserva.\"}");
-                }
-                return;
-            }
-
-            if (exito) {
-                String anio = java.time.Year.now().toString();
-                String codigoCita = "CI-" + anio + "-" + String.format("%06d", idCita);
-                response.sendRedirect(request.getContextPath() + "/paciente/citas?reserva=ok&codigo=" + codigoCita);
+            int medico = Integer.parseInt(request.getParameter("idMedico"));
+            int paciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
+            int id = citaDAO.reservarCitaValidada(paciente, medico, request.getParameter("fecha"),
+                    request.getParameter("hora"), request.getParameter("urgencia"));
+            String codigo = "CI-" + Year.now(ZoneId.of("America/Lima")) + "-" + String.format("%06d", id);
+            if (json(request)) {
+                ApiJson.write(response, 201, new ApiResponse<>("CITA_RESERVADA", "Cita reservada correctamente.", new ReservaCreada(id, codigo)));
             } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
+                response.sendRedirect(request.getContextPath() + "/paciente/historial?reserva=ok");
             }
+        } catch (NumberFormatException e) {
+            fallo(request, response, 400, "DATOS_INVALIDOS", "El médico no es válido.");
+        } catch (AgendaException e) {
+            fallo(request, response, e.status(), e.code(), e.getMessage());
+        } catch (RuntimeException e) {
+            fallo(request, response, 500, "ERROR_INTERNO", "No se pudo completar la reserva.");
+        }
+    }
 
-        } catch (Exception e) {
-            e.printStackTrace();
-            String accept = request.getHeader("Accept");
-            String requestedWith = request.getHeader("X-Requested-With");
-            if ("XMLHttpRequest".equals(requestedWith) || (accept != null && accept.contains("application/json"))) {
-                response.setContentType("application/json;charset=UTF-8");
-                response.getWriter().write("{\"success\":false,\"error\":\"Error interno al procesar reserva.\"}");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/citas?error=true");
-            }
+    private static boolean json(HttpServletRequest request) {
+        String accept = request.getHeader("Accept");
+        return "XMLHttpRequest".equals(request.getHeader("X-Requested-With"))
+                || (accept != null && accept.contains("application/json"))
+                || "true".equals(request.getParameter("ajax"));
+    }
+
+    private static void fallo(HttpServletRequest request, HttpServletResponse response, int status, String code, String message) throws IOException {
+        if (json(request) || status == 403) {
+            ApiJson.write(response, status, new ApiResponse<>(code, message, null));
+        } else {
+            request.getSession().setAttribute("agendaError", message);
+            response.sendRedirect(request.getContextPath() + "/paciente/citas?error=" + code);
         }
     }
 }

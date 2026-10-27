@@ -146,6 +146,11 @@
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
+        <c:if test="${not empty sessionScope.agendaError}">
+            <p role="alert" class="catalogo-estado"><c:out value="${sessionScope.agendaError}"/></p>
+            <c:remove var="agendaError" scope="session"/>
+        </c:if>
+
 
         <!-- HEADER TOP INSTITUCIONAL -->
         <header class="dash-top-header">

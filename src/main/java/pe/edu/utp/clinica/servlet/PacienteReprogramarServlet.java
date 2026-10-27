@@ -7,19 +7,17 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
 import java.util.List;
 import java.util.Map;
 
 @WebServlet(name = "PacienteReprogramarServlet", urlPatterns = {"/paciente/reprogramar"})
 public class PacienteReprogramarServlet extends HttpServlet {
 
-    private CitaDAO citaDAO;
+    private transient CitaDAO citaDAO;
 
     @Override
     public void init() throws ServletException {
@@ -121,32 +119,18 @@ public class PacienteReprogramarServlet extends HttpServlet {
 
             int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
 
-            // Validación de fecha y hora futura obligatoria en el flujo clínico
-            LocalDate fechaParsed = LocalDate.parse(fecha);
-            LocalTime horaParsed = LocalTime.parse(hora);
-            LocalDateTime nuevaFechaHora = LocalDateTime.of(fechaParsed, horaParsed);
+            citaDAO.reprogramarCitaValidada(idCita, idPaciente, idMedico, fecha, hora, idMotivo, nivelUrgencia);
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?reprogramada=ok");
 
-            if (nuevaFechaHora.isBefore(LocalDateTime.now())) {
-                response.sendRedirect(request.getContextPath() + "/paciente/reprogramar?idCita=" + idCita + "&error=fecha_pasada");
-                return;
-            }
-
-            boolean exito = citaDAO.reprogramarCita(idCita, idPaciente, idMedico, fecha, hora, idMotivo, nivelUrgencia);
-
-            if (exito) {
-                response.sendRedirect(request.getContextPath() + "/paciente/historial?reprogramada=ok");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/reprogramar?idCita=" + idCita + "&error=fallo_transaccion");
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            String idCitaParam = request.getParameter("idCita");
-            if (idCitaParam != null) {
-                response.sendRedirect(request.getContextPath() + "/paciente/reprogramar?idCita=" + idCitaParam + "&error=datos_invalidos");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/historial?error=error_inesperado");
-            }
+        } catch (AgendaException e) {
+            request.getSession().setAttribute("agendaError", e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?error=" + e.code());
+        } catch (NumberFormatException e) {
+            request.getSession().setAttribute("agendaError", "Los datos de la cita no son válidos.");
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?error=DATOS_INVALIDOS");
+        } catch (RuntimeException e) {
+            request.getSession().setAttribute("agendaError", "No se pudo completar la reprogramación.");
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?error=ERROR_INTERNO");
         }
     }
 }
