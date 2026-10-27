@@ -1,0 +1,756 @@
+{
+  "info": {
+    "name": "Clínica - Agendas y ciclo de citas local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo LOCAL. Publica una agenda 09:00–11:00 con duración de 30 minutos, crea un paciente sintético, reserva, reprograma y cancela. La agenda queda publicada para revisión manual. Configurar fechaAgenda futura, idMedico y su idSede, correoPersonal y clavePersonal. Ejecutar en orden, con cookies y sin seguir redirecciones. No consulta proveedores de DNI. No ejecutar sobre producción."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "correoPersonal",
+      "value": ""
+    },
+    {
+      "key": "clavePersonal",
+      "value": ""
+    },
+    {
+      "key": "idMedico",
+      "value": "1"
+    },
+    {
+      "key": "idSede",
+      "value": "1"
+    },
+    {
+      "key": "fechaAgenda",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Sesión de personal",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Ingresar como personal administrativo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{correoPersonal}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{clavePersonal}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Acceso administrativo\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/admin/dashboard\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Gestión de médicos y token renovado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/admin/medicos",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Publicar agenda local",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/medicos",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "publicar_horario_medico",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "idSede",
+              "value": "{{idSede}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "horaInicio",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "horaFin",
+              "value": "11:00",
+              "type": "text"
+            },
+            {
+              "key": "duracion",
+              "value": "30",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Verificar horarios publicados",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/horarios?idMedico={{idMedico}}&fecha={{fechaAgenda}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const body=pm.response.json(); pm.test(\"Agenda disponible\",()=>{pm.expect(body.code).to.eql(\"HORARIOS_OBTENIDOS\");pm.expect(body.data).to.include(\"09:00\");pm.expect(body.data).to.include(\"09:30\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Cerrar sesión de personal",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "logout",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Registro sintético y token",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente?action=register",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "const suffix=String(Date.now()).slice(-7);pm.collectionVariables.set(\"dniPrueba\",\"9\"+suffix);pm.collectionVariables.set(\"correoPrueba\",\"agenda.\"+suffix+\"@example.test\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Crear paciente sintético",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/registro",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "nombres",
+              "value": "Paciente de prueba",
+              "type": "text"
+            },
+            {
+              "key": "apellidos",
+              "value": "Pérez Núñez",
+              "type": "text"
+            },
+            {
+              "key": "dni",
+              "value": "{{dniPrueba}}",
+              "type": "text"
+            },
+            {
+              "key": "fechaNacimiento",
+              "value": "2000-01-01",
+              "type": "text"
+            },
+            {
+              "key": "telefono",
+              "value": "900000001",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "{{correoPrueba}}",
+              "type": "text"
+            },
+            {
+              "key": "direccion",
+              "value": "Prueba local",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "AgendaPrueba2026!",
+              "type": "text"
+            },
+            {
+              "key": "terminos",
+              "value": "on",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Registro completado\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/dashboard\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Formulario de reserva y token renovado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/citas",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);",
+              "pm.test(\"Cliente de reservas\",()=>pm.expect(pm.response.text()).to.include(\"reservas-api.js\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Reservar horario publicado",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reservar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "BAJA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(201));",
+              "const body=pm.response.json();pm.test(\"Contrato de creación\",()=>{pm.expect(body.code).to.eql(\"CITA_RESERVADA\");pm.expect(body.data.idCita).to.be.above(0);});if(body.data)pm.collectionVariables.set(\"idCita\",body.data.idCita);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Rechazar reserva duplicada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reservar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "BAJA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(409));",
+              "pm.test(\"Sin comprobante\",()=>pm.expect(pm.response.json().data).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Horario ocupado desaparece del catálogo",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/horarios?idMedico={{idMedico}}&fecha={{fechaAgenda}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Cupo ocupado\",()=>pm.expect(pm.response.json().data).to.not.include(\"09:00\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Formulario de reprogramación",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/reprogramar?idCita={{idCita}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);",
+              "pm.test(\"La hora guardada coincide con la solicitada\",()=>pm.expect(pm.response.text()).to.include(\"let horaCitaPrevia = '09:00'\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Reprogramar al siguiente horario",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reprogramar",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idCita",
+              "value": "{{idCita}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:30",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "BAJA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Reprogramación completada\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"reprogramada=ok\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - Identificar cita reprogramada",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/historial",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);",
+              "const matches=[...pm.response.text().matchAll(/reprogramar\\?idCita=(\\d+)/g)];pm.test(\"Nueva cita propia\",()=>pm.expect(matches.length).to.be.above(0));if(matches.length)pm.collectionVariables.set(\"idCitaNueva\",matches[0][1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - Cancelar nueva cita",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/historial",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "cancelar",
+              "type": "text"
+            },
+            {
+              "key": "idCita",
+              "value": "{{idCitaNueva}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Cancelación y reprogramación liberan los cupos",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/horarios?idMedico={{idMedico}}&fecha={{fechaAgenda}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Ambos cupos libres\",()=>{const data=pm.response.json().data;pm.expect(data).to.include(\"09:00\");pm.expect(data).to.include(\"09:30\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - Rechazar hora fuera de los intervalos",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reservar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:15",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "BAJA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(409));",
+              "pm.test(\"Horario rechazado\",()=>pm.expect(pm.response.json().code).to.eql(\"HORARIO_NO_DISPONIBLE\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 - Rechazar fecha inválida",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reservar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "2026-02-30",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "BAJA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -111,7 +111,8 @@ en el servidor; el registro manual sigue disponible si la consulta falla.
 ## 🌿 Flujo de Trabajo (GitFlow)
 
 Los contratos y las pruebas de médicos y horarios están en
-[Contratos de catálogos médicos](docs/contratos-catalogos.md).
+[Contratos de catálogos médicos](docs/contratos-catalogos.md). La publicación de horarios y la prueba del ciclo de citas están en
+[Agendas y reservas locales](docs/agendas-reservas.md).
 
 El equipo de desarrollo sigue una estrategia basada en GitFlow:
 
