@@ -12,26 +12,35 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ApiPeruClientTest {
+    private static final class RecordingSubscription implements Flow.Subscription {
+        private long requested;
+        private boolean cancelled;
+
+        @Override public void request(long amount) { requested += amount; }
+        @Override public void cancel() { cancelled = true; }
+    }
+
     @Test void cancelsOversizedStreamingBodyBeforeAccumulatingIt() {
         var subscriber = new ApiPeruClient.LimitedBodySubscriber();
-        var cancelled = new AtomicInteger();
-        subscriber.onSubscribe(new Flow.Subscription() {
-            public void request(long n) {}
-            public void cancel() { cancelled.incrementAndGet(); }
-        });
+        var subscription = new RecordingSubscription();
+        subscriber.onSubscribe(subscription);
         subscriber.onNext(List.of(ByteBuffer.wrap(new byte[16384])));
         subscriber.onNext(List.of(ByteBuffer.wrap(new byte[1])));
         subscriber.onComplete();
-        assertEquals(1, cancelled.get());
+        assertTrue(subscription.cancelled);
+        assertTrue(subscription.requested > 0);
         assertThrows(java.util.concurrent.CompletionException.class, () -> subscriber.getBody().toCompletableFuture().join());
     }
 
     @Test void acceptsSmallStreamingBody() {
         var subscriber = new ApiPeruClient.LimitedBodySubscriber();
-        subscriber.onSubscribe(new Flow.Subscription() { public void request(long n) {} public void cancel() {} });
+        var subscription = new RecordingSubscription();
+        subscriber.onSubscribe(subscription);
         subscriber.onNext(List.of(ByteBuffer.wrap(new byte[]{1,2,3})));
         subscriber.onComplete();
         assertArrayEquals(new byte[]{1,2,3}, subscriber.getBody().toCompletableFuture().join());
+        assertFalse(subscription.cancelled);
+        assertTrue(subscription.requested > 0);
     }
     private static final String BODY = """
             {"nombres":"PACIENTE PRUEBA","apellidoPaterno":"FICTICIO",

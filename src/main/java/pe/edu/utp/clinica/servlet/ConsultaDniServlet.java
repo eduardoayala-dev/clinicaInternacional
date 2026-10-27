@@ -21,7 +21,7 @@ public class ConsultaDniServlet extends HttpServlet {
     private static final ObjectMapper JSON = new ObjectMapper()
             .enable(DeserializationFeature.FAIL_ON_TRAILING_TOKENS);
     private static final int MAX_REQUEST_CHARS = 1024;
-    private DniService service;
+    private transient DniService service;
     private record Result(String code, String message, DniDatos data) {}
 
     public ConsultaDniServlet() {}
@@ -58,31 +58,31 @@ public class ConsultaDniServlet extends HttpServlet {
                 throw new DniException(415, "CONTENIDO_NO_ADMITIDO", "Envía el contenido como application/json.");
             }
             char[] buffer = new char[MAX_REQUEST_CHARS + 1];
-            int total = 0, read;
+            int total = 0;
+            int read;
             var reader = req.getReader();
             while (total < buffer.length && (read = reader.read(buffer, total, buffer.length - total)) != -1) total += read;
             if (total > MAX_REQUEST_CHARS) throw new DniException(413, "SOLICITUD_MUY_GRANDE", "La solicitud supera el tamaño permitido.");
-            JsonNode root;
-            try { root = JSON.readTree(new String(buffer, 0, total)); }
-            catch (IOException e) { throw new DniException(400, "JSON_INVALIDO", "El cuerpo JSON no es válido."); }
+            JsonNode root = parseJson(new String(buffer, 0, total));
             if (root == null || !root.isObject() || root.size() != 1 || !root.path("numero").isTextual()) {
                 throw new DniException(400, "SOLICITUD_INVALIDA", "Envía únicamente el campo numero como texto.");
             }
             String numero = root.get("numero").asText();
             var session = req.getSession(false);
-            DniDatos data;
-            synchronized (session) {
-                data = DniConsultaSesion.obtener(session, numero);
-                if (data == null) {
-                    data = service.consultar(numero, req.getRemoteAddr(), session.getId());
-                    DniConsultaSesion.guardar(session, data);
-                }
-            }
+            DniDatos data = DniConsultaSesion.obtenerOConsultar(session, numero,
+                    document -> service.consultar(document, req.getRemoteAddr(), session.getId()));
             JSON.writeValue(res.getWriter(), new Result("DNI_ENCONTRADO", "Datos consultados correctamente.", data));
         } catch (DniException e) {
             res.setStatus(e.status());
             if (e.status() == 429) res.setHeader("Retry-After", Integer.toString(e.retryAfter()));
             JSON.writeValue(res.getWriter(), new Result(e.code(), e.getMessage(), null));
+        }
+    }
+    private static JsonNode parseJson(String body) throws DniException {
+        try {
+            return JSON.readTree(body);
+        } catch (IOException e) {
+            throw new DniException(400, "JSON_INVALIDO", "El cuerpo JSON no es válido.");
         }
     }
 }

@@ -16,23 +16,27 @@ public final class NombrePersona {
         if (clean.isEmpty()) return clean;
         String[] words = clean.split(" ");
         for (int i = 0; i < words.length; i++) {
-            String word = words[i];
-            String lower = word.toLowerCase(SPANISH);
-            if (i > 0 && PARTICLES.contains(lower)) {
-                words[i] = lower;
-                continue;
-            }
-            if (word.codePoints().anyMatch(Character::isLowerCase)
-                    && word.codePoints().anyMatch(Character::isUpperCase)) continue;
-            StringBuilder formatted = new StringBuilder();
-            boolean initial = true;
-            for (int code : lower.codePoints().toArray()) {
-                formatted.appendCodePoint(initial && Character.isLetter(code) ? Character.toTitleCase(code) : code);
-                if (Character.isLetter(code)) initial = false;
-                else if (code == '-' || code == '\'' || code == '’') initial = true;
-            }
-            words[i] = formatted.toString();
+            words[i] = formatWord(words[i], i == 0);
         }
         return String.join(" ", words);
+    }
+
+    private static String formatWord(String word, boolean first) {
+        String lower = word.toLowerCase(SPANISH);
+        if (!first && PARTICLES.contains(lower)) return lower;
+        if (word.codePoints().anyMatch(Character::isLowerCase)
+                && word.codePoints().anyMatch(Character::isUpperCase)) return word;
+        return capitalizeCompound(lower);
+    }
+
+    private static String capitalizeCompound(String word) {
+        StringBuilder formatted = new StringBuilder();
+        boolean initial = true;
+        for (int code : word.codePoints().toArray()) {
+            formatted.appendCodePoint(initial && Character.isLetter(code) ? Character.toTitleCase(code) : code);
+            if (Character.isLetter(code)) initial = false;
+            else if (code == '-' || code == '\'' || code == '’') initial = true;
+        }
+        return formatted.toString();
     }
 }

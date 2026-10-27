@@ -207,38 +207,38 @@
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Tipo de documento *</label>
+                                <label class="form-label" for="regTipoDoc">Tipo de documento *</label>
                                 <select name="tipoDocumento" id="regTipoDoc" class="form-select" required>
                                     <option value="DNI" selected>DNI</option>
                                     <option value="CE">Carnet de Extranjería</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Número de documento *</label>
+                                <label class="form-label" for="regDni">Número de documento *</label>
                                 <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">
-                                <p id="dniLookupStatus" class="dni-lookup-status" role="status" aria-live="polite"></p>
+                                <output id="dniLookupStatus" class="dni-lookup-status" for="regDni" aria-live="polite"></output>
                             </div>
                         </div>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Nombres completos *</label>
-                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena">
+                                <label class="form-label" for="regNombres">Nombres completos *</label>
+                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena" id="regNombres">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Apellidos *</label>
-                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez">
+                                <label class="form-label" for="regApellidos">Apellidos *</label>
+                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez" id="regApellidos">
                             </div>
                         </div>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Fecha de nacimiento *</label>
-                                <input type="date" name="fechaNacimiento" class="form-input" required>
+                                <label class="form-label" for="regFechaNacimiento">Fecha de nacimiento *</label>
+                                <input type="date" name="fechaNacimiento" class="form-input" required id="regFechaNacimiento">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Sexo / género *</label>
-                                <select name="genero" class="form-select" required>
+                                <label class="form-label" for="regGenero">Sexo / género *</label>
+                                <select name="genero" class="form-select" required id="regGenero">
                                     <option value="" disabled selected>Seleccionar</option>
                                     <option value="F">Femenino</option>
                                     <option value="M">Masculino</option>
@@ -257,12 +257,12 @@
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Teléfono / celular *</label>
-                                <input type="text" name="telefono" class="form-input" required placeholder="Ej. 987 654 321">
+                                <label class="form-label" for="regTelefono">Teléfono / celular *</label>
+                                <input type="text" name="telefono" class="form-input" required placeholder="Ej. 987 654 321" id="regTelefono">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Correo electrónico *</label>
-                                <input type="email" name="email" class="form-input" required placeholder="nombre@correo.com">
+                                <label class="form-label" for="regEmail">Correo electrónico *</label>
+                                <input type="email" name="email" class="form-input" required placeholder="nombre@correo.com" id="regEmail">
                             </div>
                         </div>
 
@@ -288,8 +288,8 @@
                         </div>
 
                         <div class="form-group" style="margin-bottom: 6px;">
-                            <label class="form-label">Dirección / zona de residencia *</label>
-                            <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. San Borja Norte, San Borja">
+                            <label class="form-label" for="regDireccion">Dirección / zona de residencia *</label>
+                            <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. San Borja Norte, San Borja" id="regDireccion">
                         </div>
                     </div>
 
@@ -302,7 +302,7 @@
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Crear contraseña *</label>
+                                <label class="form-label" for="regPwd">Crear contraseña *</label>
                                 <div class="input-box has-right-icon">
                                     <input type="password" name="password" id="regPwd" class="form-input" required placeholder="••••••••">
                                     <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwd', this)" title="Mostrar/ocultar contraseña">
@@ -312,7 +312,7 @@
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Confirmar contraseña *</label>
+                                <label class="form-label" for="regPwdConfirm">Confirmar contraseña *</label>
                                 <div class="input-box has-right-icon">
                                     <input type="password" name="confirmPassword" id="regPwdConfirm" class="form-input" required placeholder="••••••••">
                                     <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwdConfirm', this)" title="Mostrar/ocultar contraseña">
@@ -335,12 +335,12 @@
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Alergias conocidas (opcional)</label>
-                                <input type="text" name="alergias" class="form-input" placeholder="Ej. Penicilina">
+                                <label class="form-label" for="regAlergias">Alergias conocidas (opcional)</label>
+                                <input type="text" name="alergias" class="form-input" placeholder="Ej. Penicilina" id="regAlergias">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Tipo de cobertura *</label>
-                                <select name="cobertura" class="form-select">
+                                <label class="form-label" for="regCobertura">Tipo de cobertura *</label>
+                                <select name="cobertura" class="form-select" id="regCobertura">
                                     <option value="Particular / EPS" selected>EPS / seguro privado / particular</option>
                                     <option value="Particular">Particular</option>
                                     <option value="EPS Rimac">EPS Rímac</option>

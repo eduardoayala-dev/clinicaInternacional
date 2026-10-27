@@ -29,7 +29,18 @@ public final class ApiPeruClient implements DniProvider {
 
     @FunctionalInterface
     interface Transport { Reply send(HttpRequest request) throws IOException, InterruptedException; }
-    record Reply(int status, byte[] body) {}
+    static final class Reply {
+        private final int status;
+        private final byte[] body;
+
+        Reply(int status, byte[] body) {
+            this.status = status;
+            this.body = body.clone();
+        }
+
+        int status() { return status; }
+        byte[] body() { return body.clone(); }
+    }
 
     public ApiPeruClient(String apiKey) {
         this(apiKey, realTransport());
@@ -74,12 +85,13 @@ public final class ApiPeruClient implements DniProvider {
                 .header("Accept", "application/json").header("Content-Type", "application/json").GET().build();
         try {
             Reply reply = transport.send(request);
+            byte[] body = reply.body();
             if (reply.status() == 404) throw new DniException(404, "DNI_NO_ENCONTRADO",
                     "No se encontraron datos. Puedes completar el formulario manualmente.");
             if (reply.status() == 401 || reply.status() == 403 || reply.status() == 429
                     || reply.status() >= 500) throw unavailable();
-            if (reply.status() != 200 || reply.body().length > MAX_RESPONSE_BYTES) throw invalidResponse();
-            JsonNode root = JSON.readTree(reply.body());
+            if (reply.status() != 200 || body.length > MAX_RESPONSE_BYTES) throw invalidResponse();
+            JsonNode root = JSON.readTree(body);
             if (root != null && root.path("success").isBoolean() && !root.path("success").asBoolean()) {
                 throw unavailable();
             }

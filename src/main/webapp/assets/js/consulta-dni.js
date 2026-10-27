@@ -9,7 +9,10 @@
     let retryAt = null;
     const names = ['nombres', 'apellidos'].map(name => form.elements[name]);
     function lock(value) { names.forEach(field => { field.readOnly = value; }); }
-    function hasValidDni() { return type.value === 'DNI' && /^[0-9]{8}$/.test(input.value); }
+    function hasValidDni() { return type.value === 'DNI' && /^\d{8}$/.test(input.value); }
+    function isCurrent(currentVersion, numero) {
+        return currentVersion === version && input.value === numero && type.value === 'DNI';
+    }
     function documentChanged() {
         const next = type.value + ':' + input.value;
         if (identity === next) return;
@@ -22,7 +25,7 @@
         if (filled) names.forEach(field => { field.value = ''; });
         filled = false;
         lock(type.value === 'DNI');
-        input.pattern = type.value === 'DNI' ? '[0-9]{8}' : '[A-Za-z0-9]+';
+        input.pattern = type.value === 'DNI' ? '\\d{8}' : '[A-Za-z0-9]+';
         input.maxLength = type.value === 'DNI' ? 8 : 15;
         input.inputMode = type.value === 'DNI' ? 'numeric' : 'text';
         status.textContent = '';
@@ -31,14 +34,7 @@
     async function lookup() {
         documentChanged();
         const numero = input.value;
-        if (!hasValidDni()) return;
-        if (lastAttempt === numero) {
-            if (retryAt === null) return;
-            if (Date.now() < retryAt) {
-                showRetry(Math.ceil((retryAt - Date.now()) / 1000));
-                return;
-            }
-        }
+        if (!hasValidDni() || shouldSkip(numero)) return;
         lastAttempt = numero;
         retryAt = null;
         const currentVersion = ++version;
@@ -55,30 +51,14 @@
                 body: JSON.stringify({numero}), signal: controller.signal
             });
             const result = await response.json();
-            if (currentVersion !== version || input.value !== numero || type.value !== 'DNI') return;
-            if (!response.ok) {
-                lock(false);
-                const wait = Number(response.headers?.get('Retry-After'));
-                if (response.status === 429 && Number.isInteger(wait) && wait > 0 && wait <= 86400) {
-                    retryAt = Date.now() + wait * 1000;
-                    showRetry(wait);
-                } else status.textContent = result.message || 'Completa tus nombres y apellidos manualmente.';
-                return;
-            }
-            const data = result.data;
-            if (!data || data.numero !== numero || typeof data.nombres !== 'string'
-                || typeof data.apellidoPaterno !== 'string' || typeof data.apellidoMaterno !== 'string') {
-                throw new Error('Respuesta inválida');
-            }
-            names[0].value = data.nombres;
-            names[1].value = [data.apellidoPaterno, data.apellidoMaterno].filter(Boolean).join(' ');
-            filled = true;
-            lock(true);
-            status.textContent = 'Datos del DNI completados.';
+            if (!isCurrent(currentVersion, numero)) return;
+            applyResponse(response, result, numero);
         } catch (error) {
-            if (currentVersion === version) {
+            if (isCurrent(currentVersion, numero)) {
                 lock(false);
-                status.textContent = 'No se pudo consultar. Completa tus nombres y apellidos manualmente.';
+                status.textContent = error.name === 'AbortError'
+                    ? 'La consulta demoró demasiado. Completa tus nombres y apellidos manualmente.'
+                    : 'No se pudo consultar. Completa tus nombres y apellidos manualmente.';
             }
         } finally {
             clearTimeout(timeout);
@@ -88,10 +68,49 @@
             }
         }
     }
+    function shouldSkip(numero) {
+        if (lastAttempt !== numero) return false;
+        if (retryAt === null) return true;
+        const remaining = retryAt - Date.now();
+        if (remaining <= 0) return false;
+        showRetry(Math.ceil(remaining / 1000));
+        return true;
+    }
+    function showFailure(response, result) {
+        lock(false);
+        const wait = Number(response.headers?.get('Retry-After'));
+        if (response.status === 429 && Number.isInteger(wait) && wait > 0 && wait <= 86400) {
+            retryAt = Date.now() + wait * 1000;
+            showRetry(wait);
+        } else status.textContent = result.message || 'Completa tus nombres y apellidos manualmente.';
+    }
+    function isValidData(data, numero) {
+        return data && data.numero === numero && typeof data.nombres === 'string'
+            && typeof data.apellidoPaterno === 'string' && typeof data.apellidoMaterno === 'string';
+    }
+    function applyResponse(response, result, numero) {
+        if (!response.ok) {
+            showFailure(response, result);
+            return;
+        }
+        if (!isValidData(result.data, numero)) throw new Error('Respuesta inválida');
+        names[0].value = result.data.nombres;
+        names[1].value = [result.data.apellidoPaterno, result.data.apellidoMaterno].filter(Boolean).join(' ');
+        filled = true;
+        lock(true);
+        status.textContent = 'Datos del DNI completados.';
+    }
     function showRetry(seconds) {
-        const amount = seconds < 60 ? seconds : seconds < 3600 ? Math.ceil(seconds / 60) : Math.ceil(seconds / 3600);
-        const unit = seconds < 60 ? (amount === 1 ? 'segundo' : 'segundos')
-            : seconds < 3600 ? (amount === 1 ? 'minuto' : 'minutos') : (amount === 1 ? 'hora' : 'horas');
+        let amount = seconds;
+        let unit = 'segundo';
+        if (seconds >= 3600) {
+            amount = Math.ceil(seconds / 3600);
+            unit = 'hora';
+        } else if (seconds >= 60) {
+            amount = Math.ceil(seconds / 60);
+            unit = 'minuto';
+        }
+        if (amount !== 1) unit += 's';
         status.textContent = 'Se alcanzó el límite de consultas. Podrás reintentar en aproximadamente '
             + amount + ' ' + unit + '. Puedes completar tus datos manualmente.';
     }
@@ -101,7 +120,7 @@
     form.addEventListener('submit', event => {
         if (active || (hasValidDni() && lastAttempt !== input.value)) {
             event.preventDefault();
-            if (!active) lookup();
+            if (!active) void lookup();
         }
     });
     documentChanged();
