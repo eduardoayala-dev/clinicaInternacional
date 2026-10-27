@@ -118,3 +118,9 @@ La prueba valida el cipher TLS de la sesión real, la cuenta conectada y sus gra
 La aplicación solo utiliza MySQL. H2 tiene alcance Maven `test`: sirve para pruebas aisladas y no se incluye en el WAR. No existe un modo temporal de ejecución ni se cargan datos de demostración desde Java. Una configuración antigua con `DB_MODE=h2` se rechaza.
 
 Para trabajar con la base local persistente, usar la aplicación de Docker en `http://localhost:8080`. Cerrar Docker o reconstruir la aplicación conserva el volumen `mysql_data`. Eliminar ese volumen o ejecutar `sql/schema.sql` sobre la base elimina datos. Una instancia Java adicional solo comparte cuentas si apunta al mismo servidor y base de MySQL.
+
+## Codificación de textos
+
+Los archivos SQL se guardan en UTF-8. `sql/schema.sql` declara `SET NAMES utf8mb4` antes de insertar datos para impedir que el cliente interprete sus bytes como latin1. Para importaciones manuales, usar además `mysql --default-character-set=utf8mb4`. Esto no exige recrear volúmenes ni tablas existentes.
+
+Cambiar la codificación de la conexión no repara textos ya dañados. Antes de corregir datos existentes, guardar un respaldo, identificar los bytes afectados y aplicar actualizaciones específicas con verificación del valor anterior. No ejecutar de nuevo `schema.sql`, porque elimina tablas.
