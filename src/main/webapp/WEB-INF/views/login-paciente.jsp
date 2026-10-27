@@ -24,9 +24,7 @@
 
 <div class="login-container ${showRegister ? 'is-registering' : ''}" id="mainContainer">
 
-    <!-- ==================== LADO IZQUIERDO: HERO ==================== -->
     <aside class="hero-pane">
-        <!-- Logo y Sistema -->
         <div class="hero-brand">
             <div class="brand-icon-box">
                 <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
@@ -37,7 +35,6 @@
             </div>
         </div>
 
-        <!-- Mensaje Principal -->
         <div class="hero-body">
             <h1 class="hero-title">
                 Tu salud, gestionada<br>
@@ -55,7 +52,6 @@
             </ul>
         </div>
 
-        <!-- Footer Izquierdo: Acceso Personal -->
         <div class="hero-footer">
             <span>Portal de Pacientes</span>
             <a href="${pageContext.request.contextPath}/login/personal">
@@ -64,11 +60,9 @@
         </div>
     </aside>
 
-    <!-- ==================== LADO DERECHO: FORMULARIOS ==================== -->
     <main class="form-pane" id="formPane">
         <div class="form-inner-box">
             
-            <!-- VISTA 1: INICIAR SESIÓN -->
             <section id="view-login" class="auth-view ${not showRegister ? 'active' : ''}">
                 <div class="auth-header">
                     <h2 class="auth-title">Iniciar sesión</h2>
@@ -99,7 +93,6 @@
                 <form action="${pageContext.request.contextPath}/login/paciente" method="POST" autocomplete="off">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}" />
 
-                    <!-- Documento -->
                     <div class="form-group">
                         <label class="form-label" for="identificador">N° de documento (DNI o Carné de Extranjería) *</label>
                         <div class="input-box">
@@ -107,7 +100,6 @@
                         </div>
                     </div>
 
-                    <!-- Contraseña -->
                     <div class="form-group" style="margin-bottom: 8px;">
                         <label class="form-label" for="password">Contraseña *</label>
                         <div class="input-box has-right-icon">
@@ -118,36 +110,30 @@
                         </div>
                     </div>
 
-                    <!-- Olvidó contraseña -->
                     <div class="forgot-pwd-row">
                         <a href="javascript:void(0)" onclick="toggleView('view-recovery')" class="forgot-pwd-link">
                             ¿Olvidó su contraseña?
                         </a>
                     </div>
 
-                    <!-- Botón Ingresar -->
                     <button type="submit" class="btn-submit-primary">
                         Ingresar
                     </button>
 
-                    <!-- Separador -->
                     <div class="auth-divider">
                         <span>¿Paciente nuevo?</span>
                     </div>
 
-                    <!-- Botón Crear Cuenta Nueva -->
                     <button type="button" class="btn-create-account" onclick="toggleView('view-register')">
                         Crear cuenta nueva
                     </button>
                 </form>
 
-                <!-- Footer de ayuda -->
                 <div class="auth-help-footer">
                     ¿Necesita ayuda? Contactar call center citas
                 </div>
             </section>
 
-            <!-- VISTA 3: RECUPERAR CONTRASEÑA -->
             <section id="view-recovery" class="auth-view">
                 <div class="auth-header">
                     <h2 class="auth-title">Recuperar contraseña</h2>
@@ -184,7 +170,6 @@
                 </form>
             </section>
 
-            <!-- VISTA 2: CREAR CUENTA DE PACIENTE -->
             <section id="view-register" class="auth-view ${showRegister ? 'active' : ''}">
                 <div class="reg-header-row">
                     <h2 class="reg-title">Crear cuenta de paciente</h2>
@@ -213,23 +198,11 @@
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="terminos" value="on">
 
-                    <!-- SECCIÓN 01: DATOS PERSONALES -->
                     <div class="reg-card">
                         <div class="reg-card-header">
                             <span class="reg-badge">01</span>
                             <span class="reg-card-title">Datos personales</span>
                             <span class="reg-card-subtitle">· Identificación</span>
-                        </div>
-
-                        <div class="form-grid-2">
-                            <div class="form-group">
-                                <label class="form-label">Nombres completos *</label>
-                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Apellidos *</label>
-                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez">
-                            </div>
                         </div>
 
                         <div class="form-grid-2">
@@ -242,9 +215,19 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Número de documento *</label>
-                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus">
-                                <button type="button" id="btnConsultarDni" class="btn-create-account" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">Consultar DNI</button>
-                                <p id="dniLookupStatus" role="status" aria-live="polite">La consulta completa nombres y apellidos. También puedes ingresarlos manualmente.</p>
+                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">
+                                <p id="dniLookupStatus" class="dni-lookup-status" role="status" aria-live="polite"></p>
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label">Nombres completos *</label>
+                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Apellidos *</label>
+                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez">
                             </div>
                         </div>
 
@@ -265,7 +248,6 @@
                         </div>
                     </div>
 
-                    <!-- SECCIÓN 02: DATOS DE CONTACTO Y UBICACIÓN -->
                     <div class="reg-card">
                         <div class="reg-card-header">
                             <span class="reg-badge">02</span>
@@ -311,7 +293,6 @@
                         </div>
                     </div>
 
-                    <!-- SECCIÓN 03: CREDENCIALES DE ACCESO -->
                     <div class="reg-card">
                         <div class="reg-card-header">
                             <span class="reg-badge">03</span>
@@ -345,7 +326,6 @@
                         </div>
                     </div>
 
-                    <!-- SECCIÓN 04: DATOS DE SALUD Y COBERTURA -->
                     <div class="reg-card">
                         <div class="reg-card-header">
                             <span class="reg-badge">04</span>
@@ -371,7 +351,6 @@
                         </div>
                     </div>
 
-                    <!-- BARRA DE ACCIONES INFERIOR -->
                     <div class="reg-footer-bar">
                         <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-cancel-link">
                             <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Cancelar y volver
@@ -416,7 +395,6 @@
 
         if (!targetView || currentView === targetView) return;
 
-        // Transición de salida suave (fade out y leve elevación)
         if (currentView) {
             currentView.style.transition = 'opacity 0.16s ease-out, transform 0.16s ease-out';
             currentView.style.opacity = '0';
@@ -437,15 +415,12 @@
                 container.classList.remove('is-registering');
             }
 
-            // Preparar target para entrada suave
             targetView.style.opacity = '0';
             targetView.style.transform = 'translateY(12px)';
             targetView.classList.add('active');
 
-            // Forzar reflow del DOM
             void targetView.offsetHeight;
 
-            // Transición de entrada suave (fade in y descenso sutil a posición normal)
             targetView.style.transition = 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
             targetView.style.opacity = '1';
             targetView.style.transform = 'translateY(0)';
@@ -479,7 +454,6 @@
         if (radio) radio.checked = true;
     }
 
-    // Validación de coincidencia de contraseñas
     const pwd = document.getElementById('regPwd');
     const pwdConfirm = document.getElementById('regPwdConfirm');
     const pwdMatchMsg = document.getElementById('pwdMatchMsg');

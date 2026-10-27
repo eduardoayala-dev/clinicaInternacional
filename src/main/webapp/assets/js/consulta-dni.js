@@ -1,56 +1,55 @@
-/* Consulta opcional; nunca bloquea el registro ni representa verificación de identidad. */
 (() => {
     'use strict';
     const form = document.getElementById('registerForm');
     const input = document.getElementById('regDni');
     const type = document.getElementById('regTipoDoc');
-    const button = document.getElementById('btnConsultarDni');
     const status = document.getElementById('dniLookupStatus');
-    if (!form || !input || !type || !button || !status) return;
-    let active = null;
-    let version = 0;
-    // Solo se borran valores autocompletados que el paciente aún no haya editado.
-    let filled = null;
-    function clearAutofill() {
-        if (!filled) return;
-        for (const name of ['nombres', 'apellidos']) {
-            if (form.elements[name].value === filled[name]) form.elements[name].value = '';
-        }
-        filled = null;
-    }
+    if (!form || !input || !type || !status) return;
+    let active = null, version = 0, filled = false, lastAttempt = null, identity = null;
+    let retryAt = null;
+    const names = ['nombres', 'apellidos'].map(name => form.elements[name]);
+    function lock(value) { names.forEach(field => { field.readOnly = value; }); }
+    function hasValidDni() { return type.value === 'DNI' && /^[0-9]{8}$/.test(input.value); }
     function documentChanged() {
+        const next = type.value + ':' + input.value;
+        if (identity === next) return;
+        identity = next;
         version++;
         if (active) active.abort();
         active = null;
-        clearAutofill();
-        button.disabled = type.value !== 'DNI';
-        button.textContent = 'Consultar DNI';
+        lastAttempt = null;
+        retryAt = null;
+        if (filled) names.forEach(field => { field.value = ''; });
+        filled = false;
+        lock(type.value === 'DNI');
         input.pattern = type.value === 'DNI' ? '[0-9]{8}' : '[A-Za-z0-9]+';
         input.maxLength = type.value === 'DNI' ? 8 : 15;
         input.inputMode = type.value === 'DNI' ? 'numeric' : 'text';
-        status.textContent = type.value === 'DNI'
-            ? 'Puedes consultar tu DNI o completar tus nombres y apellidos manualmente.'
-            : 'Para Carné de Extranjería completa tus datos manualmente.';
+        status.textContent = '';
+        status.removeAttribute('aria-busy');
     }
-    input.addEventListener('input', documentChanged);
-    type.addEventListener('change', documentChanged);
-    button.addEventListener('click', async () => {
+    async function lookup() {
+        documentChanged();
         const numero = input.value;
-        if (type.value !== 'DNI' || !/^[0-9]{8}$/.test(numero)) {
-            status.textContent = 'Ingresa un DNI de exactamente 8 dígitos para consultar.';
-            input.focus();
-            return;
+        if (!hasValidDni()) return;
+        if (lastAttempt === numero) {
+            if (retryAt === null) return;
+            if (Date.now() < retryAt) {
+                showRetry(Math.ceil((retryAt - Date.now()) / 1000));
+                return;
+            }
         }
+        lastAttempt = numero;
+        retryAt = null;
         const currentVersion = ++version;
-        const before = {nombres: form.elements.nombres.value, apellidos: form.elements.apellidos.value};
         active = new AbortController();
         const controller = active;
         const timeout = setTimeout(() => controller.abort(), 9000);
-        button.disabled = true;
-        button.textContent = 'Consultando…';
-        status.textContent = 'Consultando los datos del DNI…';
+        lock(true);
+        status.setAttribute('aria-busy', 'true');
+        status.textContent = 'Buscando datos del DNI…';
         try {
-            const response = await fetch(button.dataset.endpoint, {
+            const response = await fetch(input.dataset.endpoint, {
                 method: 'POST', credentials: 'same-origin', cache: 'no-store',
                 headers: {'Content-Type': 'application/json', 'X-CSRF-Token': form.elements.csrfToken.value},
                 body: JSON.stringify({numero}), signal: controller.signal
@@ -58,7 +57,12 @@
             const result = await response.json();
             if (currentVersion !== version || input.value !== numero || type.value !== 'DNI') return;
             if (!response.ok) {
-                status.textContent = result.message || 'No se pudo consultar. Completa tus datos manualmente.';
+                lock(false);
+                const wait = Number(response.headers?.get('Retry-After'));
+                if (response.status === 429 && Number.isInteger(wait) && wait > 0 && wait <= 86400) {
+                    retryAt = Date.now() + wait * 1000;
+                    showRetry(wait);
+                } else status.textContent = result.message || 'Completa tus nombres y apellidos manualmente.';
                 return;
             }
             const data = result.data;
@@ -66,24 +70,38 @@
                 || typeof data.apellidoPaterno !== 'string' || typeof data.apellidoMaterno !== 'string') {
                 throw new Error('Respuesta inválida');
             }
-            // No pisar cambios escritos mientras la consulta estaba en curso.
-            if (form.elements.nombres.value !== before.nombres || form.elements.apellidos.value !== before.apellidos) {
-                status.textContent = 'Conservamos los datos que editaste. Revísalos antes de registrarte.';
-                return;
-            }
-            filled = {nombres: data.nombres, apellidos: [data.apellidoPaterno, data.apellidoMaterno].filter(Boolean).join(' ')};
-            form.elements.nombres.value = filled.nombres;
-            form.elements.apellidos.value = filled.apellidos;
-            status.textContent = 'Nombres y apellidos completados. Revisa tus datos antes de registrarte.';
+            names[0].value = data.nombres;
+            names[1].value = [data.apellidoPaterno, data.apellidoMaterno].filter(Boolean).join(' ');
+            filled = true;
+            lock(true);
+            status.textContent = 'Datos del DNI completados.';
         } catch (error) {
-            if (currentVersion === version) status.textContent = 'No se pudo consultar. Puedes completar tus datos manualmente.';
+            if (currentVersion === version) {
+                lock(false);
+                status.textContent = 'No se pudo consultar. Completa tus nombres y apellidos manualmente.';
+            }
         } finally {
             clearTimeout(timeout);
             if (currentVersion === version) {
                 active = null;
-                button.disabled = type.value !== 'DNI';
-                button.textContent = 'Consultar DNI';
+                status.removeAttribute('aria-busy');
             }
+        }
+    }
+    function showRetry(seconds) {
+        const amount = seconds < 60 ? seconds : seconds < 3600 ? Math.ceil(seconds / 60) : Math.ceil(seconds / 3600);
+        const unit = seconds < 60 ? (amount === 1 ? 'segundo' : 'segundos')
+            : seconds < 3600 ? (amount === 1 ? 'minuto' : 'minutos') : (amount === 1 ? 'hora' : 'horas');
+        status.textContent = 'Se alcanzó el límite de consultas. Podrás reintentar en aproximadamente '
+            + amount + ' ' + unit + '. Puedes completar tus datos manualmente.';
+    }
+    input.addEventListener('input', documentChanged);
+    type.addEventListener('change', documentChanged);
+    input.addEventListener('blur', lookup);
+    form.addEventListener('submit', event => {
+        if (active || (hasValidDni() && lastAttempt !== input.value)) {
+            event.preventDefault();
+            if (!active) lookup();
         }
     });
     documentChanged();
