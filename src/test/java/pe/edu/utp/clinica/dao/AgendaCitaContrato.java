@@ -135,7 +135,7 @@ abstract class AgendaCitaContrato {
         catch(AgendaException e) { assertEquals(409,e.status()); return 0; }
     }
 
-    @Test void cancellationReleasesSlotAndCannotBeRepeated() throws Exception {
+    @Test void cancellationReleasesSlotAndCannotBeRepeated() {
         publicar(); int id=reservar(1,"09:00");
         CitaDAO citas = new CitaDAO(){ @Override protected Connection abrirConexion() throws SQLException { return abrir(); } };
         assertFalse(citas.actualizarEstadoCitaPaciente(id,2,"CANCELADA"));

@@ -152,17 +152,21 @@ public final class AgendaCitaDAO {
         try (Connection conn = connections.open()) {
             conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
             conn.setAutoCommit(false);
-            try {
-                T result = operacion.ejecutar(conn);
-                conn.commit();
-                return result;
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
-            }
+            return ejecutarTransaccion(conn, operacion);
         } catch (SQLException e) {
             LOGGER.warning(() -> "No se pudo completar la operación de agenda: " + e.getSQLState());
             throw new AgendaException(503, "AGENDA_NO_DISPONIBLE", "No se pudo completar la operación. Inténtalo más tarde.");
+        }
+    }
+
+    private static <T> T ejecutarTransaccion(Connection conn, Operacion<T> operacion) throws SQLException {
+        try {
+            T result = operacion.ejecutar(conn);
+            conn.commit();
+            return result;
+        } catch (SQLException | RuntimeException e) {
+            conn.rollback();
+            throw e;
         }
     }
 

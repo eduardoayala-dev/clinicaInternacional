@@ -11,12 +11,16 @@ import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.util.List;
 import java.util.Map;
 
 @WebServlet(name = "PacienteReprogramarServlet", urlPatterns = {"/paciente/reprogramar"})
 public class PacienteReprogramarServlet extends HttpServlet {
+    private static final Logger LOGGER = Logger.getLogger(PacienteReprogramarServlet.class.getName());
 
+    private static final String AGENDA_ERROR = "agendaError";
     private transient CitaDAO citaDAO;
 
     @Override
@@ -95,7 +99,16 @@ public class PacienteReprogramarServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            procesarReprogramacion(request, response);
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "No se pudo entregar la respuesta de la operación de cita.", e);
+            if (!response.isCommitted()) response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void procesarReprogramacion(HttpServletRequest request, HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
             response.sendRedirect(request.getContextPath() + "/login?error=sesion_requerida");
@@ -123,13 +136,13 @@ public class PacienteReprogramarServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/paciente/historial?reprogramada=ok");
 
         } catch (AgendaException e) {
-            request.getSession().setAttribute("agendaError", e.getMessage());
+            request.getSession().setAttribute(AGENDA_ERROR, e.getMessage());
             response.sendRedirect(request.getContextPath() + "/paciente/historial?error=" + e.code());
         } catch (NumberFormatException e) {
-            request.getSession().setAttribute("agendaError", "Los datos de la cita no son válidos.");
+            request.getSession().setAttribute(AGENDA_ERROR, "Los datos de la cita no son válidos.");
             response.sendRedirect(request.getContextPath() + "/paciente/historial?error=DATOS_INVALIDOS");
         } catch (RuntimeException e) {
-            request.getSession().setAttribute("agendaError", "No se pudo completar la reprogramación.");
+            request.getSession().setAttribute(AGENDA_ERROR, "No se pudo completar la reprogramación.");
             response.sendRedirect(request.getContextPath() + "/paciente/historial?error=ERROR_INTERNO");
         }
     }

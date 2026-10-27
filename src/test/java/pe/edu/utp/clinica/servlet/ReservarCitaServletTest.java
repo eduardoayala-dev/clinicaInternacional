@@ -6,6 +6,9 @@ import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.support.HttpExchange;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.lang.reflect.Proxy;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ReservarCitaServletTest {
@@ -53,5 +56,33 @@ class ReservarCitaServletTest {
         enviar(dao,x); assertEquals(400,x.status); assertEquals(0,dao.llamadas);
         x=request(); x.session.removeAttribute("usuarioLogueado");
         enviar(dao,x); assertEquals(403,x.status); assertEquals(0,dao.llamadas);
+    }
+
+    @Test void disconnectedClientDoesNotPropagateResponseExceptions() throws Exception {
+        var x=request(); var dao=new Dao();
+        var servlet=new ReservarCitaServlet(){ @Override protected CitaDAO crearCitaDAO(){return dao;} };
+        servlet.init();
+        HttpServletResponse disconnected=(HttpServletResponse) Proxy.newProxyInstance(
+                HttpServletResponse.class.getClassLoader(),new Class<?>[]{HttpServletResponse.class},
+                (proxy,method,args)->{
+                    if("getWriter".equals(method.getName())) throw new IOException("cliente desconectado");
+                    return method.invoke(x.response,args);
+                });
+        assertDoesNotThrow(()->servlet.doPost(x.request,disconnected));
+        assertEquals(500,x.status);
+        assertEquals(1,dao.llamadas);
+        assertEquals("",x.body.toString());
+    }
+
+    @Test void failedReprogrammingRedirectDoesNotPropagateTransportExceptions() {
+        var x=new HttpExchange();
+        HttpServletResponse disconnected=(HttpServletResponse) Proxy.newProxyInstance(
+                HttpServletResponse.class.getClassLoader(),new Class<?>[]{HttpServletResponse.class},
+                (proxy,method,args)->{
+                    if("sendRedirect".equals(method.getName())) throw new IOException("cliente desconectado");
+                    return method.invoke(x.response,args);
+                });
+        assertDoesNotThrow(()->new PacienteReprogramarServlet().doPost(x.request,disconnected));
+        assertEquals(500,x.status);
     }
 }

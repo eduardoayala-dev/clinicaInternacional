@@ -23,6 +23,10 @@ import java.util.logging.Logger;
  * Delega en MedicoDAO, NotificacionDAO y ListaEsperaDAO para mantener alta cohesión y bajo acoplamiento.
  */
 public class CitaDAO {
+    private static final String ESTADO_CANCELADA = "CANCELADA";
+    private static final String ESTADO_SOLICITADA = "SOLICITADA";
+    private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
+    private static final String ESPECIALIDAD = "especialidad";
 
     private static final Logger LOGGER = Logger.getLogger(CitaDAO.class.getName());
 
@@ -194,14 +198,14 @@ public class CitaDAO {
             map.put("fechaFormateadaBanner", "Por definir");
         }
         map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-        map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+        map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
         map.put("cmp", normalizarCmp(rs.getString("cmp")));
         map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
         map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
         map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
         map.put("modalidad", "Presencial");
         String est = rs.getString("estado");
-        map.put("estado", est != null ? est : "CONFIRMADA");
+        map.put("estado", est != null ? est : ESTADO_CONFIRMADA);
         return map;
     }
 
@@ -267,17 +271,19 @@ public class CitaDAO {
 
     public boolean actualizarEstadoCita(int idCita, String nuevoEstado) {
         if (idCita <= 0 || nuevoEstado == null) return false;
-        String anteriores = switch (nuevoEstado) {
-            case "CONFIRMADA" -> "('SOLICITADA')";
-            case "EN_SALA" -> "('CONFIRMADA')";
-            case "CANCELADA" -> "('SOLICITADA','CONFIRMADA')";
+        String anterior = switch (nuevoEstado) {
+            case ESTADO_CONFIRMADA, ESTADO_CANCELADA -> ESTADO_SOLICITADA;
+            case "EN_SALA" -> ESTADO_CONFIRMADA;
             default -> null;
         };
-        if (anteriores == null) return false;
-        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND estado IN " + anteriores;
+        if (anterior == null) return false;
+        String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : anterior;
+        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND (estado=? OR estado=?)";
         try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setInt(2, idCita);
+            ps.setString(3, anterior);
+            ps.setString(4, alternativo);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             LOGGER.warning("No se pudo actualizar el estado de la cita.");
@@ -288,16 +294,15 @@ public class CitaDAO {
     /** Actualización condicionada al propietario y al estado actual de la cita. */
     public boolean actualizarEstadoCitaPaciente(int idCita, int idPaciente, String nuevoEstado) {
         if (idCita <= 0 || idPaciente <= 0) return false;
-        String estadosPermitidos;
-        if ("CONFIRMADA".equals(nuevoEstado)) estadosPermitidos = "('SOLICITADA')";
-        else if ("CANCELADA".equals(nuevoEstado)) estadosPermitidos = "('SOLICITADA','CONFIRMADA')";
-        else return false;
-        String sql = "UPDATE cita SET estado = ? WHERE id_cita = ? AND id_paciente = ? AND estado IN "
-                + estadosPermitidos;
+        if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
+        String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
+        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?)";
         try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setInt(2, idCita);
             ps.setInt(3, idPaciente);
+            ps.setString(4, ESTADO_SOLICITADA);
+            ps.setString(5, alternativo);
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
@@ -426,7 +431,7 @@ public class CitaDAO {
         map.put("paciente", rs.getString("paciente_nombres") + " " + rs.getString("paciente_apellidos"));
         map.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "10492837");
         map.put("telefono", rs.getString("telefono") != null ? rs.getString("telefono") : "+51 987 654 321");
-        map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Consulta General");
+        map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Consulta General");
         map.put("motivo", rs.getString("motivo_consulta") != null ? rs.getString("motivo_consulta") : "Control general");
         map.put("estado", rs.getString("estado"));
         map.put("urgencia", rs.getString("nivel_urgencia"));
@@ -463,7 +468,7 @@ public class CitaDAO {
                 map.put("fechaHora", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "12/10/2026 15:00");
                 map.put("paciente", rs.getString("paciente_nombres") + " " + rs.getString("paciente_apellidos"));
                 map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Cardiología");
+                map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Cardiología");
                 map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
                 map.put("nivelUrgencia", rs.getString("nivel_urgencia") != null ? rs.getString("nivel_urgencia") : "BAJA");
                 map.put("riesgoCancelacion", rs.getString("riesgo_cancelacion") != null ? rs.getString("riesgo_cancelacion") : "MEDIO");
@@ -672,7 +677,7 @@ public class CitaDAO {
                     map.put("idMedico", rs.getInt("id_medico"));
                     map.put("cmp", rs.getString("cmp"));
                     map.put("medicoNombre", "Dr. " + rs.getString("med_nombres") + " " + rs.getString("med_apellidos"));
-                    map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
+                    map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
                     String sedeStr = rs.getString("sede_nombre") != null ? rs.getString("sede_nombre") : "Sede San Borja";
                     map.put("sede", sedeStr);
                     map.put("sedeYConsultorio", sedeStr + " · Consultorio 102");

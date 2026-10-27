@@ -11,11 +11,14 @@ import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.dao.CitaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 import java.io.IOException;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.time.Year;
 import java.time.ZoneId;
 
 @WebServlet(name = "ReservarCitaServlet", urlPatterns = {"/paciente/reservar"})
 public class ReservarCitaServlet extends HttpServlet {
+    private static final Logger LOGGER = Logger.getLogger(ReservarCitaServlet.class.getName());
     private transient CitaDAO citaDAO;
     private record ReservaCreada(int idCita, String codigoCita) {}
 
@@ -23,7 +26,16 @@ public class ReservarCitaServlet extends HttpServlet {
     @Override public void init() throws ServletException { citaDAO = crearCitaDAO(); }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            procesarReserva(request, response);
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "No se pudo entregar la respuesta de la operación de cita.", e);
+            if (!response.isCommitted()) response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void procesarReserva(HttpServletRequest request, HttpServletResponse response) throws IOException {
         var session = request.getSession(false);
         Usuario usuario = session == null ? null : (Usuario) session.getAttribute("usuarioLogueado");
         if (usuario == null || !"PACIENTE".equals(usuario.getRol())) {

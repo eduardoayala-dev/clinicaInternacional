@@ -31,6 +31,10 @@ import java.util.*;
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
+    private static final String ID_MEDICO = "idMedico";
+    private static final String ID_SEDE = "idSede";
+    private static final String FECHA_HORA = "fecha_hora";
+
 
     private CitaDAO citaDAO;
     private UsuarioDAO usuarioDAO;
@@ -308,7 +312,7 @@ public class AdminDashboardServlet extends HttpServlet {
                             idUsuarioPac = rs.getInt("id_usuario");
                             idPaciente = rs.getInt("id_paciente");
                             idMedico = rs.getInt("id_medico");
-                            Timestamp ts = Timestamp.valueOf(rs.getObject("fecha_hora", java.time.LocalDateTime.class));
+                            Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
                             if (ts != null) {
                                 horaCita = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
                             }
@@ -366,7 +370,7 @@ public class AdminDashboardServlet extends HttpServlet {
                             pacNom = rs.getString("pac_nom") + " " + rs.getString("pac_ape");
                             espNom = rs.getString("esp_nom") != null ? rs.getString("esp_nom") : "Medicina General";
                             idUsuarioPac = rs.getInt("id_usuario");
-                            Timestamp ts = Timestamp.valueOf(rs.getObject("fecha_hora", java.time.LocalDateTime.class));
+                            Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
                             if (ts != null) {
                                 horaCita = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
                             }
@@ -551,8 +555,8 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         } else if ("publicar_horario_medico".equals(action)) {
             try {
-                int medico = Integer.parseInt(request.getParameter("idMedico"));
-                int sede = Integer.parseInt(request.getParameter("idSede"));
+                int medico = Integer.parseInt(request.getParameter(ID_MEDICO));
+                int sede = Integer.parseInt(request.getParameter(ID_SEDE));
                 String duracion = request.getParameter("duracion");
                 int minutos = duracion == null || duracion.isBlank() ? 30 : Integer.parseInt(duracion);
                 new AgendaCitaDAO().publicar(medico, sede, request.getParameter("fecha"),
@@ -603,7 +607,7 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             int idSede = 1;
             try {
-                String sedeStr = request.getParameter("idSede");
+                String sedeStr = request.getParameter(ID_SEDE);
                 if (sedeStr != null) idSede = Integer.parseInt(sedeStr);
             } catch (Exception ignored) {}
 
@@ -670,7 +674,7 @@ public class AdminDashboardServlet extends HttpServlet {
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> m = new HashMap<>();
-                    m.put("idMedico", rs.getInt("id_medico"));
+                    m.put(ID_MEDICO, rs.getInt("id_medico"));
                     String rawCmp = rs.getString("cmp");
                     m.put("cmp", (rawCmp != null && !rawCmp.trim().isEmpty()) ? rawCmp : "045821");
                     m.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "09452178");
@@ -847,7 +851,7 @@ public class AdminDashboardServlet extends HttpServlet {
             while (rs.next()) {
                 Map<String, Object> map = new HashMap<>();
                 map.put("idCita", rs.getInt("id_cita"));
-                Timestamp ts = Timestamp.valueOf(rs.getObject("fecha_hora", java.time.LocalDateTime.class));
+                Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
                 String hora = "08:00";
                 if (ts != null) {
                     java.time.LocalDateTime ldt = ts.toLocalDateTime();
@@ -931,7 +935,7 @@ public class AdminDashboardServlet extends HttpServlet {
     private List<Map<String, Object>> obtenerMedicosPadrónFallback() {
         List<Map<String, Object>> list = new ArrayList<>();
         Map<String, Object> m1 = new HashMap<>();
-        m1.put("idMedico", 1);
+        m1.put(ID_MEDICO, 1);
         m1.put("cmp", "CMP 45211"); m1.put("dni", "09482711"); m1.put("rne", "24109");
         m1.put("nombre", "Dr. Eduardo Ayala"); m1.put("especialidades", Arrays.asList("Cardiología"));
         m1.put("sede", "Sede San Borja"); m1.put("horas", "36 hrs"); m1.put("estado", "ACTIVO");
@@ -1023,8 +1027,8 @@ public class AdminDashboardServlet extends HttpServlet {
             while (rs.next()) {
                 Map<String, Object> d = new HashMap<>();
                 d.put("idDisponibilidad", rs.getInt("id_disponibilidad"));
-                d.put("idMedico", rs.getInt("id_medico"));
-                d.put("idSede", rs.getInt("id_sede"));
+                d.put(ID_MEDICO, rs.getInt("id_medico"));
+                d.put(ID_SEDE, rs.getInt("id_sede"));
                 d.put("sedeNombre", rs.getString("sede_nombre"));
                 
                 java.sql.Date sqlFecha = rs.getDate("fecha");
