@@ -1,0 +1,5 @@
+services:
+  app:
+    environment:
+      APISPERU_TOKEN: ${APISPERU_TOKEN:-}
+      DNI_DAILY_LIMIT: ${DNI_DAILY_LIMIT:-100}

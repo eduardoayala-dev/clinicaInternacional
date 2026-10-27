@@ -102,6 +102,12 @@ La conexión a la base de datos se configura mediante las siguientes variables d
 
 Estas variables permiten configurar la conexión sin modificar el código. Antes del despliegue, preparar la cuenta limitada, la migración y la CA/hostname del servidor; seguir la [guía de validación MySQL](docs/conexion-segura-bd.md). La configuración del código por sí sola no demuestra que el servicio cloud tenga TLS y permisos correctos.
 
+## Consulta de DNI
+
+La configuración, contrato y pruebas del autocompletado de pacientes están en
+[Consulta de DNI](docs/consulta-dni.md). La clave del proveedor se configura únicamente
+en el servidor; el registro manual sigue disponible si la consulta falla.
+
 ## 🌿 Flujo de Trabajo (GitFlow)
 
 El equipo de desarrollo sigue una estrategia basada en GitFlow:

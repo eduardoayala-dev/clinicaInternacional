@@ -27,7 +27,7 @@ public class CsrfFilter implements Filter {
                 res.setStatus(HttpServletResponse.SC_FORBIDDEN);
                 res.setContentType("application/json;charset=UTF-8");
                 res.setHeader("Cache-Control", "no-store");
-                res.getWriter().write("{\"code\":\"CSRF_INVALIDO\",\"message\":\"La sesión o el token de seguridad no es válido. Recarga la página.\"}");
+                res.getWriter().write("{\"code\":\"CSRF_INVALIDO\",\"message\":\"La sesión o el token de seguridad no es válido. Recarga la página.\",\"data\":null}");
                 return;
             }
         } else if (!req.getServletPath().startsWith("/assets/")) {
