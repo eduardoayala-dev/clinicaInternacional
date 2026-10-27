@@ -92,6 +92,12 @@ La conexión a la base de datos se configura mediante las siguientes variables d
 
 Estas variables permiten configurar la conexión sin modificar directamente el código fuente.
 
+## Consulta de DNI
+
+La configuración, contrato y pruebas del autocompletado de pacientes están en
+[Consulta de DNI](docs/consulta-dni.md). La clave del proveedor se configura únicamente
+en el servidor; el registro manual sigue disponible si la consulta falla.
+
 ## 🌿 Flujo de Trabajo (GitFlow)
 
 El equipo de desarrollo sigue una estrategia basada en GitFlow:

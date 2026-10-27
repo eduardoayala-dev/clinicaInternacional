@@ -1,0 +1,290 @@
+{
+  "info": {
+    "name": "Clínica - Consulta DNI",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Contrato propio. Las primeras 7 solicitudes no llaman al proveedor. La 8 se omite hasta configurar explícitamente dniConsultaAutorizada. No introducir API keys en esta colección. La instancia de prueba usa 8082; ajustar baseUrl al entorno correspondiente."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8082"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "dniConsultaAutorizada",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Abrir registro y obtener sesión/CSRF",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/login/paciente?action=register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token disponible\", () => pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "02 - DNI inválido sin llamada externa",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"numero\":\"123\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 400\", () => pm.response.to.have.status(400));",
+              "const r=pm.response.json(); pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"DNI_INVALIDO\"); pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "03 - Sin CSRF",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"numero\":\"99000001\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 403\", () => pm.response.to.have.status(403));",
+              "const r=pm.response.json(); pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"CSRF_INVALIDO\"); pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "04 - CSRF incorrecto",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "incorrecto"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"numero\":\"99000001\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 403\", () => pm.response.to.have.status(403));",
+              "const r=pm.response.json(); pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"CSRF_INVALIDO\"); pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "05 - GET rechazado",
+      "request": {
+        "method": "GET",
+        "header": [],
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 405\", () => pm.response.to.have.status(405));",
+              "const r=pm.response.json(); pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"METODO_NO_PERMITIDO\"); pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "06 - Content-Type rechazado",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "text/plain"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta",
+        "body": {
+          "mode": "raw",
+          "raw": "{\"numero\":\"99000001\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 415\", () => pm.response.to.have.status(415));",
+              "const r=pm.response.json(); pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"CONTENIDO_NO_ADMITIDO\"); pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "07 - JSON incorrecto",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta",
+        "body": {
+          "mode": "raw",
+          "raw": "{"
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado HTTP 400\", () => pm.response.to.have.status(400));",
+              "const r=pm.response.json(); pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"JSON_INVALIDO\"); pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "08 - OPCIONAL consulta autorizada (omitida sin variable)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/api/v1/documentos/dni/consulta",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "X-CSRF-Token",
+            "value": "{{csrfToken}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\"numero\":\"{{dniConsultaAutorizada}}\"}"
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "if (!/^[0-9]{8}$/.test(pm.collectionVariables.get(\"dniConsultaAutorizada\") || \"\")) pm.execution.skipRequest();"
+            ],
+            "type": "text/javascript"
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Estado previsto\", () => pm.expect(pm.response.code).to.be.oneOf([200,404,429,502,503,504]));",
+              "const r=pm.response.json(); pm.test(\"Contrato\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); if(pm.response.code===200) { pm.expect(r.data.numero).to.eql(pm.collectionVariables.get(\"dniConsultaAutorizada\")); pm.expect(Object.keys(r.data).sort()).to.eql([\"apellidoMaterno\",\"apellidoPaterno\",\"nombres\",\"numero\"]); } else pm.expect(r.data).to.eql(null); });"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    }
+  ]
+}
