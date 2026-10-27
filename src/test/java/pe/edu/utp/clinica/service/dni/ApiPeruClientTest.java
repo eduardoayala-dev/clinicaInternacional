@@ -11,9 +11,9 @@ import java.nio.ByteBuffer;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
-class DecolectaClientTest {
+class ApiPeruClientTest {
     @Test void cancelsOversizedStreamingBodyBeforeAccumulatingIt() {
-        var subscriber = new DecolectaClient.LimitedBodySubscriber();
+        var subscriber = new ApiPeruClient.LimitedBodySubscriber();
         var cancelled = new AtomicInteger();
         subscriber.onSubscribe(new Flow.Subscription() {
             public void request(long n) {}
@@ -27,35 +27,35 @@ class DecolectaClientTest {
     }
 
     @Test void acceptsSmallStreamingBody() {
-        var subscriber = new DecolectaClient.LimitedBodySubscriber();
+        var subscriber = new ApiPeruClient.LimitedBodySubscriber();
         subscriber.onSubscribe(new Flow.Subscription() { public void request(long n) {} public void cancel() {} });
         subscriber.onNext(List.of(ByteBuffer.wrap(new byte[]{1,2,3})));
         subscriber.onComplete();
         assertArrayEquals(new byte[]{1,2,3}, subscriber.getBody().toCompletableFuture().join());
     }
     private static final String BODY = """
-            {"first_name":"PACIENTE PRUEBA","first_last_name":"FICTICIO",
-             "second_last_name":"LOCAL","full_name":"NO EXPONER",
-             "document_number":"99000001"}
+            {"nombres":"PACIENTE PRUEBA","apellidoPaterno":"FICTICIO",
+             "apellidoMaterno":"LOCAL","codVerifica":"8",
+             "dni":"99000001"}
             """;
-    private DecolectaClient client(int status, String body) {
-        return new DecolectaClient("token-simulado", req -> new DecolectaClient.Reply(status, body.getBytes(StandardCharsets.UTF_8)));
+    private ApiPeruClient client(int status, String body) {
+        return new ApiPeruClient("token-simulado", req -> new ApiPeruClient.Reply(status, body.getBytes(StandardCharsets.UTF_8)));
     }
 
-    @Test void buildsFixedHttpsRequestWithPrivateHeaderAndTimeout() throws Exception {
-        var client = new DecolectaClient("token-simulado", req -> {
-            assertEquals("https://api.decolecta.com/v1/reniec/dni?numero=99000001", req.uri().toString());
+    @Test void buildsFixedHttpsRequestWithServerSideTokenAndTimeout() throws Exception {
+        var client = new ApiPeruClient("token-simulado", req -> {
+            assertEquals("https://dniruc.apisperu.com/api/v1/dni/99000001?token=token-simulado", req.uri().toString());
             assertEquals("GET", req.method());
-            assertEquals("Bearer token-simulado", req.headers().firstValue("Authorization").orElseThrow());
+            assertTrue(req.headers().firstValue("Authorization").isEmpty());
             assertEquals(Duration.ofSeconds(6), req.timeout().orElseThrow());
-            return new DecolectaClient.Reply(200, BODY.getBytes(StandardCharsets.UTF_8));
+            return new ApiPeruClient.Reply(200, BODY.getBytes(StandardCharsets.UTF_8));
         });
         assertEquals(new DniDatos("99000001", "PACIENTE PRUEBA", "FICTICIO", "LOCAL"), client.consultar("99000001"));
     }
 
     @Test void missingKeyNeverSendsNetworkRequest() {
         AtomicInteger calls = new AtomicInteger();
-        var client = new DecolectaClient("", req -> { calls.incrementAndGet(); throw new IOException(); });
+        var client = new ApiPeruClient("", req -> { calls.incrementAndGet(); throw new IOException(); });
         assertEquals(503, assertThrows(DniException.class, () -> client.consultar("99000001")).status());
         assertEquals(0, calls.get());
     }
@@ -80,6 +80,14 @@ class DecolectaClientTest {
         assertEquals("", client(200, BODY.replace("\"LOCAL\"", "\"\"")).consultar("99000001").apellidoMaterno());
     }
 
+    @Test void handlesProviderErrorInsideHttp200WithoutExposingItsMessage() {
+        DniException ex = assertThrows(DniException.class, () ->
+                client(200, "{\"success\":false,\"message\":\"token-simulado datos privados\"}").consultar("99000001"));
+        assertEquals(503, ex.status());
+        assertFalse(ex.getMessage().contains("token-simulado"));
+        assertFalse(ex.getMessage().contains("datos privados"));
+    }
+
     @Test void translatesProviderFailuresWithoutLeakingBodyOrToken() {
         for (int status : new int[]{301, 400, 401, 403, 404, 429, 500, 503}) {
             DniException ex = assertThrows(DniException.class,
@@ -92,11 +100,11 @@ class DecolectaClientTest {
     }
 
     @Test void handlesTimeoutNetworkFailureAndInterruptedThread() {
-        var timeout = new DecolectaClient("simulado", req -> { throw new HttpTimeoutException("privado"); });
+        var timeout = new ApiPeruClient("simulado", req -> { throw new HttpTimeoutException("privado"); });
         assertEquals(504, assertThrows(DniException.class, () -> timeout.consultar("99000001")).status());
-        var network = new DecolectaClient("simulado", req -> { throw new IOException("privado"); });
+        var network = new ApiPeruClient("simulado", req -> { throw new IOException("privado"); });
         assertEquals(502, assertThrows(DniException.class, () -> network.consultar("99000001")).status());
-        var interrupted = new DecolectaClient("simulado", req -> { throw new InterruptedException(); });
+        var interrupted = new ApiPeruClient("simulado", req -> { throw new InterruptedException(); });
         try {
             assertEquals(503, assertThrows(DniException.class, () -> interrupted.consultar("99000001")).status());
             assertTrue(Thread.currentThread().isInterrupted());

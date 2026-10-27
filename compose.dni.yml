@@ -1,6 +1,5 @@
-# Complemento de Compose. No sustituye la configuración de seguridad de MySQL.
 services:
   app:
     environment:
-      DECOLECTA_API_KEY: ${DECOLECTA_API_KEY:-}
+      APISPERU_TOKEN: ${APISPERU_TOKEN:-}
       DNI_DAILY_LIMIT: ${DNI_DAILY_LIMIT:-100}

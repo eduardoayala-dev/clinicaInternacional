@@ -34,7 +34,9 @@ class ConsultaDniServletTest {
         var x = request(); execute(x); assertContract(x, 200, "DNI_ENCONTRADO");
         var data = new ObjectMapper().readTree(x.body.toString()).get("data");
         assertEquals(4, data.size()); assertEquals("99000001", data.get("numero").asText());
-        assertEquals(1, calls.get()); assertFalse(x.body.toString().contains("full_name"));
+        assertEquals("Paciente Prueba", DniConsultaSesion.obtener(x.session, "99000001").nombres());
+        assertEquals("Paciente Prueba", data.get("nombres").asText());
+        assertEquals(1, calls.get()); assertFalse(x.body.toString().contains("codVerifica"));
     }
     @Test void rejectsMissingForeignAndExpiredCsrfBeforeProvider() throws Exception {
         for (int mode = 0; mode < 3; mode++) {
@@ -71,6 +73,27 @@ class ConsultaDniServletTest {
         for (int i = 0; i < 5; i++) execute(request());
         var x = request(); execute(x); assertContract(x, 429, "DNI_LIMITE_CONSULTAS");
         assertNotNull(x.responseHeaders.get("Retry-After")); assertEquals(5, calls.get());
+    }
+    @Test void repeatedLookupInSameSessionReusesDataWithoutSpendingBudget() throws Exception {
+        var original = request(); execute(original);
+        for (int i = 0; i < 8; i++) {
+            var reload = request(); reload.session = original.session;
+            reload.headers.put("X-CSRF-Token", CsrfToken.getOrCreate(reload.session));
+            execute(reload); assertContract(reload, 200, "DNI_ENCONTRADO");
+        }
+        assertEquals(1, calls.get());
+        execute(request()); assertEquals(2, calls.get());
+    }
+    @Test void cachedDniRemainsAvailableWhenOtherLookupsReachLimit() throws Exception {
+        var original = request(); execute(original);
+        for (int i = 0; i < 4; i++) execute(request());
+        var blocked = request(); execute(blocked);
+        assertContract(blocked, 429, "DNI_LIMITE_CONSULTAS");
+        assertTrue(Integer.parseInt(blocked.responseHeaders.get("Retry-After")) > 0);
+        var cached = request(); cached.session = original.session;
+        cached.headers.put("X-CSRF-Token", CsrfToken.getOrCreate(cached.session));
+        execute(cached); assertContract(cached, 200, "DNI_ENCONTRADO");
+        assertEquals(5, calls.get());
     }
     @Test void providerFailuresRetainSameEnvelope() throws Exception {
         var unavailable = new ConsultaDniServlet(new DniService(numero -> {

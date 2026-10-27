@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import pe.edu.utp.clinica.model.Paciente;
 import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.service.AuthService;
+import pe.edu.utp.clinica.service.dni.DniConsultaSesion;
 import pe.edu.utp.clinica.util.SecurityUtil;
 
 import java.io.IOException;
@@ -35,6 +36,11 @@ public class RegistroPacienteServlet extends HttpServlet {
         String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
         String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));
         String dni = SecurityUtil.sanitizeInput(request.getParameter("dni"));
+        var consultados = DniConsultaSesion.obtener(request.getSession(false), dni);
+        if (consultados != null) {
+            nombres = SecurityUtil.sanitizeInput(consultados.nombres());
+            apellidos = SecurityUtil.sanitizeInput((consultados.apellidoPaterno() + " " + consultados.apellidoMaterno()).trim());
+        }
         String fechaNacimiento = SecurityUtil.sanitizeInput(request.getParameter("fechaNacimiento"));
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
@@ -63,7 +69,6 @@ public class RegistroPacienteServlet extends HttpServlet {
             return;
         }
 
-        // Validate password complexity
         String pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_\\-]).{8,}$";
         if (!password.matches(pattern)) {
             request.getSession().setAttribute("registerError", "La contraseña debe tener al menos una mayúscula, una minúscula, un número y un símbolo.");
@@ -98,7 +103,6 @@ public class RegistroPacienteServlet extends HttpServlet {
         boolean exito = authService.registrarPaciente(u, p);
 
         if (exito) {
-            // Asegurar que el objeto Usuario en sesión tenga el ID asignado
             if (u.getIdUsuario() <= 0) {
                 Usuario uPersistido = new pe.edu.utp.clinica.dao.UsuarioDAO().buscarPorEmailODni(u.getEmail());
                 if (uPersistido != null) {

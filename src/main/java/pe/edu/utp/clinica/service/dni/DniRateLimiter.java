@@ -5,7 +5,6 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 
-/** Un solo contador por IP (no confiar en X-Forwarded-For) y presupuesto por instancia. */
 public final class DniRateLimiter {
     private record Counter(long until, int used) {}
     private final Map<String, Counter> clients = new HashMap<>();
