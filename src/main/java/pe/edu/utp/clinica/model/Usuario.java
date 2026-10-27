@@ -1,6 +1,7 @@
 package pe.edu.utp.clinica.model;
 
 import java.io.Serializable;
+import pe.edu.utp.clinica.util.NombrePersona;
 import java.time.LocalDateTime;
 
 public class Usuario implements Serializable {
@@ -9,11 +10,10 @@ public class Usuario implements Serializable {
     private String apellidos;
     private String email;
     private String passwordHash;
-    private String rol; // PACIENTE, MEDICO, PERSONAL_ADMINISTRATIVO, ADMINISTRADOR
+    private String rol;
     private LocalDateTime fechaRegistro;
     private boolean activo;
 
-    // Transient UI Fields (from JOINs)
     private String cmp;
     private String especialidad;
     private String codigoEmpleado;
@@ -29,8 +29,8 @@ public class Usuario implements Serializable {
 
     public Usuario(int idUsuario, String nombres, String apellidos, String email, String passwordHash, String rol, LocalDateTime fechaRegistro, boolean activo) {
         this.idUsuario = idUsuario;
-        this.nombres = nombres;
-        this.apellidos = apellidos;
+        setNombres(nombres);
+        setApellidos(apellidos);
         this.email = email;
         this.passwordHash = passwordHash;
         this.rol = rol;
@@ -51,7 +51,7 @@ public class Usuario implements Serializable {
     }
 
     public void setNombres(String nombres) {
-        this.nombres = nombres;
+        this.nombres = NombrePersona.formatear(nombres);
     }
 
     public String getApellidos() {
@@ -59,7 +59,7 @@ public class Usuario implements Serializable {
     }
 
     public void setApellidos(String apellidos) {
-        this.apellidos = apellidos;
+        this.apellidos = NombrePersona.formatear(apellidos);
     }
 
     public String getEmail() {
