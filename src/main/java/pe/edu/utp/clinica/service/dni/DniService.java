@@ -4,7 +4,7 @@ import pe.edu.utp.clinica.util.NombrePersona;
 import java.util.regex.Pattern;
 
 public final class DniService {
-    private static final Pattern DNI = Pattern.compile("[0-9]{8}");
+    private static final Pattern DNI = Pattern.compile("\\d{8}");
     private final DniProvider provider;
     private final DniRateLimiter limiter;
 
