@@ -15,56 +15,41 @@ import java.util.logging.Logger;
 public class DatabaseConfig {
 
     private static final Logger LOGGER = Logger.getLogger(DatabaseConfig.class.getName());
-    private static HikariDataSource dataSource;
-
-    private static boolean esProduccion() {
-        return System.getenv("RAILWAY_ENVIRONMENT") != null
-                || "production".equalsIgnoreCase(System.getenv("APP_ENV"));
-    }
+    private static volatile HikariDataSource dataSource;
 
     private static synchronized void inicializarBaseDatos() throws SQLException {
-        if (dataSource != null && !dataSource.isClosed())
+        if (dataSource != null && !dataSource.isClosed()) return;
+        DatabaseSettings settings;
+        try {
+            settings = new DatabaseSettings(System.getenv());
+        } catch (IllegalArgumentException e) {
+            // Mensajes de configuración no contienen valores de credenciales.
+            throw new SQLException("Configuración de base de datos inválida: " + e.getMessage());
+        }
+        if (settings.isH2()) {
+            LOGGER.warning("DB_MODE=h2: base temporal de demostración habilitada explícitamente.");
+            inicializarH2Desarrollo();
+            if (dataSource == null || dataSource.isClosed()) throw new SQLException("No se pudo inicializar H2 de desarrollo");
             return;
-
-        // Intentar primero MySQL
-        String host = System.getenv().getOrDefault("DB_HOST", "localhost");
-        String port = System.getenv().getOrDefault("DB_PORT", "3306");
-        String dbName = System.getenv().getOrDefault("DB_NAME", "clinica_db");
-        String user = System.getenv().getOrDefault("DB_USER", "root");
-        String password = System.getenv().getOrDefault("DB_PASSWORD", "");
-
-        String mysqlUrl = String.format(
-                "jdbc:mysql://%s:%s/%s?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=America/Lima&characterEncoding=UTF-8",
-                host, port, dbName);
-
+        }
         SQLException ultimoError = null;
-        int intentos = esProduccion() ? 5 : 1;
+        int intentos = settings.isProduction() ? 5 : 1;
         for (int intento = 1; intento <= intentos; intento++) {
             HikariDataSource candidato = null;
             try {
-                HikariConfig config = new HikariConfig();
-                config.setDriverClassName("com.mysql.cj.jdbc.Driver");
-                config.setJdbcUrl(mysqlUrl);
-                config.setUsername(user);
-                config.setPassword(password);
-                config.setMaximumPoolSize(5);
-                config.setMinimumIdle(0);
-                config.setConnectionTimeout(10000);
-                config.setValidationTimeout(5000);
-                config.setInitializationFailTimeout(1000);
-                candidato = new HikariDataSource(config);
+                candidato = new HikariDataSource(settings.mysqlConfig());
                 try (Connection conexion = candidato.getConnection()) {
-                    migrarEsquemaMySQLSiNecesario(conexion);
+                    if (!conexion.isValid(5)) throw new SQLException("Conexión MySQL no válida");
                 }
                 dataSource = candidato;
-                LOGGER.info("Conexión MySQL establecida correctamente.");
+                LOGGER.info("Conexión MySQL establecida con la política TLS configurada.");
                 return;
             } catch (Exception e) {
+                // No registrar URLs o propiedades suministradas por el driver.
                 ultimoError = new SQLException("No se pudo conectar con MySQL (intento "
-                        + intento + "/" + intentos + ")", e);
-                LOGGER.log(Level.WARNING, ultimoError.getMessage(), e);
-                if (candidato != null)
-                    candidato.close();
+                        + intento + "/" + intentos + ")", "08001");
+                LOGGER.warning(ultimoError.getMessage());
+                if (candidato != null) candidato.close();
                 if (intento < intentos) {
                     try {
                         Thread.sleep(3000);
@@ -75,44 +60,11 @@ public class DatabaseConfig {
                 }
             }
         }
-
-        if (esProduccion()) {
-            // Nunca utilizar H2 en Railway: los siguientes requests podrán reintentar
-            // MySQL.
-            throw ultimoError;
-        }
-
-        LOGGER.warning("MySQL local no disponible; inicializando H2 solo para desarrollo.");
-        inicializarH2Fallback();
-        if (dataSource == null || dataSource.isClosed()) {
-            throw new SQLException("No se pudo inicializar MySQL ni H2", ultimoError);
-        }
+        // Un fallo de MySQL nunca se sustituye por otra base de datos.
+        throw ultimoError;
     }
 
-    private static void migrarEsquemaMySQLSiNecesario(Connection conn) {
-        try (Statement stmt = conn.createStatement()) {
-            try {
-                stmt.execute("ALTER TABLE paciente ADD COLUMN canal_aviso VARCHAR(20) DEFAULT 'WhatsApp'");
-            } catch (Exception ignored) {
-            }
-            try {
-                stmt.execute("ALTER TABLE paciente ADD COLUMN sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja'");
-            } catch (Exception ignored) {
-            }
-            try {
-                stmt.execute("ALTER TABLE paciente ADD COLUMN alergias VARCHAR(100) DEFAULT ''");
-            } catch (Exception ignored) {
-            }
-            try {
-                stmt.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'");
-            } catch (Exception ignored) {
-            }
-        } catch (Exception e) {
-            LOGGER.fine("Verificación de esquema MySQL: " + e.getMessage());
-        }
-    }
-
-    private static void inicializarH2Fallback() {
+    private static void inicializarH2Desarrollo() {
         try {
             String h2Url = "jdbc:h2:mem:clinica_db;DB_CLOSE_DELAY=-1;MODE=MySQL;CASE_INSENSITIVE_IDENTIFIERS=TRUE;NON_KEYWORDS=KEY,VALUE,USER";
 

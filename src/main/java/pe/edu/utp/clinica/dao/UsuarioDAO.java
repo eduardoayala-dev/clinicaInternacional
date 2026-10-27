@@ -7,12 +7,16 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class UsuarioDAO {
+
+    protected Connection abrirConexion() throws SQLException {
+        return DatabaseConfig.getConnection();
+    }
+
 
     private static final Logger LOGGER = Logger.getLogger(UsuarioDAO.class.getName());
 
@@ -22,7 +26,7 @@ public class UsuarioDAO {
                      "LEFT JOIN paciente p ON u.id_usuario = p.id_usuario " +
                      "WHERE (u.email = ? OR p.dni = ?) AND u.activo = 1";
         
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             stmt.setString(1, identificador);
@@ -52,7 +56,7 @@ public class UsuarioDAO {
     public int crearUsuario(Usuario u) {
         String sql = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
         
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
 
             stmt.setString(1, u.getNombres());
@@ -79,7 +83,7 @@ public class UsuarioDAO {
     public void registrarAuditoria(Integer idUsuario, String ip, String evento, String descripcion, boolean sospechoso) {
         String sql = "INSERT INTO auditoria_seguridad (id_usuario, ip_origen, evento, descripcion, sospechoso) VALUES (?, ?, ?, ?, ?)";
         
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
 
             if (idUsuario != null) {
@@ -99,7 +103,7 @@ public class UsuarioDAO {
     }
     public boolean existeDocumentoOCorreo(String documento, String email) {
         String sql = "SELECT 1 FROM usuario u LEFT JOIN paciente p ON u.id_usuario = p.id_usuario WHERE u.email = ? OR p.dni = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email);
             stmt.setString(2, documento);
@@ -114,7 +118,7 @@ public class UsuarioDAO {
 
     public boolean existeEmail(String email) {
         String sql = "SELECT 1 FROM usuario WHERE LOWER(email) = LOWER(?)";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, email != null ? email.trim() : "");
             try (ResultSet rs = stmt.executeQuery()) {
@@ -126,28 +130,13 @@ public class UsuarioDAO {
         return false;
     }
 
-    private static volatile boolean esquemaPacienteVerificado = false;
-
-    private void asegurarEsquemaPaciente(Connection conn) {
-        if (esquemaPacienteVerificado) return;
-        try (Statement st = conn.createStatement()) {
-            try { st.execute("ALTER TABLE paciente ADD COLUMN canal_aviso VARCHAR(20) DEFAULT 'WhatsApp'"); } catch (Exception ignored) {}
-            try { st.execute("ALTER TABLE paciente ADD COLUMN sede_preferida VARCHAR(50) DEFAULT 'Sede San Borja'"); } catch (Exception ignored) {}
-            try { st.execute("ALTER TABLE paciente ADD COLUMN alergias VARCHAR(100) DEFAULT ''"); } catch (Exception ignored) {}
-            try { st.execute("ALTER TABLE paciente ADD COLUMN tipo_cobertura VARCHAR(50) DEFAULT 'EPS'"); } catch (Exception ignored) {}
-            esquemaPacienteVerificado = true;
-        } catch (Exception ignored) {}
-    }
-
     public boolean crearCuentaPaciente(Usuario u, pe.edu.utp.clinica.model.Paciente p) {
         String sqlUsuario = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
         String sqlPacienteFull = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-        String sqlPacienteBase = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion) VALUES (?, ?, ?, ?, ?)";
 
         Connection conn = null;
         try {
-            conn = DatabaseConfig.getConnection();
-            asegurarEsquemaPaciente(conn);
+            conn = abrirConexion();
             conn.setAutoCommit(false);
 
             try (PreparedStatement stmtUsuario = conn.prepareStatement(sqlUsuario, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -189,23 +178,6 @@ public class UsuarioDAO {
                     }
                 }
                 insertado = true;
-            } catch (SQLException eCols) {
-                LOGGER.warning("Tabla paciente sin columnas extendidas. Realizando inserción con columnas base: " + eCols.getMessage());
-                try (PreparedStatement stmtBase = conn.prepareStatement(sqlPacienteBase, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                    stmtBase.setInt(1, p.getUsuarioId());
-                    stmtBase.setString(2, p.getDni());
-                    stmtBase.setDate(3, java.sql.Date.valueOf(p.getFechaNacimiento()));
-                    stmtBase.setString(4, p.getTelefono());
-                    stmtBase.setString(5, p.getDireccion());
-                    stmtBase.executeUpdate();
-
-                    try (ResultSet rsP = stmtBase.getGeneratedKeys()) {
-                        if (rsP.next()) {
-                            p.setIdPaciente(rsP.getInt(1));
-                        }
-                    }
-                    insertado = true;
-                }
             }
 
             conn.commit();
@@ -240,7 +212,7 @@ public class UsuarioDAO {
 
         Connection conn = null;
         try {
-            conn = DatabaseConfig.getConnection();
+            conn = abrirConexion();
             conn.setAutoCommit(false);
 
             try (PreparedStatement stmtUsuario = conn.prepareStatement(sqlUsuario, PreparedStatement.RETURN_GENERATED_KEYS)) {
@@ -311,7 +283,7 @@ public class UsuarioDAO {
 
         Connection conn = null;
         try {
-            conn = DatabaseConfig.getConnection();
+            conn = abrirConexion();
             conn.setAutoCommit(false);
 
             try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
@@ -361,7 +333,7 @@ public class UsuarioDAO {
 
     public boolean cambiarEstadoUsuario(int idUsuario, boolean activo) {
         String sql = "UPDATE usuario SET activo = ? WHERE id_usuario = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
              
             stmt.setBoolean(1, activo);
@@ -390,7 +362,7 @@ public class UsuarioDAO {
                      "LEFT JOIN administrador a ON u.id_usuario = a.id_usuario " +
                      "ORDER BY u.id_usuario ASC";
         
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
             
@@ -460,7 +432,7 @@ public class UsuarioDAO {
         int adminsActivos = 0;
         int totalPersonal = 0;
 
-        try (Connection conn = DatabaseConfig.getConnection()) {
+        try (Connection conn = abrirConexion()) {
             // Métricas reales de Médicos
             String sqlMed = "SELECT COUNT(*) AS total, " +
                             "SUM(CASE WHEN (m.estado = 'ACTIVO' OR m.estado IS NULL) AND u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
@@ -521,7 +493,7 @@ public class UsuarioDAO {
 
     public pe.edu.utp.clinica.model.Paciente obtenerPacientePorUsuarioId(int usuarioId) {
         String sql = "SELECT * FROM paciente WHERE id_usuario = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
+        try (Connection conn = abrirConexion();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setInt(1, usuarioId);
             try (ResultSet rs = stmt.executeQuery()) {
@@ -567,7 +539,7 @@ public class UsuarioDAO {
         String sqlPaciente = "UPDATE paciente SET telefono = ?, direccion = ? WHERE id_usuario = ?";
         Connection conn = null;
         try {
-            conn = DatabaseConfig.getConnection();
+            conn = abrirConexion();
             conn.setAutoCommit(false);
             try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
                 stmtU.setString(1, email);
@@ -601,7 +573,7 @@ public class UsuarioDAO {
         String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ?, email = ? WHERE id_usuario = ?";
         Connection conn = null;
         try {
-            conn = DatabaseConfig.getConnection();
+            conn = abrirConexion();
             conn.setAutoCommit(false);
             try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
                 stmtU.setString(1, nombres);
@@ -637,19 +609,14 @@ public class UsuarioDAO {
                 stmtP.executeUpdate();
             }
 
-            // Opcional: Actualizar campos extendidos si las columnas existen en la base de datos
-            try {
-                String sqlExt = "UPDATE paciente SET canal_aviso = ?, sede_preferida = ?, alergias = ?, tipo_cobertura = ? WHERE id_usuario = ?";
-                try (PreparedStatement stmtExt = conn.prepareStatement(sqlExt)) {
-                    stmtExt.setString(1, canalAviso != null ? canalAviso : "WhatsApp");
-                    stmtExt.setString(2, sedePreferida != null ? sedePreferida : "Sede San Borja");
-                    stmtExt.setString(3, alergias != null ? alergias : "");
-                    stmtExt.setString(4, tipoCobertura != null ? tipoCobertura : "EPS");
-                    stmtExt.setInt(5, idUsuario);
-                    stmtExt.executeUpdate();
-                }
-            } catch (SQLException ignore) {
-                // Si la tabla no tiene las columnas adicionales en MySQL/H2 antiguo, no interrumpe el guardado principal
+            String sqlExt = "UPDATE paciente SET canal_aviso = ?, sede_preferida = ?, alergias = ?, tipo_cobertura = ? WHERE id_usuario = ?";
+            try (PreparedStatement stmtExt = conn.prepareStatement(sqlExt)) {
+                stmtExt.setString(1, canalAviso != null ? canalAviso : "WhatsApp");
+                stmtExt.setString(2, sedePreferida != null ? sedePreferida : "Sede San Borja");
+                stmtExt.setString(3, alergias != null ? alergias : "");
+                stmtExt.setString(4, tipoCobertura != null ? tipoCobertura : "EPS");
+                stmtExt.setInt(5, idUsuario);
+                stmtExt.executeUpdate();
             }
 
             conn.commit();

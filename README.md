@@ -58,9 +58,13 @@ cd clinicaInternacional
 
 1. Iniciar el servicio de MySQL.
 2. Abrir el gestor de base de datos (por ejemplo, phpMyAdmin o Workbench) y crear una base de datos llamada `clinica_db`.
-3. Ejecutar el script `sql/schema.sql` para generar las tablas y registros semilla.
+3. Solo en una base vacía de desarrollo, ejecutar `sql/schema.sql` para generar tablas y datos sintéticos.
 
-Por defecto, la aplicación utiliza el usuario `root` sin contraseña. Esta configuración puede modificarse mediante variables de entorno.
+La aplicación exige `DB_HOST`, `DB_NAME`, `DB_USER` y `DB_PASSWORD`, con una cuenta distinta de `root`. En producción exige TLS con `DB_SSL_MODE=VERIFY_IDENTITY`. H2 solo se habilita expresamente con `DB_MODE=h2` fuera de producción; no se activa si MySQL falla.
+
+Para una base existente, aplicar `sql/migrations/V001__perfil_paciente.sql` con una cuenta de migración. `sql/schema.sql` recrea tablas y solo debe usarse para una base inicial de desarrollo.
+
+Consultar [conexión, permisos y migración](docs/conexion-segura-bd.md) antes de ejecutar o desplegar. Para Compose, copiar `.env.example` a `.env` y definir las dos contraseñas. Java/Jetty requiere las variables en su proceso; no carga `.env` automáticamente.
 
 **3. Compilación y Ejecución**
 
@@ -88,9 +92,15 @@ La conexión a la base de datos se configura mediante las siguientes variables d
 | `DB_PORT` | Puerto de conexión |
 | `DB_NAME` | Nombre de la base de datos |
 | `DB_USER` | Usuario de MySQL |
-| `DB_PASSWORD` | Contraseña de conexión |
+| `DB_PASSWORD` | Contraseña de la cuenta limitada |
+| `APP_ENV` | `production` en el despliegue |
+| `DB_MODE` | `mysql` para datos persistentes |
+| `DB_SSL_MODE` | `VERIFY_IDENTITY` obligatorio en producción |
+| `DB_TRUSTSTORE_PATH` | Ruta al truststore si la CA no está en Java |
+| `DB_TRUSTSTORE_TYPE` | `PKCS12` o `JKS` |
+| `DB_TRUSTSTORE_PASSWORD` | Contraseña del truststore, fuera del repositorio |
 
-Estas variables permiten configurar la conexión sin modificar directamente el código fuente.
+Estas variables permiten configurar la conexión sin modificar el código. Antes del despliegue, preparar la cuenta limitada, la migración y la CA/hostname del servidor; seguir la [guía de validación MySQL](docs/conexion-segura-bd.md). La configuración del código por sí sola no demuestra que el servicio cloud tenga TLS y permisos correctos.
 
 ## 🌿 Flujo de Trabajo (GitFlow)
 
