@@ -242,7 +242,9 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Número de documento *</label>
-                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+">
+                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus">
+                                <button type="button" id="btnConsultarDni" class="btn-create-account" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">Consultar DNI</button>
+                                <p id="dniLookupStatus" role="status" aria-live="polite">La consulta completa nombres y apellidos. También puedes ingresarlos manualmente.</p>
                             </div>
                         </div>
 
@@ -538,5 +540,6 @@
     }
 </script>
 
+<script src="${pageContext.request.contextPath}/assets/js/consulta-dni.js" defer></script>
 </body>
 </html>

@@ -17,6 +17,7 @@
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <jakarta.ee.version>10.0.0</jakarta.ee.version>
+        <jetty.http.port>8080</jetty.http.port>
     </properties>
 
     <dependencies>
@@ -145,6 +146,10 @@
                 <version>12.0.8</version>
                 <configuration>
                     <scan>2</scan>
+                    <httpConnector>
+                        <host>127.0.0.1</host>
+                        <port>${jetty.http.port}</port>
+                    </httpConnector>
                     <scanIntervalSeconds>2</scanIntervalSeconds>
                     <webApp>
                         <contextPath>/</contextPath>
