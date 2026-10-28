@@ -25,6 +25,15 @@
     --med-radius-md: 10px;
 }
 
+.med-atencion-fieldset {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+.med-atencion-fieldset:disabled .med-bottom-actions { display: none; }
+.med-atencion-fieldset:disabled button { cursor: not-allowed; opacity: .55; }
+
 * {
     margin: 0;
     padding: 0;

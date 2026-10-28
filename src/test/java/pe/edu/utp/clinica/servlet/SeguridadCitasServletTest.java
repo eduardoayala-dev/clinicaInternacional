@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SeguridadCitasServletTest {
     private static class Dao extends CitaDAO {
+        @Override public Map<String,Object> obtenerPerfilPortalMedico(int usuario) { return Map.of("idMedico",8,"nombreMedico","Medico de prueba","especialidad","General","sedeNombre","Central"); }
         boolean allowed;
         int owner;
         int attempts;
@@ -26,7 +27,7 @@ class SeguridadCitasServletTest {
         @Override public Map<String,Object> obtenerDetalleCitaMedico(int id, int doctor) {
             owner = doctor; return Map.of();
         }
-        @Override public boolean actualizarAtencionMedica(int id, int doctor, String state,
+        @Override public boolean actualizarAtencionMedicaValidada(int id, int doctor, String state,
                 String priority, String date, String instructions) {
             attempts++; owner = doctor; return allowed;
         }
@@ -68,7 +69,7 @@ class SeguridadCitasServletTest {
         }
     }
 
-    @Test void doctorReadUsesDoctorIdentityAndDeniesUnassignedAppointment() throws Exception {
+    @Test void doctorReadUsesDoctorIdentityAndDeniesUnassignedAppointment() {
         Dao dao = new Dao(); HttpExchange x = new HttpExchange(); x.method="GET";
         x.session.setAttribute("usuarioLogueado", new Usuario(20,"M","Uno","m@test","","MEDICO",null,true));
         x.parameters.put("idCita","7"); x.parameters.put("idMedico","999");
@@ -79,7 +80,7 @@ class SeguridadCitasServletTest {
         assertEquals(8,dao.owner); assertEquals(404,x.status);
     }
 
-    @Test void rejectedMedicalUpdateDoesNotReportSuccess() throws Exception {
+    @Test void rejectedMedicalUpdateDoesNotReportSuccess() {
         Dao dao = new Dao(); HttpExchange x = new HttpExchange();
         x.session.setAttribute("usuarioLogueado", new Usuario(20,"M","Uno","m@test","","MEDICO",null,true));
         x.parameters.put("idCita","7"); x.parameters.put("accion","guardar"); x.parameters.put("prioridad","MEDIA");

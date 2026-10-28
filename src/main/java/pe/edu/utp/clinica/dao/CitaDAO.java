@@ -315,132 +315,29 @@ public class CitaDAO {
         }
     }
 
-    /** Cita e historial se modifican juntos y solo por el médico asignado. */
-    public boolean actualizarAtencionMedica(int idCita, int idMedico, String nuevoEstado,
-            String prioridad, String fechaRecomendada, String indicaciones) {
-        if (idCita <= 0 || idMedico <= 0
-                || !("ATENDIDA".equals(nuevoEstado) || "NO_ASISTIO".equals(nuevoEstado))
-                || !("ALTA".equals(prioridad) || "MEDIA".equals(prioridad) || "BAJA".equals(prioridad))) {
-            return false;
-        }
-        java.sql.Date proxima = null;
-        try {
-            if (fechaRecomendada != null && !fechaRecomendada.isBlank()) {
-                proxima = java.sql.Date.valueOf(fechaRecomendada);
-            }
-        } catch (IllegalArgumentException e) {
-            return false;
-        }
-        String sql = "UPDATE cita SET estado = ?, nivel_urgencia = ?"
-                + (proxima != null ? ", fecha_recomendada_proxima = ?" : "")
-                + " WHERE id_cita = ? AND id_medico = ? AND estado IN ('CONFIRMADA','EN_SALA')";
-        try (Connection conn = abrirConexion()) {
-            conn.setAutoCommit(false);
-            try {
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, nuevoEstado);
-                    ps.setString(2, prioridad);
-                    int param = 3;
-                    if (proxima != null) ps.setDate(param++, proxima);
-                    ps.setInt(param++, idCita);
-                    ps.setInt(param, idMedico);
-                    if (ps.executeUpdate() != 1) {
-                        conn.rollback();
-                        return false;
-                    }
-                }
-                String historial = "INSERT INTO historial_asistencia (id_paciente, id_cita, asistio, observacion) "
-                        + "SELECT id_paciente, id_cita, ?, ? FROM cita WHERE id_cita = ? AND id_medico = ?";
-                try (PreparedStatement ps = conn.prepareStatement(historial)) {
-                    ps.setBoolean(1, !"NO_ASISTIO".equals(nuevoEstado));
-                    ps.setString(2, indicaciones);
-                    ps.setInt(3, idCita);
-                    ps.setInt(4, idMedico);
-                    if (ps.executeUpdate() != 1) throw new SQLException("No se registró el historial");
-                }
-                conn.commit();
-                return true;
-            } catch (SQLException e) {
-                conn.rollback();
-                LOGGER.log(java.util.logging.Level.WARNING, "No se pudo guardar la atención médica", e);
-                return false;
-            }
-        } catch (SQLException e) {
-            LOGGER.log(java.util.logging.Level.WARNING, "No se pudo abrir la transacción de atención", e);
-            return false;
-        }
+    protected java.time.Clock relojClinico() {
+        return java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA));
     }
 
-    public List<Map<String, Object>> obtenerAgendaMedico(int idMedico) {
-        List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
-                     "u.nombres AS paciente_nombres, u.apellidos AS paciente_apellidos, p.dni, p.telefono, " +
-                     "e.nombre AS especialidad, COALESCE(mc.descripcion, 'Consulta y control general') AS motivo_consulta " +
-                     "FROM cita c " +
-                     "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                     "JOIN usuario u ON p.id_usuario = u.id_usuario " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
-                     "WHERE c.id_medico = ? AND DATE(c.fecha_hora) = CURDATE() AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') " +
-                     "ORDER BY c.fecha_hora ASC";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idMedico);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    lista.add(mapearCitaAgenda(rs));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+    private MedicoPortalDAO portalMedico() { return new MedicoPortalDAO(this::abrirConexion,relojClinico()); }
 
-        // Si hoy no hay citas agendadas para el médico, traer las citas más recientes del médico
-        if (lista.isEmpty()) {
-            String sqlFallback = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, " +
-                                 "u.nombres AS paciente_nombres, u.apellidos AS paciente_apellidos, p.dni, p.telefono, " +
-                                 "e.nombre AS especialidad, COALESCE(mc.descripcion, 'Control y evaluación médica') AS motivo_consulta " +
-                                 "FROM cita c " +
-                                 "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                                 "JOIN usuario u ON p.id_usuario = u.id_usuario " +
-                                 "JOIN medico m ON c.id_medico = m.id_medico " +
-                                 "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                                 "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
-                                 "WHERE c.id_medico = ? AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') " +
-                                 "ORDER BY c.fecha_hora DESC LIMIT 10";
-            try (Connection conn = abrirConexion();
-                 PreparedStatement ps = conn.prepareStatement(sqlFallback)) {
-                ps.setInt(1, idMedico);
-                try (ResultSet rs = ps.executeQuery()) {
-                    while (rs.next()) {
-                        lista.add(mapearCitaAgenda(rs));
-                    }
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        }
+    public Map<String,Object> obtenerPerfilPortalMedico(int usuario) { return portalMedico().perfil(usuario); }
 
-        return lista;
+    public boolean actualizarAtencionMedica(int cita,int medico,String estado,String prioridad,String fecha,String indicaciones) {
+        try { return actualizarAtencionMedicaValidada(cita,medico,estado,prioridad,fecha,indicaciones); }
+        catch(AgendaException e) { return false; }
     }
 
-    private Map<String, Object> mapearCitaAgenda(ResultSet rs) throws Exception {
-        Map<String, Object> map = new HashMap<>();
-        int idCita = rs.getInt("id_cita");
-        map.put("idCita", idCita);
-        LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
-        map.put("hora", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("HH:mm")) : "08:00");
-        map.put("fecha", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "");
-        map.put("fechaFormateada", ldt != null ? formatearFechaEspanol(ldt) : "");
-        map.put("paciente", rs.getString("paciente_nombres") + " " + rs.getString("paciente_apellidos"));
-        map.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "10492837");
-        map.put("telefono", rs.getString("telefono") != null ? rs.getString("telefono") : "+51 987 654 321");
-        map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Consulta General");
-        map.put("motivo", rs.getString("motivo_consulta") != null ? rs.getString("motivo_consulta") : "Control general");
-        map.put("estado", rs.getString("estado"));
-        map.put("urgencia", rs.getString("nivel_urgencia"));
-        return map;
+    public boolean actualizarAtencionMedicaValidada(int cita,int medico,String estado,String prioridad,String fecha,String indicaciones) {
+        return portalMedico().guardar(medico,cita,estado,prioridad,fecha,indicaciones);
+    }
+
+    public List<Map<String,Object>> obtenerAgendaMedico(int medico) {
+        return obtenerAgendaMedico(medico,LocalDate.now(relojClinico()));
+    }
+
+    public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate fecha) {
+        return portalMedico().agenda(medico,fecha);
     }
 
     // =========================================================================
@@ -543,94 +440,8 @@ public class CitaDAO {
         return listaEsperaDAO.rechazarOfertaCupo(idPaciente, idListaEspera);
     }
 
-    public Map<String, Object> obtenerDetalleCitaMedico(int idCita, int idMedico) {
-        Map<String, Object> map = new HashMap<>();
-        if (idCita <= 0 || idMedico <= 0) return map;
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, c.nivel_urgencia, c.riesgo_cancelacion, c.fecha_recomendada_proxima, c.fecha_creacion, " +
-                     "u.nombres AS pac_nombres, u.apellidos AS pac_apellidos, u.email AS pac_email, " +
-                     "p.id_paciente, p.dni, p.telefono, p.fecha_nacimiento, p.direccion, p.alergias, p.tipo_cobertura, p.canal_aviso, " +
-                     "m.id_medico, m.cmp, um.nombres AS med_nombres, um.apellidos AS med_apellidos, " +
-                     "e.nombre AS especialidad, s.nombre AS sede_nombre, " +
-                     "COALESCE(mc.descripcion, 'Chequeo preventivo / Consulta especializada') AS motivo_consulta " +
-                     "FROM cita c " +
-                     "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                     "JOIN usuario u ON p.id_usuario = u.id_usuario " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario um ON m.id_usuario = um.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "LEFT JOIN motivo_cita mc ON c.id_motivo = mc.id_motivo " +
-                     "WHERE c.id_cita = ? AND c.id_medico = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idCita);
-            ps.setInt(2, idMedico);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    map.put("idCita", rs.getInt("id_cita"));
-                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
-                    map.put("fechaHora", ldt);
-                    map.put("fechaFormateada", ldt != null ? formatearFechaModal(ldt) : "Por definir");
-                    map.put("hora", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("HH:mm")) : "08:00");
-                    map.put("fecha", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) : "");
-                    map.put("estado", rs.getString("estado"));
-                    map.put("urgencia", rs.getString("nivel_urgencia") != null ? rs.getString("nivel_urgencia") : "MEDIA");
-                    map.put("riesgo", rs.getString("riesgo_cancelacion"));
-                    
-                    // Fecha recomendada proxima
-                    java.sql.Date fProx = rs.getDate("fecha_recomendada_proxima");
-                    map.put("fechaRecomendadaProxima", fProx != null ? fProx.toString() : "");
-
-                    // Fecha de creación de la reserva
-                    LocalDateTime ldtCreacion = extraerFechaHora(rs, "fecha_creacion");
-                    if (ldtCreacion != null) {
-                        map.put("fechaRegistro", ldtCreacion.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-                    } else if (ldt != null) {
-                        map.put("fechaRegistro", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-                    } else {
-                        map.put("fechaRegistro", "15/10/2026 08:52");
-                    }
-
-                    map.put("idPaciente", rs.getInt("id_paciente"));
-                    map.put("pacienteNombre", rs.getString("pac_nombres") + " " + rs.getString("pac_apellidos"));
-                    map.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "45120378");
-                    map.put("telefono", rs.getString("telefono") != null ? rs.getString("telefono") : "+51 986 112 340");
-                    map.put("email", rs.getString("pac_email") != null ? rs.getString("pac_email") : "paciente@correo.com");
-                    map.put("direccion", rs.getString("direccion") != null ? rs.getString("direccion") : "Lima, Perú");
-
-                    String alergias = rs.getString("alergias");
-                    map.put("alergias", (alergias != null && !alergias.trim().isEmpty()) ? alergias : "Penicilina");
-
-                    String cobertura = rs.getString("tipo_cobertura");
-                    map.put("tipoCobertura", (cobertura != null && !cobertura.trim().isEmpty()) ? cobertura : "EPS");
-
-                    String canal = rs.getString("canal_aviso");
-                    map.put("canalReserva", (canal != null && !canal.trim().isEmpty()) ? ("Reserva " + canal.toLowerCase()) : "Reserva web");
-                    
-                    // Cálculo de edad si existe fecha de nacimiento
-                    java.sql.Date fNac = rs.getDate("fecha_nacimiento");
-                    if (fNac != null) {
-                        int edad = java.time.Period.between(fNac.toLocalDate(), LocalDate.now()).getYears();
-                        map.put("edad", edad + " Años");
-                    } else {
-                        map.put("edad", "35 Años");
-                    }
-
-                    map.put("idMedico", rs.getInt("id_medico"));
-                    map.put("cmp", rs.getString("cmp"));
-                    map.put("medicoNombre", "Dr. " + rs.getString("med_nombres") + " " + rs.getString("med_apellidos"));
-                    map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
-                    String sedeStr = rs.getString("sede_nombre") != null ? rs.getString("sede_nombre") : "Sede San Borja";
-                    map.put("sede", sedeStr);
-                    map.put("sedeYConsultorio", sedeStr + " · Consultorio 102");
-                    map.put("consultorio", "Consultorio 102");
-                    map.put("motivo", rs.getString("motivo_consulta"));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return map;
+    public Map<String,Object> obtenerDetalleCitaMedico(int cita,int medico) {
+        return portalMedico().detalle(medico,cita);
     }
 
     // =========================================================================

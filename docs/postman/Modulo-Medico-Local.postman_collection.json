@@ -1,0 +1,1217 @@
+{
+  "info": {
+    "name": "Clínica - Comprobación del módulo médico local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo local y con cuentas y citas sintéticas. Cierra la cita idCitaPropia y registra inasistencia de idCitaInasistencia. No usar citas reales. Configura las variables, activa cookies y desactiva el seguimiento de redirecciones. Incluye texto de prueba XSS para verificar su salida segura; no consulta proveedores externos."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "correoMedico",
+      "value": ""
+    },
+    {
+      "key": "claveMedico",
+      "value": ""
+    },
+    {
+      "key": "idMedico",
+      "value": ""
+    },
+    {
+      "key": "fechaAgenda",
+      "value": ""
+    },
+    {
+      "key": "fechaVacia",
+      "value": ""
+    },
+    {
+      "key": "fechaSeguimiento",
+      "value": ""
+    },
+    {
+      "key": "idCitaPropia",
+      "value": ""
+    },
+    {
+      "key": "idCitaInasistencia",
+      "value": ""
+    },
+    {
+      "key": "idCitaAjena",
+      "value": ""
+    },
+    {
+      "key": "idCitaFutura",
+      "value": ""
+    },
+    {
+      "key": "idCitaCancelada",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Perfil sin sesión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/perfil",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Formulario del personal",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token de sesión\",()=>pm.expect(m).to.not.eql(null));if(m)pm.collectionVariables.set(\"csrfToken\",m[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Ingresar como médico sintético",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{correoMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{claveMedico}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Ruta de médico\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/medico/agenda\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Perfil con hoja de estilos consistente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/perfil",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token de sesión\",()=>pm.expect(m).to.not.eql(null));if(m)pm.collectionVariables.set(\"csrfToken\",m[1]);",
+              "pm.test(\"Estilos del portal\",()=>pm.expect(pm.response.text()).to.include(\"assets/css/portal-medico.css\"));",
+              "pm.test(\"Sin perfil ficticio\",()=>pm.expect(pm.response.text()).to.not.include(\"Dr. Carlos Mendoza\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Perfil real de la sesión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/perfil",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const b=pm.response.json();pm.test(\"Perfil propio\",()=>pm.expect(String(b.data.idMedico)).to.eql(String(pm.collectionVariables.get(\"idMedico\"))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Inicio con métricas reales",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/inicio",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const d=pm.response.json().data;pm.test(\"Conteo real de sala\",()=>pm.expect(d.enEspera).to.eql(d.agenda.filter(c=>c.estado===\"EN_SALA\").length));pm.test(\"Pendientes reales\",()=>pm.expect(d.pendientes).to.eql(d.agenda.filter(c=>[\"CONFIRMADA\",\"SOLICITADA\"].includes(c.estado)).length));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Agenda por fecha y médico de la sesión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/agenda?fecha={{fechaAgenda}}&idMedico=999999",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const d=pm.response.json().data;pm.test(\"Solo citas propias\",()=>{pm.expect(d.citas.map(c=>String(c.idCita))).to.include(String(pm.collectionVariables.get(\"idCitaPropia\")));pm.expect(d.citas.map(c=>String(c.idCita))).to.not.include(String(pm.collectionVariables.get(\"idCitaAjena\")));});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Un día vacío sigue vacío",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/agenda?fecha={{fechaVacia}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Sin reemplazos por otro día\",()=>pm.expect(pm.response.json().data.citas).to.eql([]));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Fecha inválida rechazada",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/agenda?fecha=2026-02-30",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Detalle ajeno protegido",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaAjena}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\",()=>pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Identificador inválido rechazado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita=-1",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Sin selección no inventa un paciente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Sin paciente ficticio\",()=>pm.expect(pm.response.json().data).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - GET no cambia el estado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaPropia}}&accion=no_asistio",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 405\",()=>pm.response.to.have.status(405));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - POST sin CSRF rechazado",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - POST con CSRF incorrecto rechazado",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "incorrecto",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - POST sobre cita ajena rechazado",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaAjena}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\",()=>pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - No se puede atender una cita futura",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaFutura}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - No se puede atender una cita cancelada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCancelada}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 - Fecha imposible no se normaliza",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "2026-02-30",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 - Notas excesivas se rechazan",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 - Prioridad inválida se rechaza",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "URGENTISIMA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 - Cerrar atención propia y guardar seguimiento",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "ALTA",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Revisión del niño: <script>window.pruebaXss=2</script> & seguimiento.",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "999999",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const b=pm.response.json();pm.test(\"Confirmación real\",()=>{pm.expect(b.code).to.eql(\"ATENCION_REGISTRADA\");pm.expect(String(b.data.idCita)).to.eql(String(pm.collectionVariables.get(\"idCitaPropia\")));});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 - Historial conserva la nota y queda en solo lectura",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaPropia}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const d=pm.response.json().data;pm.test(\"Registro persistido\",()=>{pm.expect(d.estado).to.eql(\"ATENDIDA\");pm.expect(d.editable).to.eql(false);pm.expect(d.indicaciones).to.eql(\"Revisi\\u00f3n del ni\\u00f1o: <script>window.pruebaXss=2</script> & seguimiento.\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 - La vista HTML escapa el contenido almacenado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaPropia}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Contenido seguro\",()=>{pm.expect(pm.response.text()).to.include(\"&lt;script&gt;\");pm.expect(pm.response.text()).to.not.include(\"<script>window.pruebaXss\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 - Repetir el cierre no duplica el historial",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPropia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 - Registrar inasistencia sin cambiar datos clínicos",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idCita",
+              "value": "{{idCitaInasistencia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_asistio",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 - La prioridad clínica se conserva al faltar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaInasistencia}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const d=pm.response.json().data;pm.test(\"Inasistencia sin prioridad inventada\",()=>{pm.expect(d.estado).to.eql(\"NO_ASISTIO\");pm.expect(d.urgencia).to.eql(\"ALTA\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 - Exportación CSV propia",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/export?format=csv&fecha={{fechaAgenda}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Formato CSV\",()=>pm.expect(pm.response.headers.get(\"Content-Type\")).to.include(\"text/csv\"));pm.test(\"Descarga identificada\",()=>pm.expect(pm.response.headers.get(\"Content-Disposition\")).to.include(\"agenda-medica\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 - Vista para imprimir propia y segura",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/export?format=print&fecha={{fechaAgenda}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Escapa datos de prueba\",()=>{pm.expect(pm.response.text()).to.include(\"&lt;script&gt;\");pm.expect(pm.response.text()).to.not.include(\"<script>window.pruebaXss\");pm.expect(pm.response.text()).to.not.include(\"<td>\"+pm.collectionVariables.get(\"idCitaAjena\")+\"</td>\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 - Formato no soportado rechazado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/export?format=xls",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32 - Agenda protegida después del cierre",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/agenda",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

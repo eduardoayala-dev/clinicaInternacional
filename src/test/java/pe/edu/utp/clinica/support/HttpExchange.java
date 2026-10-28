@@ -25,6 +25,7 @@ public class HttpExchange {
     public int status = 200;
     public String contentType;
     public String redirect;
+    public String forward;
     public String requestBody = "";
     public String requestContentType = "application/json";
     public String remoteAddr = "127.0.0.1";
@@ -66,6 +67,13 @@ public class HttpExchange {
                         return parameters.containsKey(args[0]) ? new String[]{parameters.get(args[0])} : null;
                     case "getHeader": return headers.get(args[0]);
                     case "getAttribute": return attributes.get(args[0]);
+                    case "getRequestDispatcher":
+                        String destino=(String)args[0];
+                        return (jakarta.servlet.RequestDispatcher) Proxy.newProxyInstance(jakarta.servlet.RequestDispatcher.class.getClassLoader(),
+                                new Class<?>[]{jakarta.servlet.RequestDispatcher.class},(dispatcher,operacionDispatcher,params)->{
+                                    if("forward".equals(operacionDispatcher.getName())) forward=destino;
+                                    return null;
+                                });
                     case "setAttribute": attributes.put((String) args[0], args[1]); return null;
                     case "getDateHeader": return -1L;
                     default: return null;
