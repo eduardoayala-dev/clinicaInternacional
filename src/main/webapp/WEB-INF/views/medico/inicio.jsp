@@ -159,7 +159,7 @@
                         <option value="MANANA">Mañana · antes de las 12:00</option>
                         <option value="TARDE">Tarde · desde las 12:00</option>
                     </select>
-                    <span class="med-table-count" id="medCitasVisibles" role="status"><%= Html.texto(agenda != null ? agenda.size() : 0) %> citas registradas</span>
+                    <output class="med-table-count" id="medCitasVisibles"><%= Html.texto(agenda != null ? agenda.size() : 0) %> citas registradas</output>
                 </div>
             </div>
 
@@ -167,7 +167,7 @@
             <p class="med-arrival-help">No hay pacientes en sala. Para iniciar una consulta, admisión debe registrar primero la llegada del paciente.</p>
             <% } %>
             <p class="med-table-hint">Desliza la tabla para ver todas las columnas.</p>
-            <div class="med-table-card" role="region" aria-label="Citas del médico" tabindex="0">
+            <section class="med-table-card" aria-label="Citas del médico">
                 <table class="med-table med-table-inicio" id="medCitasDia">
                     <thead>
                         <tr>
@@ -219,10 +219,10 @@
                         <tr id="medTurnoVacio" hidden><td colspan="6">No hay citas registradas para el turno seleccionado.</td></tr>
                     </tbody>
                 </table>
-            </div>
+            </section>
             <nav class="med-pagination" aria-label="Páginas de las citas del día">
                 <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medInicioAnterior">‹ Anterior</button>
-                <span id="medInicioPagina" role="status"></span>
+                <output id="medInicioPagina"></output>
                 <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medInicioSiguiente">Siguiente ›</button>
             </nav>
 

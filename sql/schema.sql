@@ -1,6 +1,5 @@
 -- =============================================================================
 -- ESQUEMA DE BASE DE DATOS - CLÍNICA INTERNACIONAL (MySQL 8.0)
--- Coincidencia 100% con el Diagrama de Clases (17 Tablas / Entidades)
 -- Requisitos: HU003, RNF-01, RNF-02, RNF-03, RNF-04, RNF-05
 -- =============================================================================
 
@@ -18,6 +17,8 @@ DROP TABLE IF EXISTS reasignacion_inteligente;
 DROP TABLE IF EXISTS notificacion;
 DROP TABLE IF EXISTS historial_asistencia;
 DROP TABLE IF EXISTS lista_espera;
+DROP TABLE IF EXISTS seguimiento_cita;
+DROP TABLE IF EXISTS consulta_clinica;
 DROP TABLE IF EXISTS atencion_cita;
 DROP TABLE IF EXISTS inasistencia_cita;
 DROP TABLE IF EXISTS admision_cita;
@@ -626,3 +627,30 @@ INSERT INTO paciente (id_paciente, id_usuario, dni, fecha_nacimiento, telefono, 
 
 
 
+
+SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS consulta_clinica (
+    id_cita INT PRIMARY KEY,
+    motivo VARCHAR(1000) NOT NULL,
+    antecedentes VARCHAR(2000) NOT NULL,
+    hallazgos VARCHAR(2000) NOT NULL,
+    evaluacion VARCHAR(2000) NOT NULL,
+    diagnostico VARCHAR(1000) NOT NULL,
+    plan VARCHAR(2000) NOT NULL,
+    CONSTRAINT fk_consulta_clinica_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS seguimiento_cita (
+    id_cita_origen INT PRIMARY KEY,
+    id_cita_control INT NOT NULL,
+    id_usuario_medico INT NOT NULL,
+    fecha_vinculacion DATETIME NOT NULL,
+    CONSTRAINT fk_seguimiento_origen FOREIGN KEY (id_cita_origen) REFERENCES cita(id_cita),
+    CONSTRAINT fk_seguimiento_control FOREIGN KEY (id_cita_control) REFERENCES cita(id_cita),
+    CONSTRAINT fk_seguimiento_responsable FOREIGN KEY (id_usuario_medico) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_seguimiento_distinto CHECK (id_cita_origen <> id_cita_control),
+    INDEX idx_seguimiento_control (id_cita_control)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_cita_medico_paciente_fecha ON cita(id_medico,id_paciente,fecha_hora);

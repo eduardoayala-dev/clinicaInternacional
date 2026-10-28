@@ -91,3 +91,13 @@ test('restablecer recupera la prioridad original y mantiene su estado accesible'
     assert.equal(cards[0].attributes['aria-pressed'], 'true');
     assert.equal(selected.attributes['aria-pressed'], 'false');
 });
+
+test('restablecer recupera también el contenido original del registro clínico', () => {
+    const {context, element} = portal();
+    for (const id of ['motivoClinico', 'antecedentesClinicos', 'hallazgosClinicos', 'evaluacionClinica', 'diagnosticoClinico', 'planClinico']) {
+        element(id).defaultValue = 'Original: niño & revisión';
+        element(id).value = 'Modificado';
+    }
+    context.restablecerFormulario();
+    for (const id of ['motivoClinico', 'antecedentesClinicos', 'hallazgosClinicos', 'evaluacionClinica', 'diagnosticoClinico', 'planClinico']) assert.equal(element(id).value, 'Original: niño & revisión');
+});

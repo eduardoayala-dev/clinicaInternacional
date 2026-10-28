@@ -26,6 +26,8 @@ class CitaAutorizacionTest {
             @Override protected java.time.Clock relojClinico() { return reloj(); }
         };
         try (Connection conn = abrir(); Statement st = conn.createStatement()) {
+            st.execute("DROP TABLE IF EXISTS seguimiento_cita");
+            st.execute("DROP TABLE IF EXISTS consulta_clinica");
             st.execute("DROP TABLE IF EXISTS atencion_cita");
             st.execute("DROP TABLE IF EXISTS inasistencia_cita");
             st.execute("DROP TABLE IF EXISTS reasignacion_inteligente");
@@ -52,6 +54,10 @@ class CitaAutorizacionTest {
             st.execute("CREATE TABLE admision_cita(id_cita INT PRIMARY KEY,id_usuario_personal INT NOT NULL,fecha_llegada DATETIME NOT NULL,tolerancia_minutos SMALLINT NOT NULL,llego_tarde BOOLEAN NOT NULL,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_personal) REFERENCES usuario(id_usuario))");
             String migracion = java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V004__flujo_atencion.sql"));
             for (String sentencia : migracion.split(";")) {
+                if (sentencia.strip().startsWith("CREATE TABLE")) st.execute(sentencia.replace(") ENGINE=InnoDB", ")"));
+            }
+            String clinica = java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V005__historial_seguimientos_clinicos.sql"));
+            for (String sentencia : clinica.split(";")) {
                 if (sentencia.strip().startsWith("CREATE TABLE")) st.execute(sentencia.replace(") ENGINE=InnoDB", ")"));
             }
             st.execute("CREATE TABLE historial_asistencia(id_historial INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_cita INT,asistio BOOLEAN,observacion VARCHAR(255),fecha_registro DATETIME,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente))");

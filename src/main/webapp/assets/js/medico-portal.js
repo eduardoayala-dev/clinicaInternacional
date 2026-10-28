@@ -41,6 +41,15 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    function actualizarTablasDesplazables() {
+        document.querySelectorAll('.med-table-card').forEach(region => {
+            region.tabIndex = region.scrollWidth > region.clientWidth ? 0 : -1;
+        });
+    }
+    actualizarTablasDesplazables();
+    globalThis.addEventListener('resize', actualizarTablasDesplazables);
+    globalThis.addEventListener('pageshow', actualizarTablasDesplazables);
+
     let pending = false;
     document.querySelectorAll('form[data-pending-label]').forEach(form => {
         form.addEventListener('submit', event => {

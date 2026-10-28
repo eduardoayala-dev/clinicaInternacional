@@ -1,0 +1,10 @@
+<%@ page pageEncoding="UTF-8" %>
+<nav class="med-pagination" aria-label="Páginas de resultados">
+    <% if (paginaDatos.pagina() > 1) { %>
+    <a class="med-tbl-btn med-tbl-btn-outline" href="<%= Html.texto(request.getContextPath()+rutaPagina+"&pagina="+(paginaDatos.pagina()-1)) %>">‹ Anterior</a>
+    <% } else { %><span class="med-tbl-btn med-page-disabled" aria-disabled="true">‹ Anterior</span><% } %>
+    <span>Página <%= Html.texto(paginaDatos.pagina()) %> · <%= Html.texto(paginaDatos.items().size()) %> <%= Html.texto(paginaDatos.items().size() == 1 ? "resultado" : "resultados") %></span>
+    <% if (paginaDatos.tieneSiguiente()) { %>
+    <a class="med-tbl-btn med-tbl-btn-outline" href="<%= Html.texto(request.getContextPath()+rutaPagina+"&pagina="+(paginaDatos.pagina()+1)) %>">Siguiente ›</a>
+    <% } else { %><span class="med-tbl-btn med-page-disabled" aria-disabled="true">Siguiente ›</span><% } %>
+</nav>
