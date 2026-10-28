@@ -199,7 +199,8 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         ofertas.generar(cancelada());
         assertTrue(ofertas.obtenerParaPaciente(2).isEmpty());
         assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
-        assertThrows(AgendaException.class,()->lista.registrar(4,new ListaEsperaDAO.Preferencias(2,1,"MANANA","MEDIA","CORREO",180,1)));
+        var preferenciasInvalidas=new ListaEsperaDAO.Preferencias(2,1,"MANANA","MEDIA","CORREO",180,1);
+        assertThrows(AgendaException.class,()->lista.registrar(4,preferenciasInvalidas));
     }
 
     @Test void concurrentAcceptsReturnSameAppointmentWithoutDuplicatingIt() throws Exception {

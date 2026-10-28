@@ -245,7 +245,7 @@
                         <div class="form-group" style="margin-top: 20px;">
                             <span class="field-label" id="preferenciaContacto">6. Preferencia de contacto *</span>
                             <p>Las ofertas se notifican en este portal. Registramos WhatsApp y correo como preferencias de contacto.</p>
-                            <div class="checkboxes-row-group" role="group" aria-labelledby="preferenciaContacto">
+                            <fieldset class="checkboxes-row-group" aria-labelledby="preferenciaContacto" style="border:0;padding:0;margin:0;min-width:0;">
                                 <label class="canal-card active" id="labelCanalWhatsapp">
                                     <input type="checkbox" name="canales" value="whatsapp" checked onchange="toggleCheckboxCard(this, 'labelCanalWhatsapp')">
                                     <span class="custom-checkbox">
@@ -263,7 +263,7 @@
                                     <i data-lucide="mail" class="canal-device-icon"></i>
                                     <span class="card-item-label">Correo electrónico</span>
                                 </label>
-                            </div>
+                            </fieldset>
                         </div>
 
                         <!-- FILA DE BOTONES DE ACCIÓN -->
