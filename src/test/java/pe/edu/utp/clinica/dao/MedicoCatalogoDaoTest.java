@@ -19,13 +19,16 @@ class MedicoCatalogoDaoTest {
     @BeforeEach void prepare() throws Exception {
         url = "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
         dao = new MedicoDAO(() -> DriverManager.getConnection(url), clock);
-        sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR,apellidos VARCHAR,activo BOOLEAN)");
+        sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR,apellidos VARCHAR,activo BOOLEAN,rol VARCHAR DEFAULT 'MEDICO')");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR)");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR)");
         sql("CREATE TABLE medico(id_medico INT PRIMARY KEY,id_usuario INT,id_especialidad INT,id_sede INT,cmp VARCHAR,estado VARCHAR)");
         sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT DEFAULT 1,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR)");
-        sql("CREATE TABLE cita(id_medico INT,fecha_hora TIMESTAMP,estado VARCHAR,id_disponibilidad INT DEFAULT 1)");
-        sql("INSERT INTO usuario VALUES (1,'MÉDICO','PRUEBA',TRUE),(2,'OTRO','MÉDICO',TRUE),(3,'INACTIVO','PRUEBA',FALSE)");
+        sql("CREATE TABLE cita(id_cita INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,fecha_hora TIMESTAMP,estado VARCHAR,id_disponibilidad INT DEFAULT 1)");
+        sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
+        sql("CREATE TABLE lista_espera(id_lista_espera INT PRIMARY KEY,id_paciente INT,estado VARCHAR)");
+        sql("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_lista_espera INT,id_cita_original INT,id_disponibilidad INT,fecha_limite_respuesta DATETIME,estado VARCHAR(20))");
+        sql("INSERT INTO usuario(id_usuario,nombres,apellidos,activo) VALUES (1,'MÉDICO','PRUEBA',TRUE),(2,'OTRO','MÉDICO',TRUE),(3,'INACTIVO','PRUEBA',FALSE)");
         sql("INSERT INTO especialidad VALUES(1,'ACTIVO'),(2,'INACTIVO')");
         sql("INSERT INTO sede VALUES(1,'ACTIVO'),(2,'ACTIVO'),(3,'INACTIVO')");
         sql("INSERT INTO medico VALUES(42,1,1,1,NULL,'ACTIVO'),(43,2,1,2,'CMP-43','ACTIVO'),(44,3,1,1,'44','ACTIVO'),(45,1,2,1,'45','ACTIVO'),(46,1,1,3,'46','ACTIVO'),(47,1,1,1,'47','INACTIVO')");
@@ -58,6 +61,14 @@ class MedicoCatalogoDaoTest {
     @Test void absentAvailabilityDoesNotInventDatesOrHours() {
         assertTrue(dao.obtenerFechasDisponibles(42).isEmpty());
         assertTrue(dao.obtenerHorariosDisponibles(42, "2026-10-28").isEmpty());
+    }
+
+    @Test void waitingListCatalogOnlyContainsActiveDoctorsAndRealClinicIds() {
+        var medicos = dao.obtenerMedicosParaEspera();
+        assertEquals(2, medicos.size());
+        assertTrue(medicos.stream().allMatch(m -> (int)m.get("idEspecialidad") == 1));
+        assertTrue(medicos.stream().anyMatch(m -> (int)m.get("idSede") == 2));
+        assertFalse(medicos.stream().anyMatch(m -> (int)m.get("idMedico") == 44));
     }
 
     @Test void onlyPublishedFutureDatesAreReturnedInOrder() throws Exception {
