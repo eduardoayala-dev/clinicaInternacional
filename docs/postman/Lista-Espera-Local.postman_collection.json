@@ -1,0 +1,1538 @@
+{
+  "info": {
+    "name": "Clínica - Lista de espera y ofertas locales",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo LOCAL. Configura correoPersonal, clavePersonal, fechaAgenda futura, idMedico, idSede e idEspecialidad. Publica una agenda, crea dos pacientes sintéticos, reserva, inscribe, cancela, comprueba propiedad y retención del cupo, acepta sin duplicar y cancela la cita sintética. No consulta servicios de DNI. Cookies activadas y redirecciones desactivadas. Conserva las cuentas sintéticas y la agenda para revisión; no modifica cuentas existentes."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "correoPersonal",
+      "value": ""
+    },
+    {
+      "key": "clavePersonal",
+      "value": ""
+    },
+    {
+      "key": "idMedico",
+      "value": "1"
+    },
+    {
+      "key": "idSede",
+      "value": "1"
+    },
+    {
+      "key": "fechaAgenda",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "idEspecialidad",
+      "value": "1"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Sesión de personal",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Ingresar como personal administrativo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{correoPersonal}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{clavePersonal}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Acceso administrativo\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/admin/dashboard\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Gestión de médicos y token renovado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/admin/medicos",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/); pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null)); if(match) pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Publicar agenda local",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/medicos",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "publicar_horario_medico",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "idSede",
+              "value": "{{idSede}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "horaInicio",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "horaFin",
+              "value": "11:00",
+              "type": "text"
+            },
+            {
+              "key": "duracion",
+              "value": "30",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Verificar horarios publicados",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/horarios?idMedico={{idMedico}}&fecha={{fechaAgenda}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const body=pm.response.json(); pm.test(\"Agenda disponible\",()=>{pm.expect(body.code).to.eql(\"HORARIOS_OBTENIDOS\");pm.expect(body.data).to.include(\"09:00\");pm.expect(body.data).to.include(\"09:30\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Formulario de registro Origen",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente?action=register",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const sufijo=String(Date.now()).slice(-7);pm.collectionVariables.set(\"dniOrigen\",\"9\"+sufijo);pm.collectionVariables.set(\"correoOrigen\",\"espera.origen.\"+Date.now()+\"@example.test\");"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Crear paciente sintético Origen",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/registro",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "nombres",
+              "value": "Origen",
+              "type": "text"
+            },
+            {
+              "key": "apellidos",
+              "value": "Prueba Local",
+              "type": "text"
+            },
+            {
+              "key": "dni",
+              "value": "{{dniOrigen}}",
+              "type": "text"
+            },
+            {
+              "key": "fechaNacimiento",
+              "value": "2000-01-01",
+              "type": "text"
+            },
+            {
+              "key": "telefono",
+              "value": "900000001",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "{{correoOrigen}}",
+              "type": "text"
+            },
+            {
+              "key": "direccion",
+              "value": "Prueba local",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "EsperaLocal2026!",
+              "type": "text"
+            },
+            {
+              "key": "terminos",
+              "value": "on",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Registro exitoso\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Token del paciente Origen",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Reservar cupo que luego se liberará",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reservar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "MEDIA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(201));",
+              "const b=pm.response.json();pm.test(\"Cita real\",()=>pm.expect(b.data.idCita).to.be.above(0));pm.collectionVariables.set(\"idCitaOrigen\",b.data.idCita);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Formulario de registro Espera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente?action=register",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        },
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const sufijo=String(Date.now()).slice(-7);pm.collectionVariables.set(\"dniEspera\",\"9\"+sufijo);pm.collectionVariables.set(\"correoEspera\",\"espera.espera.\"+Date.now()+\"@example.test\");"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Crear paciente sintético Espera",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/registro",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "nombres",
+              "value": "Espera",
+              "type": "text"
+            },
+            {
+              "key": "apellidos",
+              "value": "Prueba Local",
+              "type": "text"
+            },
+            {
+              "key": "dni",
+              "value": "{{dniEspera}}",
+              "type": "text"
+            },
+            {
+              "key": "fechaNacimiento",
+              "value": "2000-01-01",
+              "type": "text"
+            },
+            {
+              "key": "telefono",
+              "value": "900000001",
+              "type": "text"
+            },
+            {
+              "key": "email",
+              "value": "{{correoEspera}}",
+              "type": "text"
+            },
+            {
+              "key": "direccion",
+              "value": "Prueba local",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "EsperaLocal2026!",
+              "type": "text"
+            },
+            {
+              "key": "terminos",
+              "value": "on",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Registro exitoso\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Token del paciente Espera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - Formulario con sedes y médicos activos",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/lista-espera",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);",
+              "pm.test(\"Formulario de lista disponible\",()=>pm.expect(pm.response.text()).to.include(\"formInscripcionEspera\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - Inscribirse con cualquier sede y médico elegido",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/lista-espera",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "inscribir",
+              "type": "text"
+            },
+            {
+              "key": "especialidadId",
+              "value": "{{idEspecialidad}}",
+              "type": "text"
+            },
+            {
+              "key": "medicoId",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "sede",
+              "value": "cualquiera",
+              "type": "text"
+            },
+            {
+              "key": "horarios",
+              "value": "manana",
+              "type": "text"
+            },
+            {
+              "key": "canales",
+              "value": "email",
+              "type": "text"
+            },
+            {
+              "key": "canales",
+              "value": "whatsapp",
+              "type": "text"
+            },
+            {
+              "key": "disponibilidad",
+              "value": "3h",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(201));",
+              "const b=pm.response.json();pm.test(\"Inscripción real\",()=>pm.expect(b.data.idListaEspera).to.be.above(0));pm.collectionVariables.set(\"idListaEspera\",b.data.idListaEspera);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Estado de inscripción propia",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/lista-espera",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const b=pm.response.json();pm.test(\"Inscripción activa\",()=>pm.expect(b.data.estadoCodigo).to.eql(\"ACTIVA\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 - Formulario de ingreso Origen",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 - Ingresar Origen",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{dniOrigen}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "EsperaLocal2026!",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Sesión de paciente\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 - Renovar token Origen",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 - Cancelar la cita de origen",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/historial",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "cancelar",
+              "type": "text"
+            },
+            {
+              "key": "idCita",
+              "value": "{{idCitaOrigen}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 - El cupo ofertado ya no aparece disponible",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/api/horarios?idMedico={{idMedico}}&fecha={{fechaAgenda}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const b=pm.response.json();pm.test(\"Cupo temporalmente protegido\",()=>pm.expect(b.data).to.not.include(\"09:00\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 - Formulario de ingreso Espera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 - Ingresar Espera",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{dniEspera}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "EsperaLocal2026!",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Sesión de paciente\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 - Renovar token Espera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 - Consultar oferta real",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const b=pm.response.json();pm.test(\"Oferta propia con vencimiento real\",()=>{pm.expect(b.data.oferta).to.not.eql(null);pm.expect(b.data.oferta.tiempoRestanteSegundos).to.be.above(0);pm.expect(b.data.oferta.tiempoRestanteSegundos).to.be.at.most(900);});if(b.data.oferta)pm.collectionVariables.set(\"idOferta\",b.data.oferta.idOferta);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 - Oferta visible en la pantalla de notificaciones",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);",
+              "pm.test(\"Formulario con la oferta real\",()=>pm.expect(pm.response.text()).to.include('name=\"idOferta\" value=\"'+pm.collectionVariables.get(\"idOferta\")+'\"'));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31 - Formulario de ingreso Origen",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32 - Ingresar Origen",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{dniOrigen}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "EsperaLocal2026!",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Sesión de paciente\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33 - Renovar token Origen",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34 - No se puede aceptar la oferta de otro paciente",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "aceptar",
+              "type": "text"
+            },
+            {
+              "key": "idOferta",
+              "value": "{{idOferta}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(404));",
+              "pm.test(\"Sin confirmación falsa\",()=>pm.expect(pm.response.json().data).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35 - La reserva normal tampoco puede tomar el cupo ofertado",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/reservar",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "{{idMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "fecha",
+              "value": "{{fechaAgenda}}",
+              "type": "text"
+            },
+            {
+              "key": "hora",
+              "value": "09:00",
+              "type": "text"
+            },
+            {
+              "key": "urgencia",
+              "value": "MEDIA",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37 - Formulario de ingreso Espera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38 - Ingresar Espera",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{dniEspera}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "EsperaLocal2026!",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Sesión de paciente\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/paciente/\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39 - Renovar token Espera",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "40 - Aceptar y crear la cita real",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "aceptar",
+              "type": "text"
+            },
+            {
+              "key": "idOferta",
+              "value": "{{idOferta}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const b=pm.response.json();pm.test(\"Cita creada\",()=>pm.expect(b.data.idCita).to.be.above(0));pm.collectionVariables.set(\"idCitaAsignada\",b.data.idCita);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "41 - Repetir aceptación conserva la misma cita",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "aceptar",
+              "type": "text"
+            },
+            {
+              "key": "idOferta",
+              "value": "{{idOferta}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Sin duplicados\",()=>pm.expect(String(pm.response.json().data.idCita)).to.eql(String(pm.collectionVariables.get(\"idCitaAsignada\"))));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "42 - La oferta dejó de estar pendiente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/notificaciones",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Sin oferta activa\",()=>pm.expect(pm.response.json().data.oferta).to.eql(null));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "43 - Cita visible en el historial",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/historial",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(200));",
+              "const match=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF\",()=>pm.expect(match).to.not.eql(null));if(match)pm.collectionVariables.set(\"csrfToken\",match[1]);",
+              "pm.test(\"Cita asignada visible\",()=>pm.expect(pm.response.text()).to.include(\"idCita=\"+pm.collectionVariables.get(\"idCitaAsignada\")));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "44 - Cancelar solo la cita sintética al terminar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/historial",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "cancelar",
+              "type": "text"
+            },
+            {
+              "key": "idCita",
+              "value": "{{idCitaAsignada}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "45 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}
