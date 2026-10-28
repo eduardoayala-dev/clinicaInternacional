@@ -199,12 +199,13 @@
                                     <% if (esAtendido) { %>
                                         <span class="med-badge med-badge-atendido">Atendido</span>
                                     <% } else if (esEnSala) { %>
-                                        <span class="med-badge med-badge-ensala">En sala</span>
+                                        <span class="med-badge med-badge-ensala"><%= Html.texto(Boolean.TRUE.equals(c.get("llegoTarde")) ? "Llegó tarde" : "En sala") %></span>
+                                        <div><small>Llegada: <%= Html.texto(c.get("horaLlegada")) %></small></div>
                                     <% } else { %>
                                         <span class="med-badge med-badge-pendiente"><%= Html.texto(c.get("estadoTexto")) %></span>
                                     <% } %>
                                 </td>
-                                <td class="med-action-cell"><a href="${pageContext.request.contextPath}/medico/atencion?idCita=<%= Html.texto(c.get("idCita")) %>" class="med-tbl-btn med-tbl-btn-outline"><%= Html.texto(Boolean.TRUE.equals(c.get("editable")) ? "Abrir" : "Ver") %></a></td>
+                                <td class="med-action-cell"><a href="${pageContext.request.contextPath}/medico/atencion?idCita=<%= Html.texto(c.get("idCita")) %>" class="med-tbl-btn med-tbl-btn-outline"><%= Html.texto("EN_ATENCION".equals(c.get("estado")) ? "Continuar atención" : "Ver ficha") %></a></td>
                             </tr>
                         <%  }
                            } else { %>

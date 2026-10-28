@@ -82,10 +82,15 @@ abstract class MedicoPortalServlet extends HttpServlet {
         int enSala=0;
         int pendientes=0;
         int inasistencias=0;
+        int enAtencion=0;
+        long espera=0,duracion=0;int muestrasEspera=0,muestrasDuracion=0;
         Map<String,Object> pacienteEnSala=null;
         for(var cita:agenda){
             String estado=String.valueOf(cita.get("estado"));
+            if(cita.get("esperaMinutos") instanceof Number minutos){espera+=minutos.longValue();muestrasEspera++;}
+            if(cita.get("duracionMinutos") instanceof Number minutos){duracion+=minutos.longValue();muestrasDuracion++;}
             if("ATENDIDA".equals(estado)) atendidos++;
+            else if("EN_ATENCION".equals(estado)) enAtencion++;
             else if("EN_SALA".equals(estado)){
                 enSala++;
                 if(pacienteEnSala==null) pacienteEnSala=cita;
@@ -96,7 +101,10 @@ abstract class MedicoPortalServlet extends HttpServlet {
         request.setAttribute("fechaActual",fecha.toString());request.setAttribute("fechaHoyStr",fecha.toString());
         request.setAttribute("totalCitas",agenda.size());request.setAttribute("totalAsignados",agenda.size());
         request.setAttribute("atendidos",atendidos);request.setAttribute("enEspera",enSala);request.setAttribute("pendientes",pendientes);
-        request.setAttribute("pendientesRestantes",pendientes+enSala);request.setAttribute("inasistencias",inasistencias);
+        request.setAttribute("pendientesRestantes",pendientes+enSala+enAtencion);request.setAttribute("inasistencias",inasistencias);
         request.setAttribute("pacienteEnSala",pacienteEnSala);
+        request.setAttribute("enAtencion",enAtencion);
+        request.setAttribute("esperaPromedioMinutos",muestrasEspera==0?null:Math.round(10.0*espera/muestrasEspera)/10.0);
+        request.setAttribute("duracionPromedioMinutos",muestrasDuracion==0?null:Math.round(10.0*duracion/muestrasDuracion)/10.0);
     }
 }

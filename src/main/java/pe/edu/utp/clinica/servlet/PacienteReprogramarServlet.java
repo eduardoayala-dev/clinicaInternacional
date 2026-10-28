@@ -67,7 +67,7 @@ public class PacienteReprogramarServlet extends HttpServlet {
 
             // Validar estado no reprogramable
             String estado = (String) cita.get("estado");
-            if ("CANCELADA".equalsIgnoreCase(estado) || "ATENDIDA".equalsIgnoreCase(estado) || "REPROGRAMADA".equalsIgnoreCase(estado)) {
+            if (!"SOLICITADA".equals(estado) && !"CONFIRMADA".equals(estado)) {
                 response.sendRedirect(request.getContextPath() + "/paciente/historial?error=estado_invalido");
                 return;
             }

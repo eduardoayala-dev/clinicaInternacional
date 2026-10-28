@@ -1,4 +1,4 @@
-# Entorno local. Producción requiere VERIFY_IDENTITY y la CA del servidor MySQL.
+# Entorno local. ProducciÃ³n requiere VERIFY_IDENTITY y la CA del servidor MySQL.
 services:
   app:
     build: .
@@ -6,6 +6,7 @@ services:
       - "127.0.0.1:8080:8080"
     environment:
       APP_ENV: development
+      ADMISION_TOLERANCIA_MINUTOS: ${ADMISION_TOLERANCIA_MINUTOS:-10}
       DB_MODE: mysql
       DB_HOST: db
       DB_PORT: "3306"

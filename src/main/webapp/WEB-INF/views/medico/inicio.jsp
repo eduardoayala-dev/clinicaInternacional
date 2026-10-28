@@ -120,7 +120,7 @@
                     <div class="med-banner-text">
                         <div class="med-banner-title">Paciente en sala de espera</div>
                         <div class="med-banner-desc">
-                            <strong><%= Html.texto(pacienteEnSala.get("paciente")) %></strong> registró su llegada en admisión para su cita a las <strong><%= Html.texto(pacienteEnSala.get("hora")) %></strong>.
+                            <strong><%= Html.texto(pacienteEnSala.get("paciente")) %></strong> está en sala. Hora de llegada: <strong><%= Html.texto(pacienteEnSala.get("horaLlegada")) %></strong>.
                         </div>
                     </div>
                 </div>
@@ -184,6 +184,12 @@
             </div>
 
 
+            <div class="med-atencion-card">
+                <p>Consultas en curso: <strong><%= Html.texto(request.getAttribute("enAtencion")) %></strong> · <a href="${pageContext.request.contextPath}/medico/atencion">Continuar mi atención actual</a></p>
+                <p>Espera media hasta iniciar: <strong><%= Html.texto(request.getAttribute("esperaPromedioMinutos") == null ? "Sin datos" : request.getAttribute("esperaPromedioMinutos") + " min") %></strong></p>
+                <p>Duración media de consultas cerradas: <strong><%= Html.texto(request.getAttribute("duracionPromedioMinutos") == null ? "Sin datos" : request.getAttribute("duracionPromedioMinutos") + " min") %></strong></p>
+            </div>
+
             <div class="med-table-header-row">
                 <div class="med-table-title">Citas del día &nbsp;·&nbsp; <%= Html.texto(sedeMedico) %></div>
                 <div class="med-table-count"><%= Html.texto(agenda != null ? agenda.size() : 0) %> pacientes registrados</div>
@@ -222,12 +228,13 @@
                                     <% if (esAtendido) { %>
                                         <span class="med-badge med-badge-atendido">Atendido</span>
                                     <% } else if (esEnSala) { %>
-                                        <span class="med-badge med-badge-ensala">En sala</span>
+                                        <span class="med-badge med-badge-ensala"><%= Html.texto(Boolean.TRUE.equals(c.get("llegoTarde")) ? "Llegó tarde" : "En sala") %></span>
+                                        <div><small>Llegada: <%= Html.texto(c.get("horaLlegada")) %></small></div>
                                     <% } else { %>
-                                        <span class="med-badge med-badge-pendiente">Pendiente de llegada</span>
+                                        <span class="med-badge med-badge-pendiente"><%= Html.texto(c.get("estadoTexto")) %></span>
                                     <% } %>
                                 </td>
-                                <td class="med-action-cell"><a href="${pageContext.request.contextPath}/medico/atencion?idCita=<%= Html.texto(c.get("idCita")) %>" class="med-tbl-btn med-tbl-btn-outline"><%= Html.texto(Boolean.TRUE.equals(c.get("editable")) ? "Abrir" : "Ver") %></a></td>
+                                <td class="med-action-cell"><a href="${pageContext.request.contextPath}/medico/atencion?idCita=<%= Html.texto(c.get("idCita")) %>" class="med-tbl-btn med-tbl-btn-outline"><%= Html.texto("EN_ATENCION".equals(c.get("estado")) ? "Continuar atención" : "Ver ficha") %></a></td>
                             </tr>
                         <%  }
                            } else { %>

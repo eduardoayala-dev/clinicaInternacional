@@ -33,6 +33,7 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         assertEquals("Sin registrar",detalle.get("edad"));assertEquals("Central",detalle.get("sedeYConsultorio"));
     }
     @Test void rawClinicalNotesArePersistedAndReadWithoutMutatingTheirContents()throws Exception{
+        iniciarAtencionFixture();
         String texto="Evolución: niño con tos. <control> & revisión";
         assertTrue(portal.guardar(1,7,"ATENDIDA","ALTA","2026-12-01",texto));
         var detalle=portal.detalle(1,7);assertEquals(texto,detalle.get("indicaciones"));
@@ -43,7 +44,7 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
     @Test void futureAppointmentCannotBeAttendedOrMarkedAbsent()throws Exception{
         sql("UPDATE cita SET fecha_hora='2026-10-29 09:00:00'");
         error(409,()->portal.guardar(1,7,"ATENDIDA","MEDIA",null,"nota"));
-        error(409,()->portal.guardar(1,7,"NO_ASISTIO",null,null,null));
+        error(403,()->portal.guardar(1,7,"NO_ASISTIO",null,null,null));
         assertEquals(0,count("SELECT COUNT(*) FROM historial_asistencia"));
     }
     @Test void sameDayBeforeStartCannotBeClosed()throws Exception{
@@ -51,7 +52,7 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         error(409,()->portal.guardar(1,7,"ATENDIDA","MEDIA",null,"nota"));assertEquals(false,portal.detalle(1,7).get("editable"));
     }
     @Test void pastDateCannotBeSilentlyClosedToday()throws Exception{
-        sql("UPDATE cita SET fecha_hora='2026-10-27 09:00:00'");error(409,()->portal.guardar(1,7,"NO_ASISTIO",null,null,null));
+        sql("UPDATE cita SET fecha_hora='2026-10-27 09:00:00'");error(403,()->portal.guardar(1,7,"NO_ASISTIO",null,null,null));
     }
     @Test void cancelledReprogrammedAndAbsentAppointmentsCannotBeAttended()throws Exception{
         for(String estado:new String[]{"CANCELADA","REPROGRAMADA","NO_ASISTIO"}){
@@ -60,19 +61,21 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         }
     }
     @Test void rolloverDatesAndNonFutureFollowUpDatesAreRejected()throws Exception{
+        iniciarAtencionFixture();
         for(String fecha:new String[]{"2026-02-30","2026-10-28","2026-10-27","2026-2-1","texto"}) error(400,()->portal.guardar(1,7,"ATENDIDA","MEDIA",fecha,"nota"));
         assertEquals(0,count("SELECT COUNT(*) FROM historial_asistencia"));
     }
-    @Test void excessiveNotesAndControlCharactersAreRejected(){
+    @Test void excessiveNotesAndControlCharactersAreRejected()throws Exception{
+        iniciarAtencionFixture();
         error(400,()->portal.guardar(1,7,"ATENDIDA","MEDIA",null,"x".repeat(201)));
         error(400,()->portal.guardar(1,7,"ATENDIDA","MEDIA",null,"nota\u0000"));
         error(400,()->portal.guardar(1,7,"ATENDIDA","URGENTE",null,"nota"));
     }
-    @Test void absencePreservesClinicalPriorityAndExistingFollowUp()throws Exception{
+    @Test void physicianCannotMarkAbsenceOrOverwriteClinicalData()throws Exception{
         sql("UPDATE cita SET nivel_urgencia='ALTA',fecha_recomendada_proxima='2026-12-01'");
-        portal.guardar(1,7,"NO_ASISTIO","BAJA","2027-01-01","inventada");
-        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='NO_ASISTIO' AND nivel_urgencia='ALTA' AND fecha_recomendada_proxima='2026-12-01'"));
-        assertEquals(1,count("SELECT COUNT(*) FROM historial_asistencia WHERE asistio=FALSE"));
+        error(403,()->portal.guardar(1,7,"NO_ASISTIO","BAJA","2027-01-01","inventada"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA' AND nivel_urgencia='ALTA' AND fecha_recomendada_proxima='2026-12-01'"));
+        assertEquals(0,count("SELECT COUNT(*) FROM historial_asistencia"));
     }
     @Test void scopedWritesRejectMissingAndForeignAppointments(){
         error(404,()->portal.guardar(2,7,"ATENDIDA","MEDIA",null,"nota"));
@@ -103,6 +106,7 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         sql("DROP TABLE motivo_cita");assertThrows(CatalogoDatosException.class,()->portal.agenda(1,HOY));
     }
     @Test void concurrentClosuresCreateExactlyOneHistoryRecord()throws Exception{
+        iniciarAtencionFixture();
         var start=new CountDownLatch(1);var executor=Executors.newFixedThreadPool(2);
         try{
             var a=executor.submit(()->cerrar(start));var b=executor.submit(()->cerrar(start));start.countDown();
@@ -115,7 +119,8 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         try{portal.guardar(1,7,"ATENDIDA","MEDIA",null,"control");return 1;}
         catch(AgendaException e){assertEquals(409,e.status());return 0;}
     }
-    @Test void clinicalDayUsesLimaEvenWhenUtcHasAlreadyAdvanced(){
+    @Test void clinicalDayUsesLimaEvenWhenUtcHasAlreadyAdvanced()throws Exception{
+        iniciarAtencionFixture();
         var noche=new MedicoPortalDAO(this::abrir,Clock.fixed(Instant.parse("2026-10-29T04:30:00Z"),ZoneId.of("America/Lima")));
         assertEquals(true,noche.detalle(1,7).get("editable"));assertEquals(1,noche.agenda(1,HOY).size());
     }

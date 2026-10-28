@@ -1,3 +1,4 @@
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
@@ -74,7 +75,7 @@
                 <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
                 <span>Notificaciones</span>
                 <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
+                    <span class="badge-count"><%= Html.texto(numNotifSinLeer) %></span>
                 <% } %>
             </a>
             <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
@@ -84,9 +85,9 @@
         </nav>
 
         <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
+            <div class="avatar"><%= Html.texto(inicialesPaciente) %></div>
             <div class="user-info">
-                <span class="user-name"><%= nombrePaciente %></span>
+                <span class="user-name"><%= Html.texto(nombrePaciente) %></span>
                 <span class="user-role">Paciente</span>
             </div>
             <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
@@ -116,7 +117,7 @@
                 <i data-lucide="bell" style="width: 16px; height: 16px;"></i>
                 <span>Avisos</span>
                 <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-avisos-count"><%= numNotifSinLeer %></span>
+                    <span class="badge-avisos-count"><%= Html.texto(numNotifSinLeer) %></span>
                 <% } %>
             </a>
         </header>
@@ -140,13 +141,13 @@
             <!-- TABS / PESTAÑAS DE FILTRO -->
             <div class="citas-tabs-nav">
                 <button type="button" class="citas-tab-btn active" id="tabBtnActivas" onclick="cambiarPestana('activas')">
-                    Activas / próximas (<%= citasActivas != null ? citasActivas.size() : 0 %>)
+                    Activas / próximas (<%= Html.texto(citasActivas != null ? citasActivas.size() : 0) %>)
                 </button>
                 <button type="button" class="citas-tab-btn" id="tabBtnPasadas" onclick="cambiarPestana('pasadas')">
                     Historial de citas pasadas
                 </button>
                 <button type="button" class="citas-tab-btn" id="tabBtnCanceladas" onclick="cambiarPestana('canceladas')">
-                    Canceladas y reprogramadas (<%= citasCanceladas != null ? citasCanceladas.size() : 0 %>)
+                    Canceladas y reprogramadas (<%= Html.texto(citasCanceladas != null ? citasCanceladas.size() : 0) %>)
                 </button>
             </div>
 
@@ -169,23 +170,23 @@
                                 <% for (Map<String, Object> c : citasActivas) { 
                                     String estado = (String) c.get("estado");
                                     boolean esConfirmada = "CONFIRMADA".equalsIgnoreCase(estado);
-                                    boolean esPendiente = "PENDIENTE".equalsIgnoreCase(estado) || "PENDIENTE_CONFIRMACION".equalsIgnoreCase(estado);
+                                    boolean esPendiente = "SOLICITADA".equalsIgnoreCase(estado) || "PENDIENTE".equalsIgnoreCase(estado) || "PENDIENTE_CONFIRMACION".equalsIgnoreCase(estado);
                                 %>
                                     <tr>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("fechaFormateada") %></span>
-                                            <span class="cell-secondary"><%= c.get("horaFormateada") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("fechaFormateada")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("horaFormateada")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("medico") %></span>
-                                            <span class="cell-secondary"><%= c.get("cmp") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("medico")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("cmp")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("especialidad") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("especialidad")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("sede") %></span>
-                                            <span class="cell-secondary"><%= c.get("consultorio") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("sede")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("consultorio")) %></span>
                                         </td>
                                         <td>
                                             <% if (esConfirmada) { %>
@@ -196,23 +197,23 @@
                                                 <form method="POST" action="${pageContext.request.contextPath}/paciente/historial" style="margin-top: 4px;">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                                     <input type="hidden" name="action" value="confirmar">
-                                                    <input type="hidden" name="idCita" value="<%= c.get("idCita") %>">
+                                                    <input type="hidden" name="idCita" value="<%= Html.texto(c.get("idCita")) %>">
                                                     <button type="submit" class="btn-confirmar-asistencia">Confirmar asistencia</button>
                                                 </form>
                                             <% } else { %>
-                                                <span class="badge-status confirmada"><%= estado %></span>
+                                                <span class="badge-status confirmada"><%= Html.texto(c.get("estadoTexto")) %></span>
                                             <% } %>
                                         </td>
                                         <td class="actions-cell">
-                                            <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver detalle</button>
+                                            <button type="button" class="action-link" data-cita="<%= Html.texto(c.get("id")) %>" data-medico="<%= Html.texto(c.get("medico")) %>" data-especialidad="<%= Html.texto(c.get("especialidad")) %>" data-fecha="<%= Html.texto(c.get("fechaFormateada") + " " + c.get("horaFormateada")) %>" data-sede="<%= Html.texto(c.get("sede")) %>" data-consultorio="<%= Html.texto(c.get("consultorio")) %>" onclick="abrirModalDetalle(this.dataset.cita,this.dataset.medico,this.dataset.especialidad,this.dataset.fecha,this.dataset.sede,this.dataset.consultorio)">Ver detalle</button>
                                             <% if (esConfirmada || esPendiente) { %>
-                                                <a href="${pageContext.request.contextPath}/paciente/reprogramar?idCita=<%= c.get("idCita") %>" class="action-link">Reprogramar</a>
+                                                <a href="${pageContext.request.contextPath}/paciente/reprogramar?idCita=<%= Html.texto(c.get("idCita")) %>" class="action-link">Reprogramar</a>
                                                 <button type="button" class="action-link danger btn-trigger-cancelar"
-                                                        data-id="<%= c.get("idCita") %>"
-                                                        data-especialidad="<%= c.get("especialidad") %>"
-                                                        data-medico="<%= c.get("medico") %>"
-                                                        data-fechahora="<%= c.get("fechaModal") != null ? c.get("fechaModal") : (c.get("fechaFormateada") + " · " + c.get("horaFormateada")) %>"
-                                                        data-sede="<%= c.get("sede") %> · <%= c.get("consultorio") %>">Cancelar</button>
+                                                        data-id="<%= Html.texto(c.get("idCita")) %>"
+                                                        data-especialidad="<%= Html.texto(c.get("especialidad")) %>"
+                                                        data-medico="<%= Html.texto(c.get("medico")) %>"
+                                                        data-fechahora="<%= Html.texto(c.get("fechaModal") != null ? c.get("fechaModal") : (c.get("fechaFormateada") + " · " + c.get("horaFormateada"))) %>"
+                                                        data-sede="<%= Html.texto(c.get("sede")) %> · <%= Html.texto(c.get("consultorio")) %>">Cancelar</button>
                                             <% } %>
                                         </td>
                                     </tr>
@@ -252,25 +253,25 @@
                                 <% for (Map<String, Object> c : historialPasadas) { %>
                                     <tr>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("fechaFormateada") %></span>
-                                            <span class="cell-secondary"><%= c.get("horaFormateada") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("fechaFormateada")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("horaFormateada")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("medico") %></span>
-                                            <span class="cell-secondary"><%= c.get("cmp") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("medico")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("cmp")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("especialidad") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("especialidad")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("sede") %></span>
-                                            <span class="cell-secondary"><%= c.get("consultorio") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("sede")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("consultorio")) %></span>
                                         </td>
                                         <td>
-                                            <span class="badge-status completada">Atendida</span>
+                                            <span class="badge-status completada"><%= Html.texto(c.get("estadoTexto")) %></span>
                                         </td>
                                         <td class="actions-cell">
-                                            <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver constancia</button>
+                                            <button type="button" class="action-link" data-cita="<%= Html.texto(c.get("id")) %>" data-medico="<%= Html.texto(c.get("medico")) %>" data-especialidad="<%= Html.texto(c.get("especialidad")) %>" data-fecha="<%= Html.texto(c.get("fechaFormateada") + " " + c.get("horaFormateada")) %>" data-sede="<%= Html.texto(c.get("sede")) %>" data-consultorio="<%= Html.texto(c.get("consultorio")) %>" onclick="abrirModalDetalle(this.dataset.cita,this.dataset.medico,this.dataset.especialidad,this.dataset.fecha,this.dataset.sede,this.dataset.consultorio)">Ver detalle</button>
                                         </td>
                                     </tr>
                                 <% } %>
@@ -308,19 +309,19 @@
                                 %>
                                     <tr>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("fechaFormateada") %></span>
-                                            <span class="cell-secondary"><%= c.get("horaFormateada") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("fechaFormateada")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("horaFormateada")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("medico") %></span>
-                                            <span class="cell-secondary"><%= c.get("cmp") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("medico")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("cmp")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("especialidad") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("especialidad")) %></span>
                                         </td>
                                         <td>
-                                            <span class="cell-primary"><%= c.get("sede") %></span>
-                                            <span class="cell-secondary"><%= c.get("consultorio") %></span>
+                                            <span class="cell-primary"><%= Html.texto(c.get("sede")) %></span>
+                                            <span class="cell-secondary"><%= Html.texto(c.get("consultorio")) %></span>
                                         </td>
                                         <td>
                                             <% if (esReprog) { %>
@@ -330,7 +331,7 @@
                                             <% } %>
                                         </td>
                                         <td class="actions-cell">
-                                            <button type="button" class="action-link" onclick="abrirModalDetalle('<%= c.get("id") %>', '<%= c.get("medico") %>', '<%= c.get("especialidad") %>', '<%= c.get("fechaFormateada") %> <%= c.get("horaFormateada") %>', '<%= c.get("sede") %>', '<%= c.get("consultorio") %>')">Ver detalle</button>
+                                            <button type="button" class="action-link" data-cita="<%= Html.texto(c.get("id")) %>" data-medico="<%= Html.texto(c.get("medico")) %>" data-especialidad="<%= Html.texto(c.get("especialidad")) %>" data-fecha="<%= Html.texto(c.get("fechaFormateada") + " " + c.get("horaFormateada")) %>" data-sede="<%= Html.texto(c.get("sede")) %>" data-consultorio="<%= Html.texto(c.get("consultorio")) %>" onclick="abrirModalDetalle(this.dataset.cita,this.dataset.medico,this.dataset.especialidad,this.dataset.fecha,this.dataset.sede,this.dataset.consultorio)">Ver detalle</button>
                                             <a href="${pageContext.request.contextPath}/paciente/citas" class="action-link">Reagendar</a>
                                         </td>
                                     </tr>

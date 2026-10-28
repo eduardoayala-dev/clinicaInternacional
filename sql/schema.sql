@@ -18,6 +18,9 @@ DROP TABLE IF EXISTS reasignacion_inteligente;
 DROP TABLE IF EXISTS notificacion;
 DROP TABLE IF EXISTS historial_asistencia;
 DROP TABLE IF EXISTS lista_espera;
+DROP TABLE IF EXISTS atencion_cita;
+DROP TABLE IF EXISTS inasistencia_cita;
+DROP TABLE IF EXISTS admision_cita;
 DROP TABLE IF EXISTS cita;
 DROP TABLE IF EXISTS disponibilidad;
 DROP TABLE IF EXISTS motivo_cita;
@@ -164,7 +167,7 @@ CREATE TABLE cita (
     id_disponibilidad INT NOT NULL,
     id_motivo INT DEFAULT NULL,
     fecha_hora DATETIME NOT NULL,
-    estado ENUM('SOLICITADA', 'CONFIRMADA', 'EN_SALA', 'ATENDIDA', 'NO_ASISTIO', 'REPROGRAMADA', 'CANCELADA') DEFAULT 'SOLICITADA',
+    estado ENUM('SOLICITADA', 'CONFIRMADA', 'EN_SALA', 'EN_ATENCION', 'ATENDIDA', 'NO_ATENDIDA', 'NO_ASISTIO', 'REPROGRAMADA', 'CANCELADA') DEFAULT 'SOLICITADA',
     nivel_urgencia ENUM('ALTA', 'MEDIA', 'BAJA') DEFAULT 'BAJA',
     fecha_recomendada_proxima DATE DEFAULT NULL,
     riesgo_cancelacion ENUM('BAJO', 'MEDIO', 'ALTO', 'SIN_HISTORIAL') DEFAULT 'SIN_HISTORIAL',
@@ -218,6 +221,44 @@ CREATE TABLE notificacion (
 -- -----------------------------------------------------------------------------
 -- 13. CLASE/TABLA: historial (historial_asistencia)
 -- -----------------------------------------------------------------------------
+CREATE TABLE admision_cita (
+    id_cita INT PRIMARY KEY,
+    id_usuario_personal INT NOT NULL,
+    fecha_llegada DATETIME NOT NULL,
+    tolerancia_minutos SMALLINT NOT NULL,
+    llego_tarde BOOLEAN NOT NULL,
+    CONSTRAINT fk_admision_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_admision_usuario FOREIGN KEY (id_usuario_personal) REFERENCES usuario(id_usuario)
+) ENGINE=InnoDB;
+
+CREATE TABLE atencion_cita (
+    id_cita INT PRIMARY KEY,
+    id_medico INT NOT NULL,
+    id_paciente INT NOT NULL,
+    fecha_inicio DATETIME NULL,
+    fecha_fin DATETIME NULL,
+    motivo_no_atencion VARCHAR(200) NULL,
+    medico_activo INT GENERATED ALWAYS AS (CASE WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NULL THEN id_medico ELSE NULL END),
+    paciente_activo INT GENERATED ALWAYS AS (CASE WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NULL THEN id_paciente ELSE NULL END),
+    CONSTRAINT uk_atencion_medico_activo UNIQUE (medico_activo),
+    CONSTRAINT uk_atencion_paciente_activo UNIQUE (paciente_activo),
+    CONSTRAINT fk_atencion_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_atencion_medico FOREIGN KEY (id_medico) REFERENCES medico(id_medico),
+    CONSTRAINT fk_atencion_paciente FOREIGN KEY (id_paciente) REFERENCES paciente(id_paciente),
+    CONSTRAINT ck_atencion_fechas CHECK (fecha_inicio IS NOT NULL OR fecha_fin IS NOT NULL),
+    CONSTRAINT ck_atencion_orden CHECK (fecha_inicio IS NULL OR fecha_fin IS NULL OR fecha_fin >= fecha_inicio)
+) ENGINE=InnoDB;
+
+CREATE TABLE inasistencia_cita (
+    id_cita INT PRIMARY KEY,
+    id_usuario_personal INT NOT NULL,
+    fecha_registro DATETIME NOT NULL,
+    motivo VARCHAR(200) NOT NULL,
+    tolerancia_minutos SMALLINT NOT NULL,
+    CONSTRAINT fk_inasistencia_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_inasistencia_usuario FOREIGN KEY (id_usuario_personal) REFERENCES usuario(id_usuario)
+) ENGINE=InnoDB;
+
 CREATE TABLE historial_asistencia (
     id_historial INT AUTO_INCREMENT PRIMARY KEY,
     id_paciente INT NOT NULL,
