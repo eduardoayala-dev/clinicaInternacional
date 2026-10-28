@@ -118,7 +118,7 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') AND c.fecha_hora >= CURRENT_TIMESTAMP() " +
+                     "WHERE c.id_paciente = ? AND c.estado IN ('SOLICITADA','CONFIRMADA','EN_SALA','EN_ATENCION') " +
                      "ORDER BY c.fecha_hora ASC";
         return ejecutarConsultaCitas(sql, idPaciente);
     }
@@ -132,11 +132,10 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND (c.estado = 'COMPLETADA' OR (c.estado NOT IN ('CANCELADA', 'REPROGRAMADA') AND c.fecha_hora < CURRENT_TIMESTAMP())) " +
+                     "WHERE c.id_paciente = ? AND c.estado IN ('ATENDIDA','NO_ASISTIO','NO_ATENDIDA') " +
                      "ORDER BY c.fecha_hora DESC";
         List<Map<String, Object>> list = ejecutarConsultaCitas(sql, idPaciente);
         for (Map<String, Object> c : list) {
-            c.put("diagnostico", "Consulta ambulatoria realizada");
             c.put("tipo", "Consulta");
         }
         return list;
@@ -206,11 +205,21 @@ public class CitaDAO {
         map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
         map.put("cmp", normalizarCmp(rs.getString("cmp")));
         map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
-        map.put("consultorio", "Consultorio " + (100 + (idCita % 300)));
+        map.put("consultorio", "Sin asignar");
         map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
         map.put("modalidad", "Presencial");
         String est = rs.getString("estado");
         map.put("estado", est != null ? est : ESTADO_CONFIRMADA);
+        map.put("estadoTexto", switch(est == null ? "" : est) {
+            case "EN_ATENCION" -> "En atención";
+            case "NO_ATENDIDA" -> "No atendida";
+            case "NO_ASISTIO" -> "No asistió";
+            case "ATENDIDA" -> "Atendida";
+            case "EN_SALA" -> "En sala";
+            case ESTADO_SOLICITADA -> "Solicitada";
+            case ESTADO_CONFIRMADA -> "Confirmada";
+            default -> est == null ? "Sin registrar" : est;
+        });
         return map;
     }
 
@@ -278,7 +287,6 @@ public class CitaDAO {
         if (idCita <= 0 || nuevoEstado == null) return false;
         String anterior = switch (nuevoEstado) {
             case ESTADO_CONFIRMADA, ESTADO_CANCELADA -> ESTADO_SOLICITADA;
-            case "EN_SALA" -> ESTADO_CONFIRMADA;
             default -> null;
         };
         if (anterior == null) return false;
@@ -327,6 +335,10 @@ public class CitaDAO {
         try { return actualizarAtencionMedicaValidada(cita,medico,estado,prioridad,fecha,indicaciones); }
         catch(AgendaException e) { return false; }
     }
+
+    public boolean iniciarAtencionMedica(int cita,int medico) { return portalMedico().iniciar(medico,cita); }
+    public boolean registrarNoAtencionMedica(int cita,int medico,String motivo) { return portalMedico().noAtender(medico,cita,motivo); }
+    public int obtenerAtencionActivaMedico(int medico) { return portalMedico().activa(medico); }
 
     public boolean actualizarAtencionMedicaValidada(int cita,int medico,String estado,String prioridad,String fecha,String indicaciones) {
         return portalMedico().guardar(medico,cita,estado,prioridad,fecha,indicaciones);

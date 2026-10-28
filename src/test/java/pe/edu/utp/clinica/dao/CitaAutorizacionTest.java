@@ -26,8 +26,12 @@ class CitaAutorizacionTest {
             @Override protected java.time.Clock relojClinico() { return reloj(); }
         };
         try (Connection conn = abrir(); Statement st = conn.createStatement()) {
+            st.execute("DROP TABLE IF EXISTS atencion_cita");
+            st.execute("DROP TABLE IF EXISTS inasistencia_cita");
             st.execute("DROP TABLE IF EXISTS reasignacion_inteligente");
             st.execute("DROP TABLE IF EXISTS historial_asistencia");
+            st.execute("DROP TABLE IF EXISTS admision_cita");
+            st.execute("DROP TABLE IF EXISTS personal_administrativo");
             st.execute("DROP TABLE IF EXISTS cita");
             st.execute("DROP TABLE IF EXISTS motivo_cita");
             st.execute("DROP TABLE IF EXISTS disponibilidad");
@@ -44,6 +48,12 @@ class CitaAutorizacionTest {
             st.execute("CREATE TABLE disponibilidad(id_disponibilidad INT PRIMARY KEY,id_medico INT,id_sede INT,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR(20))");
             st.execute("CREATE TABLE motivo_cita(id_motivo INT PRIMARY KEY,descripcion VARCHAR(255))");
             st.execute("CREATE TABLE cita(id_cita INT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora DATETIME,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20),fecha_recomendada_proxima DATE,fecha_creacion DATETIME,FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente),FOREIGN KEY(id_medico) REFERENCES medico(id_medico))");
+            st.execute("CREATE TABLE personal_administrativo(id_personal INT PRIMARY KEY,id_usuario INT,id_sede INT,FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario))");
+            st.execute("CREATE TABLE admision_cita(id_cita INT PRIMARY KEY,id_usuario_personal INT NOT NULL,fecha_llegada DATETIME NOT NULL,tolerancia_minutos SMALLINT NOT NULL,llego_tarde BOOLEAN NOT NULL,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_personal) REFERENCES usuario(id_usuario))");
+            String migracion = java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V004__flujo_atencion.sql"));
+            for (String sentencia : migracion.split(";")) {
+                if (sentencia.strip().startsWith("CREATE TABLE")) st.execute(sentencia.replace(") ENGINE=InnoDB", ")"));
+            }
             st.execute("CREATE TABLE historial_asistencia(id_historial INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_cita INT,asistio BOOLEAN,observacion VARCHAR(255),fecha_registro DATETIME,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente))");
             st.execute("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_cita_asignada INT,estado VARCHAR(20),FOREIGN KEY(id_cita_asignada) REFERENCES cita(id_cita))");
             st.execute("INSERT INTO usuario(id_usuario,nombres,apellidos,email,rol) VALUES(10,'Paciente','Uno','p@test','PACIENTE'),(20,'Medico','Uno','m@test','MEDICO'),(30,'Medico','Dos','m2@test','MEDICO')");
@@ -59,6 +69,16 @@ class CitaAutorizacionTest {
         try (Connection c = abrir(); Statement s = c.createStatement(); var rs = s.executeQuery(query)) {
             rs.next(); return rs.getInt(1);
         }
+    }
+
+    protected void iniciarAtencionFixture() throws Exception {
+        try (Connection c = abrir(); Statement st = c.createStatement()) {
+            st.execute("INSERT INTO usuario(id_usuario,nombres,rol) VALUES(99,'Admisión de prueba','PERSONAL_ADMINISTRATIVO')");
+            st.execute("INSERT INTO personal_administrativo(id_personal,id_usuario,id_sede) VALUES(99,99,1)");
+            st.execute("INSERT INTO admision_cita(id_cita,id_usuario_personal,fecha_llegada,tolerancia_minutos,llego_tarde) VALUES(7,99,'2026-10-28 08:55:00',10,FALSE)");
+            st.execute("UPDATE cita SET estado='EN_SALA' WHERE id_cita=7");
+        }
+        assertTrue(dao.iniciarAtencionMedica(7,1));
     }
 
     @Test void patientCannotCancelAnotherPatientsAppointment() throws Exception {
@@ -92,6 +112,7 @@ class CitaAutorizacionTest {
     }
 
     @Test void assignedDoctorUpdatesAppointmentAndHistoryOnce() throws Exception {
+        iniciarAtencionFixture();
         assertTrue(dao.actualizarAtencionMedica(7, 1, "ATENDIDA", "ALTA", "2026-12-01", "control"));
         assertFalse(dao.actualizarAtencionMedica(7, 1, "ATENDIDA", "ALTA", null, "repetido"));
         assertEquals(1, count("SELECT COUNT(*) FROM historial_asistencia WHERE asistio=TRUE"));
@@ -99,11 +120,12 @@ class CitaAutorizacionTest {
     }
 
     @Test void historyFailureRollsBackAppointment() throws Exception {
+        iniciarAtencionFixture();
         try (Connection c = abrir(); Statement s = c.createStatement()) {
             s.execute("DROP TABLE historial_asistencia");
         }
         assertFalse(dao.actualizarAtencionMedica(7, 1, "ATENDIDA", "ALTA", null, "control"));
-        assertEquals(1, count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA' AND nivel_urgencia='MEDIA'"));
+        assertEquals(1, count("SELECT COUNT(*) FROM cita WHERE estado='EN_ATENCION' AND nivel_urgencia='MEDIA'"));
     }
 
     @Test void invalidPriorityOrDateDoesNotModifyAppointment() throws Exception {
@@ -113,10 +135,11 @@ class CitaAutorizacionTest {
     }
 
     @Test void missingIdentitiesNeverResolveToOneOrCreatePatient() throws Exception {
+        int pacientesAntes = count("SELECT COUNT(*) FROM paciente");
         assertEquals(-1, dao.obtenerIdMedicoPorUsuarioId(999));
         assertEquals(-1, dao.obtenerIdUsuarioPorPacienteId(999));
         assertEquals(-1, dao.obtenerIdPacientePorUsuarioId(20));
-        assertEquals(1, count("SELECT COUNT(*) FROM paciente"));
+        assertEquals(pacientesAntes, count("SELECT COUNT(*) FROM paciente"));
     }
 
     @Test void reservationWithMissingPatientNeverFallsBackToPatientOne() throws Exception {

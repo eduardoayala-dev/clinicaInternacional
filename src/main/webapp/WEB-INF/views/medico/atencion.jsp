@@ -149,6 +149,24 @@
                     </div>
                 </div>
 
+                <div class="med-atencion-card">
+                    <p>Llegada: <strong><%= Html.texto(cita.get("horaLlegada")) %></strong> · Inicio: <strong><%= Html.texto(cita.get("inicioTexto")) %></strong> · Cierre: <strong><%= Html.texto(cita.get("finTexto")) %></strong></p>
+                    <% if (cita.get("esperaMinutos") != null) { %><p>Espera registrada: <%= Html.texto(((Number)cita.get("esperaMinutos")).longValue()==0?"Menos de 1 min":cita.get("esperaMinutos")+" min") %></p><% } %>
+                    <% if (cita.get("duracionMinutos") != null) { %><p>Duración de consulta: <%= Html.texto(((Number)cita.get("duracionMinutos")).longValue()==0?"Menos de 1 min":cita.get("duracionMinutos")+" min") %></p><% } %>
+                    <% if (Boolean.TRUE.equals(cita.get("puedeIniciar"))) { %>
+                        <form id="formIniciarAtencion" method="POST" action="${pageContext.request.contextPath}/medico/atencion">
+                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                            <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
+                            <input type="hidden" name="accion" value="iniciar">
+                            <button class="med-btn-guardar" type="submit">Iniciar atención</button>
+                        </form>
+                    <% } else if ("EN_SALA".equals(estadoCita)) { %>
+                        <p>Para iniciar, la cita debe ser de hoy, tener llegada registrada y el médico y paciente deben estar libres de otra consulta activa.</p>
+                    <% } %>
+                    <% if ("EN_ATENCION".equals(estadoCita)) { %><p>Consulta en curso. Completa la indicación antes de finalizar.</p><% } %>
+                    <% if ("NO_ATENDIDA".equals(estadoCita)) { %><p>Motivo de no atención: <strong><%= Html.texto(cita.get("motivoNoAtencion")) %></strong></p><% } %>
+                </div>
+
                 <form id="formAtencion" action="${pageContext.request.contextPath}/medico/atencion" method="POST">
 <fieldset class="med-atencion-fieldset" <%= Html.texto(Boolean.TRUE.equals(cita.get("editable")) ? "" : "disabled") %>>
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
@@ -237,15 +255,11 @@
                         </div>
 
                         <div class="med-control-action-bar">
-                            <button type="submit" form="formInasistencia" class="med-btn-no-presento" onclick="return confirm('¿Confirmar la inasistencia de este paciente?')">
-                                No se presentó al llamado
-                            </button>
-
                             <div class="med-estado-recepcion-card">
                                 <i data-lucide="edit-3"></i>
                                 <div>
                                     <div class="med-estado-recepcion-title">Estado actual: <%= Html.texto(cita.get("estadoTexto")) %></div>
-                                    <div class="med-estado-recepcion-desc">El registro solo se puede cerrar el día de la cita, a partir de su hora.</div>
+                                    <div class="med-estado-recepcion-desc">La atención debe iniciarse antes de guardar el cierre. Las consultas cerradas quedan en solo lectura.</div>
                                 </div>
                             </div>
                         </div>
@@ -312,7 +326,7 @@
                             <span class="med-char-counter" id="charCounter">0 / 200 caracteres</span>
                         </div>
 
-                        <textarea name="indicaciones" id="indicacionesTextarea" class="med-textarea-atencion" maxlength="200" oninput="actualizarContador(this)"><%= Html.texto(cita.get("indicaciones")) %></textarea>
+                        <textarea required name="indicaciones" id="indicacionesTextarea" class="med-textarea-atencion" maxlength="200" oninput="actualizarContador(this)"><%= Html.texto(cita.get("indicaciones")) %></textarea>
 
                         <div class="med-disclaimer">
                             <i data-lucide="info"></i>
@@ -327,15 +341,20 @@
                         </button>
                         <button type="submit" class="med-btn-guardar">
                             <i data-lucide="save"></i>
-                            Guardar registro de atención
+                            Finalizar atención
                         </button>
                     </div>
                 </fieldset></form>
-                <form id="formInasistencia" method="POST" action="${pageContext.request.contextPath}/medico/atencion">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                    <input type="hidden" name="accion" value="no_asistio">
-                    <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
-                </form>
+                <% if (Boolean.TRUE.equals(cita.get("puedeNoAtender"))) { %>
+                    <form id="formNoAtendida" class="med-atencion-card" method="POST" action="${pageContext.request.contextPath}/medico/atencion" onsubmit="return confirm('¿Confirmar que esta cita termina sin atención completa?')">
+                        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                        <input type="hidden" name="accion" value="no_atender">
+                        <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
+                        <label class="med-field-label" for="motivoNoAtencion">Motivo de no atención</label>
+                        <textarea required minlength="3" maxlength="200" id="motivoNoAtencion" name="motivo" class="med-textarea-atencion"></textarea>
+                        <button type="submit" class="med-btn-no-presento">Registrar como no atendida</button>
+                    </form>
+                <% } %>
 
             <% } else { %>
 
@@ -354,7 +373,7 @@
                         No hay ningún paciente en atención en este momento
                     </h2>
                     <p style="font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 24px auto; line-height: 1.5;">
-                        Para iniciar una atención, diríjase a su lista de citas del turno o agenda y seleccione al paciente admitido en recepción mediante la opción <strong>«Atender ahora»</strong>.
+                        Para iniciar una atención, diríjase a su lista de citas del turno o agenda y seleccione al paciente admitido en recepción mediante la opción <strong>«Ver ficha»</strong> y luego <strong>«Iniciar atención»</strong>.
                     </p>
                     <div style="display: flex; justify-content: center; gap: 12px;">
                         <a href="${pageContext.request.contextPath}/medico/inicio" class="med-btn-guardar" style="text-decoration: none;">

@@ -82,10 +82,16 @@ abstract class MedicoPortalServlet extends HttpServlet {
         int enSala=0;
         int pendientes=0;
         int inasistencias=0;
+        int enAtencion=0;
+        var espera=new java.util.LongSummaryStatistics();
+        var duracion=new java.util.LongSummaryStatistics();
         Map<String,Object> pacienteEnSala=null;
         for(var cita:agenda){
             String estado=String.valueOf(cita.get("estado"));
+            acumular(espera,cita.get("esperaMinutos"));
+            acumular(duracion,cita.get("duracionMinutos"));
             if("ATENDIDA".equals(estado)) atendidos++;
+            else if("EN_ATENCION".equals(estado)) enAtencion++;
             else if("EN_SALA".equals(estado)){
                 enSala++;
                 if(pacienteEnSala==null) pacienteEnSala=cita;
@@ -96,7 +102,17 @@ abstract class MedicoPortalServlet extends HttpServlet {
         request.setAttribute("fechaActual",fecha.toString());request.setAttribute("fechaHoyStr",fecha.toString());
         request.setAttribute("totalCitas",agenda.size());request.setAttribute("totalAsignados",agenda.size());
         request.setAttribute("atendidos",atendidos);request.setAttribute("enEspera",enSala);request.setAttribute("pendientes",pendientes);
-        request.setAttribute("pendientesRestantes",pendientes+enSala);request.setAttribute("inasistencias",inasistencias);
+        request.setAttribute("pendientesRestantes",pendientes+enSala+enAtencion);request.setAttribute("inasistencias",inasistencias);
         request.setAttribute("pacienteEnSala",pacienteEnSala);
+        request.setAttribute("enAtencion",enAtencion);
+        request.setAttribute("esperaPromedioMinutos",promedio(espera));
+        request.setAttribute("duracionPromedioMinutos",promedio(duracion));
     }
+    private static void acumular(java.util.LongSummaryStatistics estadistica,Object valor){
+        if(valor instanceof Number minutos) estadistica.accept(minutos.longValue());
+    }
+    private static Double promedio(java.util.LongSummaryStatistics estadistica){
+        return estadistica.getCount()==0?null:Math.round(10.0*estadistica.getSum()/estadistica.getCount())/10.0;
+    }
+
 }

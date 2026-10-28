@@ -49,10 +49,24 @@ test('las cuatro vistas protegen su salida y cargan la hoja de estilos del porta
         assert.doesNotMatch(jsp, /Dr\. Carlos Mendoza|Penicilina|2027-01-15|Consultorio 102|LLEGO_TARDE|idx ==|i == 2/);
     }
 });
-test('la inasistencia usa un formulario propio con sesión y cita, sin alterar el seguimiento', () => {
+test('iniciar y no atender tienen formularios propios protegidos; la inasistencia corresponde a admisión', () => {
     const jsp = fs.readFileSync('src/main/webapp/WEB-INF/views/medico/atencion.jsp', 'utf8');
-    const form = jsp.match(/<form id="formInasistencia"[\s\S]*?<\/form>/)[0];
-    assert.match(form, /name="csrfToken"/); assert.match(form, /name="idCita"/); assert.match(form, /name="accion" value="no_asistio"/);
-    assert.doesNotMatch(form, /name="prioridad"|name="fechaProxima"|name="indicaciones"/);
-    assert.match(jsp, /form="formInasistencia"/);
+    for (const [id, accion] of [['formIniciarAtencion', 'iniciar'], ['formNoAtendida', 'no_atender']]) {
+        const form = jsp.match(new RegExp('<form id="'+id+'"[\\s\\S]*?<\\/form>'))[0];
+        assert.match(form, /name="csrfToken"/); assert.match(form, /name="idCita"/);
+        assert.ok(form.includes('value="'+accion+'"'));
+        assert.doesNotMatch(form, /name="prioridad"|name="fechaProxima"|name="indicaciones"/);
+    }
+    assert.doesNotMatch(jsp, /formInasistencia|value="no_asistio"/);
+    assert.match(jsp, /name="motivo"/);
+});
+
+test('el historial muestra resultados reales y protege los nombres al abrir el detalle', () => {
+    const jsp = fs.readFileSync('src/main/webapp/WEB-INF/views/paciente/historial.jsp', 'utf8');
+    for (const expression of jsp.matchAll(/<%=([\s\S]*?)%>/g)) assert.match(expression[1].trim(), /^Html\.texto\(/);
+    assert.doesNotMatch(jsp, /Ver constancia|abrirModalDetalle\('\s*<%=/);
+    assert.match(jsp, /data-medico=/); assert.match(jsp, /this\.dataset\.medico/);
+    for (const script of jsp.matchAll(/<script>([\s\S]*?)<\/script>/g)) {
+        assert.doesNotThrow(() => new vm.Script(script[1].replace(/<%[\s\S]*?%>/g, '0').replace(/\$\{[^}]*\}/g, '')));
+    }
 });

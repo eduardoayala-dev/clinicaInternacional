@@ -17,7 +17,8 @@ public class MedicoAtencionServlet extends MedicoPortalServlet {
         String valor=request.getParameter(ID_CITA);
         Map<String,Object> detalle=Map.of();
         int id=-1;
-        if(valor!=null){id=positivo(valor);detalle=citas.obtenerDetalleCitaMedico(id,contexto.medico());if(detalle.isEmpty()) throw inexistente();}
+        id=valor==null?citas.obtenerAtencionActivaMedico(contexto.medico()):positivo(valor);
+        if(id>0){detalle=citas.obtenerDetalleCitaMedico(id,contexto.medico());if(detalle.isEmpty()) throw inexistente();}
         if(json(request)){ApiJson.write(response,200,new ApiResponse<>("ATENCION_MEDICA_OBTENIDA","Consulta completada.",detalle.isEmpty()?null:detalle));return;}
         request.setAttribute(ID_CITA,id);request.setAttribute("cita",detalle);
         request.getRequestDispatcher("/WEB-INF/views/medico/atencion.jsp").forward(request,response);
@@ -25,8 +26,13 @@ public class MedicoAtencionServlet extends MedicoPortalServlet {
     @Override protected void ejecutar(HttpServletRequest request,HttpServletResponse response,Contexto contexto)throws IOException{
         int id=positivo(request.getParameter(ID_CITA));
         String accion=request.getParameter("accion");
-        if(!"guardar".equals(accion) && !"no_asistio".equals(accion)) throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");
-        boolean ok=citas.actualizarAtencionMedicaValidada(id,contexto.medico(),"guardar".equals(accion)?"ATENDIDA":"NO_ASISTIO",request.getParameter("prioridad"),request.getParameter("fechaProxima"),request.getParameter("indicaciones"));
+        boolean ok=switch(accion==null?"":accion){
+            case "iniciar" -> citas.iniciarAtencionMedica(id,contexto.medico());
+            case "guardar" -> citas.actualizarAtencionMedicaValidada(id,contexto.medico(),"ATENDIDA",request.getParameter("prioridad"),request.getParameter("fechaProxima"),request.getParameter("indicaciones"));
+            case "no_atender" -> citas.registrarNoAtencionMedica(id,contexto.medico(),request.getParameter("motivo"));
+            case "no_asistio" -> throw new AgendaException(403,"ACCION_NO_PERMITIDA","La inasistencia corresponde a admisión. Para un paciente que llegó, registra No atendida con un motivo.");
+            default -> throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");
+        };
         if(!ok) throw inexistente();
         if(json(request)) ApiJson.write(response,200,new ApiResponse<>("ATENCION_REGISTRADA","El registro se guardó correctamente.",Map.of(ID_CITA,id)));
         else response.sendRedirect(request.getContextPath()+"/medico/atencion?idCita="+id);

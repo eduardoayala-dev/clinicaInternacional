@@ -17,8 +17,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoPortalServletTest {
     private static class Dao extends CitaDAO {
+        int activa=-1;
         int medico,escrituras,consultas;LocalDate fecha;AgendaException fallo;
         List<Map<String,Object>> agenda=List.of();
+        @Override public int obtenerAtencionActivaMedico(int medico){return activa;}
+        @Override public boolean iniciarAtencionMedica(int cita,int medico){escrituras++;this.medico=medico;return true;}
+        @Override public boolean registrarNoAtencionMedica(int cita,int medico,String motivo){escrituras++;this.medico=medico;return true;}
         @Override public Map<String,Object> obtenerPerfilPortalMedico(int usuario){
             consultas++;if(fallo!=null) throw fallo;
             assertEquals(20,usuario);return Map.of("idMedico",8,"nombreMedico","Médico de prueba","especialidad","General","sedeNombre","Central");
@@ -70,6 +74,18 @@ class MedicoPortalServletTest {
         atencion(dao).doPost(x.request,x.response);assertEquals(8,dao.medico);assertEquals(200,x.status);assertEquals(1,dao.escrituras);
         assertEquals(7,new ObjectMapper().readTree(x.body.toString()).get("data").get("idCita").asInt());
     }
+    @Test void startAndNoAttentionUseSessionIdentityAndAbsenceIsForbidden(){
+        for(String accion:List.of("iniciar","no_atender")){
+            var x=request();var dao=new Dao();x.method="POST";x.parameters.putAll(Map.of("accion",accion,"idCita","7","idMedico","999","motivo","Motivo comprobado"));
+            atencion(dao).doPost(x.request,x.response);assertEquals(200,x.status);assertEquals(8,dao.medico);assertEquals(1,dao.escrituras);
+        }
+        var x=request();var dao=new Dao();x.method="POST";x.parameters.putAll(Map.of("accion","no_asistio","idCita","7"));
+        atencion(dao).doPost(x.request,x.response);assertEquals(403,x.status);assertEquals(0,dao.escrituras);
+    }
+    @Test void currentAttentionWithoutIdResumesTheAssignedDoctorsRecord(){
+        var x=request();var dao=new Dao();dao.activa=7;atencion(dao).doGet(x.request,x.response);
+        assertEquals(200,x.status);assertEquals(8,dao.medico);assertEquals(0,dao.escrituras);
+    }
     @Test void malformedIdAndInvalidActionNeverReachWrites(){
         for(String id:List.of("0","-1","abc","2147483648")){var x=request();var dao=new Dao();x.method="POST";x.parameters.putAll(Map.of("accion","guardar","idCita",id));atencion(dao).doPost(x.request,x.response);assertEquals(400,x.status);assertEquals(0,dao.escrituras);}
     }
@@ -78,6 +94,17 @@ class MedicoPortalServletTest {
         var s=new MedicoInicioServlet(){@Override protected CitaDAO crearCitaDAO(){return dao;}};s.init();s.doGet(x.request,x.response);
         var data=new ObjectMapper().readTree(x.body.toString()).get("data");
         assertEquals(0,data.get("enEspera").asInt());assertTrue(data.get("pacienteEnSala").isNull());assertEquals(1,data.get("pendientes").asInt());assertEquals(1,data.get("inasistencias").asInt());
+    }
+    @Test void averagesUseOnlyRegisteredTimes()throws Exception{
+        var x=request();var dao=new Dao();dao.agenda=List.of(
+            Map.of("estado","EN_ATENCION","esperaMinutos",5L),
+            Map.of("estado","ATENDIDA","esperaMinutos",15L,"duracionMinutos",20L),
+            Map.of("estado","NO_ASISTIO"));
+        var s=new MedicoInicioServlet(){@Override protected CitaDAO crearCitaDAO(){return dao;}};s.init();s.doGet(x.request,x.response);
+        var data=new ObjectMapper().readTree(x.body.toString()).get("data");
+        assertEquals(1,data.get("enAtencion").asInt());
+        assertEquals(10.0,data.get("esperaPromedioMinutos").asDouble());
+        assertEquals(20.0,data.get("duracionPromedioMinutos").asDouble());
     }
     @Test void csvAndPrintOnlyExportOwnAgendaAndEscapeValues(){
         var x=request();var dao=new Dao();dao.agenda=List.of(Map.of("idCita",7,"paciente","<script>alert(1)</script>","dni","=1+1"));

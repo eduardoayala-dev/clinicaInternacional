@@ -14,7 +14,7 @@ public class MedicoInicioServlet extends MedicoPortalServlet {
         agenda(request,contexto,LocalDate.now(reloj()));
         if(json(request)){
             var data=new java.util.LinkedHashMap<String,Object>();
-            for(String campo:new String[]{"agenda","totalCitas","atendidos","enEspera","pendientes","inasistencias","pacienteEnSala"}) data.put(campo,request.getAttribute(campo));
+            for(String campo:new String[]{"agenda","totalCitas","atendidos","enEspera","pendientes","inasistencias","pacienteEnSala","enAtencion","esperaPromedioMinutos","duracionPromedioMinutos"}) data.put(campo,request.getAttribute(campo));
             ApiJson.write(response,200,new ApiResponse<>("INICIO_MEDICO_OBTENIDO","Consulta completada.",data));
         }else request.getRequestDispatcher("/WEB-INF/views/medico/inicio.jsp").forward(request,response);
     }

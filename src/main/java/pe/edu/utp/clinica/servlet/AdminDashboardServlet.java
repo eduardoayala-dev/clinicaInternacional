@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.config.DatabaseConfig;
 import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.dao.AdmisionCitaDAO;
 import pe.edu.utp.clinica.dao.AgendaCitaDAO;
 import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.dao.MedicoDAO;
@@ -31,6 +32,9 @@ import java.util.*;
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
+    private static final String USUARIO_LOGUEADO = "usuarioLogueado";
+    private static final String FLASH_MESSAGE = "flashMessage";
+    private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
     private static final String ID_MEDICO = "idMedico";
     private static final String ID_SEDE = "idSede";
     private static final String FECHA_HORA = "fecha_hora";
@@ -38,23 +42,25 @@ public class AdminDashboardServlet extends HttpServlet {
 
     private CitaDAO citaDAO;
     private UsuarioDAO usuarioDAO;
+    private transient AdmisionCitaDAO admisionDAO;
 
     @Override
     public void init() throws ServletException {
         this.citaDAO = new CitaDAO();
         this.usuarioDAO = new UsuarioDAO();
+        this.admisionDAO = new AdmisionCitaDAO();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("usuarioLogueado") == null) {
+        if (session == null || session.getAttribute(USUARIO_LOGUEADO) == null) {
             response.sendRedirect(request.getContextPath() + "/login/personal?error=acceso_denegado");
             return;
         }
 
-        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        Usuario usuario = (Usuario) session.getAttribute(USUARIO_LOGUEADO);
         if ("ADMINISTRADOR".equals(usuario.getRol())) {
             response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
             return;
@@ -68,6 +74,7 @@ public class AdminDashboardServlet extends HttpServlet {
         String nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
         request.setAttribute("nombrePersonal", nombrePersonal);
 
+        try {
         switch (path) {
             case "/admin/medicos":
                 cargarDatosMedicos(request);
@@ -92,10 +99,14 @@ public class AdminDashboardServlet extends HttpServlet {
                 request.getRequestDispatcher("/WEB-INF/views/admin/dashboard.jsp").forward(request, response);
                 break;
         }
+        } catch (AgendaException e) {
+            responderError(response,e.status(),e.getMessage());
+        }
     }
 
     private void cargarDatosDashboardInicio(HttpServletRequest request) {
-        List<Map<String, Object>> citas = obtenerCitasSalaEsperaBD();
+        Usuario usuario = (Usuario) request.getSession(false).getAttribute(USUARIO_LOGUEADO);
+        List<Map<String, Object>> citas = obtenerCitasSalaEsperaBD(usuario.getIdUsuario());
         request.setAttribute("listaCitas", citas);
 
         int totalCitasBD = 0;
@@ -286,63 +297,18 @@ public class AdminDashboardServlet extends HttpServlet {
             throws ServletException, IOException {
         String action = request.getParameter("action");
 
+        HttpSession session = request.getSession(false);
+        if (session == null || !(session.getAttribute(USUARIO_LOGUEADO) instanceof Usuario usuario)
+                || !"PERSONAL_ADMINISTRATIVO".equals(usuario.getRol())) {
+            responderError(response,403,"Ingresa con una cuenta de admisión.");
+            return;
+        }
         if ("admitir_cita".equals(action)) {
             try {
-                int idCita = Integer.parseInt(request.getParameter("idCita"));
-                citaDAO.actualizarEstadoCita(idCita, "EN_SALA");
-
-                String pacNom = "Paciente";
-                int idUsuarioPac = 1;
-                int idPaciente = 1;
-                int idMedico = 1;
-                String horaCita = "09:00";
-
-                String qInfo = "SELECT u_pac.nombres AS pac_nom, u_pac.apellidos AS pac_ape, p.id_usuario, p.id_paciente, " +
-                               "c.id_medico, c.fecha_hora " +
-                               "FROM cita c " +
-                               "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                               "JOIN usuario u_pac ON p.id_usuario = u_pac.id_usuario " +
-                               "WHERE c.id_cita = ?";
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement(qInfo)) {
-                    ps.setInt(1, idCita);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            pacNom = rs.getString("pac_nom") + " " + rs.getString("pac_ape");
-                            idUsuarioPac = rs.getInt("id_usuario");
-                            idPaciente = rs.getInt("id_paciente");
-                            idMedico = rs.getInt("id_medico");
-                            Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
-                            if (ts != null) {
-                                horaCita = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
-                            }
-                        }
-                    }
-                }
-
-                // Registrar en historial_asistencia
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement("INSERT INTO historial_asistencia (id_paciente, id_cita, asistio, observacion) VALUES (?, ?, 1, 'Admitido en sala de espera')")) {
-                    ps.setInt(1, idPaciente);
-                    ps.setInt(2, idCita);
-                    ps.executeUpdate();
-                } catch (Exception ignored) {}
-
-                // Registrar en notificaciones para el feed en vivo
-                String opMsg = "Admisión: " + pacNom + " admitido en sala de espera (cita " + horaCita + ") - Consultorio " + (100 + (idMedico * 2));
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement("INSERT INTO notificacion (id_usuario, id_cita, tipo, canal, mensaje, fecha_envio, estado_envio) VALUES (?, ?, 'Admisión', 'PLATAFORMA', ?, CURRENT_TIMESTAMP, 'ENVIADA')")) {
-                    ps.setInt(1, idUsuarioPac);
-                    ps.setInt(2, idCita);
-                    ps.setString(3, opMsg);
-                    ps.executeUpdate();
-                } catch (Exception ignored) {}
-
-                request.getSession().setAttribute("flashMessage", "¡Paciente " + pacNom + " admitido en sala de espera exitosamente!");
-            } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Paciente admitido en sala de espera.");
+                request.getRequestDispatcher("/admin/admision").forward(request,response);
+            } catch (ServletException | IOException e) {
+                responderError(response,500,"No se pudo completar la operación de admisión.");
             }
-            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
         } else if ("cancelar_cita".equals(action)) {
             try {
@@ -391,9 +357,9 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute("flashMessage", "Cita #" + idCita + " (" + pacNom + ") cancelada. El cupo ha sido ofertado a la lista de espera de inmediato.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Cita #" + idCita + " (" + pacNom + ") cancelada. El cupo ha sido ofertado a la lista de espera de inmediato.");
             } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Cita cancelada correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Cita cancelada correctamente.");
             }
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
@@ -446,7 +412,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute("flashMessage", "¡Paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado con éxito en el padrón!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado con éxito en el padrón!");
             } else {
                 request.getSession().setAttribute("flashError", "No se pudo registrar: verifique que el DNI o correo no estén duplicados.");
             }
@@ -497,7 +463,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute("flashMessage", "¡Datos del paciente " + nombres + " " + apellidos + " (DNI " + dni + ") actualizados correctamente en la Base de Datos!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Datos del paciente " + nombres + " " + apellidos + " (DNI " + dni + ") actualizados correctamente en la Base de Datos!");
             } catch (Exception e) {
                 request.getSession().setAttribute("flashError", "Error al actualizar datos del paciente: " + e.getMessage());
             }
@@ -507,9 +473,9 @@ public class AdminDashboardServlet extends HttpServlet {
             try {
                 int idCita = Integer.parseInt(request.getParameter("idCita"));
                 String mensaje = citaDAO.ejecutarReasignacionInteligente(idCita);
-                request.getSession().setAttribute("flashMessage", mensaje);
+                request.getSession().setAttribute(FLASH_MESSAGE, mensaje);
             } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Error al procesar reasignación: " + e.getMessage());
+                request.getSession().setAttribute(FLASH_MESSAGE, "Error al procesar reasignación: " + e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
@@ -519,12 +485,12 @@ public class AdminDashboardServlet extends HttpServlet {
                 String nuevoEstado = request.getParameter("nuevoEstado");
                 boolean ok = citaDAO.actualizarEstadoCita(idCita, nuevoEstado);
                 if (ok) {
-                    request.getSession().setAttribute("flashMessage", "Estado de cita #" + idCita + " actualizado a " + nuevoEstado + " en la Base de Datos.");
+                    request.getSession().setAttribute(FLASH_MESSAGE, "Estado de cita #" + idCita + " actualizado a " + nuevoEstado + " en la Base de Datos.");
                 } else {
-                    request.getSession().setAttribute("flashMessage", "Cita #" + idCita + " en atención.");
+                    request.getSession().setAttribute(FLASH_MESSAGE, "Cita #" + idCita + " en atención.");
                 }
             } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Acción realizada correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Acción realizada correctamente.");
             }
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
@@ -547,7 +513,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
             int idCitaNueva = citaDAO.reservarCitaConId(idPac, idMed, fecha, hora, "MEDIA");
             if (idCitaNueva > 0) {
-                request.getSession().setAttribute("flashMessage", "¡Cita agendada exitosamente (ID #" + idCitaNueva + ") para el " + fecha + " a las " + hora + "!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Cita agendada exitosamente (ID #" + idCitaNueva + ") para el " + fecha + " a las " + hora + "!");
             } else {
                 request.getSession().setAttribute("flashError", "No se pudo agendar la cita: el horario " + (fecha != null ? fecha : "") + " " + (hora != null ? hora : "") + " ya se encuentra ocupado por otro paciente.");
             }
@@ -561,7 +527,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 int minutos = duracion == null || duracion.isBlank() ? 30 : Integer.parseInt(duracion);
                 new AgendaCitaDAO().publicar(medico, sede, request.getParameter("fecha"),
                         request.getParameter("horaInicio"), request.getParameter("horaFin"), minutos);
-                request.getSession().setAttribute("flashMessage", "Turno de atención publicado correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Turno de atención publicado correctamente.");
             } catch (NumberFormatException e) {
                 request.getSession().setAttribute("flashError", "Los identificadores y la duración deben ser números válidos.");
             } catch (AgendaException e) {
@@ -573,7 +539,7 @@ public class AdminDashboardServlet extends HttpServlet {
             try {
                 new AgendaCitaDAO().cambiarEstado(Integer.parseInt(request.getParameter("idDisponibilidad")),
                         request.getParameter("nuevoEstado"));
-                request.getSession().setAttribute("flashMessage", "Estado del turno actualizado correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Estado del turno actualizado correctamente.");
             } catch (NumberFormatException e) {
                 request.getSession().setAttribute("flashError", "El identificador del turno no es válido.");
             } catch (AgendaException e) {
@@ -620,7 +586,7 @@ public class AdminDashboardServlet extends HttpServlet {
             u.setActivo(true);
 
             usuarioDAO.registrarPersonal(u, cmp, idEsp, idSede, "Médico Facultativo");
-            request.getSession().setAttribute("flashMessage", "¡Médico " + nombres + " " + apellidos + " (" + cmp + ") guardado exitosamente en la Base de Datos!");
+            request.getSession().setAttribute(FLASH_MESSAGE, "¡Médico " + nombres + " " + apellidos + " (" + cmp + ") guardado exitosamente en la Base de Datos!");
             response.sendRedirect(request.getContextPath() + "/admin/medicos");
             return;
         }
@@ -828,74 +794,54 @@ public class AdminDashboardServlet extends HttpServlet {
         return list;
     }
 
-    private List<Map<String, Object>> obtenerCitasSalaEsperaBD() {
+    private List<Map<String, Object>> obtenerCitasSalaEsperaBD(int usuario) {
         List<Map<String, Object>> list = new ArrayList<>();
-        // Filtrar estrictamente las citas del día actual (CURDATE())
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.estado, " +
-                     "u_pac.nombres AS pac_nom, u_pac.apellidos AS pac_ape, p.dni, p.telefono, " +
-                     "u_med.nombres AS med_nom, u_med.apellidos AS med_ape, " +
-                     "COALESCE(s.nombre, 'Sede San Borja') AS sede_nombre, " +
-                     "c.id_medico " +
-                     "FROM cita c " +
-                     "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                     "JOIN usuario u_pac ON p.id_usuario = u_pac.id_usuario " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario u_med ON m.id_usuario = u_med.id_usuario " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE DATE(c.fecha_hora) = CURDATE() AND c.estado NOT IN ('CANCELADA') " +
-                     "ORDER BY c.fecha_hora ASC";
-
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("idCita", rs.getInt("id_cita"));
-                Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
-                String hora = "08:00";
-                if (ts != null) {
-                    java.time.LocalDateTime ldt = ts.toLocalDateTime();
-                    hora = String.format("%02d:%02d", ldt.getHour(), ldt.getMinute());
+        String sql = "SELECT c.id_cita,c.fecha_hora,c.estado,up.nombres AS pac_nom,up.apellidos AS pac_ape,p.dni,p.telefono,um.nombres AS med_nom,um.apellidos AS med_ape,s.nombre AS sede_nombre,a.fecha_llegada,a.llego_tarde "
+                + "FROM cita c JOIN paciente p ON c.id_paciente=p.id_paciente JOIN usuario up ON p.id_usuario=up.id_usuario JOIN medico m ON c.id_medico=m.id_medico JOIN usuario um ON m.id_usuario=um.id_usuario JOIN sede s ON m.id_sede=s.id_sede "
+                + "JOIN personal_administrativo pa ON pa.id_sede=m.id_sede JOIN usuario ua ON pa.id_usuario=ua.id_usuario LEFT JOIN admision_cita a ON a.id_cita=c.id_cita "
+                + "WHERE pa.id_usuario=? AND ua.activo=TRUE AND ua.rol='PERSONAL_ADMINISTRATIVO' AND s.estado='ACTIVO' AND c.fecha_hora>=? AND c.fecha_hora<? ORDER BY c.fecha_hora,c.id_cita";
+        java.time.LocalDate hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setInt(1, usuario); ps.setObject(2, hoy.atStartOfDay()); ps.setObject(3, hoy.plusDays(1).atStartOfDay());
+            try (ResultSet rs = ps.executeQuery()) {
+                while (rs.next()) {
+                    Map<String, Object> map = new HashMap<>();
+                    map.put("idCita", rs.getInt("id_cita"));
+                    map.put("hora", rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).toLocalTime().toString());
+                    map.put("pacienteNombre", rs.getString("pac_nom") + " " + rs.getString("pac_ape"));
+                    map.put("pacienteDni", rs.getString("dni"));
+                    map.put("pacienteTelefono", Objects.toString(rs.getString("telefono"), "Sin registrar"));
+                    map.put("sedeNombre", rs.getString("sede_nombre"));
+                    map.put("consultorio", "");
+                    map.put("medicoNombre", rs.getString("med_nom") + " " + rs.getString("med_ape"));
+                    String estado = rs.getString("estado");
+                    java.time.LocalDateTime llegada = rs.getObject("fecha_llegada", java.time.LocalDateTime.class);
+                    String etiqueta = switch (estado) {
+                        case "EN_SALA" -> rs.getBoolean("llego_tarde") ? "Llegó tarde" : "En sala";
+                        case "ATENDIDA" -> "Atendida";
+                        case "EN_ATENCION" -> "En atención";
+                        case "NO_ATENDIDA" -> "No atendida";
+                        case "NO_ASISTIO" -> "No asistió";
+                        case "CANCELADA" -> "Cancelada";
+                        case "REPROGRAMADA" -> "Reprogramada";
+                        case "SOLICITADA" -> "Sin confirmar";
+                        default -> "Confirmada";
+                    };
+                    map.put("estado", etiqueta);
+                    map.put("puedeAdmitir", ESTADO_CONFIRMADA.equals(estado));
+                    java.time.LocalDateTime ahora = java.time.LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
+                    map.put("puedeMarcarAusencia", ESTADO_CONFIRMADA.equals(estado) && llegada == null && ahora.isAfter(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).plusMinutes(admisionDAO.toleranciaMinutos())));
+                    map.put("puedeAnular", Set.of("SOLICITADA", ESTADO_CONFIRMADA).contains(estado));
+                    String accionTexto=etiqueta;
+                    if(llegada!=null) accionTexto="Llegada " + llegada.toLocalTime();
+                    else if("EN_SALA".equals(estado)) accionTexto="Hora de llegada sin registrar";
+                    map.put("accionTexto",accionTexto);
+                    list.add(map);
                 }
-                map.put("hora", hora);
-                map.put("pacienteNombre", rs.getString("pac_nom") + " " + rs.getString("pac_ape"));
-                map.put("pacienteDni", rs.getString("dni"));
-                map.put("pacienteTelefono", rs.getString("telefono") != null ? rs.getString("telefono") : "986 112 340");
-                map.put("sedeNombre", rs.getString("sede_nombre"));
-                map.put("consultorio", "Consultorio " + (100 + (rs.getInt("id_medico") * 2)));
-
-                String rawMedN = rs.getString("med_nom") != null ? rs.getString("med_nom").trim() : "";
-                String rawMedA = rs.getString("med_ape") != null ? rs.getString("med_ape").trim() : "";
-                String medFull = (rawMedN + " " + rawMedA).trim();
-                if (medFull.toLowerCase().startsWith("dr.") || medFull.toLowerCase().startsWith("dra.")) {
-                    map.put("medicoNombre", medFull);
-                } else {
-                    map.put("medicoNombre", "Dr. " + medFull);
-                }
-
-                String estadoBD = rs.getString("estado");
-                String estadoUI = "Confirmada - Web";
-                String accionTexto = "";
-                if ("EN_SALA".equalsIgnoreCase(estadoBD)) {
-                    estadoUI = "En sala";
-                    accionTexto = "Admitido " + hora;
-                } else if ("ATENDIDA".equalsIgnoreCase(estadoBD)) {
-                    estadoUI = "En sala";
-                    accionTexto = "Admitido " + hora;
-                } else if ("CANCELADA".equalsIgnoreCase(estadoBD)) {
-                    estadoUI = "Cancelada";
-                    accionTexto = "Cancelada";
-                } else if ("SOLICITADA".equalsIgnoreCase(estadoBD)) {
-                    estadoUI = "Sin confirmar";
-                }
-                map.put("estado", estadoUI);
-                map.put("accionTexto", accionTexto);
-                list.add(map);
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+        } catch (java.sql.SQLException e) {
+            throw new AgendaException(503, "ADMISION_NO_DISPONIBLE", "No se pudo cargar la sala de espera.");
         }
-
         return list;
     }
 
@@ -1048,4 +994,10 @@ public class AdminDashboardServlet extends HttpServlet {
         }
         return list;
     }
+    private static void responderError(HttpServletResponse response,int estado,String mensaje){
+        if(response.isCommitted()) return;
+        try { response.sendError(estado,mensaje); }
+        catch(IOException e) { response.setStatus(500); }
+    }
+
 }

@@ -26,6 +26,8 @@ public class HttpExchange {
     public String contentType;
     public String redirect;
     public String forward;
+    public java.io.IOException writerFailure;
+    public jakarta.servlet.ServletException forwardFailure;
     public String requestBody = "";
     public String requestContentType = "application/json";
     public String remoteAddr = "127.0.0.1";
@@ -71,7 +73,10 @@ public class HttpExchange {
                         String destino=(String)args[0];
                         return (jakarta.servlet.RequestDispatcher) Proxy.newProxyInstance(jakarta.servlet.RequestDispatcher.class.getClassLoader(),
                                 new Class<?>[]{jakarta.servlet.RequestDispatcher.class},(dispatcher,operacionDispatcher,params)->{
-                                    if("forward".equals(operacionDispatcher.getName())) forward=destino;
+                                    if("forward".equals(operacionDispatcher.getName())) {
+                                        if(forwardFailure!=null) throw forwardFailure;
+                                        forward=destino;
+                                    }
                                     return null;
                                 });
                     case "setAttribute": attributes.put((String) args[0], args[1]); return null;
@@ -89,7 +94,9 @@ public class HttpExchange {
                     case "setContentType": contentType = (String) args[0]; return null;
                     case "setHeader": responseHeaders.put((String) args[0], (String) args[1]); return null;
                     case "sendRedirect": redirect = (String) args[0]; status = 302; return null;
-                    case "getWriter": return new PrintWriter(body);
+                    case "getWriter":
+                        if(writerFailure!=null) throw writerFailure;
+                        return new PrintWriter(body);
                     default: return null;
                 }
             });
