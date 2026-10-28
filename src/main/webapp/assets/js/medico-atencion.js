@@ -29,6 +29,10 @@ function formularioEditable() {
 
 function restablecerFormulario() {
     if (!formularioEditable()) return;
+    ['motivoClinico', 'antecedentesClinicos', 'hallazgosClinicos', 'evaluacionClinica', 'diagnosticoClinico', 'planClinico'].forEach(id => {
+        const campo = document.getElementById(id);
+        if (campo) campo.value = campo.defaultValue;
+    });
     const txt = document.getElementById('indicacionesTextarea');
     const fecha = document.getElementById('fechaProximaInput');
     if (txt) {

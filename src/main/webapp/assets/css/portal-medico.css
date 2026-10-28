@@ -45,7 +45,7 @@ button:disabled { cursor: not-allowed; }
 .med-nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
 .med-nav-item { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 8px; color: #cbd5e1; font-weight: 500; line-height: 1.2; text-decoration: none; }
 .med-nav-item:hover, .med-user-info-link:hover { background: rgb(255 255 255 / 8%); }
-.med-nav-item.active { color: #fff; background: rgb(59 156 245 / 18%); font-weight: 600; }
+.med-nav-item.active { color: #fff; background: #233f5c; font-weight: 600; }
 .med-user-footer { display: flex; align-items: center; gap: 6px; padding: 12px; margin-top: 24px; background: rgb(255 255 255 / 6%); border-radius: 10px; }
 .med-user-info-link { display: flex; align-items: center; gap: 10px; flex: 1; min-width: 0; border-radius: 6px; text-decoration: none; }
 .med-avatar { display: grid; place-items: center; flex-shrink: 0; width: 36px; height: 36px; border-radius: 50%; background: var(--med-blue); color: #fff; font-size: 13px; font-weight: 600; }
@@ -298,3 +298,22 @@ button:disabled { cursor: not-allowed; }
     .med-calendar-day { min-height: 100px; }
     .med-calendar-navigation { justify-content: flex-end; width: 100%; }
 }
+
+.med-search-form { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 16px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--med-border); border-radius: 12px; background: #fff; }
+.med-search-form > .med-form-group { flex: 1 1 240px; min-width: 0; }
+.med-page-disabled { opacity: .5; }
+.med-section-heading { margin: 0 0 12px; font-size: 18px; font-weight: 600; }
+.med-clinical-preview { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; white-space: pre-wrap; }
+.med-clinical-section { margin-bottom: 24px; }
+.med-clinical-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 18px; margin-top: 18px; }
+.med-clinical-input { width: 100%; min-height: 100px; padding: 12px; border: 1px solid var(--med-border); border-radius: 8px; background: #fff; color: var(--med-primary); font: inherit; resize: vertical; }
+.med-clinical-input:disabled { background: #f8fafc; color: var(--med-text-muted); }
+@media (max-width: 640px) {
+    .med-clinical-grid { grid-template-columns: 1fr; }
+    .med-search-form > button { width: 100%; }
+}
+
+.med-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+fieldset.med-view-switcher, fieldset.med-calendar-navigation, fieldset.med-prioridad-cards { min-width: 0; border: 0; margin: 0; }
+fieldset.med-calendar-navigation, fieldset.med-prioridad-cards { padding: 0; }
+output.med-calendar-status { display: block; margin: 12px 0; }

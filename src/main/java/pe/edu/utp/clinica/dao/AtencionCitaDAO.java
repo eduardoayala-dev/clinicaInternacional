@@ -1,5 +1,7 @@
 package pe.edu.utp.clinica.dao;
 
+import pe.edu.utp.clinica.model.medico.ConsultaClinica;
+import pe.edu.utp.clinica.service.ConsultaClinicaService;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -42,12 +44,18 @@ final class AtencionCitaDAO {
     }
 
     boolean finalizar(int medico, int cita, String prioridad, String fecha, String notas) {
+        return finalizar(medico, cita, prioridad, fecha, notas, null);
+    }
+
+    boolean finalizar(int medico, int cita, String prioridad, String fecha, String notas, ConsultaClinica consulta) {
+        ConsultaClinica validada = consulta == null ? null : ConsultaClinicaService.validar(consulta);
         return TransaccionJdbc.ejecutar(connections, conn -> {
             Cita actual = bloquear(conn, medico, cita);
             LocalDateTime ahora = ahora();
             if (!EN_ATENCION.equals(actual.estado())) throw conflicto("Debes iniciar la atención antes de finalizarla.");
             LocalDate seguimiento = validarSeguimiento(prioridad, fecha, notas);
             cerrarRegistro(conn, medico, cita, ahora, null);
+            if (validada != null) guardarConsulta(conn, cita, validada);
             try (PreparedStatement ps = conn.prepareStatement("UPDATE cita SET estado='ATENDIDA',nivel_urgencia=?,fecha_recomendada_proxima=? WHERE id_cita=? AND id_medico=?")) {
                 ps.setString(1, prioridad); ps.setObject(2, seguimiento); ps.setInt(3, cita); ps.setInt(4, medico);
                 if (ps.executeUpdate() != 1) throw inexistente();
@@ -58,6 +66,14 @@ final class AtencionCitaDAO {
             }
             return true;
         });
+    }
+
+    private static void guardarConsulta(Connection conn, int cita, ConsultaClinica consulta) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("INSERT INTO consulta_clinica(id_cita,motivo,antecedentes,hallazgos,evaluacion,diagnostico,plan) VALUES(?,?,?,?,?,?,?)")) {
+            ps.setInt(1, cita); ps.setString(2, consulta.motivo()); ps.setString(3, consulta.antecedentes());
+            ps.setString(4, consulta.hallazgos()); ps.setString(5, consulta.evaluacion());
+            ps.setString(6, consulta.diagnostico()); ps.setString(7, consulta.plan()); ps.executeUpdate();
+        }
     }
 
     boolean noAtender(int medico, int cita, String motivo) {

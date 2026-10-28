@@ -29,6 +29,9 @@ class MedicoPortalServletTest {
         }
         @Override public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate desde,LocalDate hasta){this.medico=medico;this.fecha=desde;this.hasta=hasta;return agenda;}
         @Override public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate fecha){this.medico=medico;this.fecha=fecha;return agenda;}
+        @Override public boolean finalizarConsultaClinica(int cita,int medico,String prioridad,String fecha,String notas,pe.edu.utp.clinica.model.medico.ConsultaClinica consulta){
+            return actualizarAtencionMedicaValidada(cita,medico,"ATENDIDA",prioridad,fecha,notas);
+        }
         @Override public Map<String,Object> obtenerDetalleCitaMedico(int cita,int medico){this.medico=medico;return cita==7?Map.of("idCita",7,"estado","ATENDIDA","indicaciones","Control real"):Map.of();}
         @Override public boolean actualizarAtencionMedicaValidada(int cita,int medico,String estado,String prioridad,String fecha,String notas){
             escrituras++;this.medico=medico;if(cita!=7) throw new AgendaException(404,"CITA_NO_ENCONTRADA","Cita ajena.");return true;

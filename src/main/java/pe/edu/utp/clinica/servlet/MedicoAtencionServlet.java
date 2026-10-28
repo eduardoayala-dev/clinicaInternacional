@@ -8,6 +8,7 @@ import pe.edu.utp.clinica.api.ApiResponse;
 import pe.edu.utp.clinica.dao.AgendaException;
 import java.io.IOException;
 import java.util.Map;
+import pe.edu.utp.clinica.model.medico.ConsultaClinica;
 
 @WebServlet(name="MedicoAtencionServlet",urlPatterns={"/medico/atencion"})
 public class MedicoAtencionServlet extends MedicoPortalServlet {
@@ -28,7 +29,7 @@ public class MedicoAtencionServlet extends MedicoPortalServlet {
         String accion=request.getParameter("accion");
         boolean ok=switch(accion==null?"":accion){
             case "iniciar" -> citas.iniciarAtencionMedica(id,contexto.medico());
-            case "guardar" -> citas.actualizarAtencionMedicaValidada(id,contexto.medico(),"ATENDIDA",request.getParameter("prioridad"),request.getParameter("fechaProxima"),request.getParameter("indicaciones"));
+            case "guardar" -> citas.finalizarConsultaClinica(id,contexto.medico(),request.getParameter("prioridad"),request.getParameter("fechaProxima"),request.getParameter("indicaciones"),new ConsultaClinica(request.getParameter("motivoClinico"),request.getParameter("antecedentes"),request.getParameter("hallazgos"),request.getParameter("evaluacion"),request.getParameter("diagnostico"),request.getParameter("plan")));
             case "no_atender" -> citas.registrarNoAtencionMedica(id,contexto.medico(),request.getParameter("motivo"));
             case "no_asistio" -> throw new AgendaException(403,"ACCION_NO_PERMITIDA","La inasistencia corresponde a admisión. Para un paciente que llegó, registra No atendida con un motivo.");
             default -> throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");

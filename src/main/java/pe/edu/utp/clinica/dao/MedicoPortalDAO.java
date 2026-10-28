@@ -25,10 +25,10 @@ public class MedicoPortalDAO {
     private static final String MOTIVO = "motivo";
     private static final ZoneId LIMA=ZoneId.of("America/Lima");
     private static final String PERFIL="SELECT m.id_medico,m.cmp,u.nombres,u.apellidos,u.email,e.nombre AS especialidad,s.nombre AS sedeNombre FROM medico m JOIN usuario u ON m.id_usuario=u.id_usuario JOIN especialidad e ON m.id_especialidad=e.id_especialidad JOIN sede s ON m.id_sede=s.id_sede WHERE m.id_usuario=? AND m.estado='ACTIVO' AND u.activo=TRUE AND u.rol='MEDICO' AND e.estado='ACTIVO' AND s.estado='ACTIVO'";
-    private static final String DATOS="SELECT EXISTS(SELECT 1 FROM atencion_cita ac WHERE ac.medico_activo=c.id_medico OR ac.paciente_activo=c.id_paciente) AS consulta_ocupada,t.fecha_inicio,t.fecha_fin,t.motivo_no_atencion,a.fecha_llegada,a.llego_tarde,a.tolerancia_minutos,c.id_cita,c.id_paciente,c.fecha_hora,c.estado,c.nivel_urgencia,c.fecha_recomendada_proxima,c.fecha_creacion,p.dni,p.telefono,p.fecha_nacimiento,p.direccion,p.alergias,p.tipo_cobertura,p.canal_aviso,u.nombres,u.apellidos,u.email,mc.descripcion AS motivo,e.nombre AS especialidad,s.nombre AS sede,m.cmp,um.nombres AS medico_nombres,um.apellidos AS medico_apellidos,"
+    private static final String DATOS="SELECT cc.motivo AS motivo_clinico,cc.antecedentes,cc.hallazgos,cc.evaluacion,cc.diagnostico,cc.plan,EXISTS(SELECT 1 FROM atencion_cita ac WHERE ac.medico_activo=c.id_medico OR ac.paciente_activo=c.id_paciente) AS consulta_ocupada,t.fecha_inicio,t.fecha_fin,t.motivo_no_atencion,a.fecha_llegada,a.llego_tarde,a.tolerancia_minutos,c.id_cita,c.id_paciente,c.fecha_hora,c.estado,c.nivel_urgencia,c.fecha_recomendada_proxima,c.fecha_creacion,p.dni,p.telefono,p.fecha_nacimiento,p.direccion,p.alergias,p.tipo_cobertura,p.canal_aviso,u.nombres,u.apellidos,u.email,mc.descripcion AS motivo,e.nombre AS especialidad,s.nombre AS sede,m.cmp,um.nombres AS medico_nombres,um.apellidos AS medico_apellidos,"
             + "(SELECT h.observacion FROM historial_asistencia h WHERE h.id_cita=c.id_cita ORDER BY h.id_historial DESC LIMIT 1) AS indicaciones,"
             + "EXISTS(SELECT 1 FROM reasignacion_inteligente r WHERE r.id_cita_asignada=c.id_cita AND r.estado='ACEPTADA') AS reasignada "
-            + "FROM cita c JOIN paciente p ON c.id_paciente=p.id_paciente JOIN usuario u ON p.id_usuario=u.id_usuario JOIN medico m ON c.id_medico=m.id_medico JOIN usuario um ON m.id_usuario=um.id_usuario JOIN especialidad e ON m.id_especialidad=e.id_especialidad JOIN sede s ON m.id_sede=s.id_sede LEFT JOIN motivo_cita mc ON c.id_motivo=mc.id_motivo LEFT JOIN admision_cita a ON a.id_cita=c.id_cita LEFT JOIN atencion_cita t ON t.id_cita=c.id_cita ";
+            + "FROM cita c JOIN paciente p ON c.id_paciente=p.id_paciente JOIN usuario u ON p.id_usuario=u.id_usuario JOIN medico m ON c.id_medico=m.id_medico JOIN usuario um ON m.id_usuario=um.id_usuario JOIN especialidad e ON m.id_especialidad=e.id_especialidad JOIN sede s ON m.id_sede=s.id_sede LEFT JOIN motivo_cita mc ON c.id_motivo=mc.id_motivo LEFT JOIN admision_cita a ON a.id_cita=c.id_cita LEFT JOIN atencion_cita t ON t.id_cita=c.id_cita LEFT JOIN consulta_clinica cc ON cc.id_cita=c.id_cita ";
     private final AgendaCitaDAO.ConnectionSource connections;
     private final Clock clock;
     public MedicoPortalDAO(){this(DatabaseConfig::getConnection,Clock.system(LIMA));}
@@ -135,6 +135,7 @@ public class MedicoPortalDAO {
     }
     private Map<String,Object> presentar(ResultSet rs)throws SQLException{
         Map<String,Object> data=base(rs);
+        data.put("consultaClinica",new pe.edu.utp.clinica.model.medico.ConsultaClinica(texto(rs,"motivo_clinico"),texto(rs,"antecedentes"),texto(rs,"hallazgos"),texto(rs,"evaluacion"),texto(rs,"diagnostico"),texto(rs,"plan")));
         data.put("idPaciente",rs.getInt("id_paciente"));
         String nombre=texto(rs,NOMBRES)+" "+texto(rs,APELLIDOS);
         data.put("paciente",nombre);data.put("pacienteNombre",nombre);

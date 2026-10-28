@@ -1,0 +1,8 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ page import="pe.edu.utp.clinica.util.Html,pe.edu.utp.clinica.util.FormatoClinico,pe.edu.utp.clinica.model.medico.*" %>
+<%
+    String nombreMedico = java.util.Objects.toString(request.getAttribute("nombreMedico"), "Médico");
+    String[] partesNombre = nombreMedico.strip().split("\\s+");
+    String inicialesMedico = nombreMedico.isBlank() ? "M" : partesNombre[0].substring(0, 1).toUpperCase(java.util.Locale.ROOT);
+    if (partesNombre.length > 1) inicialesMedico += partesNombre[partesNombre.length - 1].substring(0, 1).toUpperCase(java.util.Locale.ROOT);
+%>

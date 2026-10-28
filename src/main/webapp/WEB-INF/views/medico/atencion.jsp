@@ -1,4 +1,4 @@
-<%@ page import="pe.edu.utp.clinica.util.Html" %>
+<%@ page import="pe.edu.utp.clinica.util.Html,pe.edu.utp.clinica.model.medico.ConsultaClinica" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.Map" %>
@@ -29,6 +29,9 @@
 
     Map<String, Object> cita = (Map<String, Object>) request.getAttribute("cita");
     boolean hayPacienteActivo = (cita != null && !cita.isEmpty());
+    ConsultaClinica consultaClinica = hayPacienteActivo ? (ConsultaClinica) cita.get("consultaClinica") : null;
+    if (consultaClinica == null) consultaClinica = new ConsultaClinica("", "", "", "", "", "");
+
     String mensajeOperativo = "Cita de solo lectura; no permite iniciar ni modificar la atención.";
     if (cita != null) {
         if (Boolean.TRUE.equals(cita.get("editable"))) mensajeOperativo = "Consulta en curso. Completa la indicación antes de finalizar.";
@@ -229,6 +232,26 @@
                     <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
                     <input type="hidden" name="accion" id="accionInput" value="guardar">
                     <input type="hidden" name="prioridad" id="prioridadInput" value="<%= Html.texto(urgencia) %>">
+                    <section class="med-clinical-section" aria-label="Registro clínico de la consulta">
+                        <h2 class="med-section-heading">Registro clínico</h2>
+                        <p class="med-subtitle">Completa el registro antes de finalizar. Los datos se conservarán como parte de esta atención.</p>
+                        <% if (!Boolean.TRUE.equals(cita.get("editable")) && consultaClinica.diagnostico().isBlank()) { %><p>Esta cita no tiene un registro clínico estructurado. Las indicaciones anteriores se conservan abajo.</p><% } %>
+                        <div class="med-clinical-grid">
+                            <div class="med-form-group"><label class="med-field-label" for="motivoClinico">Motivo de consulta *</label>
+                            <textarea class="med-clinical-input" id="motivoClinico" name="motivoClinico" maxlength="1000" rows="3" required><%= Html.texto(consultaClinica.motivo().isBlank() && Boolean.TRUE.equals(cita.get("editable")) ? cita.get("motivo") : consultaClinica.motivo()) %></textarea></div>
+                            <div class="med-form-group"><label class="med-field-label" for="antecedentesClinicos">Antecedentes relevantes</label>
+                            <textarea class="med-clinical-input" id="antecedentesClinicos" name="antecedentes" maxlength="2000" rows="3"><%= Html.texto(consultaClinica.antecedentes()) %></textarea></div>
+                            <div class="med-form-group"><label class="med-field-label" for="hallazgosClinicos">Hallazgos de la consulta</label>
+                            <textarea class="med-clinical-input" id="hallazgosClinicos" name="hallazgos" maxlength="2000" rows="3"><%= Html.texto(consultaClinica.hallazgos()) %></textarea></div>
+                            <div class="med-form-group"><label class="med-field-label" for="evaluacionClinica">Evaluación clínica *</label>
+                            <textarea class="med-clinical-input" id="evaluacionClinica" name="evaluacion" maxlength="2000" rows="3" required><%= Html.texto(consultaClinica.evaluacion()) %></textarea></div>
+                            <div class="med-form-group"><label class="med-field-label" for="diagnosticoClinico">Diagnóstico o impresión diagnóstica *</label>
+                            <textarea class="med-clinical-input" id="diagnosticoClinico" name="diagnostico" maxlength="1000" rows="3" required><%= Html.texto(consultaClinica.diagnostico()) %></textarea></div>
+                            <div class="med-form-group"><label class="med-field-label" for="planClinico">Plan de atención *</label>
+                            <textarea class="med-clinical-input" id="planClinico" name="plan" maxlength="2000" rows="3" required><%= Html.texto(consultaClinica.plan()) %></textarea></div>
+                        </div>
+                    </section>
+
 
 
                     <div class="med-atencion-card">
@@ -236,7 +259,7 @@
 
                         <span class="med-field-label">Nivel de prioridad clínica *</span>
 
-                        <div class="med-prioridad-cards" role="group" aria-label="Nivel de prioridad clínica">
+                        <fieldset class="med-prioridad-cards" aria-label="Nivel de prioridad clínica"><legend class="med-sr-only">Nivel de prioridad clínica</legend>
                             <button type="button" class="med-prio-card <%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "active" : "") %>" data-prioridad="ALTA" aria-pressed="<%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "true" : "false") %>" onclick="setPrioridad('ALTA', this)">
                                 <span class="med-prio-card-left"><img src="${pageContext.request.contextPath}/assets/images/medico/prioridad-alta.svg" alt="" class="med-icon"><span><span class="med-prio-title">Alta</span><span class="med-prio-sub">Requiere atención pronta</span></span></span>
                                 <span class="med-prio-check"><img src="${pageContext.request.contextPath}/assets/images/medico/confirmar.svg" alt="" class="med-icon"></span>
@@ -249,7 +272,7 @@
                                 <span class="med-prio-card-left"><img src="${pageContext.request.contextPath}/assets/images/medico/prioridad-baja.svg" alt="" class="med-icon"><span><span class="med-prio-title">Baja</span><span class="med-prio-sub">Control de rutina</span></span></span>
                                 <span class="med-prio-check"><img src="${pageContext.request.contextPath}/assets/images/medico/confirmar.svg" alt="" class="med-icon"></span>
                             </button>
-                        </div>
+                        </fieldset>
 
                         <label class="med-field-label" for="fechaProximaInput">Fecha recomendada de próxima atención (opcional)</label>
                         <div class="med-date-group">

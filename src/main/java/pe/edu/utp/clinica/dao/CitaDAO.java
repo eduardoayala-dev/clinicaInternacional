@@ -344,6 +344,11 @@ public class CitaDAO {
         return portalMedico().guardar(medico,cita,estado,prioridad,fecha,indicaciones);
     }
 
+    public boolean finalizarConsultaClinica(int cita,int medico,String prioridad,String fecha,String indicaciones,pe.edu.utp.clinica.model.medico.ConsultaClinica consulta) {
+        if (consulta == null) throw new AgendaException(400,"CONSULTA_CLINICA_INVALIDA","Completa el registro clínico.");
+        return new AtencionCitaDAO(this::abrirConexion,relojClinico()).finalizar(medico,cita,prioridad,fecha,indicaciones,consulta);
+    }
+
     public List<Map<String,Object>> obtenerAgendaMedico(int medico) {
         return obtenerAgendaMedico(medico,LocalDate.now(relojClinico()));
     }

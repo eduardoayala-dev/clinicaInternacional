@@ -109,11 +109,11 @@
 
                 <div class="med-form-group">
                     <span class="med-form-label">Modo de vista</span>
-                    <div class="med-view-switcher" role="group" aria-label="Período de la agenda">
+                    <fieldset class="med-view-switcher" aria-label="Período de la agenda"><legend class="med-sr-only">Período de la agenda</legend>
                         <% for (String modo : List.of("dia", "semana", "mes")) { %>
                         <button type="button" class="med-view-btn <%= Html.texto(modo.equals(vistaAgenda) ? "active" : "") %>" data-vista="<%= Html.texto(modo) %>" aria-pressed="<%= Html.texto(modo.equals(vistaAgenda)) %>"><%= Html.texto("dia".equals(modo) ? "Día" : "semana".equals(modo) ? "Semana" : "Mes") %></button>
                         <% } %>
-                    </div>
+                    </fieldset>
                 </div>
             </div>
 
@@ -136,18 +136,18 @@
                 data-vista="<%= Html.texto(vistaAgenda) %>" data-desde="<%= Html.texto(request.getAttribute("periodoDesde")) %>" data-hasta="<%= Html.texto(request.getAttribute("periodoHasta")) %>"
                 data-hoy="<%= Html.texto(java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"))) %>">
                 <div class="med-calendar-toolbar">
-                    <h2 id="medCalendarioTitulo" class="med-table-title"></h2>
-                    <div class="med-calendar-navigation" role="group" aria-label="Navegar por períodos">
+                    <h2 id="medCalendarioTitulo" class="med-table-title">Calendario de citas</h2>
+                    <fieldset class="med-calendar-navigation" aria-label="Navegar por períodos"><legend class="med-sr-only">Navegar por períodos</legend>
                         <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medPeriodoAnterior">‹ Anterior</button>
                         <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medPeriodoHoy">Hoy</button>
                         <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medPeriodoSiguiente">Siguiente ›</button>
-                    </div>
+                    </fieldset>
                 </div>
-                <p id="medCalendarioEstado" class="med-calendar-status" role="status"></p>
+                <output id="medCalendarioEstado" class="med-calendar-status"></output>
                 <div id="medCalendarioDias" class="med-calendar-grid"></div>
             </section>
             <p class="med-table-hint" id="medAgendaTableHint">Desliza la tabla para ver todas las columnas.</p>
-            <div class="med-table-card" id="medAgendaTablaRegion" role="region" aria-label="Citas del médico" tabindex="0">
+            <section class="med-table-card" id="medAgendaTablaRegion" aria-label="Citas del médico">
                 <table class="med-table med-table-agenda" id="tablaAgenda">
                     <thead>
                         <tr>
@@ -203,7 +203,7 @@
                         <tr id="medAgendaSinResultados" hidden><td colspan="7">No hay citas que coincidan con la búsqueda.</td></tr>
                     </tbody>
                 </table>
-            </div>
+            </section>
 
 
             <div class="med-footer-toolbar">
@@ -217,7 +217,7 @@
                 </div>
                 <nav class="med-pagination" aria-label="Páginas de la agenda">
                     <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medPaginaAnterior">‹ Anterior</button>
-                    <span id="medPaginaEstado" role="status"></span>
+                    <output id="medPaginaEstado"></output>
                     <button type="button" class="med-tbl-btn med-tbl-btn-outline" id="medPaginaSiguiente">Siguiente ›</button>
                 </nav>
             </div>

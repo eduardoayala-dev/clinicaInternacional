@@ -19,6 +19,12 @@
         <a href="${pageContext.request.contextPath}/medico/atencion" class="med-nav-item<%= Html.texto("atencion".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("atencion".equals(seccionMedico) ? "page" : "false") %>">
             <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("atencion".equals(seccionMedico) ? "atencion-activa.svg" : "atencion.svg") %>" alt="" class="med-icon"> Atención de paciente actual
         </a>
+        <a href="${pageContext.request.contextPath}/medico/pacientes" class="med-nav-item<%= Html.texto("pacientes".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("pacientes".equals(seccionMedico) ? "page" : "false") %>">
+            <img src="${pageContext.request.contextPath}/assets/images/medico/pacientes-indicador.svg" alt="" class="med-icon"> Mis pacientes
+        </a>
+        <a href="${pageContext.request.contextPath}/medico/seguimientos" class="med-nav-item<%= Html.texto("seguimientos".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("seguimientos".equals(seccionMedico) ? "page" : "false") %>">
+            <img src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt="" class="med-icon"> Seguimientos
+        </a>
     </nav>
     <div class="med-user-footer">
         <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link" aria-current="<%= Html.texto("perfil".equals(seccionMedico) ? "page" : "false") %>" title="<%= Html.texto(nombreMedico) %>">
