@@ -649,6 +649,36 @@
               "key": "indicaciones",
               "value": "Control de prueba",
               "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
+              "type": "text"
             }
           ]
         }
@@ -963,6 +993,36 @@
               "key": "indicaciones",
               "value": "   ",
               "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
+              "type": "text"
             }
           ]
         }
@@ -1021,6 +1081,36 @@
             {
               "key": "indicaciones",
               "value": "Revisión del niño & seguimiento de prueba.",
+              "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
               "type": "text"
             }
           ]
@@ -1100,6 +1190,36 @@
             {
               "key": "indicaciones",
               "value": "No debe reemplazar el registro",
+              "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
               "type": "text"
             }
           ]
