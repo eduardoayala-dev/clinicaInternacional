@@ -67,10 +67,12 @@ Importar de nuevo `docs/postman/Modulo-Medico-Local.postman_collection.json` par
 
 ## Validación del 28/10/2026
 
-- Regresión Java: 287 pruebas ejecutadas sin fallos; las 149 condicionadas por variables de entorno quedaron omitidas en esa ejecución local.
+- Regresión Java: 291 pruebas ejecutadas sin fallos; las 149 condicionadas por variables de entorno quedaron omitidas en esa ejecución local.
 - MySQL real: 61 casos de los contratos de atención y admisión verificados en bases temporales, con claves foráneas e índices únicos. La primera ejecución tuvo una interrupción TLS en la preparación de un caso; su repetición pasó, junto con una comprobación adicional del historial. Las bases temporales se retiraron al finalizar.
 - JavaScript: 31 pruebas sin fallos, incluidas protección de salida y separación de formularios.
 - Postman: 54 comprobaciones en 41 solicitudes del flujo completo. Después de actualizar la versión local, otras 20 comprobaciones en 12 solicitudes de lectura confirmaron la persistencia y que el caso Manual seguía sin consumir.
 - Edge: llegada desde admisión, ficha previa, inicio adelantado, recuperación de consulta activa, cierre, bloqueo posterior, fechas legibles y detalle del historial del paciente con el resultado real.
 
 Los respaldos previos a V003 y V004, resultados y capturas permanecen en `target/`, fuera del repositorio. Los ajustes generales de diseño móvil, las exportaciones administrativas y los demás módulos requieren sus revisiones correspondientes.
+
+La revisión de calidad del PR también cubre errores de respuesta HTTP y delegación de admisión. Se controla la excepción sin repetir una escritura confirmada y se comprueban los promedios solo con horarios registrados.

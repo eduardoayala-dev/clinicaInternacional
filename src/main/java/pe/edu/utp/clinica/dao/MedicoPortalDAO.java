@@ -17,6 +17,8 @@ import java.util.List;
 import java.util.Map;
 
 public class MedicoPortalDAO {
+    private static final String SIN_REGISTRAR = "Sin registrar";
+    private static final String EN_ATENCION = "EN_ATENCION";
     private static final String NOMBRES = "nombres";
     private static final String APELLIDOS = "apellidos";
     private static final String ATENDIDA = "ATENDIDA";
@@ -91,34 +93,42 @@ public class MedicoPortalDAO {
         data.put("idCita",rs.getInt("id_cita"));
         LocalDateTime llegada=rs.getObject("fecha_llegada",LocalDateTime.class);
         data.put("fechaLlegada",llegada==null?"":llegada.toString());
-        data.put("horaLlegada",llegada==null?"Sin registrar":llegada.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+        data.put("horaLlegada",llegada==null?SIN_REGISTRAR:llegada.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm:ss")));
         data.put("llegadaRegistrada",llegada!=null);
-        LocalDateTime comienzo=rs.getObject("fecha_inicio",LocalDateTime.class);
-        LocalDateTime fin=rs.getObject("fecha_fin",LocalDateTime.class);
-        LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
-        data.put("puedeIniciar","EN_SALA".equals(estado) && llegada!=null && !llegada.isAfter(ahora) && inicio.toLocalDate().equals(ahora.toLocalDate()));
-        data.put("puedeNoAtender",Boolean.TRUE.equals(data.get("puedeIniciar")) || "EN_ATENCION".equals(estado));
-        data.put("consultaOcupada",rs.getBoolean("consulta_ocupada"));
-        data.put("puedeIniciar",Boolean.TRUE.equals(data.get("puedeIniciar")) && !rs.getBoolean("consulta_ocupada"));
-        data.put("fechaInicio",comienzo==null?"":comienzo.toString());
-        data.put("fechaFin",fin==null?"":fin.toString());
-        DateTimeFormatter formato=DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
-        data.put("inicioTexto",comienzo==null?"Sin registrar":comienzo.format(formato));
-        data.put("finTexto",fin==null?"Sin registrar":fin.format(formato));
-        data.put("motivoNoAtencion",texto(rs,"motivo_no_atencion"));
-        data.put("esperaMinutos",llegada==null || comienzo==null?null:java.time.Duration.between(llegada,comienzo).toMinutes());
-        data.put("duracionMinutos",comienzo==null || fin==null?null:java.time.Duration.between(comienzo,fin).toMinutes());
+        presentarAtencion(rs,data,estado,inicio,llegada);
         data.put("llegoTarde",llegada!=null && rs.getBoolean("llego_tarde"));
         data.put("toleranciaMinutos",llegada==null?null:rs.getInt("tolerancia_minutos"));
         data.put("fecha",inicio.toLocalDate().toString());data.put("hora",inicio.toLocalTime().format(DateTimeFormatter.ofPattern("HH:mm")));
         data.put("fechaFormateada",inicio.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
-        data.put("fechaHora",inicio.toString());data.put("estado",estado);data.put("editable","EN_ATENCION".equals(estado) && rs.getObject("fecha_inicio")!=null && rs.getObject("fecha_fin")==null);
+        data.put("fechaHora",inicio.toString());data.put("estado",estado);data.put("editable",EN_ATENCION.equals(estado) && rs.getObject("fecha_inicio")!=null && rs.getObject("fecha_fin")==null);
         data.put("estadoTexto",switch(estado){
-            case "EN_ATENCION"->"En atención";case "NO_ATENDIDA"->"No atendida";case ATENDIDA->"Atendida";case "NO_ASISTIO"->"No asistió";case "EN_SALA"->"En sala";
+            case EN_ATENCION->"En atención";case "NO_ATENDIDA"->"No atendida";case ATENDIDA->"Atendida";case "NO_ASISTIO"->"No asistió";case "EN_SALA"->"En sala";
             case "CANCELADA"->"Cancelada";case "REPROGRAMADA"->"Reprogramada";
             case "CONFIRMADA"->"Confirmada";case "SOLICITADA"->"Solicitada";default->estado;
         });
         return data;
+    }
+    private void presentarAtencion(ResultSet rs,Map<String,Object> data,String estado,LocalDateTime programada,LocalDateTime llegada)throws SQLException {
+        LocalDateTime comienzo=rs.getObject("fecha_inicio",LocalDateTime.class);
+        LocalDateTime fin=rs.getObject("fecha_fin",LocalDateTime.class);
+        LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
+        boolean enSalaHoy="EN_SALA".equals(estado) && llegada!=null && !llegada.isAfter(ahora) && programada.toLocalDate().equals(ahora.toLocalDate());
+        boolean ocupada=rs.getBoolean("consulta_ocupada");
+        data.put("puedeIniciar",enSalaHoy && !ocupada);
+        data.put("puedeNoAtender",enSalaHoy || EN_ATENCION.equals(estado));
+        data.put("consultaOcupada",ocupada);
+        data.put("fechaInicio",comienzo==null?"":comienzo.toString());
+        data.put("fechaFin",fin==null?"":fin.toString());
+        DateTimeFormatter formato=DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm:ss");
+        data.put("inicioTexto",comienzo==null?SIN_REGISTRAR:comienzo.format(formato));
+        data.put("finTexto",fin==null?SIN_REGISTRAR:fin.format(formato));
+        data.put("motivoNoAtencion",texto(rs,"motivo_no_atencion"));
+        data.put("esperaMinutos",minutosEntre(llegada,comienzo));
+        data.put("duracionMinutos",minutosEntre(comienzo,fin));
+    }
+    private static Long minutosEntre(LocalDateTime desde,LocalDateTime hasta) {
+        if(desde==null || hasta==null) return null;
+        return java.time.Duration.between(desde.atZone(LIMA),hasta.atZone(LIMA)).toMinutes();
     }
     private Map<String,Object> presentar(ResultSet rs)throws SQLException{
         Map<String,Object> data=base(rs);
@@ -135,7 +145,7 @@ public class MedicoPortalDAO {
         LocalDateTime registro=rs.getObject("fecha_creacion",LocalDateTime.class);
         data.put("fechaRegistro",registro==null?"":registro.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
         LocalDate nacimiento=rs.getObject("fecha_nacimiento",LocalDate.class);
-        data.put("edad",nacimiento==null?"Sin registrar":Period.between(nacimiento,LocalDate.now(clock)).getYears()+" años");
+        data.put("edad",nacimiento==null?SIN_REGISTRAR:Period.between(nacimiento,LocalDate.now(clock)).getYears()+" años");
         return data;
     }
     private static String texto(ResultSet rs,String campo)throws SQLException{return java.util.Objects.toString(rs.getString(campo),"");}

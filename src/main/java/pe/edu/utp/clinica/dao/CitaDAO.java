@@ -216,8 +216,8 @@ public class CitaDAO {
             case "NO_ASISTIO" -> "No asistió";
             case "ATENDIDA" -> "Atendida";
             case "EN_SALA" -> "En sala";
-            case "SOLICITADA" -> "Solicitada";
-            case "CONFIRMADA" -> "Confirmada";
+            case ESTADO_SOLICITADA -> "Solicitada";
+            case ESTADO_CONFIRMADA -> "Confirmada";
             default -> est == null ? "Sin registrar" : est;
         });
         return map;

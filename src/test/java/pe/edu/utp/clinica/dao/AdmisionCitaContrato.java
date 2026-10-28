@@ -104,7 +104,7 @@ abstract class AdmisionCitaContrato extends CitaAutorizacionTest {
             assertEquals(1,count("SELECT COUNT(*) FROM admision_cita"));
         } finally { pool.shutdownNow(); }
     }
-    @Test void medicoVeLlegadaRealYNoSeFabricanDatosAnteriores() throws Exception {
+    @Test void medicoVeLlegadaRealYNoSeFabricanDatosAnteriores() {
         assertEquals("Sin registrar",dao.obtenerDetalleCitaMedico(7,1).get("horaLlegada"));
         admision().registrar(40,7);
         var detalle=dao.obtenerDetalleCitaMedico(7,1);

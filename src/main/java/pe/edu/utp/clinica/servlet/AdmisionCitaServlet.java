@@ -17,12 +17,12 @@ public class AdmisionCitaServlet extends HttpServlet {
     protected AdmisionCitaDAO crearDAO() { return new AdmisionCitaDAO(); }
     @Override public void init() { admision = crearDAO(); }
 
-    @Override protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Override protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         response.setHeader("Allow", "POST");
-        ApiJson.write(response, 405, new ApiResponse<>("METODO_NO_PERMITIDO", "Usa POST para registrar una llegada.", null));
+        responderError(response,405,"METODO_NO_PERMITIDO","Usa POST para registrar una llegada.");
     }
 
-    @Override protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException {
+    @Override protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         try {
             var session = request.getSession(false);
             if (session == null || !(session.getAttribute("usuarioLogueado") instanceof Usuario usuario)
@@ -49,8 +49,16 @@ public class AdmisionCitaServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             }
         } catch (AgendaException e) {
-            ApiJson.write(response, e.status(), new ApiResponse<>(e.code(), e.getMessage(), null));
+            responderError(response,e.status(),e.code(),e.getMessage());
+        } catch (IOException e) {
+            if(!response.isCommitted()) response.setStatus(500);
         }
+    }
+
+    private static void responderError(HttpServletResponse response,int estado,String codigo,String mensaje){
+        if(response.isCommitted()) return;
+        try { ApiJson.write(response,estado,new ApiResponse<>(codigo,mensaje,null)); }
+        catch(IOException e) { response.setStatus(500); }
     }
 
     private static int identificador(String valor) {

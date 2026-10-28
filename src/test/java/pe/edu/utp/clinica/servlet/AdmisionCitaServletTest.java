@@ -70,4 +70,20 @@ class AdmisionCitaServletTest {
         var x=request();x.parameters.put("action","admitir_cita");
         new AdminDashboardServlet().doPost(x.request,x.response);assertEquals("/admin/admision",x.forward);
     }
+    @Test void respuestaInterrumpidaNoPropagaErroresNiRepiteLaEscritura(){
+        var dao=new Dao();var x=request();x.writerFailure=new java.io.IOException("Conexión de prueba cerrada");
+        assertDoesNotThrow(()->servlet(dao).doPost(x.request,x.response));
+        assertEquals(500,x.status);assertEquals(1,dao.escrituras);
+    }
+    @Test void errorDeLecturaSeControlaSinEscribir(){
+        var dao=new Dao();var x=request();x.writerFailure=new java.io.IOException("Conexión de prueba cerrada");
+        assertDoesNotThrow(()->servlet(dao).doGet(x.request,x.response));
+        assertEquals(500,x.status);assertEquals(0,dao.escrituras);
+    }
+    @Test void falloAlDelegarAdmisionDevuelveErrorControlado(){
+        var x=request();x.parameters.put("action","admitir_cita");x.forwardFailure=new jakarta.servlet.ServletException("Fallo de prueba");
+        assertDoesNotThrow(()->new AdminDashboardServlet().doPost(x.request,x.response));
+        assertEquals(500,x.status);assertNull(x.session.getAttribute("flashMessage"));
+    }
+
 }

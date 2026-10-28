@@ -89,7 +89,7 @@ abstract class AtencionCitaContrato extends CitaAutorizacionTest {
         assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE nivel_urgencia='MEDIA'"));
         assertEquals(0,count("SELECT COUNT(*) FROM historial_asistencia"));
     }
-    @Test void noAtendidaDesdeConsultaActivaGuardaCierreYLiberaMedico()throws Exception {
+    @Test void noAtendidaDesdeConsultaActivaGuardaCierreYLiberaMedico() {
         sala();atencion.iniciar(1,7);aLas("2026-10-28T15:05:00Z").noAtender(1,7,"Paciente derivado por necesidad de otro servicio.");
         assertEquals(-1,dao.obtenerAtencionActivaMedico(1));
         assertEquals(5L,dao.obtenerDetalleCitaMedico(7,1).get("duracionMinutos"));
@@ -123,7 +123,7 @@ abstract class AtencionCitaContrato extends CitaAutorizacionTest {
         assertTrue(salida.await(5,TimeUnit.SECONDS));
         try{atencion.iniciar(1,cita);return 1;}catch(AgendaException e){assertEquals(409,e.status());return 0;}
     }
-    @Test void citaEnConsultaNoPuedeCancelarsePorLasRutasAnteriores()throws Exception {
+    @Test void citaEnConsultaNoPuedeCancelarsePorLasRutasAnteriores() {
         sala();atencion.iniciar(1,7);
         assertFalse(dao.actualizarEstadoCita(7,"CANCELADA"));assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA"));
         assertFalse(dao.actualizarAtencionMedica(7,1,"NO_ASISTIO",null,null,null));
@@ -148,7 +148,7 @@ abstract class AtencionCitaContrato extends CitaAutorizacionTest {
         sql("DROP TABLE historial_asistencia");error(503,()->admision.registrarInasistencia(40,7,"Ausencia verificada"));
         assertEquals(0,count("SELECT COUNT(*) FROM inasistencia_cita"));assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
     }
-    @Test void historialPacienteUsaResultadoRealYNoElPasoDelTiempo()throws Exception {
+    @Test void historialPacienteUsaResultadoRealYNoElPasoDelTiempo() {
         assertEquals(1,dao.obtenerProximasCitasPaciente(1).size());
         assertTrue(dao.obtenerHistorialPaciente(1).isEmpty());
         sala();atencion.iniciar(1,7);

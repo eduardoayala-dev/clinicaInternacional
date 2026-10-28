@@ -32,6 +32,9 @@ import java.util.*;
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
+    private static final String USUARIO_LOGUEADO = "usuarioLogueado";
+    private static final String FLASH_MESSAGE = "flashMessage";
+    private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
     private static final String ID_MEDICO = "idMedico";
     private static final String ID_SEDE = "idSede";
     private static final String FECHA_HORA = "fecha_hora";
@@ -52,12 +55,12 @@ public class AdminDashboardServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response)
             throws ServletException, IOException {
         HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("usuarioLogueado") == null) {
+        if (session == null || session.getAttribute(USUARIO_LOGUEADO) == null) {
             response.sendRedirect(request.getContextPath() + "/login/personal?error=acceso_denegado");
             return;
         }
 
-        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
+        Usuario usuario = (Usuario) session.getAttribute(USUARIO_LOGUEADO);
         if ("ADMINISTRADOR".equals(usuario.getRol())) {
             response.sendRedirect(request.getContextPath() + "/sysadmin/dashboard");
             return;
@@ -97,12 +100,12 @@ public class AdminDashboardServlet extends HttpServlet {
                 break;
         }
         } catch (AgendaException e) {
-            response.sendError(e.status(), e.getMessage());
+            responderError(response,e.status(),e.getMessage());
         }
     }
 
     private void cargarDatosDashboardInicio(HttpServletRequest request) {
-        Usuario usuario = (Usuario) request.getSession(false).getAttribute("usuarioLogueado");
+        Usuario usuario = (Usuario) request.getSession(false).getAttribute(USUARIO_LOGUEADO);
         List<Map<String, Object>> citas = obtenerCitasSalaEsperaBD(usuario.getIdUsuario());
         request.setAttribute("listaCitas", citas);
 
@@ -295,13 +298,17 @@ public class AdminDashboardServlet extends HttpServlet {
         String action = request.getParameter("action");
 
         HttpSession session = request.getSession(false);
-        if (session == null || !(session.getAttribute("usuarioLogueado") instanceof Usuario usuario)
+        if (session == null || !(session.getAttribute(USUARIO_LOGUEADO) instanceof Usuario usuario)
                 || !"PERSONAL_ADMINISTRATIVO".equals(usuario.getRol())) {
-            response.sendError(403, "Ingresa con una cuenta de admisión.");
+            responderError(response,403,"Ingresa con una cuenta de admisión.");
             return;
         }
         if ("admitir_cita".equals(action)) {
-            request.getRequestDispatcher("/admin/admision").forward(request, response);
+            try {
+                request.getRequestDispatcher("/admin/admision").forward(request,response);
+            } catch (ServletException | IOException e) {
+                responderError(response,500,"No se pudo completar la operación de admisión.");
+            }
             return;
         } else if ("cancelar_cita".equals(action)) {
             try {
@@ -350,9 +357,9 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute("flashMessage", "Cita #" + idCita + " (" + pacNom + ") cancelada. El cupo ha sido ofertado a la lista de espera de inmediato.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Cita #" + idCita + " (" + pacNom + ") cancelada. El cupo ha sido ofertado a la lista de espera de inmediato.");
             } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Cita cancelada correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Cita cancelada correctamente.");
             }
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
@@ -405,7 +412,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute("flashMessage", "¡Paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado con éxito en el padrón!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado con éxito en el padrón!");
             } else {
                 request.getSession().setAttribute("flashError", "No se pudo registrar: verifique que el DNI o correo no estén duplicados.");
             }
@@ -456,7 +463,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute("flashMessage", "¡Datos del paciente " + nombres + " " + apellidos + " (DNI " + dni + ") actualizados correctamente en la Base de Datos!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Datos del paciente " + nombres + " " + apellidos + " (DNI " + dni + ") actualizados correctamente en la Base de Datos!");
             } catch (Exception e) {
                 request.getSession().setAttribute("flashError", "Error al actualizar datos del paciente: " + e.getMessage());
             }
@@ -466,9 +473,9 @@ public class AdminDashboardServlet extends HttpServlet {
             try {
                 int idCita = Integer.parseInt(request.getParameter("idCita"));
                 String mensaje = citaDAO.ejecutarReasignacionInteligente(idCita);
-                request.getSession().setAttribute("flashMessage", mensaje);
+                request.getSession().setAttribute(FLASH_MESSAGE, mensaje);
             } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Error al procesar reasignación: " + e.getMessage());
+                request.getSession().setAttribute(FLASH_MESSAGE, "Error al procesar reasignación: " + e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
@@ -478,12 +485,12 @@ public class AdminDashboardServlet extends HttpServlet {
                 String nuevoEstado = request.getParameter("nuevoEstado");
                 boolean ok = citaDAO.actualizarEstadoCita(idCita, nuevoEstado);
                 if (ok) {
-                    request.getSession().setAttribute("flashMessage", "Estado de cita #" + idCita + " actualizado a " + nuevoEstado + " en la Base de Datos.");
+                    request.getSession().setAttribute(FLASH_MESSAGE, "Estado de cita #" + idCita + " actualizado a " + nuevoEstado + " en la Base de Datos.");
                 } else {
-                    request.getSession().setAttribute("flashMessage", "Cita #" + idCita + " en atención.");
+                    request.getSession().setAttribute(FLASH_MESSAGE, "Cita #" + idCita + " en atención.");
                 }
             } catch (Exception e) {
-                request.getSession().setAttribute("flashMessage", "Acción realizada correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Acción realizada correctamente.");
             }
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
@@ -506,7 +513,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
             int idCitaNueva = citaDAO.reservarCitaConId(idPac, idMed, fecha, hora, "MEDIA");
             if (idCitaNueva > 0) {
-                request.getSession().setAttribute("flashMessage", "¡Cita agendada exitosamente (ID #" + idCitaNueva + ") para el " + fecha + " a las " + hora + "!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Cita agendada exitosamente (ID #" + idCitaNueva + ") para el " + fecha + " a las " + hora + "!");
             } else {
                 request.getSession().setAttribute("flashError", "No se pudo agendar la cita: el horario " + (fecha != null ? fecha : "") + " " + (hora != null ? hora : "") + " ya se encuentra ocupado por otro paciente.");
             }
@@ -520,7 +527,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 int minutos = duracion == null || duracion.isBlank() ? 30 : Integer.parseInt(duracion);
                 new AgendaCitaDAO().publicar(medico, sede, request.getParameter("fecha"),
                         request.getParameter("horaInicio"), request.getParameter("horaFin"), minutos);
-                request.getSession().setAttribute("flashMessage", "Turno de atención publicado correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Turno de atención publicado correctamente.");
             } catch (NumberFormatException e) {
                 request.getSession().setAttribute("flashError", "Los identificadores y la duración deben ser números válidos.");
             } catch (AgendaException e) {
@@ -532,7 +539,7 @@ public class AdminDashboardServlet extends HttpServlet {
             try {
                 new AgendaCitaDAO().cambiarEstado(Integer.parseInt(request.getParameter("idDisponibilidad")),
                         request.getParameter("nuevoEstado"));
-                request.getSession().setAttribute("flashMessage", "Estado del turno actualizado correctamente.");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Estado del turno actualizado correctamente.");
             } catch (NumberFormatException e) {
                 request.getSession().setAttribute("flashError", "El identificador del turno no es válido.");
             } catch (AgendaException e) {
@@ -579,7 +586,7 @@ public class AdminDashboardServlet extends HttpServlet {
             u.setActivo(true);
 
             usuarioDAO.registrarPersonal(u, cmp, idEsp, idSede, "Médico Facultativo");
-            request.getSession().setAttribute("flashMessage", "¡Médico " + nombres + " " + apellidos + " (" + cmp + ") guardado exitosamente en la Base de Datos!");
+            request.getSession().setAttribute(FLASH_MESSAGE, "¡Médico " + nombres + " " + apellidos + " (" + cmp + ") guardado exitosamente en la Base de Datos!");
             response.sendRedirect(request.getContextPath() + "/admin/medicos");
             return;
         }
@@ -821,11 +828,14 @@ public class AdminDashboardServlet extends HttpServlet {
                         default -> "Confirmada";
                     };
                     map.put("estado", etiqueta);
-                    map.put("puedeAdmitir", "CONFIRMADA".equals(estado));
+                    map.put("puedeAdmitir", ESTADO_CONFIRMADA.equals(estado));
                     java.time.LocalDateTime ahora = java.time.LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
-                    map.put("puedeMarcarAusencia", "CONFIRMADA".equals(estado) && llegada == null && ahora.isAfter(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).plusMinutes(admisionDAO.toleranciaMinutos())));
-                    map.put("puedeAnular", Set.of("SOLICITADA", "CONFIRMADA").contains(estado));
-                    map.put("accionTexto", llegada != null ? "Llegada " + llegada.toLocalTime() : ("EN_SALA".equals(estado) ? "Hora de llegada sin registrar" : etiqueta));
+                    map.put("puedeMarcarAusencia", ESTADO_CONFIRMADA.equals(estado) && llegada == null && ahora.isAfter(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).plusMinutes(admisionDAO.toleranciaMinutos())));
+                    map.put("puedeAnular", Set.of("SOLICITADA", ESTADO_CONFIRMADA).contains(estado));
+                    String accionTexto=etiqueta;
+                    if(llegada!=null) accionTexto="Llegada " + llegada.toLocalTime();
+                    else if("EN_SALA".equals(estado)) accionTexto="Hora de llegada sin registrar";
+                    map.put("accionTexto",accionTexto);
                     list.add(map);
                 }
             }
@@ -984,4 +994,10 @@ public class AdminDashboardServlet extends HttpServlet {
         }
         return list;
     }
+    private static void responderError(HttpServletResponse response,int estado,String mensaje){
+        if(response.isCommitted()) return;
+        try { response.sendError(estado,mensaje); }
+        catch(IOException e) { response.setStatus(500); }
+    }
+
 }

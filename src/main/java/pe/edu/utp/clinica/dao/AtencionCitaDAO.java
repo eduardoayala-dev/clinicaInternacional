@@ -83,7 +83,10 @@ final class AtencionCitaDAO {
         int paciente;
         try (PreparedStatement ps = conn.prepareStatement("SELECT id_paciente FROM cita WHERE id_cita=? AND id_medico=?")) {
             ps.setInt(1, cita); ps.setInt(2, medico);
-            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw inexistente(); paciente = rs.getInt(1); }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) { throw inexistente(); }
+                paciente = rs.getInt(1);
+            }
         }
         try (PreparedStatement ps = conn.prepareStatement("SELECT id_paciente FROM paciente WHERE id_paciente=? FOR UPDATE")) {
             ps.setInt(1, paciente); try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw inexistente(); }
