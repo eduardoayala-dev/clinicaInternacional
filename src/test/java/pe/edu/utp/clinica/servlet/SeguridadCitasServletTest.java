@@ -69,7 +69,7 @@ class SeguridadCitasServletTest {
         }
     }
 
-    @Test void doctorReadUsesDoctorIdentityAndDeniesUnassignedAppointment() throws Exception {
+    @Test void doctorReadUsesDoctorIdentityAndDeniesUnassignedAppointment() {
         Dao dao = new Dao(); HttpExchange x = new HttpExchange(); x.method="GET";
         x.session.setAttribute("usuarioLogueado", new Usuario(20,"M","Uno","m@test","","MEDICO",null,true));
         x.parameters.put("idCita","7"); x.parameters.put("idMedico","999");
@@ -80,7 +80,7 @@ class SeguridadCitasServletTest {
         assertEquals(8,dao.owner); assertEquals(404,x.status);
     }
 
-    @Test void rejectedMedicalUpdateDoesNotReportSuccess() throws Exception {
+    @Test void rejectedMedicalUpdateDoesNotReportSuccess() {
         Dao dao = new Dao(); HttpExchange x = new HttpExchange();
         x.session.setAttribute("usuarioLogueado", new Usuario(20,"M","Uno","m@test","","MEDICO",null,true));
         x.parameters.put("idCita","7"); x.parameters.put("accion","guardar"); x.parameters.put("prioridad","MEDIA");

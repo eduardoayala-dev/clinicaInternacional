@@ -70,8 +70,8 @@ public class HttpExchange {
                     case "getRequestDispatcher":
                         String destino=(String)args[0];
                         return (jakarta.servlet.RequestDispatcher) Proxy.newProxyInstance(jakarta.servlet.RequestDispatcher.class.getClassLoader(),
-                                new Class<?>[]{jakarta.servlet.RequestDispatcher.class},(dispatcher,method,params)->{
-                                    if("forward".equals(method.getName())) forward=destino;
+                                new Class<?>[]{jakarta.servlet.RequestDispatcher.class},(dispatcher,operacionDispatcher,params)->{
+                                    if("forward".equals(operacionDispatcher.getName())) forward=destino;
                                     return null;
                                 });
                     case "setAttribute": attributes.put((String) args[0], args[1]); return null;

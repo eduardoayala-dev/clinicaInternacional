@@ -115,7 +115,7 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         try{portal.guardar(1,7,"ATENDIDA","MEDIA",null,"control");return 1;}
         catch(AgendaException e){assertEquals(409,e.status());return 0;}
     }
-    @Test void clinicalDayUsesLimaEvenWhenUtcHasAlreadyAdvanced()throws Exception{
+    @Test void clinicalDayUsesLimaEvenWhenUtcHasAlreadyAdvanced(){
         var noche=new MedicoPortalDAO(this::abrir,Clock.fixed(Instant.parse("2026-10-29T04:30:00Z"),ZoneId.of("America/Lima")));
         assertEquals(true,noche.detalle(1,7).get("editable"));assertEquals(1,noche.agenda(1,HOY).size());
     }

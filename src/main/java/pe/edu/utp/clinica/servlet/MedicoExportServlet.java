@@ -37,7 +37,13 @@ public class MedicoExportServlet extends MedicoPortalServlet {
         out.print("<!DOCTYPE html><html lang=\"es\"><head><meta charset=\"UTF-8\"><meta name=\"viewport\" content=\"width=device-width,initial-scale=1\"><title>Agenda médica</title><style>body{font-family:Arial,sans-serif;padding:24px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ccc;padding:8px;text-align:left}@media print{button{display:none}}</style></head><body><button onclick=\"window.print()\">Imprimir / Guardar como PDF</button><h1>Agenda médica</h1><p>");
         out.print(Html.texto(perfil.get("nombreMedico"))+" · "+Html.texto(fecha));
         out.print("</p><table><thead><tr><th>Cita</th><th>Fecha</th><th>Hora</th><th>Paciente</th><th>Documento</th><th>Estado</th><th>Motivo</th></tr></thead><tbody>");
-        for(var cita:agenda){out.print("<tr>");for(String campo:CAMPOS) out.print("<td>"+Html.texto(cita.get(campo))+"</td>");out.print("</tr>");}
+        for(var cita:agenda){
+            out.print("<tr>");
+            for(String campo:CAMPOS){
+                out.print("<td>"+Html.texto(cita.get(campo))+"</td>");
+            }
+            out.print("</tr>");
+        }
         out.print("</tbody></table></body></html>");
     }
 }

@@ -7,7 +7,6 @@ import pe.edu.utp.clinica.api.ApiJson;
 import pe.edu.utp.clinica.api.ApiResponse;
 import java.io.IOException;
 import java.time.LocalDate;
-import java.util.Map;
 
 @WebServlet(name="MedicoInicioServlet",urlPatterns={"/medico/inicio","/medico/dashboard"})
 public class MedicoInicioServlet extends MedicoPortalServlet {

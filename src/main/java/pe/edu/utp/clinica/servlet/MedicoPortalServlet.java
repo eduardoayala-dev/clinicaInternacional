@@ -70,22 +70,27 @@ abstract class MedicoPortalServlet extends HttpServlet {
     }
     protected static int positivo(String value){
         try{
-            if(value==null || !value.matches("[0-9]+")) throw new NumberFormatException();
-            int id=Integer.parseInt(value);if(id<=0) throw new NumberFormatException();return id;
+            if(value==null || !value.matches("\\d+")) throw new NumberFormatException();
+            int id=Integer.parseInt(value);
+            if(id<=0) throw new NumberFormatException();
+            return id;
         }catch(NumberFormatException e){throw new AgendaException(400,"IDENTIFICADOR_INVALIDO","El identificador de la cita no es válido.");}
     }
     protected void agenda(HttpServletRequest request,Contexto contexto,LocalDate fecha){
         var agenda=citas.obtenerAgendaMedico(contexto.medico(),fecha);
-        int atendidos=0,enSala=0,pendientes=0,inasistencias=0;
+        int atendidos=0;
+        int enSala=0;
+        int pendientes=0;
+        int inasistencias=0;
         Map<String,Object> pacienteEnSala=null;
         for(var cita:agenda){
-            switch(String.valueOf(cita.get("estado"))){
-                case "ATENDIDA"->atendidos++;
-                case "EN_SALA"->{enSala++;if(pacienteEnSala==null) pacienteEnSala=cita;}
-                case "CONFIRMADA","SOLICITADA"->pendientes++;
-                case "NO_ASISTIO"->inasistencias++;
-                default->{}
-            }
+            String estado=String.valueOf(cita.get("estado"));
+            if("ATENDIDA".equals(estado)) atendidos++;
+            else if("EN_SALA".equals(estado)){
+                enSala++;
+                if(pacienteEnSala==null) pacienteEnSala=cita;
+            }else if("CONFIRMADA".equals(estado) || "SOLICITADA".equals(estado)) pendientes++;
+            else if("NO_ASISTIO".equals(estado)) inasistencias++;
         }
         request.setAttribute("agenda",agenda);request.setAttribute("fechaSeleccionada",fecha.toString());
         request.setAttribute("fechaActual",fecha.toString());request.setAttribute("fechaHoyStr",fecha.toString());

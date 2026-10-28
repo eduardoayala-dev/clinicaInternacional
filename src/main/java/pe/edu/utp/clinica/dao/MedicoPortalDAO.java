@@ -18,6 +18,10 @@ import java.util.Map;
 import java.util.Set;
 
 public class MedicoPortalDAO {
+    private static final String NOMBRES = "nombres";
+    private static final String APELLIDOS = "apellidos";
+    private static final String ATENDIDA = "ATENDIDA";
+    private static final String MOTIVO = "motivo";
     private static final ZoneId LIMA=ZoneId.of("America/Lima");
     private static final Set<String> MODIFICABLES=Set.of("CONFIRMADA","EN_SALA");
     private static final String PERFIL="SELECT m.id_medico,m.cmp,u.nombres,u.apellidos,u.email,e.nombre AS especialidad,s.nombre AS sedeNombre FROM medico m JOIN usuario u ON m.id_usuario=u.id_usuario JOIN especialidad e ON m.id_especialidad=e.id_especialidad JOIN sede s ON m.id_sede=s.id_sede WHERE m.id_usuario=? AND m.estado='ACTIVO' AND u.activo=TRUE AND u.rol='MEDICO' AND e.estado='ACTIVO' AND s.estado='ACTIVO'";
@@ -37,7 +41,7 @@ public class MedicoPortalDAO {
                 if(!rs.next()) throw new AgendaException(403,"MEDICO_NO_HABILITADO","El perfil médico no está habilitado.");
                 Map<String,Object> data=new LinkedHashMap<>();
                 data.put("idMedico",rs.getInt("id_medico"));
-                data.put("nombreMedico",texto(rs,"nombres")+" "+texto(rs,"apellidos"));
+                data.put("nombreMedico",texto(rs,NOMBRES)+" "+texto(rs,APELLIDOS));
                 for(String campo:List.of("cmp","email","especialidad","sedeNombre")) data.put(campo,texto(rs,campo));
                 return data;
             }
@@ -53,8 +57,8 @@ public class MedicoPortalDAO {
             try(ResultSet rs=ps.executeQuery()){
                 while(rs.next()){
                     Map<String,Object> data=base(rs);
-                    data.put("paciente",texto(rs,"nombres")+" "+texto(rs,"apellidos"));data.put("dni",texto(rs,"dni"));
-                    data.put("motivo",texto(rs,"motivo"));data.put("origen",rs.getBoolean("reasignada")?"Lista de espera":"Reserva");
+                    data.put("paciente",texto(rs,NOMBRES)+" "+texto(rs,APELLIDOS));data.put("dni",texto(rs,"dni"));
+                    data.put(MOTIVO,texto(rs,MOTIVO));data.put("origen",rs.getBoolean("reasignada")?"Lista de espera":"Reserva");
                     rows.add(data);
                 }
             }
@@ -71,42 +75,58 @@ public class MedicoPortalDAO {
     }
 
     public boolean guardar(int medico,int cita,String estado,String prioridad,String fecha,String notas){
-        if(medico<=0 || cita<=0 || !Set.of("ATENDIDA","NO_ASISTIO").contains(estado==null?"":estado)) throw invalida();
-        boolean asistio="ATENDIDA".equals(estado);
+        if(medico<=0 || cita<=0 || !Set.of(ATENDIDA,"NO_ASISTIO").contains(estado==null?"":estado)) throw invalida();
+        boolean asistio=ATENDIDA.equals(estado);
         LocalDate proxima=validarSeguimiento(asistio,prioridad,fecha,notas);
         return TransaccionJdbc.ejecutar(connections,conn->{
-            int paciente=propietario(conn,medico,cita);
-            try(PreparedStatement ps=conn.prepareStatement("SELECT id_paciente FROM paciente WHERE id_paciente=? FOR UPDATE")){
-                ps.setInt(1,paciente);try(ResultSet rs=ps.executeQuery()){if(!rs.next()) throw inexistente();}
-            }
-            validarUsuario(conn,medico);
-            AgendaCitaDAO.medico(conn,medico);
-            String actual;LocalDateTime inicio;
-            try(PreparedStatement ps=conn.prepareStatement("SELECT estado,fecha_hora FROM cita WHERE id_cita=? AND id_medico=? FOR UPDATE")){
-                ps.setInt(1,cita);ps.setInt(2,medico);
-                try(ResultSet rs=ps.executeQuery()){
-                    if(!rs.next()) throw inexistente();actual=rs.getString(1);inicio=rs.getObject(2,LocalDateTime.class);
-                }
-            }
-            if(!editable(actual,inicio)) throw new AgendaException(409,"ATENCION_NO_DISPONIBLE","Solo puedes cerrar una cita confirmada o en sala el día de su atención, a partir de su hora.");
-            String update=asistio?"UPDATE cita SET estado='ATENDIDA',nivel_urgencia=?,fecha_recomendada_proxima=? WHERE id_cita=? AND id_medico=?"
-                    :"UPDATE cita SET estado='NO_ASISTIO' WHERE id_cita=? AND id_medico=?";
-            try(PreparedStatement ps=conn.prepareStatement(update)){
-                int i=1;
-                if(asistio){ps.setString(i++,prioridad);ps.setObject(i++,proxima);}
-                ps.setInt(i++,cita);ps.setInt(i,medico);
-                if(ps.executeUpdate()!=1) throw inexistente();
-            }
-            try(PreparedStatement ps=conn.prepareStatement("INSERT INTO historial_asistencia(id_paciente,id_cita,asistio,observacion,fecha_registro) VALUES(?,?,?,?,?)")){
-                ps.setInt(1,paciente);ps.setInt(2,cita);ps.setBoolean(3,asistio);
-                String observacion=java.util.Objects.toString(notas,"").trim();
-                if(!asistio) observacion="Inasistencia registrada por el médico asignado.";
-                ps.setString(4,observacion);
-                ps.setObject(5,LocalDateTime.now(clock));
-                if(ps.executeUpdate()!=1) throw new SQLException("No se guardó el registro de atención");
-            }
+            int paciente=validarCierre(conn,medico,cita);
+            actualizarCita(conn,medico,cita,asistio,prioridad,proxima);
+            insertarHistorial(conn,paciente,cita,asistio,notas);
             return true;
         });
+    }
+
+    private int validarCierre(Connection conn,int medico,int cita)throws SQLException {
+        int paciente=propietario(conn,medico,cita);
+        try(PreparedStatement ps=conn.prepareStatement("SELECT id_paciente FROM paciente WHERE id_paciente=? FOR UPDATE")){
+            ps.setInt(1,paciente);try(ResultSet rs=ps.executeQuery()){if(!rs.next()) throw inexistente();}
+        }
+        validarUsuario(conn,medico);
+        AgendaCitaDAO.medico(conn,medico);
+        String actual;
+        LocalDateTime inicio;
+        try(PreparedStatement ps=conn.prepareStatement("SELECT estado,fecha_hora FROM cita WHERE id_cita=? AND id_medico=? FOR UPDATE")){
+            ps.setInt(1,cita);ps.setInt(2,medico);
+            try(ResultSet rs=ps.executeQuery()){
+                if(!rs.next()) throw inexistente();
+                actual=rs.getString(1);
+                inicio=rs.getObject(2,LocalDateTime.class);
+            }
+        }
+        if(!editable(actual,inicio)) throw new AgendaException(409,"ATENCION_NO_DISPONIBLE","Solo puedes cerrar una cita confirmada o en sala el día de su atención, a partir de su hora.");
+        return paciente;
+    }
+
+    private static void actualizarCita(Connection conn,int medico,int cita,boolean asistio,String prioridad,LocalDate proxima)throws SQLException {
+        String update=asistio?"UPDATE cita SET estado='ATENDIDA',nivel_urgencia=?,fecha_recomendada_proxima=? WHERE id_cita=? AND id_medico=?"
+                :"UPDATE cita SET estado='NO_ASISTIO' WHERE id_cita=? AND id_medico=?";
+        try(PreparedStatement ps=conn.prepareStatement(update)){
+            int i=1;
+            if(asistio){ps.setString(i++,prioridad);ps.setObject(i++,proxima);}
+            ps.setInt(i++,cita);ps.setInt(i,medico);
+            if(ps.executeUpdate()!=1) throw inexistente();
+        }
+    }
+
+    private void insertarHistorial(Connection conn,int paciente,int cita,boolean asistio,String notas)throws SQLException {
+        try(PreparedStatement ps=conn.prepareStatement("INSERT INTO historial_asistencia(id_paciente,id_cita,asistio,observacion,fecha_registro) VALUES(?,?,?,?,?)")){
+            ps.setInt(1,paciente);ps.setInt(2,cita);ps.setBoolean(3,asistio);
+            String observacion=java.util.Objects.toString(notas,"").trim();
+            if(!asistio) observacion="Inasistencia registrada por el médico asignado.";
+            ps.setString(4,observacion);
+            ps.setObject(5,LocalDateTime.now(clock));
+            if(ps.executeUpdate()!=1) throw new SQLException("No se guardó el registro de atención");
+        }
     }
 
     private LocalDate validarSeguimiento(boolean asistio,String prioridad,String fecha,String notas){
@@ -124,7 +144,8 @@ public class MedicoPortalDAO {
     private static int propietario(Connection conn,int medico,int cita)throws SQLException{
         try(PreparedStatement ps=conn.prepareStatement("SELECT id_paciente FROM cita WHERE id_cita=? AND id_medico=?")){
             ps.setInt(1,cita);ps.setInt(2,medico);
-            try(ResultSet rs=ps.executeQuery()){if(!rs.next()) throw inexistente();return rs.getInt(1);}
+            try(ResultSet rs=ps.executeQuery()){if(!rs.next()) throw inexistente();
+                return rs.getInt(1);}
         }
     }
     private static void validarUsuario(Connection conn,int medico)throws SQLException{
@@ -141,7 +162,7 @@ public class MedicoPortalDAO {
         data.put("fechaFormateada",inicio.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
         data.put("fechaHora",inicio.toString());data.put("estado",estado);data.put("editable",editable(estado,inicio));
         data.put("estadoTexto",switch(estado){
-            case "ATENDIDA"->"Atendida";case "NO_ASISTIO"->"No asistió";case "EN_SALA"->"En sala";
+            case ATENDIDA->"Atendida";case "NO_ASISTIO"->"No asistió";case "EN_SALA"->"En sala";
             case "CANCELADA"->"Cancelada";case "REPROGRAMADA"->"Reprogramada";
             case "CONFIRMADA"->"Confirmada";case "SOLICITADA"->"Solicitada";default->estado;
         });
@@ -150,9 +171,9 @@ public class MedicoPortalDAO {
     private Map<String,Object> presentar(ResultSet rs)throws SQLException{
         Map<String,Object> data=base(rs);
         data.put("idPaciente",rs.getInt("id_paciente"));
-        String nombre=texto(rs,"nombres")+" "+texto(rs,"apellidos");
+        String nombre=texto(rs,NOMBRES)+" "+texto(rs,APELLIDOS);
         data.put("paciente",nombre);data.put("pacienteNombre",nombre);
-        for(String campo:List.of("dni","telefono","email","direccion","alergias","especialidad","sede","cmp","motivo","indicaciones")) data.put(campo,texto(rs,campo));
+        for(String campo:List.of("dni","telefono","email","direccion","alergias","especialidad","sede","cmp",MOTIVO,"indicaciones")) data.put(campo,texto(rs,campo));
         data.put("urgencia",texto(rs,"nivel_urgencia"));data.put("tipoCobertura",texto(rs,"tipo_cobertura"));
         data.put("medicoNombre",texto(rs,"medico_nombres")+" "+texto(rs,"medico_apellidos"));
         data.put("sedeYConsultorio",texto(rs,"sede"));data.put("canalReserva",texto(rs,"canal_aviso"));
