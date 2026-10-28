@@ -6,6 +6,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 public final class FormatoClinico {
+    private static final String SIN_REGISTRAR = "Sin registrar";
     private static final DateTimeFormatter FECHA = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter FECHA_HORA = DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     private static final Map<String,String> ESTADOS = Map.ofEntries(
@@ -15,7 +16,7 @@ public final class FormatoClinico {
             Map.entry("NO_ATENDIDA","No atendida"), Map.entry("CONFIRMADA","Confirmada"),
             Map.entry("SOLICITADA","Solicitada"), Map.entry("EN_SALA","En sala"));
     private FormatoClinico() {}
-    public static String fecha(LocalDate fecha) { return fecha == null ? "Sin registrar" : fecha.format(FECHA); }
-    public static String fechaHora(LocalDateTime fecha) { return fecha == null ? "Sin registrar" : fecha.format(FECHA_HORA); }
-    public static String estado(String estado) { return estado == null ? "Sin registrar" : ESTADOS.getOrDefault(estado, estado); }
+    public static String fecha(LocalDate fecha) { return fecha == null ? SIN_REGISTRAR : fecha.format(FECHA); }
+    public static String fechaHora(LocalDateTime fecha) { return fecha == null ? SIN_REGISTRAR : fecha.format(FECHA_HORA); }
+    public static String estado(String estado) { return estado == null ? SIN_REGISTRAR : ESTADOS.getOrDefault(estado, estado); }
 }

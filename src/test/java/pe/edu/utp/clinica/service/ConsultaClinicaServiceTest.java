@@ -9,13 +9,16 @@ class ConsultaClinicaServiceTest {
     @Test void requiresClinicalContentWithoutInventingOptionalFields() {
         var consulta=ConsultaClinicaService.validar(new ConsultaClinica(" Motivo ",null,null,"Evaluación","Diagnóstico","Plan"));
         assertEquals("Motivo",consulta.motivo());assertEquals("",consulta.antecedentes());assertEquals("",consulta.hallazgos());
-        assertEquals(400,assertThrows(AgendaException.class,()->ConsultaClinicaService.validar(new ConsultaClinica(" ","","","","",""))).status());
+        var incompleta = new ConsultaClinica(" ","","","","","");
+        assertEquals(400,assertThrows(AgendaException.class,()->ConsultaClinicaService.validar(incompleta)).status());
     }
     @Test void preservesClinicalTextButRejectsOversizedValuesAndControls() {
         String texto="Evolución: niño con tos. <control> & revisión\nSegunda línea.";
         var consulta=ConsultaClinicaService.validar(new ConsultaClinica(texto,"","","Evaluación","Diagnóstico","Plan"));
         assertEquals(texto,consulta.motivo());
-        assertThrows(AgendaException.class,()->ConsultaClinicaService.validar(new ConsultaClinica("x".repeat(1001),"","","Evaluación","Diagnóstico","Plan")));
-        assertThrows(AgendaException.class,()->ConsultaClinicaService.validar(new ConsultaClinica("Motivo","","","Evaluación","Diagnóstico","Plan\u0000")));
+        var extensa = new ConsultaClinica("x".repeat(1001),"","","Evaluación","Diagnóstico","Plan");
+        assertThrows(AgendaException.class,()->ConsultaClinicaService.validar(extensa));
+        var control = new ConsultaClinica("Motivo","","","Evaluación","Diagnóstico","Plan\u0000");
+        assertThrows(AgendaException.class,()->ConsultaClinicaService.validar(control));
     }
 }

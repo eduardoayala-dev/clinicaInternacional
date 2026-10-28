@@ -122,10 +122,13 @@ public final class MedicoHistorialDAO implements HistorialMedicoRepository {
         int paciente;
         try (PreparedStatement ps = conn.prepareStatement("SELECT id_paciente FROM cita WHERE id_cita=? AND id_medico=?")) {
             ps.setInt(1, origen); ps.setInt(2, medico);
-            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw inexistente(); paciente = rs.getInt(1); }
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) { throw inexistente(); }
+                paciente = rs.getInt(1);
+            }
         }
         try (PreparedStatement ps = conn.prepareStatement("SELECT id_paciente FROM paciente WHERE id_paciente=? FOR UPDATE")) {
-            ps.setInt(1, paciente); try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw inexistente(); }
+            ps.setInt(1, paciente); try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) { throw inexistente(); } }
         }
         AgendaCitaDAO.medico(conn, medico);
         String sql = "SELECT m.id_usuario,ct.estado FROM cita c JOIN medico m ON m.id_medico=c.id_medico JOIN usuario u ON u.id_usuario=m.id_usuario JOIN cita ct ON ct.id_cita=? AND ct.id_medico=c.id_medico AND ct.id_paciente=c.id_paciente LEFT JOIN atencion_cita t ON t.id_cita=c.id_cita WHERE c.id_cita=? AND c.id_medico=? AND c.id_paciente=? AND c.estado='ATENDIDA' AND c.fecha_recomendada_proxima IS NOT NULL AND " + RELACION + " AND ct.id_cita<>c.id_cita AND ct.fecha_hora>COALESCE(t.fecha_fin,c.fecha_hora) AND u.activo=TRUE AND u.rol='MEDICO' FOR UPDATE";

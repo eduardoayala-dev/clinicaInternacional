@@ -10,7 +10,10 @@
 %>
 <!DOCTYPE html>
 <html lang="es">
-<head><%@ include file="/WEB-INF/jspf/medico-head.jspf" %></head>
+<head>
+<title><%= Html.texto(tituloPagina) %> — Portal del médico</title>
+<%@ include file="/WEB-INF/jspf/medico-head.jspf" %>
+</head>
 <body>
 <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>
 <div class="med-main-wrapper">
