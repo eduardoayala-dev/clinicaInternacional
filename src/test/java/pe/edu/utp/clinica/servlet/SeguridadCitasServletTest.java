@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class SeguridadCitasServletTest {
     private static class Dao extends CitaDAO {
+        @Override public Map<String,Object> obtenerPerfilPortalMedico(int usuario) { return Map.of("idMedico",8,"nombreMedico","Medico de prueba","especialidad","General","sedeNombre","Central"); }
         boolean allowed;
         int owner;
         int attempts;
@@ -26,7 +27,7 @@ class SeguridadCitasServletTest {
         @Override public Map<String,Object> obtenerDetalleCitaMedico(int id, int doctor) {
             owner = doctor; return Map.of();
         }
-        @Override public boolean actualizarAtencionMedica(int id, int doctor, String state,
+        @Override public boolean actualizarAtencionMedicaValidada(int id, int doctor, String state,
                 String priority, String date, String instructions) {
             attempts++; owner = doctor; return allowed;
         }
