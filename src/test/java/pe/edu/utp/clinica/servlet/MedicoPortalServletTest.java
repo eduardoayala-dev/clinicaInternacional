@@ -74,7 +74,7 @@ class MedicoPortalServletTest {
         atencion(dao).doPost(x.request,x.response);assertEquals(8,dao.medico);assertEquals(200,x.status);assertEquals(1,dao.escrituras);
         assertEquals(7,new ObjectMapper().readTree(x.body.toString()).get("data").get("idCita").asInt());
     }
-    @Test void startAndNoAttentionUseSessionIdentityAndAbsenceIsForbidden()throws Exception{
+    @Test void startAndNoAttentionUseSessionIdentityAndAbsenceIsForbidden(){
         for(String accion:List.of("iniciar","no_atender")){
             var x=request();var dao=new Dao();x.method="POST";x.parameters.putAll(Map.of("accion",accion,"idCita","7","idMedico","999","motivo","Motivo comprobado"));
             atencion(dao).doPost(x.request,x.response);assertEquals(200,x.status);assertEquals(8,dao.medico);assertEquals(1,dao.escrituras);
