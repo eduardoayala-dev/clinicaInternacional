@@ -18,7 +18,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class MedicoPortalServletTest {
     private static class Dao extends CitaDAO {
         int activa=-1;
-        int medico,escrituras,consultas;LocalDate fecha;AgendaException fallo;
+        int medico,escrituras,consultas;LocalDate fecha,hasta;AgendaException fallo;
         List<Map<String,Object>> agenda=List.of();
         @Override public int obtenerAtencionActivaMedico(int medico){return activa;}
         @Override public boolean iniciarAtencionMedica(int cita,int medico){escrituras++;this.medico=medico;return true;}
@@ -27,6 +27,7 @@ class MedicoPortalServletTest {
             consultas++;if(fallo!=null) throw fallo;
             assertEquals(20,usuario);return Map.of("idMedico",8,"nombreMedico","Médico de prueba","especialidad","General","sedeNombre","Central");
         }
+        @Override public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate desde,LocalDate hasta){this.medico=medico;this.fecha=desde;this.hasta=hasta;return agenda;}
         @Override public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate fecha){this.medico=medico;this.fecha=fecha;return agenda;}
         @Override public Map<String,Object> obtenerDetalleCitaMedico(int cita,int medico){this.medico=medico;return cita==7?Map.of("idCita",7,"estado","ATENDIDA","indicaciones","Control real"):Map.of();}
         @Override public boolean actualizarAtencionMedicaValidada(int cita,int medico,String estado,String prioridad,String fecha,String notas){
@@ -119,5 +120,14 @@ class MedicoPortalServletTest {
     @Test void htmlAgendaForwardsToItsViewAndReadOnlyPostReturns405(){
         var x=request();var dao=new Dao();x.headers.clear();agenda(dao).doGet(x.request,x.response);assertEquals("/WEB-INF/views/medico/agenda.jsp",x.forward);
         x=request();x.method="POST";agenda(dao).doPost(x.request,x.response);assertEquals(405,x.status);assertEquals("GET",x.responseHeaders.get("Allow"));
+    }
+
+    @Test void weekAndMonthUseBoundedRangesAndSessionDoctor(){
+        var dao=new Dao();var x=request();x.parameters.put("vista","semana");x.parameters.put("fecha","2026-11-01");x.parameters.put("idMedico","999");
+        agenda(dao).doGet(x.request,x.response);
+        assertEquals(200,x.status);assertEquals(8,dao.medico);assertEquals(LocalDate.of(2026,10,26),dao.fecha);assertEquals(LocalDate.of(2026,11,2),dao.hasta);
+        x=request();x.parameters.put("vista","mes");x.parameters.put("fecha","2028-02-29");agenda(dao).doGet(x.request,x.response);
+        assertEquals(200,x.status);assertEquals(LocalDate.of(2028,2,1),dao.fecha);assertEquals(LocalDate.of(2028,3,1),dao.hasta);
+        x=request();x.parameters.put("vista","anual");agenda(dao).doGet(x.request,x.response);assertEquals(400,x.status);
     }
 }

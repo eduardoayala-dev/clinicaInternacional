@@ -77,7 +77,32 @@ abstract class MedicoPortalServlet extends HttpServlet {
         }catch(NumberFormatException e){throw new AgendaException(400,"IDENTIFICADOR_INVALIDO","El identificador de la cita no es válido.");}
     }
     protected void agenda(HttpServletRequest request,Contexto contexto,LocalDate fecha){
-        var agenda=citas.obtenerAgendaMedico(contexto.medico(),fecha);
+        resumirAgenda(request,fecha,citas.obtenerAgendaMedico(contexto.medico(),fecha));
+    }
+    protected void agenda(HttpServletRequest request,Contexto contexto,Periodo periodo){
+        var filas="dia".equals(periodo.vista()) ? citas.obtenerAgendaMedico(contexto.medico(),periodo.desde())
+                : citas.obtenerAgendaMedico(contexto.medico(),periodo.desde(),periodo.hasta());
+        resumirAgenda(request,periodo.fecha(),filas);
+        request.setAttribute("vista",periodo.vista());
+        request.setAttribute("periodoDesde",periodo.desde().toString());
+        request.setAttribute("periodoHasta",periodo.hasta().minusDays(1).toString());
+    }
+    protected record Periodo(String vista,LocalDate fecha,LocalDate desde,LocalDate hasta){}
+    protected Periodo periodo(HttpServletRequest request){
+        var fecha=fecha(request);
+        String vista=request.getParameter("vista");
+        if(vista==null) vista="dia";
+        LocalDate desde;
+        LocalDate hasta;
+        switch(vista){
+            case "dia": desde=fecha;hasta=fecha.plusDays(1);break;
+            case "semana": desde=fecha.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));hasta=desde.plusWeeks(1);break;
+            case "mes": desde=fecha.withDayOfMonth(1);hasta=desde.plusMonths(1);break;
+            default: throw new AgendaException(400,"VISTA_INVALIDA","Selecciona Día, Semana o Mes.");
+        }
+        return new Periodo(vista,fecha,desde,hasta);
+    }
+    private void resumirAgenda(HttpServletRequest request,LocalDate fecha,java.util.List<Map<String,Object>> agenda){
         int atendidos=0;
         int enSala=0;
         int pendientes=0;
