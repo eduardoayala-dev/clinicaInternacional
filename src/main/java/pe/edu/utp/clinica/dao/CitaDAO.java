@@ -23,6 +23,7 @@ import java.util.logging.Logger;
  * Delega en MedicoDAO, NotificacionDAO y ListaEsperaDAO para mantener alta cohesión y bajo acoplamiento.
  */
 public class CitaDAO {
+    private static final String ZONA_CLINICA = "America/Lima";
     private static final String ESTADO_CANCELADA = "CANCELADA";
     private static final String ESTADO_SOLICITADA = "SOLICITADA";
     private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
@@ -36,8 +37,8 @@ public class CitaDAO {
 
 
     private final MedicoDAO medicoDAO = new MedicoDAO();
-    private final NotificacionDAO notificacionDAO = new NotificacionDAO();
-    private final ListaEsperaDAO listaEsperaDAO = new ListaEsperaDAO();
+    private final NotificacionDAO notificacionDAO = new NotificacionDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
+    private final ListaEsperaDAO listaEsperaDAO = new ListaEsperaDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
 
     // =========================================================================
     // 1. DELEGACIONES A MedicoDAO (Catálogos, sedes, especialidades y disponibilidad)
@@ -73,6 +74,10 @@ public class CitaDAO {
 
     public List<Map<String, Object>> obtenerTodosMedicosDetalle() {
         return medicoDAO.obtenerTodosMedicosDetalle();
+    }
+
+    public List<Map<String, Object>> obtenerMedicosParaEspera() {
+        return medicoDAO.obtenerMedicosParaEspera();
     }
 
     public List<Map<String, Object>> obtenerMedicosDePaciente(int idPaciente) {
@@ -480,67 +485,10 @@ public class CitaDAO {
         return lista;
     }
 
-    public String ejecutarReasignacionInteligente(int idCitaOriginal) {
-        String sqlCita = "SELECT c.id_cita, c.id_medico, c.id_disponibilidad, m.id_especialidad, m.id_sede " +
-                         "FROM cita c " +
-                         "JOIN medico m ON c.id_medico = m.id_medico " +
-                         "WHERE c.id_cita = ?";
-        int idEspecialidad = 1;
-        int idDisp = 1;
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sqlCita)) {
-            ps.setInt(1, idCitaOriginal);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    idEspecialidad = rs.getInt("id_especialidad");
-                    idDisp = rs.getInt("id_disponibilidad");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        String sqlLista = "SELECT le.id_lista_espera, le.id_paciente, u.nombres, u.apellidos, u.id_usuario " +
-                          "FROM lista_espera le " +
-                          "JOIN paciente p ON le.id_paciente = p.id_paciente " +
-                          "JOIN usuario u ON p.id_usuario = u.id_usuario " +
-                          "WHERE le.id_especialidad = ? AND le.estado = 'ACTIVA' " +
-                          "ORDER BY CASE le.nivel_urgencia WHEN 'ALTA' THEN 1 WHEN 'MEDIA' THEN 2 ELSE 3 END, le.posicion ASC " +
-                          "LIMIT 1";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sqlLista)) {
-            ps.setInt(1, idEspecialidad);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    int idLista = rs.getInt("id_lista_espera");
-                    String pacienteCandidato = rs.getString("nombres") + " " + rs.getString("apellidos");
-                    int idUsuarioCandidato = rs.getInt("id_usuario");
-
-                    String sqlUpdLista = "UPDATE lista_espera SET estado = 'OFERTADA' WHERE id_lista_espera = ?";
-                    try (PreparedStatement psUpd = conn.prepareStatement(sqlUpdLista)) {
-                        psUpd.setInt(1, idLista);
-                        psUpd.executeUpdate();
-                    }
-
-                    String sqlInsReasig = "INSERT INTO reasignacion_inteligente (id_cita_original, id_lista_espera, id_disponibilidad, fecha_limite_respuesta, estado) " +
-                                          "VALUES (?, ?, ?, DATE_ADD(CURRENT_TIMESTAMP(), INTERVAL 15 MINUTE), 'PENDIENTE')";
-                    try (PreparedStatement psReasig = conn.prepareStatement(sqlInsReasig)) {
-                        psReasig.setInt(1, idCitaOriginal);
-                        psReasig.setInt(2, idLista);
-                        psReasig.setInt(3, idDisp);
-                        psReasig.executeUpdate();
-                    }
-
-                    crearNotificacion(idUsuarioCandidato, idCitaOriginal, "Lista de espera",
-                            "¡Cupo recuperado anticipado! Se te ha asignado una vacante prioritaria para Dermatología. Tienes 15 minutos para confirmar.");
-
-                    return "Cupo asignado prioritariamente al paciente en lista de espera: " + pacienteCandidato + " (Plazo de confirmación: 15 min).";
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return "No hay pacientes compatibles en lista de espera para esta especialidad.";
+    public String ejecutarReasignacionInteligente(int original) {
+        int oferta = new OfertasDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA))).generar(original);
+        return oferta > 0 ? "Se creó una oferta de cupo para un paciente compatible en lista de espera."
+                : "No se generó una nueva oferta para este cupo.";
     }
 
     // =========================================================================
@@ -553,10 +501,6 @@ public class CitaDAO {
 
     public List<Map<String, Object>> obtenerNotificacionesUsuario(int idUsuario) {
         return notificacionDAO.obtenerNotificacionesUsuario(idUsuario);
-    }
-
-    public void sincronizarNotificacionesIniciales(int idUsuario) {
-        notificacionDAO.sincronizarNotificacionesIniciales(idUsuario);
     }
 
     public int contarNotificacionesSinLeer(int idUsuario) {
@@ -592,13 +536,11 @@ public class CitaDAO {
     }
 
     public boolean aceptarOfertaCupo(int idPaciente, int idListaEspera) {
-        int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
-        return listaEsperaDAO.aceptarOfertaCupo(idPaciente, idListaEspera, idUsuario);
+        return listaEsperaDAO.aceptarOfertaCupo(idPaciente, idListaEspera);
     }
 
     public boolean rechazarOfertaCupo(int idPaciente, int idListaEspera) {
-        int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
-        return listaEsperaDAO.rechazarOfertaCupo(idPaciente, idListaEspera, idUsuario);
+        return listaEsperaDAO.rechazarOfertaCupo(idPaciente, idListaEspera);
     }
 
     public Map<String, Object> obtenerDetalleCitaMedico(int idCita, int idMedico) {

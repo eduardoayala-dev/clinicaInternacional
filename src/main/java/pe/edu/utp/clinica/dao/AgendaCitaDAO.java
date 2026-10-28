@@ -15,10 +15,8 @@ import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.Set;
-import java.util.logging.Logger;
 
 public final class AgendaCitaDAO {
-    private static final Logger LOGGER = Logger.getLogger(AgendaCitaDAO.class.getName());
     private static final Set<String> REPROGRAMABLES = Set.of("SOLICITADA", "CONFIRMADA");
     private static final String PUBLICADO = "PUBLICADO";
     private static final String OCUPADO = "HORARIO_NO_DISPONIBLE";
@@ -27,9 +25,7 @@ public final class AgendaCitaDAO {
 
     @FunctionalInterface
     interface ConnectionSource { Connection open() throws SQLException; }
-    @FunctionalInterface
-    private interface Operacion<T> { T ejecutar(Connection connection) throws SQLException; }
-    private record Medico(int sede, int especialidad) {}
+    record Medico(int sede, int especialidad) {}
     private record Bloque(int id, LocalTime inicio, LocalTime fin, int minutos) {}
 
     public AgendaCitaDAO() { this(DatabaseConfig::getConnection); }
@@ -42,18 +38,27 @@ public final class AgendaCitaDAO {
     }
 
     public int reservar(int paciente, int medico, String fecha, String hora, String urgencia) {
+        return transaccion(conn -> reservarEnConexion(conn, paciente, medico, fecha, hora, urgencia, 0));
+    }
+
+    int reservarEnConexion(Connection conn, int paciente, int medico, String fecha, String hora, String urgencia, int oferta) throws SQLException {
         LocalDateTime inicio = futura(fecha, hora);
         String prioridad = prioridad(urgencia);
-        return transaccion(conn -> {
-            int usuario = paciente(conn, paciente);
-            Medico perfil = medico(conn, medico);
-            Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
-            libre(conn, medico, inicio, bloque.minutos());
-            validarFutura(inicio);
-            int id = insertarCita(conn, paciente, medico, bloque.id(), inicio, null, prioridad);
-            notificar(conn, usuario, id, "Cita confirmada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
-            return id;
-        });
+        int usuario = paciente(conn, paciente);
+        Medico perfil = medico(conn, medico);
+        Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
+        libre(conn, medico, inicio, bloque.minutos(), oferta);
+        validarFutura(inicio);
+        int id = insertarCita(conn, paciente, medico, bloque.id(), inicio, null, prioridad);
+        notificar(conn, usuario, id, "Cita confirmada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
+        return id;
+    }
+
+    void validarCupo(Connection conn, int medico, LocalDateTime inicio) throws SQLException {
+        Medico perfil = medico(conn, medico);
+        validarFutura(inicio);
+        Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
+        libre(conn, medico, inicio, bloque.minutos(), 0);
     }
 
     public boolean reprogramar(int anterior, int paciente, int medico, String fecha, String hora,
@@ -67,7 +72,7 @@ public final class AgendaCitaDAO {
             Medico perfil = medico(conn, medico);
             verificarMotivo(conn, motivo, perfil.especialidad());
             Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
-            libre(conn, medico, inicio, bloque.minutos());
+            libre(conn, medico, inicio, bloque.minutos(), 0);
             validarFutura(inicio);
             try (PreparedStatement ps = conn.prepareStatement("UPDATE cita SET estado = 'REPROGRAMADA' WHERE id_cita = ? AND id_paciente = ?")) {
                 ps.setInt(1, anterior);
@@ -148,41 +153,37 @@ public final class AgendaCitaDAO {
         }
     }
 
-    private <T> T transaccion(Operacion<T> operacion) {
-        try (Connection conn = connections.open()) {
-            conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-            conn.setAutoCommit(false);
-            return ejecutarTransaccion(conn, operacion);
-        } catch (SQLException e) {
-            LOGGER.warning(() -> "No se pudo completar la operación de agenda: " + e.getSQLState());
-            throw new AgendaException(503, "AGENDA_NO_DISPONIBLE", "No se pudo completar la operación. Inténtalo más tarde.");
-        }
+    private <T> T transaccion(TransaccionJdbc.Operacion<T> operacion) {
+        return TransaccionJdbc.ejecutar(connections, operacion);
     }
 
-    private static <T> T ejecutarTransaccion(Connection conn, Operacion<T> operacion) throws SQLException {
-        try {
-            T result = operacion.ejecutar(conn);
-            conn.commit();
-            return result;
-        } catch (SQLException | RuntimeException e) {
-            conn.rollback();
-            throw e;
-        }
-    }
-
-    private static int paciente(Connection conn, int id) throws SQLException {
+    static int paciente(Connection conn, int id) throws SQLException {
         if (id <= 0) throw invalida("El paciente no es válido.");
-        String sql = "SELECT p.id_usuario FROM paciente p JOIN usuario u ON p.id_usuario=u.id_usuario WHERE p.id_paciente=? AND u.activo=TRUE AND u.rol='PACIENTE' FOR UPDATE";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+        int usuario;
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id_usuario FROM paciente WHERE id_paciente=? FOR UPDATE")) {
             ps.setInt(1, id);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) throw invalida("El paciente no está habilitado.");
-                return rs.getInt(1);
+                usuario = rs.getInt(1);
             }
+        }
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id_usuario FROM usuario WHERE id_usuario=? AND activo=TRUE AND rol='PACIENTE'")) {
+            ps.setInt(1, usuario);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) throw invalida("El paciente no está habilitado.");
+            }
+        }
+        return usuario;
+    }
+
+    static void bloquearMedico(Connection conn, int id) throws SQLException {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT id_medico FROM medico WHERE id_medico=? FOR UPDATE")) {
+            ps.setInt(1, id);
+            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw noDisponible(); }
         }
     }
 
-    private static Medico medico(Connection conn, int id) throws SQLException {
+    static Medico medico(Connection conn, int id) throws SQLException {
         if (id <= 0) throw invalida("El médico no es válido.");
         String sql = "SELECT id_sede,id_especialidad FROM medico WHERE id_medico=? AND estado='ACTIVO' FOR UPDATE";
         int sede;
@@ -230,12 +231,19 @@ public final class AgendaCitaDAO {
                 && requested >= start && requested + duration <= end && (requested - start) % duration == 0;
     }
 
-    private static void libre(Connection conn, int medico, LocalDateTime inicio, int minutos) throws SQLException {
-        String sql = "SELECT c.fecha_hora,d.duracion_minutos FROM cita c JOIN disponibilidad d ON c.id_disponibilidad=d.id_disponibilidad WHERE c.id_medico=? AND c.fecha_hora>=? AND c.fecha_hora<? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA')";
+    private void libre(Connection conn, int medico, LocalDateTime inicio, int minutos, int oferta) throws SQLException {
+        String sql = "SELECT c.fecha_hora,d.duracion_minutos FROM cita c JOIN disponibilidad d ON c.id_disponibilidad=d.id_disponibilidad WHERE c.id_medico=? AND c.fecha_hora>=? AND c.fecha_hora<? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA') "
+                + "UNION ALL SELECT c.fecha_hora,d.duracion_minutos FROM reasignacion_inteligente r JOIN cita c ON r.id_cita_original=c.id_cita JOIN disponibilidad d ON r.id_disponibilidad=d.id_disponibilidad JOIN medico m ON c.id_medico=m.id_medico "
+                + "WHERE c.id_medico=? AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>? AND c.fecha_hora>? AND c.estado='CANCELADA' AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND r.id_reasignacion<>? "
+                + "AND EXISTS(SELECT 1 FROM lista_espera le JOIN paciente p ON le.id_paciente=p.id_paciente JOIN usuario u ON p.id_usuario=u.id_usuario WHERE le.id_lista_espera=r.id_lista_espera AND le.estado='OFERTADA' AND u.activo=TRUE AND u.rol='PACIENTE')";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, medico);
             ps.setObject(2, inicio.toLocalDate().atStartOfDay());
             ps.setObject(3, inicio.toLocalDate().plusDays(1).atStartOfDay());
+            ps.setInt(4, medico);
+            ps.setObject(5, LocalDateTime.now(clock));
+            ps.setObject(6, LocalDateTime.now(clock));
+            ps.setInt(7, oferta);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     LocalDateTime ocupada = rs.getObject(1, LocalDateTime.class);
@@ -299,12 +307,13 @@ public final class AgendaCitaDAO {
         }
     }
 
-    private static void notificar(Connection conn, int usuario, int cita, String mensaje) throws SQLException {
-        String sql = "INSERT INTO notificacion (id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida) VALUES (?,?,'Citas','PLATAFORMA',?,'ENVIADA',0)";
+    private void notificar(Connection conn, int usuario, int cita, String mensaje) throws SQLException {
+        String sql = "INSERT INTO notificacion (id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida,fecha_envio) VALUES (?,?,'Citas','PLATAFORMA',?,'ENVIADA',0,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, usuario);
             ps.setInt(2, cita);
             ps.setString(3, mensaje);
+            ps.setObject(4, LocalDateTime.now(clock));
             ps.executeUpdate();
         }
     }

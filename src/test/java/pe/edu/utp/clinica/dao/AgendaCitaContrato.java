@@ -29,7 +29,7 @@ abstract class AgendaCitaContrato {
             String catalogo = conn.getCatalog();
             if (url.startsWith("jdbc:mysql:")) assertTrue(catalogo.startsWith("clinica_agendas_test_"));
         }
-        for (String table : List.of("notificacion", "cita", "disponibilidad", "motivo_cita", "medico", "paciente", "usuario", "especialidad", "sede")) sql("DROP TABLE IF EXISTS " + table);
+        for (String table : List.of("reasignacion_inteligente", "lista_espera", "notificacion", "cita", "disponibilidad", "motivo_cita", "medico", "paciente", "usuario", "especialidad", "sede")) sql("DROP TABLE IF EXISTS " + table);
         sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR(100),apellidos VARCHAR(100),rol VARCHAR(30),activo BOOLEAN)");
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");
@@ -38,7 +38,9 @@ abstract class AgendaCitaContrato {
         sql("CREATE TABLE motivo_cita(id_motivo INT PRIMARY KEY,id_especialidad INT,estado VARCHAR(20))");
         sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR(20))");
         sql("CREATE TABLE cita(id_cita INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora TIMESTAMP,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20))");
-        sql("CREATE TABLE notificacion(id_notificacion INT AUTO_INCREMENT PRIMARY KEY,id_usuario INT,id_cita INT,tipo VARCHAR(30),canal VARCHAR(30),mensaje VARCHAR(300),estado_envio VARCHAR(30),leida INT)");
+        sql("CREATE TABLE notificacion(id_notificacion INT AUTO_INCREMENT PRIMARY KEY,id_usuario INT,id_cita INT,tipo VARCHAR(30),canal VARCHAR(30),mensaje VARCHAR(300),estado_envio VARCHAR(30),leida INT,fecha_envio DATETIME)");
+        sql("CREATE TABLE lista_espera(id_lista_espera INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_especialidad INT,id_sede INT,nivel_urgencia VARCHAR(20),rango_horario VARCHAR(20),canal_notificacion VARCHAR(40),fecha_registro DATETIME,estado VARCHAR(20),posicion INT,anticipacion_minutos INT DEFAULT 180,id_medico_preferido INT)");
+        sql("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_cita_original INT,id_lista_espera INT,id_disponibilidad INT,fecha_oferta DATETIME,fecha_limite_respuesta DATETIME,estado VARCHAR(20),id_cita_asignada INT)");
         sql("INSERT INTO usuario VALUES(1,'Paciente','Ñúñez','PACIENTE',TRUE),(2,'Otro','Pérez','PACIENTE',TRUE),(3,'Médico','Prueba','MEDICO',TRUE),(4,'Segundo','Médico','MEDICO',TRUE)");
         sql("INSERT INTO paciente VALUES(1,1),(2,2)");
         sql("INSERT INTO especialidad VALUES(1,'ACTIVO'),(2,'INACTIVO')");

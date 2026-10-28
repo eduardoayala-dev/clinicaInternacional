@@ -9,6 +9,8 @@ import java.util.logging.Logger;
 @WebListener
 public class AppContextListener implements ServletContextListener {
 
+    private MantenimientoOfertas ofertas;
+
     private static final Logger LOGGER = Logger.getLogger(AppContextListener.class.getName());
 
     @Override
@@ -19,12 +21,15 @@ public class AppContextListener implements ServletContextListener {
         boolean produccion = System.getenv("RAILWAY_ENVIRONMENT") != null
                 || "production".equalsIgnoreCase(System.getenv("APP_ENV"));
         cookie.setSecure(produccion);
+        ofertas = new MantenimientoOfertas();
+        ofertas.iniciar();
         LOGGER.info("Aplicación Clínica Internacional iniciada correctamente.");
     }
 
     @Override
     public void contextDestroyed(ServletContextEvent sce) {
         LOGGER.info("Deteniendo recursos de la aplicación...");
+        if (ofertas != null) ofertas.close();
         DatabaseConfig.shutdown();
         LOGGER.info("Recursos de base de datos liberados exitosamente.");
     }
