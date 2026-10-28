@@ -348,6 +348,10 @@ public class CitaDAO {
         return obtenerAgendaMedico(medico,LocalDate.now(relojClinico()));
     }
 
+    public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate desde,LocalDate hasta) {
+        return portalMedico().agenda(medico,desde,hasta);
+    }
+
     public List<Map<String,Object>> obtenerAgendaMedico(int medico,LocalDate fecha) {
         return portalMedico().agenda(medico,fecha);
     }

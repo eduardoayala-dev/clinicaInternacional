@@ -49,11 +49,14 @@ public class MedicoPortalDAO {
     }
 
     public List<Map<String,Object>> agenda(int medico,LocalDate fecha){
-        if(medico<=0 || fecha==null) throw new AgendaException(400,"DATOS_INVALIDOS","Selecciona una fecha válida.");
+        return agenda(medico,fecha,fecha == null ? null : fecha.plusDays(1));
+    }
+    public List<Map<String,Object>> agenda(int medico,LocalDate fecha,LocalDate hasta){
+        if(medico<=0 || fecha==null || hasta==null || !hasta.isAfter(fecha) || java.time.temporal.ChronoUnit.DAYS.between(fecha,hasta)>31) throw new AgendaException(400,"DATOS_INVALIDOS","Selecciona una fecha válida.");
         String sql="SELECT EXISTS(SELECT 1 FROM atencion_cita ac WHERE ac.medico_activo=c.id_medico OR ac.paciente_activo=c.id_paciente) AS consulta_ocupada,t.fecha_inicio,t.fecha_fin,t.motivo_no_atencion,a.fecha_llegada,a.llego_tarde,a.tolerancia_minutos,c.id_cita,c.fecha_hora,c.estado,p.dni,u.nombres,u.apellidos,mc.descripcion AS motivo,EXISTS(SELECT 1 FROM reasignacion_inteligente r WHERE r.id_cita_asignada=c.id_cita AND r.estado='ACEPTADA') AS reasignada FROM cita c JOIN paciente p ON c.id_paciente=p.id_paciente JOIN usuario u ON p.id_usuario=u.id_usuario LEFT JOIN motivo_cita mc ON c.id_motivo=mc.id_motivo LEFT JOIN admision_cita a ON a.id_cita=c.id_cita LEFT JOIN atencion_cita t ON t.id_cita=c.id_cita WHERE c.id_medico=? AND c.fecha_hora>=? AND c.fecha_hora<? ORDER BY c.fecha_hora,c.id_cita";
         List<Map<String,Object>> rows=new ArrayList<>();
         try(Connection conn=connections.open();PreparedStatement ps=conn.prepareStatement(sql)){
-            ps.setInt(1,medico);ps.setObject(2,fecha.atStartOfDay());ps.setObject(3,fecha.plusDays(1).atStartOfDay());
+            ps.setInt(1,medico);ps.setObject(2,fecha.atStartOfDay());ps.setObject(3,hasta.atStartOfDay());
             try(ResultSet rs=ps.executeQuery()){
                 while(rs.next()){
                     Map<String,Object> data=base(rs);
@@ -112,7 +115,7 @@ public class MedicoPortalDAO {
         LocalDateTime comienzo=rs.getObject("fecha_inicio",LocalDateTime.class);
         LocalDateTime fin=rs.getObject("fecha_fin",LocalDateTime.class);
         LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
-        boolean enSalaHoy="EN_SALA".equals(estado) && llegada!=null && !llegada.isAfter(ahora) && programada.toLocalDate().equals(ahora.toLocalDate());
+        boolean enSalaHoy="EN_SALA".equals(estado) && llegada!=null && !llegada.isAfter(ahora) && programada.toLocalDate().equals(ahora.toLocalDate()) && llegada.toLocalDate().equals(ahora.toLocalDate());
         boolean ocupada=rs.getBoolean("consulta_ocupada");
         data.put("puedeIniciar",enSalaHoy && !ocupada);
         data.put("puedeNoAtender",enSalaHoy || EN_ATENCION.equals(estado));

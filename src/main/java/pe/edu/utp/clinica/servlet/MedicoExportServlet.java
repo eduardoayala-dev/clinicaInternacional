@@ -15,14 +15,15 @@ public class MedicoExportServlet extends MedicoPortalServlet {
     @Override protected void mostrar(HttpServletRequest request,HttpServletResponse response,Contexto contexto)throws IOException{
         String formato=request.getParameter("format");
         if(!"csv".equals(formato) && !"print".equals(formato)) throw new AgendaException(400,"FORMATO_INVALIDO","Elige CSV o la vista para imprimir.");
-        var fecha=fecha(request);
-        var agenda=citas.obtenerAgendaMedico(contexto.medico(),fecha);
+        var periodo=periodo(request);
+        var fecha=periodo.fecha();
+        var agenda="dia".equals(periodo.vista()) ? citas.obtenerAgendaMedico(contexto.medico(),fecha) : citas.obtenerAgendaMedico(contexto.medico(),periodo.desde(),periodo.hasta());
         if("csv".equals(formato)){
             response.setContentType("text/csv;charset=UTF-8");
             response.setHeader("Content-Disposition","attachment; filename=\"agenda-medica-"+fecha+".csv\"");
             var out=response.getWriter();out.print('\ufeff');out.println("CITA;FECHA;HORA;PACIENTE;DOCUMENTO;ESTADO;MOTIVO");
             for(var cita:agenda) out.println(String.join(";",CAMPOS.stream().map(campo->csv(cita.get(campo))).toList()));
-        }else imprimir(response,contexto.perfil(),agenda,fecha.toString());
+        }else imprimir(response,contexto.perfil(),agenda,periodo.desde()+" al "+periodo.hasta().minusDays(1));
     }
     static String csv(Object valor){
         String texto=java.util.Objects.toString(valor,"");

@@ -28,11 +28,11 @@ Con `Accept: application/json`, las consultas y el cierre responden `{code,messa
 | --- | --- |
 | GET `/medico/perfil` | Perfil vigente y propio; no permite editar credenciales. |
 | GET `/medico/inicio` | Métricas y citas del día de Lima. |
-| GET `/medico/agenda?fecha=AAAA-MM-DD` | Agenda e historial por fecha del médico autenticado. |
+| GET `/medico/agenda?fecha=AAAA-MM-DD&vista=dia` | Agenda propia por día, semana (lunes a domingo) o mes. `vista` acepta `dia`, `semana` o `mes`; por defecto, `dia`. |
 | GET `/medico/atencion?idCita=ID` | Detalle propio, seguimiento y posibilidad real de edición. |
-| POST `/medico/atencion` | `accion=guardar` o `accion=no_asistio`, `idCita` y CSRF. |
-| GET `/medico/export?fecha=AAAA-MM-DD&format=csv` | Archivo CSV propio. |
-| GET `/medico/export?fecha=AAAA-MM-DD&format=print` | Vista propia para imprimir o guardar como PDF desde el navegador. |
+| POST `/medico/atencion` | `accion=iniciar`, `accion=guardar` o `accion=no_atender`, `idCita` y CSRF; la inasistencia se registra en admisión. |
+| GET `/medico/export?fecha=AAAA-MM-DD&format=csv` | Archivo CSV propio del período indicado por `vista` (día por defecto). |
+| GET `/medico/export?fecha=AAAA-MM-DD&format=print` | Vista propia del período indicado por `vista`, para imprimir o guardar como PDF desde el navegador. |
 
 La fecha recomendada orienta el seguimiento; no crea automáticamente otra reserva. El registro de continuidad no constituye una historia clínica completa. Los cierres fuera del día de atención requerirían un flujo de corrección autorizado, que no se añade en esta entrega.
 
@@ -47,3 +47,11 @@ En este entorno se prepararon cuentas `audit.*@example.test` y seis citas sinté
 Para la revisión manual del flujo actual, seguir los pasos de [flujo-atencion.md](flujo-atencion.md), utilizando los casos preparados en `target/atencion/variables-locales.json`. Cada paciente sintético del flujo representa un escenario distinto; el caso Manual queda reservado al usuario.
 
 La revisión se limita al módulo médico y sus rutas de exportación. Las exportaciones administrativas, la seguridad de los demás módulos y el despliegue cloud continúan pendientes de su revisión específica.
+
+## Presentación de agenda
+
+Las vistas Día, Semana y Mes conservan la fecha de referencia y la búsqueda al consultar otro período. Día presenta una tabla con páginas de seis filas; Semana organiza las citas en siete días y Mes usa una cuadrícula de semanas completas. Anterior, Siguiente y Hoy desplazan el calendario. Cada cita abre su ficha; el encabezado del día o Ver todas abre la vista diaria. Las celdas limitan las citas visibles a cuatro en Semana y tres en Mes, sin perder el acceso al resto. En móvil los días se apilan para mantener legibles los nombres.
+
+Los indicadores resumen el período completo; la búsqueda filtra todo el período, no solo la página diaria. Incluye nombre, documento e identificador y vuelve a la primera página al cambiar. CSV e impresión incluyen todas las citas del período, sin limitarse a la página o búsqueda visible. La paginación de Inicio y Agenda se alinea a la derecha.
+
+Inicio conserva el acceso Gestionar atención actual, el filtro de mañana (antes de las 12:00), tarde (desde las 12:00) o todo el día, y páginas de seis citas. La navegación y los filtros no modifican citas; iniciar y cerrar siguen requiriendo POST, CSRF y validación del servidor.

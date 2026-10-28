@@ -1,8 +1,9 @@
 <%@ page import="pe.edu.utp.clinica.util.Html" %>
-<%@ page contentType="text/html;charset=UTF-8" language="java" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" pageEncoding="UTF-8" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.Map" %>
 <%
+    String seccionMedico = "atencion";
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreMedico = (String) request.getAttribute("nombreMedico");
     if (nombreMedico == null && usuario != null) {
@@ -10,7 +11,6 @@
     }
     if (nombreMedico == null) nombreMedico = "Médico";
 
-    String especialidadMedico = String.valueOf(request.getAttribute("especialidadMedico"));
 
     String inicialesMedico = "M";
     if (nombreMedico != null && !nombreMedico.trim().isEmpty()) {
@@ -29,6 +29,16 @@
 
     Map<String, Object> cita = (Map<String, Object>) request.getAttribute("cita");
     boolean hayPacienteActivo = (cita != null && !cita.isEmpty());
+    String mensajeOperativo = "Cita de solo lectura; no permite iniciar ni modificar la atención.";
+    if (cita != null) {
+        if (Boolean.TRUE.equals(cita.get("editable"))) mensajeOperativo = "Consulta en curso. Completa la indicación antes de finalizar.";
+        else if (Boolean.TRUE.equals(cita.get("puedeIniciar"))) mensajeOperativo = "Llegada registrada. Puedes iniciar la consulta.";
+        else if ("EN_SALA".equals(cita.get("estado"))) mensajeOperativo = Boolean.TRUE.equals(cita.get("consultaOcupada"))
+                ? "El médico o el paciente tiene otra consulta activa. Debe finalizar antes de iniciar esta atención."
+                : "Solo se puede iniciar una cita de hoy con la llegada de hoy registrada por admisión.";
+        else if ("CONFIRMADA".equals(cita.get("estado")) || "SOLICITADA".equals(cita.get("estado"))) mensajeOperativo = "Admisión debe registrar la llegada del paciente antes de iniciar la atención.";
+    }
+
 
     String pacienteNombre = hayPacienteActivo && cita.get("pacienteNombre") != null ? (String) cita.get("pacienteNombre") : "";
     String dni = hayPacienteActivo && cita.get("dni") != null ? (String) cita.get("dni") : "";
@@ -39,7 +49,8 @@
     String fechaHora = hayPacienteActivo && cita.get("fechaFormateada") != null ? (String) cita.get("fechaFormateada") : "";
     String sedeYConsultorio = hayPacienteActivo && cita.get("sedeYConsultorio") != null ? (String) cita.get("sedeYConsultorio") : "Sin registrar";
     String medicoTratante = hayPacienteActivo && cita.get("medicoNombre") != null ? (String) cita.get("medicoNombre") : nombreMedico;
-    String motivo = hayPacienteActivo && cita.get("motivo") != null ? (String) cita.get("motivo") : "Control general";
+    String motivo = hayPacienteActivo && cita.get("motivo") != null ? (String) cita.get("motivo") : "";
+    if (motivo.isBlank()) motivo = "Sin registrar";
     String canalReserva = hayPacienteActivo && cita.get("canalReserva") != null ? (String) cita.get("canalReserva") : "Reserva web";
     String fechaRegistro = hayPacienteActivo && cita.get("fechaRegistro") != null ? (String) cita.get("fechaRegistro") : "";
     String estadoCita = hayPacienteActivo && cita.get("estado") != null ? (String) cita.get("estado") : "CONFIRMADA";
@@ -57,69 +68,29 @@
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
 
-    <script src="https://unpkg.com/lucide@latest"></script>
 
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css?v=20261028">
+    <script defer src="${pageContext.request.contextPath}/assets/js/medico-portal.js?v=20261028"></script>
 </head>
 <body>
 
 
-    <aside class="med-sidebar">
-        <a href="${pageContext.request.contextPath}/medico/inicio" class="med-brand">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="med-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div>
-                <div class="med-brand-name">Clínica Internacional</div>
-                <div class="med-brand-sub">Portal del médico</div>
-            </div>
-        </a>
-
-        <nav class="med-nav">
-            <a href="${pageContext.request.contextPath}/medico/inicio" class="med-nav-item">
-                <i data-lucide="home"></i> Inicio
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/agenda" class="med-nav-item">
-                <i data-lucide="calendar"></i> Mi agenda
-            </a>
-            <a href="${pageContext.request.contextPath}/medico/atencion<%= Html.texto(hayPacienteActivo ? ("?idCita=" + idCita) : "") %>" class="med-nav-item active">
-                <i data-lucide="stethoscope"></i> Atención de paciente actual
-            </a>
-        </nav>
-
-        <div class="med-user-footer">
-            <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link" title="Mi perfil">
-                <div class="med-avatar"><%= Html.texto(inicialesMedico) %></div>
-                <div style="flex: 1; min-width: 0;">
-                    <div class="med-user-name"><%= Html.texto(nombreMedico) %></div>
-                    <div class="med-user-role"><%= Html.texto(especialidadMedico) %></div>
-                </div>
-            </a>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="med-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out"></i>
-            </button>
-</form>
-        </div>
-    </aside>
+    <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>
 
 
     <div class="med-main-wrapper">
 
-        <header class="med-topbar">
-            <div class="med-breadcrumb">
-                Médico &nbsp;/&nbsp; <span>Atención de paciente actual</span>
-            </div>
-        </header>
+        <%@ include file="/WEB-INF/jspf/medico-topbar.jspf" %>
 
 
-        <main class="med-content-scroll">
+        <main class="med-content-scroll" id="medContenido" tabindex="-1">
 
 
             <% if (mensajeExito != null) { %>
-                <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
-                    <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
+                <div>
+                    <img src="${pageContext.request.contextPath}/assets/images/medico/informacion.svg" alt="" class="med-icon">
                     <%= Html.texto(mensajeExito) %>
                 </div>
             <% } %>
@@ -129,7 +100,7 @@
 
 
                 <div class="med-atencion-banner">
-                    <i data-lucide="info"></i>
+                    <img src="${pageContext.request.contextPath}/assets/images/medico/informacion.svg" alt="" class="med-icon">
                     <div class="med-atencion-banner-text">
                         <span class="med-atencion-banner-strong">Mensaje operativo del sistema</span><br>
                         Estado registrado: <%= Html.texto(cita.get("estadoTexto")) %>
@@ -148,32 +119,6 @@
                         <% } %>
                     </div>
                 </div>
-
-                <div class="med-atencion-card">
-                    <p>Llegada: <strong><%= Html.texto(cita.get("horaLlegada")) %></strong> · Inicio: <strong><%= Html.texto(cita.get("inicioTexto")) %></strong> · Cierre: <strong><%= Html.texto(cita.get("finTexto")) %></strong></p>
-                    <% if (cita.get("esperaMinutos") != null) { %><p>Espera registrada: <%= Html.texto(((Number)cita.get("esperaMinutos")).longValue()==0?"Menos de 1 min":cita.get("esperaMinutos")+" min") %></p><% } %>
-                    <% if (cita.get("duracionMinutos") != null) { %><p>Duración de consulta: <%= Html.texto(((Number)cita.get("duracionMinutos")).longValue()==0?"Menos de 1 min":cita.get("duracionMinutos")+" min") %></p><% } %>
-                    <% if (Boolean.TRUE.equals(cita.get("puedeIniciar"))) { %>
-                        <form id="formIniciarAtencion" method="POST" action="${pageContext.request.contextPath}/medico/atencion">
-                            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                            <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
-                            <input type="hidden" name="accion" value="iniciar">
-                            <button class="med-btn-guardar" type="submit">Iniciar atención</button>
-                        </form>
-                    <% } else if ("EN_SALA".equals(estadoCita)) { %>
-                        <p>Para iniciar, la cita debe ser de hoy, tener llegada registrada y el médico y paciente deben estar libres de otra consulta activa.</p>
-                    <% } %>
-                    <% if ("EN_ATENCION".equals(estadoCita)) { %><p>Consulta en curso. Completa la indicación antes de finalizar.</p><% } %>
-                    <% if ("NO_ATENDIDA".equals(estadoCita)) { %><p>Motivo de no atención: <strong><%= Html.texto(cita.get("motivoNoAtencion")) %></strong></p><% } %>
-                </div>
-
-                <form id="formAtencion" action="${pageContext.request.contextPath}/medico/atencion" method="POST">
-<fieldset class="med-atencion-fieldset" <%= Html.texto(Boolean.TRUE.equals(cita.get("editable")) ? "" : "disabled") %>>
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                    <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
-                    <input type="hidden" name="accion" id="accionInput" value="guardar">
-                    <input type="hidden" name="prioridad" id="prioridadInput" value="<%= Html.texto(urgencia) %>">
-
 
                     <div class="med-atencion-card">
                         <div class="med-atencion-card-head">
@@ -247,81 +192,78 @@
                     </div>
 
 
-                    <div class="med-atencion-card">
-                        <div class="med-atencion-tag-title" style="margin-bottom: 14px;">Control operativo requerido</div>
-
-                        <div class="med-aviso-box">
-                            Registra únicamente información verificada durante la atención.
+                <div class="med-atencion-card">
+                    <div class="med-atencion-card-head"><h2 class="med-atencion-tag-title">Control operativo de atención</h2></div>
+                    <dl class="med-registro-tiempos">
+                        <div><dt>Llegada registrada</dt><dd><%= Html.texto(cita.get("horaLlegada")) %></dd></div>
+                        <div><dt>Inicio de atención</dt><dd><%= Html.texto(cita.get("inicioTexto")) %></dd></div>
+                        <div><dt>Cierre de atención</dt><dd><%= Html.texto(cita.get("finTexto")) %></dd></div>
+                    </dl>
+                    <div class="med-consulta-resumen">
+                        <div class="med-estado-recepcion-card"><img src="${pageContext.request.contextPath}/assets/images/medico/editar.svg" alt="" class="med-icon">
+                            <div><div class="med-estado-recepcion-title">Estado actual: <%= Html.texto(cita.get("estadoTexto")) %></div>
+                            <div class="med-estado-recepcion-desc"><%= Html.texto(mensajeOperativo) %></div></div>
                         </div>
-
-                        <div class="med-control-action-bar">
-                            <div class="med-estado-recepcion-card">
-                                <i data-lucide="edit-3"></i>
-                                <div>
-                                    <div class="med-estado-recepcion-title">Estado actual: <%= Html.texto(cita.get("estadoTexto")) %></div>
-                                    <div class="med-estado-recepcion-desc">La atención debe iniciarse antes de guardar el cierre. Las consultas cerradas quedan en solo lectura.</div>
-                                </div>
-                            </div>
+                        <% if (Boolean.TRUE.equals(cita.get("puedeIniciar"))) { %>
+                            <form id="formIniciarAtencion" method="POST" data-pending-label="Iniciando…" action="${pageContext.request.contextPath}/medico/atencion">
+                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
+                                <input type="hidden" name="accion" value="iniciar">
+                                <button class="med-btn-guardar" type="submit"><img src="${pageContext.request.contextPath}/assets/images/medico/cargando-claro.svg" alt="" class="med-icon med-loading-icon"><span class="med-button-label">Iniciar atención</span></button>
+                            </form>
+                        <% } %>
+                        <div class="med-metricas">
+                            <% if (cita.get("esperaMinutos") != null) { %><span>Espera: <strong><%= Html.texto(((Number)cita.get("esperaMinutos")).longValue()==0 ? "Menos de 1 min" : cita.get("esperaMinutos")+" min") %></strong></span><% } %>
+                            <% if (cita.get("duracionMinutos") != null) { %><span>Duración: <strong><%= Html.texto(((Number)cita.get("duracionMinutos")).longValue()==0 ? "Menos de 1 min" : cita.get("duracionMinutos")+" min") %></strong></span><% } %>
                         </div>
                     </div>
+                    <% if ("EN_SALA".equals(estadoCita) && !Boolean.TRUE.equals(cita.get("puedeIniciar"))) { %>
+                        <p class="med-reason">Para iniciar, la cita debe ser de hoy, tener llegada registrada y el médico y paciente deben estar libres de otra consulta activa.</p>
+                    <% } %>
+                    <% if ("NO_ATENDIDA".equals(estadoCita)) { %><p class="med-reason">Motivo de no atención: <strong><%= Html.texto(cita.get("motivoNoAtencion")) %></strong></p><% } %>
+                </div>
+
+                <form id="formAtencion" action="${pageContext.request.contextPath}/medico/atencion" method="POST" data-pending-label="Guardando…">
+<fieldset class="med-atencion-fieldset" <%= Html.texto(Boolean.TRUE.equals(cita.get("editable")) ? "" : "disabled") %>>
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                    <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
+                    <input type="hidden" name="accion" id="accionInput" value="guardar">
+                    <input type="hidden" name="prioridad" id="prioridadInput" value="<%= Html.texto(urgencia) %>">
 
 
                     <div class="med-atencion-card">
-                        <div class="med-atencion-tag-title" style="margin-bottom: 14px;">Plan de seguimiento</div>
+                        <div class="med-atencion-tag-title">Plan de seguimiento</div>
 
                         <span class="med-field-label">Nivel de prioridad clínica *</span>
 
-                        <div class="med-prioridad-cards">
-
-                            <div class="med-prio-card <%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "active" : "") %>" onclick="setPrioridad('ALTA', this)">
-                                <div class="med-prio-card-left">
-                                    <span class="med-prio-dot alta"></span>
-                                    <div>
-                                        <div class="med-prio-title">Alta</div>
-                                        <div class="med-prio-sub">Requiere atención pronta</div>
-                                    </div>
-                                </div>
-                                <div class="med-prio-check"><i data-lucide="check"></i></div>
-                            </div>
-
-
-                            <div class="med-prio-card <%= Html.texto(!"ALTA".equalsIgnoreCase(urgencia) && !"BAJA".equalsIgnoreCase(urgencia) ? "active" : "") %>" onclick="setPrioridad('MEDIA', this)">
-                                <div class="med-prio-card-left">
-                                    <span class="med-prio-dot media"></span>
-                                    <div>
-                                        <div class="med-prio-title">Media</div>
-                                        <div class="med-prio-sub">Seguimiento regular</div>
-                                    </div>
-                                </div>
-                                <div class="med-prio-check"><i data-lucide="check"></i></div>
-                            </div>
-
-
-                            <div class="med-prio-card <%= Html.texto("BAJA".equalsIgnoreCase(urgencia) ? "active" : "") %>" onclick="setPrioridad('BAJA', this)">
-                                <div class="med-prio-card-left">
-                                    <span class="med-prio-dot baja"></span>
-                                    <div>
-                                        <div class="med-prio-title">Baja</div>
-                                        <div class="med-prio-sub">Control de rutina</div>
-                                    </div>
-                                </div>
-                                <div class="med-prio-check"><i data-lucide="check"></i></div>
-                            </div>
+                        <div class="med-prioridad-cards" role="group" aria-label="Nivel de prioridad clínica">
+                            <button type="button" class="med-prio-card <%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "active" : "") %>" data-prioridad="ALTA" aria-pressed="<%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "true" : "false") %>" onclick="setPrioridad('ALTA', this)">
+                                <span class="med-prio-card-left"><img src="${pageContext.request.contextPath}/assets/images/medico/prioridad-alta.svg" alt="" class="med-icon"><span><span class="med-prio-title">Alta</span><span class="med-prio-sub">Requiere atención pronta</span></span></span>
+                                <span class="med-prio-check"><img src="${pageContext.request.contextPath}/assets/images/medico/confirmar.svg" alt="" class="med-icon"></span>
+                            </button>
+                            <button type="button" class="med-prio-card <%= Html.texto(!"ALTA".equalsIgnoreCase(urgencia) && !"BAJA".equalsIgnoreCase(urgencia) ? "active" : "") %>" data-prioridad="MEDIA" aria-pressed="<%= Html.texto(!"ALTA".equalsIgnoreCase(urgencia) && !"BAJA".equalsIgnoreCase(urgencia) ? "true" : "false") %>" onclick="setPrioridad('MEDIA', this)">
+                                <span class="med-prio-card-left"><img src="${pageContext.request.contextPath}/assets/images/medico/prioridad-media.svg" alt="" class="med-icon"><span><span class="med-prio-title">Media</span><span class="med-prio-sub">Seguimiento regular</span></span></span>
+                                <span class="med-prio-check"><img src="${pageContext.request.contextPath}/assets/images/medico/confirmar.svg" alt="" class="med-icon"></span>
+                            </button>
+                            <button type="button" class="med-prio-card <%= Html.texto("BAJA".equalsIgnoreCase(urgencia) ? "active" : "") %>" data-prioridad="BAJA" aria-pressed="<%= Html.texto("BAJA".equalsIgnoreCase(urgencia) ? "true" : "false") %>" onclick="setPrioridad('BAJA', this)">
+                                <span class="med-prio-card-left"><img src="${pageContext.request.contextPath}/assets/images/medico/prioridad-baja.svg" alt="" class="med-icon"><span><span class="med-prio-title">Baja</span><span class="med-prio-sub">Control de rutina</span></span></span>
+                                <span class="med-prio-check"><img src="${pageContext.request.contextPath}/assets/images/medico/confirmar.svg" alt="" class="med-icon"></span>
+                            </button>
                         </div>
-
 
                         <label class="med-field-label" for="fechaProximaInput">Fecha recomendada de próxima atención (opcional)</label>
                         <div class="med-date-group">
                             <div class="med-input-date-wrap">
                                 <input min="<%= Html.texto(java.time.LocalDate.now(java.time.ZoneId.of("America/Lima")).plusDays(1)) %>" type="date" name="fechaProxima" id="fechaProximaInput" class="med-input-date" value="<%= Html.texto(fechaRecomendadaProxima) %>" onchange="actualizarBadgeMeses()">
+                                <img src="${pageContext.request.contextPath}/assets/images/medico/calendario-campo.svg" alt="" class="med-icon med-field-icon">
                             </div>
                             <span class="med-badge-meses" id="badgeMeses">Sin fecha de seguimiento</span>
                         </div>
 
 
                         <div class="med-textarea-header">
-                            <label class="med-field-label" for="indicacionesTextarea" style="margin-bottom: 0;">
-                                Indicación breve de continuidad (texto libre)
+                            <label class="med-field-label" for="indicacionesTextarea">
+                                Indicación breve de continuidad *
                             </label>
                             <span class="med-char-counter" id="charCounter">0 / 200 caracteres</span>
                         </div>
@@ -329,7 +271,7 @@
                         <textarea required name="indicaciones" id="indicacionesTextarea" class="med-textarea-atencion" maxlength="200" oninput="actualizarContador(this)"><%= Html.texto(cita.get("indicaciones")) %></textarea>
 
                         <div class="med-disclaimer">
-                            <i data-lucide="info"></i>
+                            <img src="${pageContext.request.contextPath}/assets/images/medico/nota.svg" alt="" class="med-icon">
                             <span>Nota: esta indicación orienta la próxima cita. No reemplaza ni constituye una historia clínica.</span>
                         </div>
                     </div>
@@ -340,20 +282,22 @@
                             Restablecer
                         </button>
                         <button type="submit" class="med-btn-guardar">
-                            <i data-lucide="save"></i>
-                            Finalizar atención
+                            <img src="${pageContext.request.contextPath}/assets/images/medico/guardar.svg" alt="" class="med-icon med-submit-icon"><img src="${pageContext.request.contextPath}/assets/images/medico/cargando-claro.svg" alt="" class="med-icon med-loading-icon"><span class="med-button-label">Finalizar atención</span>
                         </button>
                     </div>
                 </fieldset></form>
                 <% if (Boolean.TRUE.equals(cita.get("puedeNoAtender"))) { %>
-                    <form id="formNoAtendida" class="med-atencion-card" method="POST" action="${pageContext.request.contextPath}/medico/atencion" onsubmit="return confirm('¿Confirmar que esta cita termina sin atención completa?')">
+                    <details class="med-atencion-card med-critical-panel">
+                    <summary>Registrar que no se completó la atención</summary>
+                    <form id="formNoAtendida" method="POST" data-pending-label="Registrando…" action="${pageContext.request.contextPath}/medico/atencion" onsubmit="return confirm('¿Confirmar que esta cita termina sin atención completa?')">
                         <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                         <input type="hidden" name="accion" value="no_atender">
                         <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
                         <label class="med-field-label" for="motivoNoAtencion">Motivo de no atención</label>
                         <textarea required minlength="3" maxlength="200" id="motivoNoAtencion" name="motivo" class="med-textarea-atencion"></textarea>
-                        <button type="submit" class="med-btn-no-presento">Registrar como no atendida</button>
+                        <button type="submit" class="med-btn-no-presento"><img src="${pageContext.request.contextPath}/assets/images/medico/cargando.svg" alt="" class="med-icon med-loading-icon"><span class="med-button-label">Registrar como no atendida</span></button>
                     </form>
+                    </details>
                 <% } %>
 
             <% } else { %>
@@ -365,22 +309,22 @@
                     </div>
                 </div>
 
-                <div class="med-atencion-card" style="text-align: center; padding: 60px 30px;">
-                    <div style="width: 72px; height: 72px; border-radius: 50%; background: #f0f7ff; color: #0077c8; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 18px;">
-                        <i data-lucide="user-x" style="width: 36px; height: 36px;"></i>
+                <div class="med-atencion-card med-empty-state">
+                    <div class="med-empty-icon">
+                        <img src="${pageContext.request.contextPath}/assets/images/medico/informacion.svg" alt="" class="med-icon">
                     </div>
-                    <h2 style="font-size: 20px; font-weight: 700; color: #0c2340; margin-bottom: 8px;">
+                    <h2>
                         No hay ningún paciente en atención en este momento
                     </h2>
-                    <p style="font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 24px auto; line-height: 1.5;">
-                        Para iniciar una atención, diríjase a su lista de citas del turno o agenda y seleccione al paciente admitido en recepción mediante la opción <strong>«Ver ficha»</strong> y luego <strong>«Iniciar atención»</strong>.
+                    <p>
+                        Para iniciar una atención, diríjase a su lista de citas del turno o agenda y seleccione al paciente admitido en recepción mediante la opción <strong>«Atender»</strong> o <strong>«Ver ficha»</strong> y luego <strong>«Iniciar atención»</strong>.
                     </p>
-                    <div style="display: flex; justify-content: center; gap: 12px;">
-                        <a href="${pageContext.request.contextPath}/medico/inicio" class="med-btn-guardar" style="text-decoration: none;">
-                            <i data-lucide="home"></i> Ir a Inicio
+                    <div class="med-header-actions">
+                        <a href="${pageContext.request.contextPath}/medico/inicio" class="med-btn-guardar">
+                            <img src="${pageContext.request.contextPath}/assets/images/medico/inicio.svg" alt="" class="med-icon"> Ir a Inicio
                         </a>
-                        <a href="${pageContext.request.contextPath}/medico/agenda" class="med-btn-restablecer" style="text-decoration: none;">
-                            <i data-lucide="calendar" style="width: 16px; height: 16px; display: inline; vertical-align: middle; margin-right: 4px;"></i> Ver mi agenda
+                        <a href="${pageContext.request.contextPath}/medico/agenda" class="med-btn-restablecer">
+                            <img src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt="" class="med-icon"> Ver mi agenda
                         </a>
                     </div>
                 </div>

@@ -124,4 +124,23 @@ abstract class MedicoPortalContrato extends CitaAutorizacionTest {
         var noche=new MedicoPortalDAO(this::abrir,Clock.fixed(Instant.parse("2026-10-29T04:30:00Z"),ZoneId.of("America/Lima")));
         assertEquals(true,noche.detalle(1,7).get("editable"));assertEquals(1,noche.agenda(1,HOY).size());
     }
+
+    @Test void rangeIncludesBoundariesAndKeepsDoctorScope()throws Exception{
+        sql("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado,nivel_urgencia) VALUES(8,1,1,'2026-10-26 00:00:00','CONFIRMADA','MEDIA'),(9,1,1,'2026-11-01 23:59:59','CONFIRMADA','MEDIA'),(10,1,1,'2026-11-02 00:00:00','CONFIRMADA','MEDIA'),(11,1,2,'2026-10-28 08:00:00','CONFIRMADA','MEDIA')");
+        var filas=portal.agenda(1,LocalDate.of(2026,10,26),LocalDate.of(2026,11,2));
+        assertEquals(java.util.List.of(8,7,9),filas.stream().map(fila->fila.get("idCita")).toList());
+        error(400,()->portal.agenda(1,HOY,HOY));
+        error(400,()->portal.agenda(1,HOY,HOY.plusDays(32)));
+    }
+    @Test void oldArrivalDoesNotAdvertiseStartOrNoAttendance()throws Exception{
+        iniciarAtencionFixture();
+        sql("DELETE FROM atencion_cita");
+        sql("UPDATE cita SET estado='EN_SALA'");
+        sql("UPDATE admision_cita SET fecha_llegada='2026-10-27 08:55:00'");
+        var detalle=portal.detalle(1,7);
+        assertEquals(false,detalle.get("puedeIniciar"));
+        assertEquals(false,detalle.get("puedeNoAtender"));
+        error(409,()->portal.iniciar(1,7));
+        error(409,()->portal.noAtender(1,7,"Prueba con llegada antigua"));
+    }
 }

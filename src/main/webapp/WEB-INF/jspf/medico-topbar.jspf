@@ -1,0 +1,11 @@
+<%@ page pageEncoding="UTF-8" %>
+<%
+    String nombreSeccionMedico = "Mi perfil";
+    if ("inicio".equals(seccionMedico)) nombreSeccionMedico = "Inicio";
+    else if ("agenda".equals(seccionMedico)) nombreSeccionMedico = "Mi agenda";
+    else if ("atencion".equals(seccionMedico)) nombreSeccionMedico = "Atención de paciente actual";
+%>
+<header class="med-topbar">
+    <button type="button" class="med-menu-toggle" aria-controls="medSidebar" aria-expanded="false">Menú</button>
+    <div class="med-breadcrumb">Médico / <span><%= Html.texto(nombreSeccionMedico) %></span></div>
+</header>

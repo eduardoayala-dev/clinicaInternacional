@@ -1,0 +1,39 @@
+<%@ page pageEncoding="UTF-8" %>
+<a href="#medContenido" class="med-skip-link">Saltar al contenido</a>
+<aside class="med-sidebar" id="medSidebar" aria-label="Navegación del médico">
+    <button type="button" class="med-sidebar-close" data-close-menu>Cerrar menú</button>
+    <a href="${pageContext.request.contextPath}/medico/inicio" class="med-brand">
+        <img src="${pageContext.request.contextPath}/assets/images/medico/logo-clinica.svg" alt="" class="med-brand-logo-img">
+        <span class="med-brand-text">
+            <span class="med-brand-name">Clínica Internacional</span>
+            <span class="med-brand-sub">Portal del médico</span>
+        </span>
+    </a>
+    <nav class="med-nav" aria-label="Secciones">
+        <a href="${pageContext.request.contextPath}/medico/inicio" class="med-nav-item<%= Html.texto("inicio".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("inicio".equals(seccionMedico) ? "page" : "false") %>">
+            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("inicio".equals(seccionMedico) ? "inicio-activo.svg" : "inicio.svg") %>" alt="" class="med-icon"> Inicio
+        </a>
+        <a href="${pageContext.request.contextPath}/medico/agenda" class="med-nav-item<%= Html.texto("agenda".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("agenda".equals(seccionMedico) ? "page" : "false") %>">
+            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("agenda".equals(seccionMedico) ? "agenda-activa.svg" : "agenda.svg") %>" alt="" class="med-icon"> Mi agenda
+        </a>
+        <a href="${pageContext.request.contextPath}/medico/atencion" class="med-nav-item<%= Html.texto("atencion".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("atencion".equals(seccionMedico) ? "page" : "false") %>">
+            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("atencion".equals(seccionMedico) ? "atencion-activa.svg" : "atencion.svg") %>" alt="" class="med-icon"> Atención de paciente actual
+        </a>
+    </nav>
+    <div class="med-user-footer">
+        <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link" aria-current="<%= Html.texto("perfil".equals(seccionMedico) ? "page" : "false") %>" title="<%= Html.texto(nombreMedico) %>">
+            <span class="med-avatar"><%= Html.texto(inicialesMedico) %></span>
+            <span class="med-user-text">
+                <span class="med-user-name"><%= Html.texto(nombreMedico) %></span>
+                <span class="med-user-role"><%= Html.texto(request.getAttribute("especialidadMedico")) %></span>
+            </span>
+        </a>
+        <form method="POST" action="${pageContext.request.contextPath}/logout" class="med-logout-form">
+            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+            <button type="submit" class="med-logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
+                <img src="${pageContext.request.contextPath}/assets/images/medico/salir.svg" alt="" class="med-icon">
+            </button>
+        </form>
+    </div>
+</aside>
+<button type="button" class="med-nav-overlay" data-close-menu aria-label="Cerrar menú"></button>
