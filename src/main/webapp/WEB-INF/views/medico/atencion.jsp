@@ -1,3 +1,4 @@
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.Map" %>
@@ -7,11 +8,11 @@
     if (nombreMedico == null && usuario != null) {
         nombreMedico = "Dr. " + usuario.getNombres() + " " + usuario.getApellidos();
     }
-    if (nombreMedico == null) nombreMedico = "Dr. Carlos Mendoza";
+    if (nombreMedico == null) nombreMedico = "Médico";
 
-    String especialidadMedico = "Medicina general";
+    String especialidadMedico = String.valueOf(request.getAttribute("especialidadMedico"));
 
-    String inicialesMedico = "CM";
+    String inicialesMedico = "M";
     if (nombreMedico != null && !nombreMedico.trim().isEmpty()) {
         String cleanNom = nombreMedico.replace("Dr.", "").replace("Dra.", "").trim();
         String[] partes = cleanNom.split("\\s+");
@@ -32,19 +33,19 @@
     String pacienteNombre = hayPacienteActivo && cita.get("pacienteNombre") != null ? (String) cita.get("pacienteNombre") : "";
     String dni = hayPacienteActivo && cita.get("dni") != null ? (String) cita.get("dni") : "";
     String telefono = hayPacienteActivo && cita.get("telefono") != null ? (String) cita.get("telefono") : "";
-    String tipoCobertura = hayPacienteActivo && cita.get("tipoCobertura") != null ? (String) cita.get("tipoCobertura") : "EPS";
-    String alergias = hayPacienteActivo && cita.get("alergias") != null ? (String) cita.get("alergias") : "Ninguna";
-    
+    String tipoCobertura = hayPacienteActivo && cita.get("tipoCobertura") != null ? (String) cita.get("tipoCobertura") : "Sin registrar";
+    String alergias = hayPacienteActivo && cita.get("alergias") != null ? (String) cita.get("alergias") : "Sin registrar";
+
     String fechaHora = hayPacienteActivo && cita.get("fechaFormateada") != null ? (String) cita.get("fechaFormateada") : "";
-    String sedeYConsultorio = hayPacienteActivo && cita.get("sedeYConsultorio") != null ? (String) cita.get("sedeYConsultorio") : "Sede San Borja · Consultorio 102";
+    String sedeYConsultorio = hayPacienteActivo && cita.get("sedeYConsultorio") != null ? (String) cita.get("sedeYConsultorio") : "Sin registrar";
     String medicoTratante = hayPacienteActivo && cita.get("medicoNombre") != null ? (String) cita.get("medicoNombre") : nombreMedico;
     String motivo = hayPacienteActivo && cita.get("motivo") != null ? (String) cita.get("motivo") : "Control general";
     String canalReserva = hayPacienteActivo && cita.get("canalReserva") != null ? (String) cita.get("canalReserva") : "Reserva web";
     String fechaRegistro = hayPacienteActivo && cita.get("fechaRegistro") != null ? (String) cita.get("fechaRegistro") : "";
     String estadoCita = hayPacienteActivo && cita.get("estado") != null ? (String) cita.get("estado") : "CONFIRMADA";
     String urgencia = hayPacienteActivo && cita.get("urgencia") != null ? (String) cita.get("urgencia") : "MEDIA";
-    String fechaRecomendadaProxima = hayPacienteActivo && cita.get("fechaRecomendadaProxima") != null && !((String) cita.get("fechaRecomendadaProxima")).isEmpty() 
-            ? (String) cita.get("fechaRecomendadaProxima") : "2027-01-15";
+    String fechaRecomendadaProxima = hayPacienteActivo && cita.get("fechaRecomendadaProxima") != null && !((String) cita.get("fechaRecomendadaProxima")).isEmpty()
+            ? (String) cita.get("fechaRecomendadaProxima") : "";
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -53,18 +54,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Atención de paciente actual — Clínica Internacional</title>
-    <!-- FUENTES: Inter para textos y Playfair Display para títulos institucionales -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <!-- ICONOS LUCIDE -->
+
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ESTILOS UNIFICADOS -->
+
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css">
 </head>
 <body>
 
-    <!-- SIDEBAR INSTITUCIONAL -->
+
     <aside class="med-sidebar">
         <a href="${pageContext.request.contextPath}/medico/inicio" class="med-brand">
             <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="med-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
@@ -81,17 +82,17 @@
             <a href="${pageContext.request.contextPath}/medico/agenda" class="med-nav-item">
                 <i data-lucide="calendar"></i> Mi agenda
             </a>
-            <a href="${pageContext.request.contextPath}/medico/atencion<%= hayPacienteActivo ? ("?idCita=" + idCita) : "" %>" class="med-nav-item active">
+            <a href="${pageContext.request.contextPath}/medico/atencion<%= Html.texto(hayPacienteActivo ? ("?idCita=" + idCita) : "") %>" class="med-nav-item active">
                 <i data-lucide="stethoscope"></i> Atención de paciente actual
             </a>
         </nav>
 
         <div class="med-user-footer">
             <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link" title="Mi perfil">
-                <div class="med-avatar"><%= inicialesMedico %></div>
+                <div class="med-avatar"><%= Html.texto(inicialesMedico) %></div>
                 <div style="flex: 1; min-width: 0;">
-                    <div class="med-user-name"><%= nombreMedico %></div>
-                    <div class="med-user-role"><%= especialidadMedico %></div>
+                    <div class="med-user-name"><%= Html.texto(nombreMedico) %></div>
+                    <div class="med-user-role"><%= Html.texto(especialidadMedico) %></div>
                 </div>
             </a>
             <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
@@ -103,163 +104,162 @@
         </div>
     </aside>
 
-    <!-- CONTENEDOR PRINCIPAL -->
+
     <div class="med-main-wrapper">
-        <!-- TOPBAR CON BREADCRUMB -->
+
         <header class="med-topbar">
             <div class="med-breadcrumb">
                 Médico &nbsp;/&nbsp; <span>Atención de paciente actual</span>
             </div>
         </header>
 
-        <!-- ÁREA CON SCROLL -->
+
         <main class="med-content-scroll">
 
-            <!-- MENSAJE DE ÉXITO TRAS GUARDAR -->
+
             <% if (mensajeExito != null) { %>
                 <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
-                    <%= mensajeExito %>
+                    <%= Html.texto(mensajeExito) %>
                 </div>
             <% } %>
 
             <% if (hayPacienteActivo) { %>
-                <!-- ========================================================
-                     CASO A: HAY PACIENTE ACTIVO EN CONSULTORIO
-                     ======================================================== -->
 
-                <!-- MENSAJE OPERATIVO DEL SISTEMA -->
+
+
                 <div class="med-atencion-banner">
                     <i data-lucide="info"></i>
                     <div class="med-atencion-banner-text">
                         <span class="med-atencion-banner-strong">Mensaje operativo del sistema</span><br>
-                        Estado: paciente admitido en recepción · en consultorio
+                        Estado registrado: <%= Html.texto(cita.get("estadoTexto")) %>
                     </div>
                 </div>
 
-                <!-- ENCABEZADO DE LA VISTA -->
+
                 <div class="med-atencion-header">
                     <div>
                         <h1 class="med-atencion-title">Atención de paciente</h1>
-                        <div class="med-atencion-subtitle">Detalle de la cita · <%= pacienteNombre %></div>
+                        <div class="med-atencion-subtitle">Detalle de la cita · <%= Html.texto(pacienteNombre) %></div>
                     </div>
                     <div class="med-atencion-fecha-reg">
                         <% if (!fechaRegistro.isEmpty()) { %>
-                            Fecha de registro: <%= fechaRegistro %>
+                            Fecha de registro: <%= Html.texto(fechaRegistro) %>
                         <% } %>
                     </div>
                 </div>
 
                 <form id="formAtencion" action="${pageContext.request.contextPath}/medico/atencion" method="POST">
+<fieldset class="med-atencion-fieldset" <%= Html.texto(Boolean.TRUE.equals(cita.get("editable")) ? "" : "disabled") %>>
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                    <input type="hidden" name="idCita" value="<%= idCita %>">
+                    <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
                     <input type="hidden" name="accion" id="accionInput" value="guardar">
-                    <input type="hidden" name="prioridad" id="prioridadInput" value="<%= urgencia %>">
+                    <input type="hidden" name="prioridad" id="prioridadInput" value="<%= Html.texto(urgencia) %>">
 
-                    <!-- TARJETA 1: METADATOS CLÍNICOS VALIDADOS -->
+
                     <div class="med-atencion-card">
                         <div class="med-atencion-card-head">
-                            <span class="med-atencion-tag-title">Metadatos clínicos validados</span>
+                            <span class="med-atencion-tag-title">Datos registrados de la cita</span>
                             <span class="med-badge-solo-lectura">Solo lectura</span>
                         </div>
 
                         <div class="med-meta-grid">
-                            <!-- Columna Izquierda: Información del paciente -->
+
                             <div>
                                 <div class="med-meta-col-title">Información del paciente</div>
                                 <div class="med-meta-list">
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Nombre completo</span>
-                                        <span class="med-meta-val"><%= pacienteNombre %></span>
+                                        <span class="med-meta-val"><%= Html.texto(pacienteNombre) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Documento / ficha</span>
-                                        <span class="med-meta-val">DNI <%= dni %></span>
+                                        <span class="med-meta-val">DNI <%= Html.texto(dni) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Teléfono de contacto</span>
-                                        <span class="med-meta-val"><%= telefono %></span>
+                                        <span class="med-meta-val"><%= Html.texto(telefono) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Tipo de cobertura</span>
-                                        <span class="med-meta-val"><%= tipoCobertura %></span>
+                                        <span class="med-meta-val"><%= Html.texto(tipoCobertura) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Alergias registradas</span>
                                         <span class="med-meta-val">
-                                            <% if ("Ninguna".equalsIgnoreCase(alergias) || alergias.trim().isEmpty()) { %>
+                                            <% if (alergias.trim().isEmpty()) { %>
+                                                <span>Sin registrar</span>
+                                            <% } else if ("Ninguna".equalsIgnoreCase(alergias)) { %>
                                                 <span class="med-pill-alergia ninguna">Ninguna</span>
                                             <% } else { %>
-                                                <span class="med-pill-alergia"><%= alergias %></span>
+                                                <span class="med-pill-alergia"><%= Html.texto(alergias) %></span>
                                             <% } %>
                                         </span>
                                     </div>
                                 </div>
                             </div>
 
-                            <!-- Columna Derecha: Detalles de programación -->
+
                             <div>
                                 <div class="med-meta-col-title">Detalles de programación</div>
                                 <div class="med-meta-list">
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Fecha y hora</span>
-                                        <span class="med-meta-val"><%= fechaHora %></span>
+                                        <span class="med-meta-val"><%= Html.texto(fechaHora) %></span>
                                     </div>
                                     <div class="med-meta-row">
-                                        <span class="med-meta-label">Sede y consultorio</span>
-                                        <span class="med-meta-val"><%= sedeYConsultorio %></span>
+                                        <span class="med-meta-label">Sede de la cita</span>
+                                        <span class="med-meta-val"><%= Html.texto(sedeYConsultorio) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Médico tratante</span>
-                                        <span class="med-meta-val"><%= medicoTratante %></span>
+                                        <span class="med-meta-val"><%= Html.texto(medicoTratante) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Motivo de consulta</span>
-                                        <span class="med-meta-val"><%= motivo %></span>
+                                        <span class="med-meta-val"><%= Html.texto(motivo) %></span>
                                     </div>
                                     <div class="med-meta-row">
                                         <span class="med-meta-label">Canal de reserva</span>
-                                        <span class="med-meta-val"><%= canalReserva %></span>
+                                        <span class="med-meta-val"><%= Html.texto(canalReserva) %></span>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TARJETA 2: CONTROL OPERATIVO REQUERIDO -->
+
                     <div class="med-atencion-card">
                         <div class="med-atencion-tag-title" style="margin-bottom: 14px;">Control operativo requerido</div>
 
                         <div class="med-aviso-box">
-                            <strong>Aviso clínico-administrativo:</strong> Ninguno registrado
+                            Registra únicamente información verificada durante la atención.
                         </div>
 
                         <div class="med-control-action-bar">
-                            <button type="button" class="med-btn-no-presento" onclick="marcarNoSePresento()">
+                            <button type="submit" form="formInasistencia" class="med-btn-no-presento" onclick="return confirm('¿Confirmar la inasistencia de este paciente?')">
                                 No se presentó al llamado
                             </button>
 
                             <div class="med-estado-recepcion-card">
                                 <i data-lucide="edit-3"></i>
                                 <div>
-                                    <div class="med-estado-recepcion-title">Estado actual: En sala · admitido por recepción a tiempo</div>
-                                    <div class="med-estado-recepcion-desc">Llegada registrada en recepción · la atención se cierra al guardar el registro</div>
+                                    <div class="med-estado-recepcion-title">Estado actual: <%= Html.texto(cita.get("estadoTexto")) %></div>
+                                    <div class="med-estado-recepcion-desc">El registro solo se puede cerrar el día de la cita, a partir de su hora.</div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- TARJETA 3: PLAN DE SEGUIMIENTO -->
+
                     <div class="med-atencion-card">
                         <div class="med-atencion-tag-title" style="margin-bottom: 14px;">Plan de seguimiento</div>
 
-                        <label class="med-field-label">
-                            Nivel de prioridad clínica <span class="med-field-required">*</span>
-                        </label>
+                        <span class="med-field-label">Nivel de prioridad clínica *</span>
 
                         <div class="med-prioridad-cards">
-                            <!-- Alta -->
-                            <div class="med-prio-card <%= "ALTA".equalsIgnoreCase(urgencia) ? "active" : "" %>" onclick="setPrioridad('ALTA', this)">
+
+                            <div class="med-prio-card <%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "active" : "") %>" onclick="setPrioridad('ALTA', this)">
                                 <div class="med-prio-card-left">
                                     <span class="med-prio-dot alta"></span>
                                     <div>
@@ -270,8 +270,8 @@
                                 <div class="med-prio-check"><i data-lucide="check"></i></div>
                             </div>
 
-                            <!-- Media -->
-                            <div class="med-prio-card <%= !"ALTA".equalsIgnoreCase(urgencia) && !"BAJA".equalsIgnoreCase(urgencia) ? "active" : "" %>" onclick="setPrioridad('MEDIA', this)">
+
+                            <div class="med-prio-card <%= Html.texto(!"ALTA".equalsIgnoreCase(urgencia) && !"BAJA".equalsIgnoreCase(urgencia) ? "active" : "") %>" onclick="setPrioridad('MEDIA', this)">
                                 <div class="med-prio-card-left">
                                     <span class="med-prio-dot media"></span>
                                     <div>
@@ -282,8 +282,8 @@
                                 <div class="med-prio-check"><i data-lucide="check"></i></div>
                             </div>
 
-                            <!-- Baja -->
-                            <div class="med-prio-card <%= "BAJA".equalsIgnoreCase(urgencia) ? "active" : "" %>" onclick="setPrioridad('BAJA', this)">
+
+                            <div class="med-prio-card <%= Html.texto("BAJA".equalsIgnoreCase(urgencia) ? "active" : "") %>" onclick="setPrioridad('BAJA', this)">
                                 <div class="med-prio-card-left">
                                     <span class="med-prio-dot baja"></span>
                                     <div>
@@ -295,26 +295,24 @@
                             </div>
                         </div>
 
-                        <!-- Fecha recomendada de próxima atención -->
-                        <label class="med-field-label">
-                            Fecha recomendada de próxima atención <span class="med-field-required">*</span>
-                        </label>
+
+                        <label class="med-field-label" for="fechaProximaInput">Fecha recomendada de próxima atención (opcional)</label>
                         <div class="med-date-group">
                             <div class="med-input-date-wrap">
-                                <input type="date" name="fechaProxima" id="fechaProximaInput" class="med-input-date" value="<%= fechaRecomendadaProxima %>" onchange="actualizarBadgeMeses()">
+                                <input min="<%= Html.texto(java.time.LocalDate.now(java.time.ZoneId.of("America/Lima")).plusDays(1)) %>" type="date" name="fechaProxima" id="fechaProximaInput" class="med-input-date" value="<%= Html.texto(fechaRecomendadaProxima) %>" onchange="actualizarBadgeMeses()">
                             </div>
-                            <span class="med-badge-meses" id="badgeMeses">En 3 meses</span>
+                            <span class="med-badge-meses" id="badgeMeses">Sin fecha de seguimiento</span>
                         </div>
 
-                        <!-- Indicación breve de continuidad -->
+
                         <div class="med-textarea-header">
-                            <label class="med-field-label" style="margin-bottom: 0;">
+                            <label class="med-field-label" for="indicacionesTextarea" style="margin-bottom: 0;">
                                 Indicación breve de continuidad (texto libre)
                             </label>
-                            <span class="med-char-counter" id="charCounter">42 / 200 caracteres</span>
+                            <span class="med-char-counter" id="charCounter">0 / 200 caracteres</span>
                         </div>
 
-                        <textarea name="indicaciones" id="indicacionesTextarea" class="med-textarea-atencion" maxlength="200" oninput="actualizarContador(this)">Control en 3 meses para evaluar evolución.</textarea>
+                        <textarea name="indicaciones" id="indicacionesTextarea" class="med-textarea-atencion" maxlength="200" oninput="actualizarContador(this)"><%= Html.texto(cita.get("indicaciones")) %></textarea>
 
                         <div class="med-disclaimer">
                             <i data-lucide="info"></i>
@@ -322,7 +320,7 @@
                         </div>
                     </div>
 
-                    <!-- BARRA INFERIOR DE ACCIONES -->
+
                     <div class="med-bottom-actions">
                         <button type="button" class="med-btn-restablecer" onclick="restablecerFormulario()">
                             Restablecer
@@ -332,12 +330,15 @@
                             Guardar registro de atención
                         </button>
                     </div>
+                </fieldset></form>
+                <form id="formInasistencia" method="POST" action="${pageContext.request.contextPath}/medico/atencion">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                    <input type="hidden" name="accion" value="no_asistio">
+                    <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
                 </form>
 
             <% } else { %>
-                <!-- ========================================================
-                     CASO B: NO HAY PACIENTE EN CONSULTORIO
-                     ======================================================== -->
+
                 <div class="med-atencion-header">
                     <div>
                         <h1 class="med-atencion-title">Atención de paciente</h1>
@@ -370,67 +371,7 @@
         </main>
     </div>
 
-    <!-- SCRIPTS INTERACTIVOS -->
-    <script>
-        lucide.createIcons();
 
-        function setPrioridad(valor, elemento) {
-            document.querySelectorAll('.med-prio-card').forEach(c => c.classList.remove('active'));
-            elemento.classList.add('active');
-            document.getElementById('prioridadInput').value = valor;
-        }
-
-        function marcarNoSePresento() {
-            if (confirm('¿Confirmar que el paciente no se presentó al llamado en el consultorio?')) {
-                document.getElementById('accionInput').value = 'no_asistio';
-                document.getElementById('formAtencion').submit();
-            }
-        }
-
-        function actualizarContador(textarea) {
-            const count = textarea.value.length;
-            document.getElementById('charCounter').textContent = count + ' / 200 caracteres';
-        }
-
-        function actualizarBadgeMeses() {
-            const el = document.getElementById('fechaProximaInput');
-            if (!el) return;
-            const fechaInput = el.value;
-            if (!fechaInput) {
-                document.getElementById('badgeMeses').textContent = '--';
-                return;
-            }
-            const fechaSel = new Date(fechaInput);
-            const hoy = new Date();
-            const diffMeses = Math.round((fechaSel - hoy) / (1000 * 60 * 60 * 24 * 30));
-            if (diffMeses <= 0) {
-                document.getElementById('badgeMeses').textContent = 'Próximos días';
-            } else if (diffMeses === 1) {
-                document.getElementById('badgeMeses').textContent = 'En 1 mes';
-            } else {
-                document.getElementById('badgeMeses').textContent = 'En ' + diffMeses + ' meses';
-            }
-        }
-
-        function restablecerFormulario() {
-            const txt = document.getElementById('indicacionesTextarea');
-            const fInput = document.getElementById('fechaProximaInput');
-            if (txt) {
-                txt.value = 'Control en 3 meses para evaluar evolución.';
-                actualizarContador(txt);
-            }
-            if (fInput) {
-                fInput.value = '<%= fechaRecomendadaProxima %>';
-                actualizarBadgeMeses();
-            }
-        }
-
-        // Inicializar badges y contador
-        document.addEventListener('DOMContentLoaded', () => {
-            const textarea = document.getElementById('indicacionesTextarea');
-            if (textarea) actualizarContador(textarea);
-            actualizarBadgeMeses();
-        });
-    </script>
+    <script src="${pageContext.request.contextPath}/assets/js/medico-atencion.js"></script>
 </body>
 </html>

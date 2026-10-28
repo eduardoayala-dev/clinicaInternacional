@@ -1,3 +1,4 @@
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%
@@ -6,11 +7,11 @@
     if (nombreMedico == null && usuario != null) {
         nombreMedico = "Dr. " + usuario.getNombres() + " " + usuario.getApellidos();
     }
-    if (nombreMedico == null) nombreMedico = "Dr. Carlos Mendoza";
+    if (nombreMedico == null) nombreMedico = "Médico";
 
-    String emailVal = usuario != null && usuario.getEmail() != null ? usuario.getEmail() : "carlos.mendoza@clinica.pe";
+    String emailVal = String.valueOf(((java.util.Map<?,?>)request.getAttribute("detallesMedico")).get("email"));
 
-    String inicialesMedico = "CM";
+    String inicialesMedico = "M";
     if (nombreMedico != null && !nombreMedico.trim().isEmpty()) {
         String[] partes = nombreMedico.replace("Dr.", "").replace("Dra.", "").trim().split("\\s+");
         if (partes.length >= 2) {
@@ -31,12 +32,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css">
     <style>
         :root {
             --primary: #2563eb;
             --primary-hover: #1d4ed8;
             --primary-light: #eff6ff;
-            --bg-page: #f0f8ff;
+            --bg-page: var(--med-bg-page);
             --bg-card: #ffffff;
             --text-dark: #0f172a;
             --text-gray: #64748b;
@@ -50,32 +52,8 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', sans-serif; }
         body { background-color: var(--bg-page); color: var(--text-dark); display: flex; height: 100vh; overflow: hidden; }
 
-        .sidebar {
-            width: var(--sidebar-width); background-color: var(--bg-card); border-right: 1px solid var(--border-light);
-            display: flex; flex-direction: column; padding: 24px 20px; flex-shrink: 0; z-index: 10;
-        }
-        .brand-container { display: flex; align-items: center; gap: 12px; margin-bottom: 40px; padding-left: 8px; }
-        .brand-container img { height: 36px; }
-        .nav-menu { display: flex; flex-direction: column; gap: 8px; flex: 1; }
-        .nav-item {
-            display: flex; align-items: center; gap: 14px; padding: 12px 16px; border-radius: var(--radius-md);
-            color: var(--text-gray); text-decoration: none; font-size: 14px; font-weight: 500; transition: all 0.2s;
-        }
-        .nav-item:hover { background-color: #f8fafc; color: var(--text-dark); }
-        .nav-item.active { background-color: #eff6ff; color: var(--primary); font-weight: 600; }
-        .user-profile-bottom {
-            margin-top: auto; display: flex; align-items: center; gap: 12px; padding: 16px 8px 8px 8px;
-            border-top: 1px solid var(--border-light); cursor: pointer; text-decoration: none;
-        }
-        .avatar-initials {
-            display: flex; align-items: center; justify-content: center; border-radius: 50%; font-weight: 600;
-            color: var(--primary); background-color: #eff6ff; width: 36px; height: 36px; font-size: 13px; flex-shrink: 0;
-        }
-        .user-name-sm { font-size: 13px; font-weight: 600; color: var(--text-dark); line-height: 1.3; }
-        .user-role-sm { font-size: 11px; color: var(--text-gray); }
-
         .main-content { flex: 1; padding: 32px 40px; overflow-y: auto; }
-        
+
         .header-row { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 24px; }
         .header-title { font-size: 26px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px; letter-spacing: -0.5px; }
         .header-subtitle { font-size: 14px; color: var(--text-gray); }
@@ -87,9 +65,9 @@
         }
         .btn-bell:hover { background: #f8fafc; color: var(--text-dark); }
 
-        /* PROFILE LAYOUT GRID */
+
         .profile-grid { display: grid; grid-template-columns: 320px 1fr; gap: 24px; max-width: 1100px; margin: 0 auto; }
-        
+
         .card-box {
             background: #ffffff; border-radius: var(--radius-lg); border: 1px solid var(--border-light);
             padding: 24px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);
@@ -114,7 +92,7 @@
             border-radius: var(--radius-md); border: 1px solid var(--border-light);
         }
 
-        @media(max-width:900px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .profile-grid { grid-template-columns: 1fr; } }
+        @media(max-width:900px) { body { flex-direction: column; overflow-y: auto; } .med-sidebar { width:100%; } .main-content { padding:24px 16px; } .profile-grid { grid-template-columns: 1fr; } }
     </style>
 </head>
 <body>
@@ -140,9 +118,9 @@
         </nav>
         <div class="med-user-footer">
             <a href="${pageContext.request.contextPath}/medico/perfil" class="med-user-info-link">
-                <div class="med-avatar"><%= inicialesMedico %></div>
+                <div class="med-avatar"><%= Html.texto(inicialesMedico) %></div>
                 <div style="flex: 1; min-width: 0;">
-                    <div class="med-user-name"><%= nombreMedico %></div>
+                    <div class="med-user-name"><%= Html.texto(nombreMedico) %></div>
                     <div class="med-user-role">Médico Especialista</div>
                 </div>
             </a>
@@ -161,39 +139,39 @@
                 <h1 class="header-title">Perfil del Médico</h1>
                 <p class="header-subtitle">Información profesional, especialidad y credenciales registradas.</p>
             </div>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-bell" title="Alertas">
+            <a href="${pageContext.request.contextPath}/medico/agenda" class="btn-bell" title="Mi agenda">
                 <i data-lucide="bell" style="width: 20px;"></i>
             </a>
         </div>
 
         <%
             java.util.Map<String, Object> detMed = (java.util.Map<String, Object>) request.getAttribute("detallesMedico");
-            String cmpVal = detMed != null && detMed.get("cmp") != null ? (String) detMed.get("cmp") : "CMP 45892";
+            String cmpVal = detMed != null && detMed.get("cmp") != null ? (String) detMed.get("cmp") : "Sin registrar";
             String espVal = detMed != null && detMed.get("especialidad") != null ? (String) detMed.get("especialidad") : "Medicina General";
-            String sedeVal = detMed != null && detMed.get("sedeNombre") != null ? (String) detMed.get("sedeNombre") : "Sede San Borja";
+            String sedeVal = detMed != null && detMed.get("sedeNombre") != null ? (String) detMed.get("sedeNombre") : "Sin registrar";
         %>
 
         <div class="profile-grid">
-            <!-- IZQUIERDA: AVATAR CARD -->
+
             <div class="card-box">
                 <div class="avatar-section">
-                    <div class="avatar-circle"><%= inicialesMedico %></div>
-                    <div class="profile-fullname"><%= nombreMedico %></div>
-                    <span class="profile-badge">Médico Especialista Habilitado</span>
+                    <div class="avatar-circle"><%= Html.texto(inicialesMedico) %></div>
+                    <div class="profile-fullname"><%= Html.texto(nombreMedico) %></div>
+                    <span class="profile-badge">Perfil médico activo</span>
                 </div>
 
                 <div class="field-group">
                     <div class="field-label">Colegiatura / CMP</div>
-                    <div class="field-val"><%= cmpVal %> (Hábil)</div>
+                    <div class="field-val"><%= Html.texto(cmpVal) %></div>
                 </div>
 
                 <div class="field-group">
                     <div class="field-label">Especialidad</div>
-                    <div class="field-val" style="color: var(--primary);"><%= espVal %></div>
+                    <div class="field-val" style="color: var(--primary);"><%= Html.texto(espVal) %></div>
                 </div>
             </div>
 
-            <!-- DERECHA: CREDANCIALES DETALLADAS -->
+
             <div class="card-box">
                 <h2 style="font-size: 16px; font-weight: 700; color: var(--text-dark); margin-bottom: 20px;">
                     Detalles Institucionales
@@ -201,24 +179,24 @@
 
                 <div class="field-group">
                     <div class="field-label">Correo Institucional</div>
-                    <div class="field-val"><%= emailVal %></div>
+                    <div class="field-val"><%= Html.texto(emailVal) %></div>
                 </div>
 
                 <div class="field-group">
                     <div class="field-label">Sede Asignada Principal</div>
-                    <div class="field-val"><%= sedeVal %> (Consultorio 102)</div>
+                    <div class="field-val"><%= Html.texto(sedeVal) %></div>
                 </div>
 
                 <div class="field-group">
-                    <div class="field-label">Propuesta de Horario Asistencial</div>
-                    <div class="field-val">Turno Mañana: 08:00 AM a 14:00 PM (Lunes a Viernes)</div>
+                    <div class="field-label">Consulta de agenda</div>
+                    <div class="field-val">Consulta las citas por fecha en Mi agenda.</div>
                 </div>
             </div>
         </div>
     </main>
 
     <script>
-        lucide.createIcons();
+        globalThis.lucide?.createIcons();
     </script>
 </body>
 </html>
