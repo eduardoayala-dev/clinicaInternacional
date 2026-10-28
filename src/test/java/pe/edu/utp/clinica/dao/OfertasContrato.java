@@ -6,7 +6,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -93,7 +92,7 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         assertEquals(900L,data.get("tiempoRestanteSegundos"));
         reloj.avanzar(Duration.ofMinutes(2));
         assertEquals(780L,ofertas.obtenerParaPaciente(2).get("tiempoRestanteSegundos"));
-        assertNull(ofertas.obtenerParaPaciente(3));
+        assertTrue(ofertas.obtenerParaPaciente(3).isEmpty());
         assertEquals(1,count("SELECT COUNT(*) FROM reasignacion_inteligente WHERE estado='PENDIENTE'"));
     }
 
@@ -114,7 +113,7 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_paciente=2 AND estado='CONFIRMADA' AND fecha_hora='2026-12-01 09:00:00'"));
         assertEquals(1,count("SELECT COUNT(*) FROM lista_espera WHERE id_paciente=2 AND estado='ATENDIDA'"));
         assertEquals(1,count("SELECT COUNT(*) FROM reasignacion_inteligente WHERE estado='ACEPTADA' AND id_cita_asignada="+cita));
-        assertNull(ofertas.obtenerParaPaciente(2));
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty());
     }
 
     @Test void foreignOfferAndMissingIdentifiersNeverAffectTheOwner() throws Exception {
@@ -129,11 +128,11 @@ abstract class OfertasContrato extends AgendaCitaContrato {
     @Test void expiryIsCheckedByServerAndNextPatientCanReceiveOffer() throws Exception {
         registrar(2); registrar(3); int original=cancelada(); int id=ofertas.generar(original);
         reloj.avanzar(Duration.ofMinutes(16));
-        assertNull(ofertas.obtenerParaPaciente(2));
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty());
         assertTrue(ofertas.tieneOfertaVencida(2));
         assertEquals(410,assertThrows(AgendaException.class,()->ofertas.aceptar(2,id)).status());
         assertEquals(1,ofertas.procesarPendientes());
-        assertNotNull(ofertas.obtenerParaPaciente(3));
+        assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
         assertEquals(1,count("SELECT COUNT(*) FROM reasignacion_inteligente WHERE estado='EXPIRADA'"));
     }
 
@@ -141,7 +140,7 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         int listaId=registrar(2); registrar(3); int original=cancelada(); int id=ofertas.generar(original);
         assertTrue(ofertas.rechazar(2,id)); assertTrue(ofertas.rechazar(2,id));
         assertEquals(listaId,lista.obtenerEstadoListaEspera(2).get("idListaEspera"));
-        assertNotNull(ofertas.obtenerParaPaciente(3));
+        assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
         assertEquals(0,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
         assertEquals(1,count("SELECT COUNT(*) FROM reasignacion_inteligente WHERE estado='PENDIENTE'"));
     }
@@ -150,7 +149,7 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         int listaId=registrar(2); int id=ofertas.generar(cancelada());
         assertEquals(404,assertThrows(AgendaException.class,()->lista.retirarListaEspera(listaId,3)).status());
         assertTrue(lista.retirarListaEspera(listaId,2)); assertTrue(lista.retirarListaEspera(listaId,2));
-        assertNull(lista.obtenerEstadoListaEspera(2));
+        assertTrue(lista.obtenerEstadoListaEspera(2).isEmpty());
         assertEquals(409,assertThrows(AgendaException.class,()->ofertas.aceptar(2,id)).status());
         assertTrue(dao.reservar(3,1,FECHA,"09:00","MEDIA")>0);
     }
@@ -180,7 +179,7 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         int cita=dao.reservar(1,2,FECHA,"09:00","MEDIA");
         sql("UPDATE cita SET estado='CANCELADA' WHERE id_cita="+cita);
         assertTrue(ofertas.generar(cita)>0);
-        assertNull(ofertas.obtenerParaPaciente(2)); assertNotNull(ofertas.obtenerParaPaciente(3));
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty()); assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
     }
 
     @Test void requiredNoticeIsNotInterpretedAsClinicalUrgency() throws Exception {
@@ -190,17 +189,17 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         int cita=dao.reservar(1,1,"2026-10-27","15:00","BAJA");
         sql("UPDATE cita SET estado='CANCELADA' WHERE id_cita="+cita);
         assertTrue(ofertas.generar(cita)>0);
-        assertNull(ofertas.obtenerParaPaciente(2)); assertNotNull(ofertas.obtenerParaPaciente(3));
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty()); assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
         assertEquals(2,count("SELECT COUNT(*) FROM lista_espera WHERE nivel_urgencia='MEDIA'"));
     }
 
     @Test void preferredDoctorIsARealRestrictionRatherThanAnIgnoredFormField() throws Exception {
-        lista.registrar(2,1,1,"MANANA","MEDIA","CORREO",180,2);
+        lista.registrar(2,new ListaEsperaDAO.Preferencias(1,1,"MANANA","MEDIA","CORREO",180,2));
         registrar(3);
         ofertas.generar(cancelada());
-        assertNull(ofertas.obtenerParaPaciente(2));
-        assertNotNull(ofertas.obtenerParaPaciente(3));
-        assertThrows(AgendaException.class,()->lista.registrar(4,2,1,"MANANA","MEDIA","CORREO",180,1));
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty());
+        assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
+        assertThrows(AgendaException.class,()->lista.registrar(4,new ListaEsperaDAO.Preferencias(2,1,"MANANA","MEDIA","CORREO",180,1)));
     }
 
     @Test void concurrentAcceptsReturnSameAppointmentWithoutDuplicatingIt() throws Exception {

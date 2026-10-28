@@ -144,7 +144,7 @@ public class OfertasDAO {
     }
 
     public Map<String, Object> obtenerParaPaciente(int paciente) {
-        if (paciente <= 0) return null;
+        if (paciente <= 0) return Map.of();
         String sql = "SELECT r.id_reasignacion,r.id_lista_espera,r.fecha_limite_respuesta,c.fecha_hora,u.nombres,u.apellidos,e.nombre AS especialidad,s.nombre AS sede "
                 + "FROM reasignacion_inteligente r JOIN lista_espera le ON r.id_lista_espera=le.id_lista_espera JOIN cita c ON r.id_cita_original=c.id_cita "
                 + "JOIN disponibilidad d ON r.id_disponibilidad=d.id_disponibilidad JOIN medico m ON c.id_medico=m.id_medico JOIN usuario u ON m.id_usuario=u.id_usuario JOIN especialidad e ON m.id_especialidad=e.id_especialidad JOIN sede s ON m.id_sede=s.id_sede "
@@ -153,7 +153,7 @@ public class OfertasDAO {
             ps.setInt(1, paciente);
             ps.setObject(2, ahora());
             ps.setObject(3, ahora());
-            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? presentar(rs) : null; }
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? presentar(rs) : Map.of(); }
         } catch (SQLException e) { throw new CatalogoDatosException(e); }
     }
 
@@ -186,7 +186,7 @@ public class OfertasDAO {
     private Map<String, Object> presentar(ResultSet rs) throws SQLException {
         Map<String, Object> data = new LinkedHashMap<>();
         LocalDateTime vence = rs.getObject("fecha_limite_respuesta", LocalDateTime.class);
-        long segundos = Math.max(0, Duration.between(ahora(), vence).toSeconds());
+        long segundos = Math.max(0, Duration.between(ahora().atZone(LIMA), vence.atZone(LIMA)).toSeconds());
         data.put("idOferta", rs.getInt("id_reasignacion"));
         data.put("idListaEspera", rs.getInt("id_lista_espera"));
         data.put("especialidad", rs.getString("especialidad"));
@@ -225,7 +225,9 @@ public class OfertasDAO {
     }
 
     private int candidato(Connection conn, Cupo cupo) throws SQLException {
-        String rango = cupo.inicio().getHour() < 13 ? "MANANA" : cupo.inicio().getHour() < 19 ? "TARDE" : "NOCHE";
+        String rango = "NOCHE";
+        if(cupo.inicio().getHour()<13) rango="MANANA";
+        else if(cupo.inicio().getHour()<19) rango="TARDE";
         String sql = "SELECT le.id_lista_espera FROM lista_espera le "
                 + "WHERE le.estado='ACTIVA' AND le.id_paciente IN (SELECT p.id_paciente FROM paciente p JOIN usuario u ON p.id_usuario=u.id_usuario WHERE u.activo=TRUE AND u.rol='PACIENTE') AND le.id_especialidad=? AND (le.id_sede=? OR le.id_sede IS NULL) AND le.rango_horario IN (?, 'INDIFERENTE') AND le.id_paciente<>? "
                 + "AND NOT EXISTS (SELECT 1 FROM reasignacion_inteligente r WHERE r.id_cita_original=? AND r.id_lista_espera=le.id_lista_espera AND r.estado IN ('RECHAZADA','EXPIRADA','ACEPTADA')) "
@@ -238,7 +240,7 @@ public class OfertasDAO {
             ps.setInt(4, cupo.paciente());
             ps.setInt(5, cupo.cita());
             ps.setObject(6, cupo.inicio());
-            ps.setLong(7, Duration.between(ahora(), cupo.inicio()).toMinutes());
+            ps.setLong(7, Duration.between(ahora().atZone(LIMA), cupo.inicio().atZone(LIMA)).toMinutes());
             ps.setInt(8,cupo.medico());
             try (ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getInt(1) : 0; }
         }

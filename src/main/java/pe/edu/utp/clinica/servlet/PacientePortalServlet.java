@@ -14,6 +14,8 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 abstract class PacientePortalServlet extends HttpServlet {
+    private static final String TOAST_MSG = "toastMsg";
+    private static final String TOAST_TIPO = "toastTipo";
     private static final Logger LOGGER = Logger.getLogger(PacientePortalServlet.class.getName());
     protected abstract String ruta();
     protected abstract void mostrar(HttpServletRequest request, HttpServletResponse response, Usuario usuario) throws IOException, ServletException;
@@ -53,8 +55,8 @@ abstract class PacientePortalServlet extends HttpServlet {
                 response.setContentType("text/plain;charset=UTF-8");
                 response.getWriter().write(mensaje);
             } else {
-                request.getSession().setAttribute("toastMsg", mensaje);
-                request.getSession().setAttribute("toastTipo", "error");
+                request.getSession().setAttribute(TOAST_MSG, mensaje);
+                request.getSession().setAttribute(TOAST_TIPO, "error");
                 response.sendRedirect(request.getContextPath() + ruta());
             }
         } catch (IOException e) { transporte(response, e); }
@@ -84,8 +86,8 @@ abstract class PacientePortalServlet extends HttpServlet {
     protected static void resultado(HttpServletRequest request, HttpServletResponse response, int status, ApiResponse<?> data, String destino) throws IOException {
         if (json(request)) ApiJson.write(response, status, data);
         else {
-            request.getSession().setAttribute("toastMsg", data.message());
-            request.getSession().setAttribute("toastTipo", "success");
+            request.getSession().setAttribute(TOAST_MSG, data.message());
+            request.getSession().setAttribute(TOAST_TIPO, "success");
             response.sendRedirect(request.getContextPath() + destino);
         }
     }
@@ -93,10 +95,10 @@ abstract class PacientePortalServlet extends HttpServlet {
     protected static void flash(HttpServletRequest request) {
         var session = request.getSession(false);
         if (session == null) return;
-        request.setAttribute("toastMsg", session.getAttribute("toastMsg"));
-        request.setAttribute("toastTipo", session.getAttribute("toastTipo"));
-        session.removeAttribute("toastMsg");
-        session.removeAttribute("toastTipo");
+        request.setAttribute(TOAST_MSG, session.getAttribute(TOAST_MSG));
+        request.setAttribute(TOAST_TIPO, session.getAttribute(TOAST_TIPO));
+        session.removeAttribute(TOAST_MSG);
+        session.removeAttribute(TOAST_TIPO);
     }
 
     private static void transporte(HttpServletResponse response, IOException e) {

@@ -24,6 +24,8 @@ import java.util.Map;
  * DAO para gestión del cuerpo médico, sedes, especialidades y disponibilidad de horarios.
  */
 public class MedicoDAO {
+    private static final String ID_SEDE = "id_sede";
+    private static final String ID_ESPECIALIDAD = "idEspecialidad";
     private static final DateTimeFormatter SLOT_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
     private static final String ACTIVE_JOINS = " JOIN usuario u ON m.id_usuario = u.id_usuario "
             + "JOIN especialidad e ON m.id_especialidad = e.id_especialidad JOIN sede s ON m.id_sede = s.id_sede ";
@@ -74,7 +76,7 @@ public class MedicoDAO {
              ResultSet rs = ps.executeQuery()) {
             while (rs.next()) {
                 Map<String, Object> map = new HashMap<>();
-                map.put("id", rs.getInt("id_sede"));
+                map.put("id", rs.getInt(ID_SEDE));
                 map.put("nombre", rs.getString("nombre"));
                 map.put("direccion", rs.getString("direccion"));
                 lista.add(map);
@@ -150,9 +152,9 @@ public class MedicoDAO {
                     map.put("idMedico", rs.getInt("id_medico"));
                     map.put("cmp", rs.getString("cmp"));
                     map.put("nombreMedico", nombreCompleto);
-                    map.put("idEspecialidad", rs.getInt("id_especialidad"));
+                    map.put(ID_ESPECIALIDAD, rs.getInt("id_especialidad"));
                     map.put("especialidad", rs.getString("especialidad") != null ? rs.getString("especialidad") : "Medicina General");
-                    map.put("idSede", rs.getInt("id_sede"));
+                    map.put("idSede", rs.getInt(ID_SEDE));
                     map.put("sedeNombre", rs.getString("sede_nombre") != null ? rs.getString("sede_nombre") : "Sede San Borja");
                 }
             }
@@ -304,8 +306,8 @@ public class MedicoDAO {
             while (rs.next()) {
                 Map<String, Object> medico = new HashMap<>();
                 medico.put("idMedico", rs.getInt("id_medico"));
-                medico.put("idEspecialidad", rs.getInt("id_especialidad"));
-                medico.put("idSede", rs.getInt("id_sede"));
+                medico.put(ID_ESPECIALIDAD, rs.getInt("id_especialidad"));
+                medico.put("idSede", rs.getInt(ID_SEDE));
                 medico.put("nombre", NombrePersona.formatear(rs.getString("nombres") + " " + rs.getString("apellidos")));
                 lista.add(medico);
             }
@@ -338,7 +340,7 @@ public class MedicoDAO {
                 m.put("apellidosOnly", cleanA);
                 String espName = rs.getString("especialidad_nombre") != null ? rs.getString("especialidad_nombre") : "Medicina General";
                 m.put("especialidad", espName);
-                m.put("idEspecialidad", rs.getInt("id_especialidad"));
+                m.put(ID_ESPECIALIDAD, rs.getInt("id_especialidad"));
                 
                 double precio = 80.00;
                 if ("Medicina General".equalsIgnoreCase(espName)) precio = 60.00;

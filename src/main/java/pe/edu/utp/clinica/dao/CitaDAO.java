@@ -23,6 +23,7 @@ import java.util.logging.Logger;
  * Delega en MedicoDAO, NotificacionDAO y ListaEsperaDAO para mantener alta cohesión y bajo acoplamiento.
  */
 public class CitaDAO {
+    private static final String ZONA_CLINICA = "America/Lima";
     private static final String ESTADO_CANCELADA = "CANCELADA";
     private static final String ESTADO_SOLICITADA = "SOLICITADA";
     private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
@@ -36,8 +37,8 @@ public class CitaDAO {
 
 
     private final MedicoDAO medicoDAO = new MedicoDAO();
-    private final NotificacionDAO notificacionDAO = new NotificacionDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of("America/Lima")));
-    private final ListaEsperaDAO listaEsperaDAO = new ListaEsperaDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of("America/Lima")));
+    private final NotificacionDAO notificacionDAO = new NotificacionDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
+    private final ListaEsperaDAO listaEsperaDAO = new ListaEsperaDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
 
     // =========================================================================
     // 1. DELEGACIONES A MedicoDAO (Catálogos, sedes, especialidades y disponibilidad)
@@ -485,7 +486,7 @@ public class CitaDAO {
     }
 
     public String ejecutarReasignacionInteligente(int original) {
-        int oferta = new OfertasDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of("America/Lima"))).generar(original);
+        int oferta = new OfertasDAO(this::abrirConexion, java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA))).generar(original);
         return oferta > 0 ? "Se creó una oferta de cupo para un paciente compatible en lista de espera."
                 : "No se generó una nueva oferta para este cupo.";
     }
@@ -535,13 +536,11 @@ public class CitaDAO {
     }
 
     public boolean aceptarOfertaCupo(int idPaciente, int idListaEspera) {
-        int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
-        return listaEsperaDAO.aceptarOfertaCupo(idPaciente, idListaEspera, idUsuario);
+        return listaEsperaDAO.aceptarOfertaCupo(idPaciente, idListaEspera);
     }
 
     public boolean rechazarOfertaCupo(int idPaciente, int idListaEspera) {
-        int idUsuario = obtenerIdUsuarioPorPacienteId(idPaciente);
-        return listaEsperaDAO.rechazarOfertaCupo(idPaciente, idListaEspera, idUsuario);
+        return listaEsperaDAO.rechazarOfertaCupo(idPaciente, idListaEspera);
     }
 
     public Map<String, Object> obtenerDetalleCitaMedico(int idCita, int idMedico) {

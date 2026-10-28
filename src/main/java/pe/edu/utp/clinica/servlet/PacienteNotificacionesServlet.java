@@ -16,6 +16,7 @@ import java.util.Map;
 
 @WebServlet(name="PacienteNotificacionesServlet",urlPatterns={"/paciente/notificaciones"})
 public class PacienteNotificacionesServlet extends PacientePortalServlet {
+    private static final String ID_OFERTA = "idOferta";
     private transient CitaDAO citas;
     private transient OfertasDAO ofertas;
     protected CitaDAO crearCitaDAO() { return new CitaDAO(); }
@@ -29,10 +30,10 @@ public class PacienteNotificacionesServlet extends PacientePortalServlet {
         var oferta=ofertas.obtenerParaPaciente(paciente);
         var notificaciones=citas.obtenerNotificacionesUsuario(usuario.getIdUsuario());
         int sinLeer=citas.contarNotificacionesSinLeer(usuario.getIdUsuario());
-        boolean vencida=oferta==null && ofertas.tieneOfertaVencida(paciente);
+        boolean vencida=oferta.isEmpty() && ofertas.tieneOfertaVencida(paciente);
         if(json(request)) {
             Map<String,Object> data=new LinkedHashMap<>();
-            data.put("notificaciones",notificaciones); data.put("sinLeer",sinLeer); data.put("oferta",oferta); data.put("ofertaVencida",vencida);
+            data.put("notificaciones",notificaciones); data.put("sinLeer",sinLeer); data.put("oferta",oferta.isEmpty()?null:oferta); data.put("ofertaVencida",vencida);
             ApiJson.write(response,200,new ApiResponse<>("NOTIFICACIONES_OBTENIDAS","Consulta completada.",data));
             return;
         }
@@ -57,13 +58,13 @@ public class PacienteNotificacionesServlet extends PacientePortalServlet {
             return;
         }
         if("aceptar".equals(accion)) {
-            int id=positivo(request.getParameter("idOferta"));
+            int id=positivo(request.getParameter(ID_OFERTA));
             int cita=ofertas.aceptar(paciente,id);
-            resultado(request,response,200,new ApiResponse<>("OFERTA_ACEPTADA","La oferta se procesó. Revisa la cita asociada en Mis citas.",Map.of("idOferta",id,"idCita",cita)),"/paciente/historial");
+            resultado(request,response,200,new ApiResponse<>("OFERTA_ACEPTADA","La oferta se procesó. Revisa la cita asociada en Mis citas.",Map.of(ID_OFERTA,id,"idCita",cita)),"/paciente/historial");
         } else if("rechazar".equals(accion)) {
-            int id=positivo(request.getParameter("idOferta"));
+            int id=positivo(request.getParameter(ID_OFERTA));
             ofertas.rechazar(paciente,id);
-            resultado(request,response,200,new ApiResponse<>("OFERTA_RECHAZADA","Oferta rechazada. Conservas tu inscripción y antigüedad.",Map.of("idOferta",id)),ruta());
+            resultado(request,response,200,new ApiResponse<>("OFERTA_RECHAZADA","Oferta rechazada. Conservas tu inscripción y antigüedad.",Map.of(ID_OFERTA,id)),ruta());
         } else if("confirmarCita".equals(accion)) {
             marcar(request,response,usuario,positivo(request.getParameter("idNotificacion")),true);
         } else throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");

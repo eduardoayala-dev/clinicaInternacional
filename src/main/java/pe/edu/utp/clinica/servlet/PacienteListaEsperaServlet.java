@@ -18,6 +18,7 @@ import java.util.Map;
 
 @WebServlet(name="PacienteListaEsperaServlet",urlPatterns={"/paciente/lista-espera"})
 public class PacienteListaEsperaServlet extends PacientePortalServlet {
+    private static final String ID_LISTA_ESPERA = "idListaEspera";
     private transient CitaDAO citas;
     private transient ListaEsperaDAO lista;
     protected CitaDAO crearCitaDAO() { return new CitaDAO(); }
@@ -30,7 +31,7 @@ public class PacienteListaEsperaServlet extends PacientePortalServlet {
         int paciente=identidad(usuario);
         var estado=lista.obtenerEstadoListaEspera(paciente);
         if(json(request)) {
-            ApiJson.write(response,200,new ApiResponse<>("LISTA_ESPERA_OBTENIDA","Consulta completada.",estado));
+            ApiJson.write(response,200,new ApiResponse<>("LISTA_ESPERA_OBTENIDA","Consulta completada.",estado.isEmpty()?null:estado));
             return;
         }
         request.setAttribute("listaEspecialidades",citas.obtenerEspecialidades());
@@ -47,9 +48,9 @@ public class PacienteListaEsperaServlet extends PacientePortalServlet {
         int paciente=identidad(usuario);
         String accion=request.getParameter("action");
         if("retirar".equals(accion)) {
-            int id=positivo(request.getParameter("idListaEspera"));
+            int id=positivo(request.getParameter(ID_LISTA_ESPERA));
             lista.retirarListaEspera(id,paciente);
-            resultado(request,response,200,new ApiResponse<>("INSCRIPCION_RETIRADA","Te retiraste de la lista de espera.",Map.of("idListaEspera",id)),ruta());
+            resultado(request,response,200,new ApiResponse<>("INSCRIPCION_RETIRADA","Te retiraste de la lista de espera.",Map.of(ID_LISTA_ESPERA,id)),ruta());
             return;
         }
         if(accion!=null && !"inscribir".equals(accion)) throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");
@@ -57,15 +58,17 @@ public class PacienteListaEsperaServlet extends PacientePortalServlet {
         String sede=request.getParameter("sede");
         Integer sedeId="cualquiera".equals(sede)?null:positivo(sede);
         Set<String> horarios=seleccion(request,"horarios",Set.of("manana","tarde"));
-        String rango=horarios.size()==2?"INDIFERENTE":horarios.contains("manana")?"MANANA":"TARDE";
+        String rango="INDIFERENTE";
+        if(horarios.size()==1) rango=horarios.contains("manana")?"MANANA":"TARDE";
         Set<String> canales=seleccion(request,"canales",Set.of("whatsapp","email","sms"));
         String contacto=String.join(",",canales.stream().map(c->switch(c){case "email"->"CORREO";case "sms"->"SMS";default->"WHATSAPP";}).toList());
         String aviso=request.getParameter("disponibilidad");
         if(!Set.of("3h","12h").contains(aviso==null?"":aviso)) throw new AgendaException(400,"DATOS_INVALIDOS","Selecciona la anticipación del aviso.");
         String medico=request.getParameter("medicoId");
         Integer medicoId=medico==null || medico.isBlank()?null:positivo(medico);
-        int id=lista.registrar(paciente,especialidad,sedeId,rango,"MEDIA",contacto,"12h".equals(aviso)?720:180,medicoId);
-        resultado(request,response,201,new ApiResponse<>("INSCRIPCION_REGISTRADA","Inscripción registrada. Revisa tus ofertas en este portal.",Map.of("idListaEspera",id)),ruta());
+        var preferencias=new ListaEsperaDAO.Preferencias(especialidad,sedeId,rango,"MEDIA",contacto,"12h".equals(aviso)?720:180,medicoId);
+        int id=lista.registrar(paciente,preferencias);
+        resultado(request,response,201,new ApiResponse<>("INSCRIPCION_REGISTRADA","Inscripción registrada. Revisa tus ofertas en este portal.",Map.of(ID_LISTA_ESPERA,id)),ruta());
     }
 
     private int identidad(Usuario usuario) {

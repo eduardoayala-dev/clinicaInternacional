@@ -20,7 +20,7 @@ public class ListaEsperaDAO {
     private final AgendaCitaDAO.ConnectionSource connections;
     private final Clock clock;
     private final OfertasDAO ofertas;
-    private record Preferencias(int especialidad, Integer sede, String horario, String urgencia, String canales, int anticipacion, Integer medico) {}
+    public record Preferencias(int especialidad, Integer sede, String horario, String urgencia, String canales, int anticipacion, Integer medico) {}
 
     public ListaEsperaDAO() { this(DatabaseConfig::getConnection, Clock.system(ZoneId.of("America/Lima"))); }
     ListaEsperaDAO(AgendaCitaDAO.ConnectionSource connections, Clock clock) {
@@ -39,11 +39,12 @@ public class ListaEsperaDAO {
     }
 
     public int registrar(int paciente, int especialidad, Integer sede, String horario, String urgencia, String canales, int anticipacion) {
-        return registrar(paciente,especialidad,sede,horario,urgencia,canales,anticipacion,null);
+        return registrar(paciente,new Preferencias(especialidad,sede,horario,urgencia,canales,anticipacion,null));
     }
 
-    public int registrar(int paciente,int especialidad,Integer sede,String horario,String urgencia,String canales,int anticipacion,Integer medico) {
-        Preferencias prefs = preferencias(especialidad, sede, horario, urgencia, canales, anticipacion, medico);
+    public int registrar(int paciente,Preferencias solicitud) {
+        if(solicitud==null) throw invalida("Indica las preferencias de la inscripción.");
+        Preferencias prefs = preferencias(solicitud.especialidad(), solicitud.sede(), solicitud.horario(), solicitud.urgencia(), solicitud.canales(), solicitud.anticipacion(), solicitud.medico());
         return TransaccionJdbc.ejecutar(connections, conn -> {
             AgendaCitaDAO.paciente(conn, paciente);
             validarCatalogos(conn, prefs);
@@ -90,7 +91,7 @@ public class ListaEsperaDAO {
     }
 
     public Map<String, Object> obtenerEstadoListaEspera(int paciente) {
-        if (paciente <= 0) return null;
+        if (paciente <= 0) return Map.of();
         String sql = "SELECT le.id_lista_espera,le.rango_horario,le.canal_notificacion,le.anticipacion_minutos,e.nombre AS especialidad,s.nombre AS sede, "
                 + "CASE WHEN EXISTS(SELECT 1 FROM reasignacion_inteligente r WHERE r.id_lista_espera=le.id_lista_espera AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>?) THEN 'OFERTADA' ELSE 'ACTIVA' END AS estado_real, "
                 + "(SELECT COUNT(*) FROM lista_espera otra WHERE otra.id_especialidad=le.id_especialidad AND (otra.id_sede=le.id_sede OR otra.id_sede IS NULL OR le.id_sede IS NULL) AND otra.estado IN ('ACTIVA','OFERTADA') AND otra.id_lista_espera<=le.id_lista_espera) AS posicion_real "
@@ -98,16 +99,16 @@ public class ListaEsperaDAO {
         try (Connection conn = connections.open(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setObject(1, LocalDateTime.now(clock));
             ps.setInt(2, paciente);
-            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? presentar(rs) : null; }
+            try (ResultSet rs = ps.executeQuery()) { return rs.next() ? presentar(rs) : Map.of(); }
         } catch (SQLException e) { throw new CatalogoDatosException(e); }
     }
 
     public Map<String, Object> obtenerOfertaCupoAnticipado(int paciente) { return ofertas.obtenerParaPaciente(paciente); }
-    public boolean aceptarOfertaCupo(int paciente, int oferta, int usuario) {
+    public boolean aceptarOfertaCupo(int paciente, int oferta) {
         ofertas.aceptar(paciente, oferta);
         return true;
     }
-    public boolean rechazarOfertaCupo(int paciente, int oferta, int usuario) { return ofertas.rechazar(paciente, oferta); }
+    public boolean rechazarOfertaCupo(int paciente, int oferta) { return ofertas.rechazar(paciente, oferta); }
 
     private static Map<String, Object> presentar(ResultSet rs) throws SQLException {
         Map<String, Object> data = new LinkedHashMap<>();
@@ -162,9 +163,9 @@ public class ListaEsperaDAO {
             ps.setInt(1, paciente);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    boolean mismaSede = java.util.Objects.equals((Integer) rs.getObject(3), prefs.sede());
+                    boolean mismaSede = java.util.Objects.equals(rs.getObject(3), prefs.sede());
                     if (rs.getInt(2) == prefs.especialidad() && mismaSede && prefs.horario().equals(rs.getString(4))
-                            && prefs.urgencia().equals(rs.getString(5)) && prefs.canales().equals(rs.getString(6)) && prefs.anticipacion() == rs.getInt(7) && java.util.Objects.equals((Integer)rs.getObject(8),prefs.medico())) return rs.getInt(1);
+                            && prefs.urgencia().equals(rs.getString(5)) && prefs.canales().equals(rs.getString(6)) && prefs.anticipacion() == rs.getInt(7) && java.util.Objects.equals(rs.getObject(8),prefs.medico())) return rs.getInt(1);
                 }
             }
         }

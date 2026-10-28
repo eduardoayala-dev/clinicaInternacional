@@ -65,7 +65,9 @@ public class NotificacionDAO {
         data.put("fecha",dia);data.put("hora",hora);data.put("fechaEnvio",dia+" · "+hora);
         data.put("leida",leida);data.put("estado",leida?"Leído":"Pendiente");
         data.put("tipo",tipo);data.put("categoria",categoria);
-        data.put("accion",!leida && Set.of("Recordatorio de cita","Recordatorio").contains(tipo==null?"":tipo) && rs.getBoolean("confirmable")?"Confirmar":"Ver");
+        String tipoAviso=tipo==null?"":tipo;
+        boolean recordatorio=Set.of(RECORDATORIO,"Recordatorio").contains(tipoAviso);
+        data.put("accion",!leida && recordatorio && rs.getBoolean("confirmable")?"Confirmar":"Ver");
         return data;
     }
     private static String categoria(String tipo,String mensaje) {

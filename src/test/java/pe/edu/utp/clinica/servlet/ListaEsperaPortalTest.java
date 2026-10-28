@@ -23,9 +23,9 @@ class ListaEsperaPortalTest {
         int llamadas, paciente, aviso;
         Integer sede, medico;
         String canales, urgencia;
-        @Override public int registrar(int paciente,int especialidad,Integer sede,String horario,String urgencia,String canales,int aviso,Integer medico) {
-            llamadas++; this.paciente=paciente; this.sede=sede; this.medico=medico;
-            this.canales=canales; this.urgencia=urgencia; this.aviso=aviso; return 35;
+        @Override public int registrar(int paciente,Preferencias prefs) {
+            llamadas++; this.paciente=paciente; this.sede=prefs.sede(); this.medico=prefs.medico();
+            this.canales=prefs.canales(); this.urgencia=prefs.urgencia(); this.aviso=prefs.anticipacion(); return 35;
         }
     }
     private static class Ofertas extends OfertasDAO {
@@ -36,7 +36,7 @@ class ListaEsperaPortalTest {
             if(error!=null) throw error;
             return 72;
         }
-        @Override public Map<String,Object> obtenerParaPaciente(int paciente) { return null; }
+        @Override public Map<String,Object> obtenerParaPaciente(int paciente) { return Map.of(); }
         @Override public boolean tieneOfertaVencida(int paciente) { return false; }
     }
     private HttpExchange request() {
