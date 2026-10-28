@@ -11,6 +11,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.model.Usuario;
+import pe.edu.utp.clinica.api.ApiJson;
+import pe.edu.utp.clinica.api.ApiResponse;
 
 import java.io.IOException;
 
@@ -33,29 +35,30 @@ public class AuthFilter implements Filter {
         Usuario usuario = (session != null) ? (Usuario) session.getAttribute("usuarioLogueado") : null;
 
         if (usuario == null) {
-            res.sendRedirect(req.getContextPath() + "/login?error=sesion_requerida");
+            if (json(req)) ApiJson.write(res,403,new ApiResponse<>("SESION_REQUERIDA","Inicia sesión para continuar.",null));
+            else res.sendRedirect(req.getContextPath() + "/login?error=sesion_requerida");
             return;
         }
 
         String rol = usuario.getRol();
 
         if (uri.contains("/paciente/") && !"PACIENTE".equals(rol)) {
-            redirigirSegunRol(res, req.getContextPath(), rol);
+            redirigirSegunRol(res, req, rol);
             return;
         }
 
         if (uri.contains("/medico/") && !"MEDICO".equals(rol)) {
-            redirigirSegunRol(res, req.getContextPath(), rol);
+            redirigirSegunRol(res, req, rol);
             return;
         }
 
         if (uri.contains("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
-            redirigirSegunRol(res, req.getContextPath(), rol);
+            redirigirSegunRol(res, req, rol);
             return;
         }
 
         if (uri.contains("/admin/") && !uri.contains("/sysadmin/") && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
-            redirigirSegunRol(res, req.getContextPath(), rol);
+            redirigirSegunRol(res, req, rol);
             return;
         }
 
@@ -68,7 +71,17 @@ public class AuthFilter implements Filter {
         chain.doFilter(request, response);
     }
 
-    private void redirigirSegunRol(HttpServletResponse res, String contextPath, String rol) throws IOException {
+    private static boolean json(HttpServletRequest request) {
+        String accept=request.getHeader("Accept");
+        return accept!=null && accept.contains("application/json");
+    }
+
+    private void redirigirSegunRol(HttpServletResponse res, HttpServletRequest request, String rol) throws IOException {
+        if(json(request)) {
+            ApiJson.write(res,403,new ApiResponse<>("ACCESO_DENEGADO","Tu perfil no tiene acceso a este recurso.",null));
+            return;
+        }
+        String contextPath=request.getContextPath();
         if ("PACIENTE".equals(rol)) {
             res.sendRedirect(contextPath + "/paciente/dashboard");
         } else if ("MEDICO".equals(rol)) {

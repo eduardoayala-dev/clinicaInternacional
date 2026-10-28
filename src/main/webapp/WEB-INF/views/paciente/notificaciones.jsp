@@ -10,10 +10,10 @@
         nombrePaciente = usuario.getNombreCompleto();
     }
     if (nombrePaciente == null) {
-        nombrePaciente = "María Pérez";
+        nombrePaciente = "Paciente";
     }
 
-    String inicialesPaciente = "MP";
+    String inicialesPaciente = "P";
     if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
@@ -185,10 +185,10 @@
                     <!-- BOTONES DE ACCIÓN -->
                     <form method="post" action="${pageContext.request.contextPath}/paciente/notificaciones" style="margin: 0;">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                        <input type="hidden" name="idListaEspera" value="${ofertaCupo.idListaEspera}">
+                        <input type="hidden" name="idOferta" value="${ofertaCupo.idOferta}">
                         <div class="oferta-actions-row">
                             <button type="submit" name="accion" value="rechazar" class="btn-rechazar-oferta">
-                                Rechazar oferta (mantener mi posición en lista de espera)
+                                Rechazar oferta (mantener mi inscripción en lista de espera)
                             </button>
                             <div class="oferta-right-cta">
                                 <button type="submit" name="accion" value="aceptar" class="btn-aceptar-oferta">
@@ -218,11 +218,11 @@
                         </div>
                     </div>
                     <p class="expirada-desc-text">
-                        No respondiste dentro del tiempo límite. El cupo se ofreció a otro paciente.
+                        El plazo de la oferta terminó. El cupo ya no está reservado para ti.
                     </p>
                     <div class="expirada-info-box">
                         <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                        <span>Sigues en la lista de espera con tu misma posición.</span>
+                        <span>Conservas tu inscripción y antigüedad en la lista de espera.</span>
                     </div>
                     <div>
                         <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-ver-espera-link">
@@ -284,7 +284,7 @@
                                                     </button></form>
                                                 </c:when>
                                                 <c:otherwise>
-                                                    <button type="button" class="btn-tb-ver" onclick="abrirModalDetalle('${n.idNotificacion}', '${n.categoria}', '${n.detalle}', '${n.fecha} ${n.hora}')" title="Ver detalle">
+                                                    <button type="button" class="btn-tb-ver" data-notificacion="${n.idNotificacion}" data-categoria="<c:out value='${n.categoria}'/>" data-detalle="<c:out value='${n.detalle}'/>" data-fecha="<c:out value='${n.fechaEnvio}'/>" title="Ver detalle">
                                                         Ver
                                                     </button>
                                                 </c:otherwise>
@@ -341,32 +341,16 @@
     </div>
 
     <!-- SCRIPTS DE INTERACCIÓN -->
+    <script src="${pageContext.request.contextPath}/assets/js/ofertas-timer.js"></script>
     <script>
         lucide.createIcons();
+        document.querySelectorAll('[data-notificacion]').forEach(button => {
+            button.addEventListener('click', () => abrirModalDetalle(button.dataset.notificacion,
+                button.dataset.categoria, button.dataset.detalle, button.dataset.fecha));
+        });
 
-        // 1. TEMPORIZADOR REGRESIVO INTERACTIVO
-        (function initCountdownTimer() {
-            var timerEl = document.getElementById('countdownTimerDigits');
-            if (!timerEl) return;
-
-            var totalSeconds = ${not empty ofertaCupo.tiempoRestanteSegundos ? ofertaCupo.tiempoRestanteSegundos : 872};
-
-            function updateDisplay() {
-                if (totalSeconds <= 0) {
-                    timerEl.textContent = '00:00 min';
-                    // Redirigir a estado expirado
-                    window.location.href = '${pageContext.request.contextPath}/paciente/notificaciones?estado=expirada';
-                    return;
-                }
-                var m = Math.floor(totalSeconds / 60);
-                var s = totalSeconds % 60;
-                timerEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s + ' min';
-                totalSeconds--;
-            }
-
-            updateDisplay();
-            var interval = setInterval(updateDisplay, 1000);
-        })();
+        ClinicaOfertas.iniciar(${not empty ofertaCupo.tiempoRestanteSegundos ? ofertaCupo.tiempoRestanteSegundos : 0},
+            '${pageContext.request.contextPath}/paciente/notificaciones');
 
         // 2. PAGINACIÓN DEL HISTORIAL (CLIENT-SIDE)
         (function initPagination() {

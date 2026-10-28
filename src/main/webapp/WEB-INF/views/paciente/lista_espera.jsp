@@ -10,11 +10,11 @@
         nombrePaciente = usuario.getNombreCompleto();
     }
     if (nombrePaciente == null) {
-        nombrePaciente = "María Pérez";
+        nombrePaciente = "Paciente";
     }
 
-    String primerNombre = "María";
-    String inicialesPaciente = "MP";
+    String primerNombre = "Paciente";
+    String inicialesPaciente = "P";
     if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         primerNombre = partes[0];
@@ -127,6 +127,9 @@
 
         <!-- CONTENEDOR CON SCROLL -->
         <div class="espera-scroll-container">
+            <c:if test="${not empty toastMsg}">
+                <p role="alert"><c:out value="${toastMsg}"/></p>
+            </c:if>
 
             <!-- ENCABEZADO -->
             <div class="page-title-section">
@@ -167,7 +170,7 @@
                                     <select id="selectMedicoEspera" name="medicoId" class="espera-select-control">
                                         <option value="">Cualquier especialista disponible</option>
                                         <c:forEach var="med" items="${listaMedicos}">
-                                            <option value="${med.idMedico}" data-esp="${med.idEspecialidad}">
+                                            <option value="${med.idMedico}" data-esp="${med.idEspecialidad}" data-sede="${med.idSede}">
                                                 <c:out value="${med.nombre}" />
                                             </option>
                                         </c:forEach>
@@ -180,20 +183,16 @@
                         <!-- FILA 2: SEDE PREFERIDA -->
                         <div class="form-group" style="margin-top: 20px;">
                             <label class="field-label">3. Sede preferida *</label>
-                            <input type="hidden" name="sede" id="inputSedeEspera" value="san_borja">
+                            <input type="hidden" name="sede" id="inputSedeEspera" value="cualquiera">
                             <div class="pills-group-sedes">
-                                <button type="button" class="btn-pill-sede active" data-sede="san_borja" onclick="seleccionarSede(this, 'san_borja')">
-                                    <i data-lucide="check" class="pill-check-icon"></i>
-                                    <span>Sede San Borja</span>
-                                </button>
-                                <button type="button" class="btn-pill-sede" data-sede="lima" onclick="seleccionarSede(this, 'lima')">
-                                    <i data-lucide="check" class="pill-check-icon"></i>
-                                    <span>Sede Lima</span>
-                                </button>
-                                <button type="button" class="btn-pill-sede" data-sede="cualquiera" onclick="seleccionarSede(this, 'cualquiera')">
-                                    <i data-lucide="check" class="pill-check-icon"></i>
+                                <button type="button" class="btn-pill-sede active" data-sede="cualquiera" onclick="seleccionarSede(this, 'cualquiera')">
                                     <span>Cualquier sede</span>
                                 </button>
+                                <c:forEach var="sede" items="${listaSedes}">
+                                    <button type="button" class="btn-pill-sede" data-sede="${sede.id}" onclick="seleccionarSede(this, this.dataset.sede)">
+                                        <span><c:out value="${sede.nombre}"/></span>
+                                    </button>
+                                </c:forEach>
                             </div>
                         </div>
 
@@ -244,7 +243,8 @@
 
                         <!-- FILA 4: CANAL DE NOTIFICACIÓN -->
                         <div class="form-group" style="margin-top: 20px;">
-                            <label class="field-label">6. Canal de notificación para la oferta de cupo *</label>
+                            <label class="field-label">6. Preferencia de contacto *</label>
+                            <p>Las ofertas se notifican en este portal. Registramos WhatsApp y correo como preferencias de contacto.</p>
                             <div class="checkboxes-row-group">
                                 <label class="canal-card active" id="labelCanalWhatsapp">
                                     <input type="checkbox" name="canales" value="whatsapp" checked onchange="toggleCheckboxCard(this, 'labelCanalWhatsapp')">
@@ -377,6 +377,7 @@
             document.querySelectorAll('.btn-pill-sede').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('inputSedeEspera').value = valor;
+            filtrarMedicosPorEspecialidad();
         }
 
         // 2. Toggle de cards tipo checkbox (horarios y canales)
@@ -411,21 +412,17 @@
             if (!selEsp || !selMed) return;
 
             const espId = selEsp.value;
+            const sede = document.getElementById('inputSedeEspera').value;
             const options = selMed.querySelectorAll('option');
 
             options.forEach(opt => {
-                if (!opt.value) {
-                    opt.style.display = 'block'; // "Cualquier especialista disponible"
-                } else if (opt.dataset.esp === espId) {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
-                }
+                const compatible = !opt.value || (opt.dataset.esp === espId && (sede === 'cualquiera' || opt.dataset.sede === sede));
+                opt.hidden = !compatible;
+                opt.disabled = !compatible;
             });
 
-            // Si el médico actualmente seleccionado no corresponde, reiniciar a cualquiera
             const currentSelected = selMed.options[selMed.selectedIndex];
-            if (currentSelected && currentSelected.value && currentSelected.dataset.esp !== espId) {
+            if (currentSelected && currentSelected.disabled) {
                 selMed.value = "";
             }
         }

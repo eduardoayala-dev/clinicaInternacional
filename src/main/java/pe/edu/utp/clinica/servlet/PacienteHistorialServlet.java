@@ -7,6 +7,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.dao.AgendaException;
+import pe.edu.utp.clinica.dao.CatalogoDatosException;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
@@ -16,6 +18,7 @@ import java.util.Map;
 
 @WebServlet(name = "PacienteHistorialServlet", urlPatterns = {"/paciente/historial"})
 public class PacienteHistorialServlet extends HttpServlet {
+    private static final java.util.logging.Logger LOGGER = java.util.logging.Logger.getLogger(PacienteHistorialServlet.class.getName());
 
     protected CitaDAO crearCitaDAO() {
         return new CitaDAO();
@@ -88,10 +91,13 @@ public class PacienteHistorialServlet extends HttpServlet {
             return;
         }
         if ("CANCELADA".equals(estado)) {
-            // Solo se oferta un cupo después de confirmar la cancelación autorizada.
-            citaDAO.ejecutarReasignacionInteligente(idCita);
-            citaDAO.crearNotificacion(usuario.getIdUsuario(), idCita, "Cita Cancelada",
-                    "Tu cita médica ha sido cancelada correctamente.");
+            try {
+                citaDAO.ejecutarReasignacionInteligente(idCita);
+                citaDAO.crearNotificacion(usuario.getIdUsuario(), idCita, "Cita Cancelada",
+                        "Tu cita médica ha sido cancelada correctamente.");
+            } catch (AgendaException | CatalogoDatosException e) {
+                LOGGER.warning("La cita se canceló; el procesamiento posterior se reintentará para la lista de espera.");
+            }
         }
         response.sendRedirect(request.getContextPath() + "/paciente/historial");
     }

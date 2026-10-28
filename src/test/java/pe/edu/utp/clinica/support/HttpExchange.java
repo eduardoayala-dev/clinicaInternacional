@@ -15,6 +15,7 @@ import java.util.UUID;
 /** Dobles HTTP sin contenedor ni dependencias adicionales. */
 public class HttpExchange {
     public final Map<String, Object> attributes = new HashMap<>();
+    public final Map<String, String[]> multipleParameters = new HashMap<>();
     public final Map<String, String> parameters = new HashMap<>();
     public final Map<String, String> headers = new HashMap<>();
     public final Map<String, String> responseHeaders = new HashMap<>();
@@ -60,6 +61,9 @@ public class HttpExchange {
                         if (session == null && (args == null || Boolean.TRUE.equals(args[0]))) session = newSession();
                         return session;
                     case "getParameter": return parameters.get(args[0]);
+                    case "getParameterValues":
+                        if (multipleParameters.containsKey(args[0])) return multipleParameters.get(args[0]);
+                        return parameters.containsKey(args[0]) ? new String[]{parameters.get(args[0])} : null;
                     case "getHeader": return headers.get(args[0]);
                     case "getAttribute": return attributes.get(args[0]);
                     case "setAttribute": attributes.put((String) args[0], args[1]); return null;
