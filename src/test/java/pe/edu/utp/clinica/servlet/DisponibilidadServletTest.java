@@ -34,4 +34,15 @@ class DisponibilidadServletTest {
         assertFalse(exchange.body.toString().contains("jdbc"));
         assertFalse(exchange.body.toString().contains("SQLException"));
     }
+
+    @Test void closedClientConnectionDoesNotExposeTransportFailure() {
+        var exchange = new HttpExchange();
+        exchange.writerFailure = new java.io.IOException("detalle privado de transporte");
+        var servlet = new DisponibilidadServlet() {
+            @Override protected boolean disponible() { return true; }
+        };
+        assertDoesNotThrow(() -> servlet.doGet(exchange.request, exchange.response));
+        assertEquals(500, exchange.status);
+        assertEquals("", exchange.body.toString());
+    }
 }

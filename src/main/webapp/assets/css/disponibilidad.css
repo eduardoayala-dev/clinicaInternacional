@@ -14,6 +14,29 @@
 }
 
 form[aria-busy="true"] button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
     cursor: progress;
     opacity: 0.75;
+}
+
+.indicador-carga-login {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    flex: 0 0 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: giro-carga-login 0.8s linear infinite;
+}
+
+@keyframes giro-carga-login {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .indicador-carga-login { animation: none; }
 }
