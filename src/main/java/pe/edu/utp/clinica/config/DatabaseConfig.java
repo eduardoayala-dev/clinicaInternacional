@@ -33,8 +33,8 @@ public class DatabaseConfig {
                 return;
             } catch (Exception e) {
                 ultimoError = new SQLException("No se pudo conectar con MySQL (intento "
-                        + intento + "/" + intentos + ")", "08001");
-                LOGGER.warning(ultimoError.getMessage());
+                        + intento + "/" + intentos + ")", "08001", e);
+                LOGGER.warning(ultimoError.getMessage() + ": " + diagnosticoSeguro(e));
                 if (candidato != null) candidato.close();
                 if (intento < intentos) {
                     try {
@@ -50,6 +50,25 @@ public class DatabaseConfig {
     }
 
     private DatabaseConfig() {
+    }
+
+    static String diagnosticoSeguro(Throwable error) {
+        StringBuilder resultado = new StringBuilder();
+        var visitados = java.util.Collections.newSetFromMap(
+                new java.util.IdentityHashMap<Throwable, Boolean>());
+        for (Throwable causa = error; causa != null && visitados.add(causa)
+                && visitados.size() <= 12; causa = causa.getCause()) {
+            if (!resultado.isEmpty()) resultado.append(" -> ");
+            resultado.append(causa.getClass().getSimpleName());
+            if (causa instanceof SQLException sql) {
+                String estado = sql.getSQLState();
+                if (estado != null && estado.matches("[A-Za-z0-9]{5}")) {
+                    resultado.append(" SQLState=").append(estado);
+                }
+                resultado.append(" codigo=").append(sql.getErrorCode());
+            }
+        }
+        return resultado.toString();
     }
 
     public static Connection getConnection() throws SQLException {
