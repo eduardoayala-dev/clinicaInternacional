@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 public class AppContextListener implements ServletContextListener {
 
     private MantenimientoOfertas ofertas;
+    private DisponibilidadSistema disponibilidad;
 
     private static final Logger LOGGER = Logger.getLogger(AppContextListener.class.getName());
 
@@ -21,6 +22,9 @@ public class AppContextListener implements ServletContextListener {
         boolean produccion = System.getenv("RAILWAY_ENVIRONMENT") != null
                 || "production".equalsIgnoreCase(System.getenv("APP_ENV"));
         cookie.setSecure(produccion);
+        disponibilidad = new DisponibilidadSistema();
+        sce.getServletContext().setAttribute(DisponibilidadSistema.CONTEXT_ATTRIBUTE, disponibilidad);
+        disponibilidad.iniciar();
         ofertas = new MantenimientoOfertas();
         ofertas.iniciar();
         LOGGER.info("Aplicación Clínica Internacional iniciada correctamente.");
@@ -30,6 +34,7 @@ public class AppContextListener implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent sce) {
         LOGGER.info("Deteniendo recursos de la aplicación...");
         if (ofertas != null) ofertas.close();
+        if (disponibilidad != null) disponibilidad.close();
         DatabaseConfig.shutdown();
         LOGGER.info("Recursos de base de datos liberados exitosamente.");
     }
