@@ -1,0 +1,78 @@
+USE railway;
+
+SELECT DATABASE() AS base_seleccionada;
+
+SELECT e.tabla, e.columna AS columna_faltante
+FROM JSON_TABLE('[{"tabla":"usuario","columnas":["id_usuario","nombres","apellidos","email","password_hash","rol","fecha_registro","activo"]},{"tabla":"paciente","columnas":["id_paciente","id_usuario","dni","fecha_nacimiento","telefono","direccion","canal_aviso","sede_preferida","alergias","tipo_cobertura"]},{"tabla":"medico","columnas":["id_medico","id_usuario","cmp","id_especialidad","id_sede","estado"]},{"tabla":"personal_administrativo","columnas":["id_personal","id_usuario","id_sede","codigo_empleado","cargo"]},{"tabla":"administrador","columnas":["id_administrador","id_usuario","estado"]},{"tabla":"sede","columnas":["id_sede","codigo","nombre","direccion","telefono","imagen_url","estado"]},{"tabla":"especialidad","columnas":["id_especialidad","nombre","descripcion","estado"]},{"tabla":"motivo_cita","columnas":["id_motivo","id_especialidad","descripcion","estado"]},{"tabla":"disponibilidad","columnas":["id_disponibilidad","id_medico","id_sede","fecha","hora_inicio","hora_fin","duracion_minutos","estado"]},{"tabla":"cita","columnas":["id_cita","id_paciente","id_medico","id_disponibilidad","id_motivo","fecha_hora","estado","nivel_urgencia","fecha_recomendada_proxima","riesgo_cancelacion","fecha_creacion"]},{"tabla":"lista_espera","columnas":["id_lista_espera","id_paciente","id_especialidad","id_sede","id_motivo","nivel_urgencia","rango_horario","canal_notificacion","fecha_registro","estado","posicion","anticipacion_minutos","id_medico_preferido"]},{"tabla":"notificacion","columnas":["id_notificacion","id_usuario","id_cita","tipo","canal","mensaje","fecha_envio","estado_envio","leida"]},{"tabla":"admision_cita","columnas":["id_cita","id_usuario_personal","fecha_llegada","tolerancia_minutos","llego_tarde"]},{"tabla":"atencion_cita","columnas":["id_cita","id_medico","id_paciente","fecha_inicio","fecha_fin","motivo_no_atencion","medico_activo","paciente_activo"]},{"tabla":"inasistencia_cita","columnas":["id_cita","id_usuario_personal","fecha_registro","motivo","tolerancia_minutos"]},{"tabla":"historial_asistencia","columnas":["id_historial","id_paciente","id_cita","asistio","fecha_registro","observacion"]},{"tabla":"reasignacion_inteligente","columnas":["id_reasignacion","id_cita_original","id_lista_espera","id_disponibilidad","fecha_oferta","fecha_limite_respuesta","estado","motivo","id_cita_asignada"]},{"tabla":"priorizacion_config","columnas":["id_config","nombre","criterio","peso","nivel","prioridad_activa","tiempo_limite_oferta_minutos","candidatos_simultaneos","fecha_actualizacion"]},{"tabla":"indicador","columnas":["id_indicador","nombre","descripcion","tipo","valor","periodo","fecha_calculo","estado"]},{"tabla":"reporte","columnas":["id_reporte","nombre","tipo","fecha_inicio","fecha_fin","formato","fecha_generacion","id_usuario"]},{"tabla":"auditoria_seguridad","columnas":["id_auditoria","id_usuario","ip_origen","evento","descripcion","sospechoso","fecha_registro"]},{"tabla":"consulta_clinica","columnas":["id_cita","motivo","antecedentes","hallazgos","evaluacion","diagnostico","plan"]},{"tabla":"seguimiento_cita","columnas":["id_cita_origen","id_cita_control","id_usuario_medico","fecha_vinculacion"]}]', '$[*]' COLUMNS (
+ tabla VARCHAR(64) PATH '$.tabla',
+ NESTED PATH '$.columnas[*]' COLUMNS (columna VARCHAR(64) PATH '$')
+)) e
+LEFT JOIN information_schema.columns c ON c.table_schema=DATABASE()
+ AND c.table_name=e.tabla AND c.column_name=e.columna
+WHERE c.column_name IS NULL
+ORDER BY e.tabla,e.columna;
+
+SELECT DISTINCT e.tabla,e.nombre AS restriccion_faltante
+FROM JSON_TABLE('[{"tabla":"paciente","nombre":"fk_paciente_usuario"},{"tabla":"medico","nombre":"fk_medico_usuario"},{"tabla":"personal_administrativo","nombre":"fk_personal_usuario"},{"tabla":"administrador","nombre":"fk_admin_usuario"},{"tabla":"motivo_cita","nombre":"fk_motivo_especialidad"},{"tabla":"disponibilidad","nombre":"fk_disp_medico"},{"tabla":"disponibilidad","nombre":"fk_disp_sede"},{"tabla":"cita","nombre":"fk_cita_paciente"},{"tabla":"cita","nombre":"fk_cita_medico"},{"tabla":"cita","nombre":"fk_cita_disponibilidad"},{"tabla":"cita","nombre":"fk_cita_motivo"},{"tabla":"lista_espera","nombre":"fk_lista_medico_preferido"},{"tabla":"lista_espera","nombre":"fk_lista_paciente"},{"tabla":"lista_espera","nombre":"fk_lista_especialidad"},{"tabla":"lista_espera","nombre":"fk_lista_sede"},{"tabla":"notificacion","nombre":"fk_notif_usuario"},{"tabla":"notificacion","nombre":"fk_notif_cita"},{"tabla":"admision_cita","nombre":"fk_admision_cita"},{"tabla":"admision_cita","nombre":"fk_admision_usuario"},{"tabla":"atencion_cita","nombre":"uk_atencion_medico_activo"},{"tabla":"atencion_cita","nombre":"uk_atencion_paciente_activo"},{"tabla":"atencion_cita","nombre":"fk_atencion_cita"},{"tabla":"atencion_cita","nombre":"fk_atencion_medico"},{"tabla":"atencion_cita","nombre":"fk_atencion_paciente"},{"tabla":"atencion_cita","nombre":"ck_atencion_fechas"},{"tabla":"atencion_cita","nombre":"ck_atencion_orden"},{"tabla":"inasistencia_cita","nombre":"fk_inasistencia_cita"},{"tabla":"inasistencia_cita","nombre":"fk_inasistencia_usuario"},{"tabla":"historial_asistencia","nombre":"fk_hist_paciente"},{"tabla":"historial_asistencia","nombre":"fk_hist_cita"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_asignada"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_cita"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_lista"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_disp"},{"tabla":"reporte","nombre":"fk_reporte_usuario"},{"tabla":"auditoria_seguridad","nombre":"fk_auditoria_usuario"},{"tabla":"consulta_clinica","nombre":"fk_consulta_clinica_cita"},{"tabla":"seguimiento_cita","nombre":"fk_seguimiento_origen"},{"tabla":"seguimiento_cita","nombre":"fk_seguimiento_control"},{"tabla":"seguimiento_cita","nombre":"fk_seguimiento_responsable"},{"tabla":"seguimiento_cita","nombre":"ck_seguimiento_distinto"}]', '$[*]' COLUMNS (
+ tabla VARCHAR(64) PATH '$.tabla',nombre VARCHAR(64) PATH '$.nombre'
+)) e
+LEFT JOIN information_schema.table_constraints m ON m.table_schema=DATABASE()
+ AND m.table_name=e.tabla AND m.constraint_name=e.nombre
+WHERE m.constraint_name IS NULL
+ORDER BY e.tabla,e.nombre;
+
+SELECT DISTINCT e.tabla,e.nombre AS indice_faltante
+FROM JSON_TABLE('[{"tabla":"usuario","nombre":"idx_usuario_email"},{"tabla":"usuario","nombre":"idx_usuario_rol"},{"tabla":"paciente","nombre":"idx_paciente_dni"},{"tabla":"medico","nombre":"idx_medico_cmp"},{"tabla":"sede","nombre":"idx_sede_codigo"},{"tabla":"seguimiento_cita","nombre":"idx_seguimiento_control"},{"tabla":"cita","nombre":"idx_cita_medico_paciente_fecha"}]', '$[*]' COLUMNS (
+ tabla VARCHAR(64) PATH '$.tabla',nombre VARCHAR(64) PATH '$.nombre'
+)) e
+LEFT JOIN information_schema.statistics m ON m.table_schema=DATABASE()
+ AND m.table_name=e.tabla AND m.index_name=e.nombre
+WHERE m.index_name IS NULL
+ORDER BY e.tabla,e.nombre;
+
+SELECT table_name,column_name,column_type,is_nullable,column_default
+FROM information_schema.columns
+WHERE table_schema=DATABASE() AND (
+ (table_name='lista_espera' AND column_name IN ('id_sede','canal_notificacion','anticipacion_minutos','id_medico_preferido'))
+ OR (table_name='reasignacion_inteligente' AND column_name='id_cita_asignada')
+ OR (table_name='cita' AND column_name='estado'))
+ORDER BY table_name,ordinal_position;
+USE railway;
+
+SELECT DATABASE() AS base_seleccionada;
+
+SELECT e.tabla, e.columna AS columna_faltante
+FROM JSON_TABLE('[{"tabla":"usuario","columnas":["id_usuario","nombres","apellidos","email","password_hash","rol","fecha_registro","activo"]},{"tabla":"paciente","columnas":["id_paciente","id_usuario","dni","fecha_nacimiento","telefono","direccion","canal_aviso","sede_preferida","alergias","tipo_cobertura"]},{"tabla":"medico","columnas":["id_medico","id_usuario","cmp","id_especialidad","id_sede","estado"]},{"tabla":"personal_administrativo","columnas":["id_personal","id_usuario","id_sede","codigo_empleado","cargo"]},{"tabla":"administrador","columnas":["id_administrador","id_usuario","estado"]},{"tabla":"sede","columnas":["id_sede","codigo","nombre","direccion","telefono","imagen_url","estado"]},{"tabla":"especialidad","columnas":["id_especialidad","nombre","descripcion","estado"]},{"tabla":"motivo_cita","columnas":["id_motivo","id_especialidad","descripcion","estado"]},{"tabla":"disponibilidad","columnas":["id_disponibilidad","id_medico","id_sede","fecha","hora_inicio","hora_fin","duracion_minutos","estado"]},{"tabla":"cita","columnas":["id_cita","id_paciente","id_medico","id_disponibilidad","id_motivo","fecha_hora","estado","nivel_urgencia","fecha_recomendada_proxima","riesgo_cancelacion","fecha_creacion"]},{"tabla":"lista_espera","columnas":["id_lista_espera","id_paciente","id_especialidad","id_sede","id_motivo","nivel_urgencia","rango_horario","canal_notificacion","fecha_registro","estado","posicion","anticipacion_minutos","id_medico_preferido"]},{"tabla":"notificacion","columnas":["id_notificacion","id_usuario","id_cita","tipo","canal","mensaje","fecha_envio","estado_envio","leida"]},{"tabla":"admision_cita","columnas":["id_cita","id_usuario_personal","fecha_llegada","tolerancia_minutos","llego_tarde"]},{"tabla":"atencion_cita","columnas":["id_cita","id_medico","id_paciente","fecha_inicio","fecha_fin","motivo_no_atencion","medico_activo","paciente_activo"]},{"tabla":"inasistencia_cita","columnas":["id_cita","id_usuario_personal","fecha_registro","motivo","tolerancia_minutos"]},{"tabla":"historial_asistencia","columnas":["id_historial","id_paciente","id_cita","asistio","fecha_registro","observacion"]},{"tabla":"reasignacion_inteligente","columnas":["id_reasignacion","id_cita_original","id_lista_espera","id_disponibilidad","fecha_oferta","fecha_limite_respuesta","estado","motivo","id_cita_asignada"]},{"tabla":"priorizacion_config","columnas":["id_config","nombre","criterio","peso","nivel","prioridad_activa","tiempo_limite_oferta_minutos","candidatos_simultaneos","fecha_actualizacion"]},{"tabla":"indicador","columnas":["id_indicador","nombre","descripcion","tipo","valor","periodo","fecha_calculo","estado"]},{"tabla":"reporte","columnas":["id_reporte","nombre","tipo","fecha_inicio","fecha_fin","formato","fecha_generacion","id_usuario"]},{"tabla":"auditoria_seguridad","columnas":["id_auditoria","id_usuario","ip_origen","evento","descripcion","sospechoso","fecha_registro"]},{"tabla":"consulta_clinica","columnas":["id_cita","motivo","antecedentes","hallazgos","evaluacion","diagnostico","plan"]},{"tabla":"seguimiento_cita","columnas":["id_cita_origen","id_cita_control","id_usuario_medico","fecha_vinculacion"]}]', '$[*]' COLUMNS (
+ tabla VARCHAR(64) PATH '$.tabla',
+ NESTED PATH '$.columnas[*]' COLUMNS (columna VARCHAR(64) PATH '$')
+)) e
+LEFT JOIN information_schema.columns c ON c.table_schema=DATABASE()
+ AND c.table_name=e.tabla AND c.column_name=e.columna
+WHERE c.column_name IS NULL
+ORDER BY e.tabla,e.columna;
+
+SELECT DISTINCT e.tabla,e.nombre AS restriccion_faltante
+FROM JSON_TABLE('[{"tabla":"paciente","nombre":"fk_paciente_usuario"},{"tabla":"medico","nombre":"fk_medico_usuario"},{"tabla":"personal_administrativo","nombre":"fk_personal_usuario"},{"tabla":"administrador","nombre":"fk_admin_usuario"},{"tabla":"motivo_cita","nombre":"fk_motivo_especialidad"},{"tabla":"disponibilidad","nombre":"fk_disp_medico"},{"tabla":"disponibilidad","nombre":"fk_disp_sede"},{"tabla":"cita","nombre":"fk_cita_paciente"},{"tabla":"cita","nombre":"fk_cita_medico"},{"tabla":"cita","nombre":"fk_cita_disponibilidad"},{"tabla":"cita","nombre":"fk_cita_motivo"},{"tabla":"lista_espera","nombre":"fk_lista_medico_preferido"},{"tabla":"lista_espera","nombre":"fk_lista_paciente"},{"tabla":"lista_espera","nombre":"fk_lista_especialidad"},{"tabla":"lista_espera","nombre":"fk_lista_sede"},{"tabla":"notificacion","nombre":"fk_notif_usuario"},{"tabla":"notificacion","nombre":"fk_notif_cita"},{"tabla":"admision_cita","nombre":"fk_admision_cita"},{"tabla":"admision_cita","nombre":"fk_admision_usuario"},{"tabla":"atencion_cita","nombre":"uk_atencion_medico_activo"},{"tabla":"atencion_cita","nombre":"uk_atencion_paciente_activo"},{"tabla":"atencion_cita","nombre":"fk_atencion_cita"},{"tabla":"atencion_cita","nombre":"fk_atencion_medico"},{"tabla":"atencion_cita","nombre":"fk_atencion_paciente"},{"tabla":"atencion_cita","nombre":"ck_atencion_fechas"},{"tabla":"atencion_cita","nombre":"ck_atencion_orden"},{"tabla":"inasistencia_cita","nombre":"fk_inasistencia_cita"},{"tabla":"inasistencia_cita","nombre":"fk_inasistencia_usuario"},{"tabla":"historial_asistencia","nombre":"fk_hist_paciente"},{"tabla":"historial_asistencia","nombre":"fk_hist_cita"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_asignada"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_cita"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_lista"},{"tabla":"reasignacion_inteligente","nombre":"fk_reasig_disp"},{"tabla":"reporte","nombre":"fk_reporte_usuario"},{"tabla":"auditoria_seguridad","nombre":"fk_auditoria_usuario"},{"tabla":"consulta_clinica","nombre":"fk_consulta_clinica_cita"},{"tabla":"seguimiento_cita","nombre":"fk_seguimiento_origen"},{"tabla":"seguimiento_cita","nombre":"fk_seguimiento_control"},{"tabla":"seguimiento_cita","nombre":"fk_seguimiento_responsable"},{"tabla":"seguimiento_cita","nombre":"ck_seguimiento_distinto"}]', '$[*]' COLUMNS (
+ tabla VARCHAR(64) PATH '$.tabla',nombre VARCHAR(64) PATH '$.nombre'
+)) e
+LEFT JOIN information_schema.table_constraints m ON m.table_schema=DATABASE()
+ AND m.table_name=e.tabla AND m.constraint_name=e.nombre
+WHERE m.constraint_name IS NULL
+ORDER BY e.tabla,e.nombre;
+
+SELECT DISTINCT e.tabla,e.nombre AS indice_faltante
+FROM JSON_TABLE('[{"tabla":"usuario","nombre":"idx_usuario_email"},{"tabla":"usuario","nombre":"idx_usuario_rol"},{"tabla":"paciente","nombre":"idx_paciente_dni"},{"tabla":"medico","nombre":"idx_medico_cmp"},{"tabla":"sede","nombre":"idx_sede_codigo"},{"tabla":"seguimiento_cita","nombre":"idx_seguimiento_control"},{"tabla":"cita","nombre":"idx_cita_medico_paciente_fecha"}]', '$[*]' COLUMNS (
+ tabla VARCHAR(64) PATH '$.tabla',nombre VARCHAR(64) PATH '$.nombre'
+)) e
+LEFT JOIN information_schema.statistics m ON m.table_schema=DATABASE()
+ AND m.table_name=e.tabla AND m.index_name=e.nombre
+WHERE m.index_name IS NULL
+ORDER BY e.tabla,e.nombre;
+
+SELECT table_name,column_name,column_type,is_nullable,column_default
+FROM information_schema.columns
+WHERE table_schema=DATABASE() AND (
+ (table_name='lista_espera' AND column_name IN ('id_sede','canal_notificacion','anticipacion_minutos','id_medico_preferido'))
+ OR (table_name='reasignacion_inteligente' AND column_name='id_cita_asignada')
+ OR (table_name='cita' AND column_name='estado'))
+ORDER BY table_name,ordinal_position;
