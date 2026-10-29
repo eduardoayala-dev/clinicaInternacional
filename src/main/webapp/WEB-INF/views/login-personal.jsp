@@ -4,6 +4,7 @@
 <html lang="es">
 <head>
     <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
+    <%@ include file="/WEB-INF/jspf/disponibilidad-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acceso Institucional - Clínica Internacional</title>
@@ -444,7 +445,7 @@
                 </div>
             </c:if>
 
-            <form action="${pageContext.request.contextPath}/login/personal" method="POST" autocomplete="off">
+            <form action="${pageContext.request.contextPath}/login/personal" method="POST" autocomplete="off" data-comprobar-disponibilidad>
                 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}" />
 
                 <div class="form-group">

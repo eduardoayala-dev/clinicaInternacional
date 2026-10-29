@@ -30,7 +30,8 @@ public class CsrfFilter implements Filter {
                         "La sesión o el token de seguridad no es válido. Recarga la página.", null));
                 return;
             }
-        } else if (!req.getServletPath().startsWith("/assets/")) {
+        } else if (!req.getServletPath().startsWith("/assets/")
+                && !"/health/ready".equals(req.getServletPath())) {
             CsrfToken.getOrCreate(req.getSession(true));
             res.setHeader("Cache-Control", "no-store");
         }
