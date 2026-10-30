@@ -34,7 +34,7 @@
                 <span class="med-user-role"><%= Html.texto(request.getAttribute("especialidadMedico")) %></span>
             </span>
         </a>
-        <form method="POST" action="${pageContext.request.contextPath}/logout?portal=personal" class="med-logout-form">
+        <form method="POST" action="${pageContext.request.contextPath}/logout" class="med-logout-form">
             <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
             <button type="submit" class="med-logout-btn" title="Cerrar sesión" aria-label="Cerrar sesión">
                 <img src="${pageContext.request.contextPath}/assets/images/medico/salir.svg" alt="" class="med-icon">

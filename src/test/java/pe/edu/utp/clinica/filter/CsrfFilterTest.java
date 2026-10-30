@@ -177,4 +177,13 @@ class CsrfFilterTest {
         assertEquals("/login/personal?msg=sesion_cerrada",x.responseHeaders.get("Location"));
         assertNull(x.session);
     }
+    @Test void logoutVencidoUsaElOrigenSoloParaElegirUnLoginInterno() throws Exception {
+        for(String origen:new String[]{"http://localhost/admin/dashboard","http://localhost/medico/agenda","http://localhost/sysadmin/usuarios"}) {
+            var x=new HttpExchange();x.path="/logout";x.session=null;
+            x.headers.put("Accept","text/html");x.headers.put("Referer",origen);
+            assertEquals(0,execute(x));
+            assertEquals("/login/personal?msg=sesion_cerrada",x.responseHeaders.get("Location"));
+            assertNull(x.session);
+        }
+    }
 }

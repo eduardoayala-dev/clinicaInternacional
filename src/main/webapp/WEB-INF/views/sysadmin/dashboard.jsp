@@ -167,7 +167,7 @@
                     <span class="user-full-name"><%= nombreAdmin %></span>
                     <span class="user-role-desc">Administrador</span>
                 </div>
-                <form method="POST" action="${pageContext.request.contextPath}/logout?portal=personal" style="margin:0;display:inline;">
+                <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 <button type="submit" class="btn-sidebar-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
                     <i data-lucide="log-out"></i>
