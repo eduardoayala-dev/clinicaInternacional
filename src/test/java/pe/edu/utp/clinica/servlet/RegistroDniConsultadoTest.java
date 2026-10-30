@@ -17,6 +17,7 @@ class RegistroDniConsultadoTest {
         field.set(servlet, new AuthService() {
             @Override public boolean existeDocumentoOCorreo(String documento, String email) { return false; }
             @Override public boolean registrarPaciente(Usuario usuario, Paciente paciente) {
+                assertEquals("Correo", paciente.getCanalAviso());
                 usuario.setIdUsuario(42); saved.set(usuario); return true;
             }
         });
@@ -26,6 +27,7 @@ class RegistroDniConsultadoTest {
         x.parameters.put("apellidos", "APELLIDOS MODIFICADOS");
         x.parameters.put("password", "PruebaSegura2026!");
         x.parameters.put("terminos", "on");
+        x.parameters.put("canalAviso", "WhatsApp");
         x.parameters.put("fechaNacimiento", "1995-01-01");
         if (consulted) DniConsultaSesion.guardar(x.session, new DniDatos("99000001", "PRUEBA", "FICTICIO", "LOCAL"));
         servlet.doPost(x.request, x.response);
