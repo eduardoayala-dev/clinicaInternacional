@@ -117,11 +117,19 @@ class GmailCorreoTest {
 
     @Test void configuracionDesactivadaYValidacionDeDatos() {
         assertThrows(EnvioCorreoException.class, () -> ConfiguracionCorreo.crear(Map.of()).enviar(CORREO));
-        assertThrows(IllegalArgumentException.class, () -> ConfiguracionCorreo.crear(Map.of("MAIL_MODE", "gmail")));
-        assertThrows(IllegalArgumentException.class, () -> ConfiguracionCorreo.crear(Map.of("MAIL_MODE", "incorrecto")));
+        var gmailIncompleto=Map.of("MAIL_MODE", "gmail");
+        assertThrows(IllegalArgumentException.class, () -> ConfiguracionCorreo.crear(gmailIncompleto));
+        var modoInvalido=Map.of("MAIL_MODE", "incorrecto");
+        assertThrows(IllegalArgumentException.class, () -> ConfiguracionCorreo.crear(modoInvalido));
         assertThrows(IllegalArgumentException.class, () -> new Correo("a,b@example.test", "Hola", "texto"));
         assertThrows(IllegalArgumentException.class, () -> new Correo("a@example.test", "Hola\r\nBcc:otro", "texto"));
         assertFalse(CORREO.toString().contains("paciente"));
+    }
+    @Test void validaDominiosLargosSinRepeticionesRecursivasIlimitadas() {
+        String valido="a@"+"a.".repeat(120)+"test";
+        assertEquals(valido,Correo.validarDireccion(valido));
+        String etiquetaLarga="a@"+"a".repeat(64)+".test";
+        assertThrows(IllegalArgumentException.class,()->Correo.validarDireccion(etiquetaLarga));
     }
 
     @Test void asuntosUnicodeLargosSePlieganSinRomperCaracteres() {

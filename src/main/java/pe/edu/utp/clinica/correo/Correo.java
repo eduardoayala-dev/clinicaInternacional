@@ -5,8 +5,8 @@ import java.util.regex.Pattern;
 
 public record Correo(String destinatario, String asunto, String texto, String html) {
     private static final Pattern DIRECCION = Pattern.compile(
-            "[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?"
-                    + "(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)+");
+            "[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?"
+                    + "(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)++");
 
     public Correo(String destinatario,String asunto,String texto) {
         this(destinatario,asunto,texto,null);

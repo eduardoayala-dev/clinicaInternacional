@@ -10,6 +10,7 @@
     const titulo = document.getElementById('registroPasoTitulo');
     const detalle = document.getElementById('registroPasoDetalle');
     const progreso = document.querySelector('.registro-progreso-barras');
+    const indicador = document.getElementById('registroProgreso');
     const error = document.getElementById('registroError');
     const password = document.getElementById('regPwd');
     const confirmacion = document.getElementById('regPwdConfirm');
@@ -30,7 +31,7 @@
 
     function validarPassword() {
         let mensaje = '';
-        if (password.value && !/^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_\-]).{8,}$/.test(password.value)) {
+        if (password.value && !/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_-]).{8,}$/.test(password.value)) {
             mensaje = 'Usa al menos 8 caracteres con mayúscula, minúscula, número y un símbolo indicado.';
         } else if (documento.value && password.value.includes(documento.value)) {
             mensaje = 'La contraseña no debe contener tu número de documento.';
@@ -63,8 +64,8 @@
         pasos.forEach((paso, i) => { paso.hidden = i !== actual; });
         titulo.textContent = `Paso ${actual + 1} de ${pasos.length} · ${nombres[actual]}`;
         detalle.textContent = detalles[actual];
-        progreso.setAttribute('aria-valuenow', String(actual + 1));
-        progreso.setAttribute('aria-valuetext', titulo.textContent);
+        indicador.value = actual + 1;
+        indicador.setAttribute('aria-valuetext', titulo.textContent);
         [...progreso.children].forEach((barra, i) => barra.classList.toggle('completo', i <= actual));
         atras.hidden = actual === 0;
         cancelar.hidden = actual !== 0;

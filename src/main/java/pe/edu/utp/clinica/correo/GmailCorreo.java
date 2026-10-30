@@ -104,8 +104,9 @@ public final class GmailCorreo implements EmisorCorreo {
         var partes = new java.util.ArrayList<String>();
         var parte = new StringBuilder();
         int bytes = 0;
-        for (int posicion = 0; posicion < texto.length();) {
-            int punto = texto.codePointAt(posicion);
+        var puntos = texto.codePoints().iterator();
+        while (puntos.hasNext()) {
+            int punto = puntos.nextInt();
             String caracter = new String(Character.toChars(punto));
             int longitud = caracter.getBytes(StandardCharsets.UTF_8).length;
             if (bytes + longitud > 30) {
@@ -115,7 +116,6 @@ public final class GmailCorreo implements EmisorCorreo {
             }
             parte.append(caracter);
             bytes += longitud;
-            posicion += Character.charCount(punto);
         }
         partes.add(palabraCodificada(parte.toString()));
         return String.join("\r\n ", partes);

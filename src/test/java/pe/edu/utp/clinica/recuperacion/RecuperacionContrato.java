@@ -55,7 +55,7 @@ abstract class RecuperacionContrato {
     }
     private Solicitud cambio(String sid,VerificacionJdbc.Proposito proposito)throws SQLException {
         String id=UUID.randomUUID().toString();
-        return new Solicitud(id,dao.iniciarCambio(id,1,sid,VINCULO,proposito,ANTERIOR,"ip",ahora).orElseThrow());
+        return new Solicitud(id,dao.iniciarCambio(id,new VerificacionJdbc.InicioCambio(1,sid,VINCULO,proposito,ANTERIOR,"ip"),ahora).orElseThrow());
     }
     private boolean verificar(Solicitud s)throws SQLException{return dao.verificar(s.id(),VINCULO,RECUPERAR,null,s.entrega().codigo(),ahora);}
     private String incorrecto(String codigo){return "000000".equals(codigo)?"111111":"000000";}
@@ -113,9 +113,9 @@ abstract class RecuperacionContrato {
     }
     @Test void cambiarPasswordExigeActualYSesionDeLaCuenta()throws Exception {
         String sid=sesion(1);String otra=sesion(2);String id=UUID.randomUUID().toString();
-        assertTrue(dao.iniciarCambio(id,1,sid,VINCULO,CAMBIAR_PASSWORD,"errónea","ip",ahora).isEmpty());
-        assertTrue(dao.iniciarCambio(id,1,otra,VINCULO,CAMBIAR_PASSWORD,ANTERIOR,"ip",ahora).isEmpty());
-        assertTrue(dao.iniciarCambio(id,1,sid,VINCULO,CAMBIAR_PASSWORD,ANTERIOR,"ip",ahora).isPresent());
+        assertTrue(dao.iniciarCambio(id,new VerificacionJdbc.InicioCambio(1,sid,VINCULO,CAMBIAR_PASSWORD,"errónea","ip"),ahora).isEmpty());
+        assertTrue(dao.iniciarCambio(id,new VerificacionJdbc.InicioCambio(1,otra,VINCULO,CAMBIAR_PASSWORD,ANTERIOR,"ip"),ahora).isEmpty());
+        assertTrue(dao.iniciarCambio(id,new VerificacionJdbc.InicioCambio(1,sid,VINCULO,CAMBIAR_PASSWORD,ANTERIOR,"ip"),ahora).isPresent());
     }
     @Test void cambioAutenticadoConservaSesionActualYRevocaLasOtras()throws Exception {
         String actual=sesion(1);String otra=sesion(1);String ajena=sesion(2);var s=cambio(actual,CAMBIAR_PASSWORD);
@@ -146,7 +146,8 @@ abstract class RecuperacionContrato {
     @Test void correoYaOcupadoNoPuedeAsignarse()throws Exception {
         String sid=sesion(1);var s=cambio(sid,CAMBIAR_CORREO);assertTrue(dao.verificar(s.id(),VINCULO,CAMBIAR_CORREO,sid,s.entrega().codigo(),ahora));
         String largo="a".repeat(140)+"@example.test";
-        assertThrows(IllegalArgumentException.class,()->dao.prepararCorreo(s.id(),VINCULO,sid,largo,ahora));
+        String retoId=s.id();
+        assertThrows(IllegalArgumentException.class,()->dao.prepararCorreo(retoId,VINCULO,sid,largo,ahora));
         assertTrue(dao.prepararCorreo(s.id(),VINCULO,sid,"personal@example.test",ahora).isEmpty());
         var nuevo=dao.prepararCorreo(s.id(),VINCULO,sid,"reservado@example.test",ahora).orElseThrow();
         sql("UPDATE usuario SET email='reservado@example.test' WHERE id_usuario=2");assertFalse(dao.confirmarCorreo(s.id(),VINCULO,sid,nuevo.codigo(),ahora).cambiado());
