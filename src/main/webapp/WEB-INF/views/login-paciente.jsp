@@ -125,7 +125,8 @@
 
                 <div class="registro-progreso" aria-live="polite" aria-atomic="true">
                     <div class="registro-progreso-texto"><p id="registroPasoTitulo">Paso 1 de 4 · Datos personales</p><span id="registroPasoDetalle">Identificación</span></div>
-                    <div class="registro-progreso-barras" role="progressbar" aria-label="Progreso del registro" aria-valuemin="1" aria-valuemax="4" aria-valuenow="1"><span></span><span></span><span></span><span></span></div>
+                    <progress id="registroProgreso" class="solo-lectores" aria-label="Progreso del registro" max="4" value="1"></progress>
+                    <div class="registro-progreso-barras" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
                 </div>
                 <p id="registroError" class="alert-error" role="alert" hidden></p>
 
