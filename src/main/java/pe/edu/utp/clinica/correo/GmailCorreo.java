@@ -85,11 +85,19 @@ public final class GmailCorreo implements EmisorCorreo {
     }
 
     static String mime(Correo correo, String remitente) {
-        String contenido = Base64.getMimeEncoder(76, new byte[]{13, 10})
-                .encodeToString(correo.texto().getBytes(StandardCharsets.UTF_8));
-        return "From: " + cabecera("Clínica Internacional") + " <" + remitente + ">\r\nTo: " + correo.destinatario()
-                + "\r\nSubject: " + cabecera(correo.asunto()) + "\r\nMIME-Version: 1.0"
-                + "\r\nContent-Type: text/plain; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n" + contenido;
+        String encabezado="From: " + cabecera("Clínica Internacional") + " <" + remitente + ">\r\nTo: " + correo.destinatario()
+                + "\r\nSubject: " + cabecera(correo.asunto()) + "\r\nMIME-Version: 1.0\r\n";
+        if(correo.html()==null) return encabezado+parteMime("text/plain",correo.texto());
+        String limite="clinica_"+java.util.UUID.randomUUID().toString().replace("-","");
+        return encabezado+"Content-Type: multipart/alternative;\r\n boundary=\""+limite+"\"\r\n\r\n"
+                +"--"+limite+"\r\n"+parteMime("text/plain",correo.texto())+"\r\n"
+                +"--"+limite+"\r\n"+parteMime("text/html",correo.html())+"\r\n"
+                +"--"+limite+"--\r\n";
+    }
+
+    private static String parteMime(String tipo,String contenido) {
+        String base64=Base64.getMimeEncoder(76,new byte[]{13,10}).encodeToString(contenido.getBytes(StandardCharsets.UTF_8));
+        return "Content-Type: "+tipo+"; charset=UTF-8\r\nContent-Transfer-Encoding: base64\r\n\r\n"+base64;
     }
 
     private static String cabecera(String texto) {
