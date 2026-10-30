@@ -23,8 +23,8 @@ def main():
 
     original = tables(args.estructura.read_text(encoding='utf-8-sig'))
     expected = tables((root / 'sql/schema.sql').read_text(encoding='utf-8-sig'))
-    if len(original) != 18 or len(expected) != 23:
-        raise RuntimeError('La estructura no corresponde al ensayo revisado de 18 a 23 tablas.')
+    if len(original) != 18 or not set(original).issubset(expected):
+        raise RuntimeError('La estructura de origen no corresponde al ensayo de 18 tablas o faltan tablas en el modelo actual.')
     migration = (root / 'sql/maintenance/Actualizar-Railway.sql').read_text(encoding='utf-8-sig')
     name = 'clinica-migracion-' + datetime.now(timezone.utc).strftime('%Y%m%d%H%M%S')
 

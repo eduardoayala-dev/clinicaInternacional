@@ -1,1 +1,5 @@
 <meta name="csrf-token" content="${sessionScope.csrfToken}">
+<% if (application.getAttribute("pe.edu.utp.clinica.auth.GestorAutenticacion") != null) { %>
+<meta name="auth-context" content="${empty sessionScope.authSid ? 'anonymous' : sessionScope.authSid}">
+<script defer src="${pageContext.request.contextPath}/assets/js/sesion.js" data-state-url="${pageContext.request.contextPath}/auth/estado"></script>
+<% } %>

@@ -3,6 +3,7 @@ package pe.edu.utp.clinica.filter;
 import org.junit.jupiter.api.Test;
 import pe.edu.utp.clinica.support.HttpExchange;
 import pe.edu.utp.clinica.util.CsrfToken;
+import pe.edu.utp.clinica.model.Usuario;
 import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -93,6 +94,80 @@ class CsrfFilterTest {
     @Test void doesNotCreateSessionsForStaticAssets() throws Exception {
         HttpExchange x = new HttpExchange(); x.method = "GET"; x.path = "/assets/css/app.css"; x.session = null;
         assertEquals(1, execute(x));
+        assertNull(x.session);
+    }
+
+    @Test void expiredHtmlLoginReturnsToSamePortalWithoutExecutingPostOrCreatingSession() throws Exception {
+        for (String path : new String[]{"/login", "/login/paciente", "/login/personal"}) {
+            HttpExchange x = new HttpExchange();
+            x.path = path;
+            x.session = null;
+            x.headers.put("Accept", "text/html,application/xhtml+xml");
+            x.parameters.put("csrfToken", "formulario-antiguo");
+            x.parameters.put("password", "no-debe-procesarse");
+            assertEquals(0, execute(x));
+            assertEquals(303, x.status);
+            assertEquals(path + "?error=sesion_formulario", x.responseHeaders.get("Location"));
+            assertEquals("no-store", x.responseHeaders.get("Cache-Control"));
+            assertEquals("", x.body.toString());
+            assertNull(x.session);
+        }
+    }
+
+    @Test void htmlRecoveryDoesNotBypassProtectionOrChangeJsonContract() throws Exception {
+        HttpExchange valid = new HttpExchange();
+        valid.path = "/login/personal";
+        valid.headers.put("Accept", "text/html");
+        valid.parameters.put("csrfToken", CsrfToken.getOrCreate(valid.session));
+        assertEquals(1, execute(valid));
+        for (String path : new String[]{"/registro", "/logout", "/api/citas"}) {
+            HttpExchange x = new HttpExchange();
+            x.path = path;
+            x.headers.put("Accept", "text/html");
+            assertEquals(0, execute(x));
+            if ("/logout".equals(path)) {
+                assertEquals(303, x.status);
+                assertEquals("/login?msg=sesion_cerrada", x.responseHeaders.get("Location"));
+                continue;
+            }
+            assertEquals(403, x.status);
+            if (!path.startsWith("/api/")) {
+                assertEquals("/WEB-INF/views/error.jsp", x.forward);
+                assertEquals(true, x.attributes.get("csrfRejected"));
+            }
+        }
+        HttpExchange api = new HttpExchange();
+        api.path = "/login/paciente";
+        api.headers.put("Accept", "application/json,text/html");
+        assertEquals(0, execute(api));
+        assertEquals(403, api.status);
+        assertTrue(api.body.toString().contains("CSRF_INVALIDO"));
+    }
+
+    @Test void staleLogoutReturnsToSafePortalWithoutInvalidatingCurrentSession() throws Exception {
+        HttpExchange x = new HttpExchange();
+        x.path = "/logout";
+        x.headers.put("Accept", "text/html");
+        x.session.setAttribute("usuarioLogueado", new Usuario(10,"Paciente","Prueba","p@example.test","","PACIENTE",null,true));
+        String sessionId = x.session.getId();
+        String currentToken = CsrfToken.getOrCreate(x.session);
+        x.parameters.put("csrfToken", "token-de-otra-pestana");
+        assertEquals(0, execute(x));
+        assertEquals(303, x.status);
+        assertEquals("/login?error=sesion_formulario", x.responseHeaders.get("Location"));
+        assertEquals(sessionId, x.session.getId());
+        assertEquals(currentToken, x.session.getAttribute("csrfToken"));
+        assertEquals("", x.body.toString());
+    }
+
+    @Test void repeatedHtmlLogoutWithoutActiveSessionSimplyReturnsToLogin() throws Exception {
+        HttpExchange x = new HttpExchange();
+        x.path = "/logout";
+        x.session = null;
+        x.headers.put("Accept", "text/html");
+        assertEquals(0, execute(x));
+        assertEquals(303, x.status);
+        assertEquals("/login?msg=sesion_cerrada", x.responseHeaders.get("Location"));
         assertNull(x.session);
     }
 }

@@ -7,6 +7,14 @@
     <display-name>Clinica Internacional</display-name>
 
     <filter>
+        <filter-name>AutenticacionJwtFilter</filter-name>
+        <filter-class>pe.edu.utp.clinica.filter.AutenticacionJwtFilter</filter-class>
+    </filter>
+    <filter-mapping>
+        <filter-name>AutenticacionJwtFilter</filter-name><url-pattern>/*</url-pattern><dispatcher>REQUEST</dispatcher>
+    </filter-mapping>
+
+    <filter>
         <filter-name>CsrfFilter</filter-name>
         <filter-class>pe.edu.utp.clinica.filter.CsrfFilter</filter-class>
     </filter>
@@ -33,6 +41,9 @@
         </init-param>
     </servlet>
 
+    <error-page>
+        <error-code>503</error-code><location>/WEB-INF/views/error.jsp</location>
+    </error-page>
     <!-- Error Pages -->
     <error-page>
         <error-code>404</error-code>

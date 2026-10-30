@@ -9,6 +9,27 @@ import pe.edu.utp.clinica.util.CsrfToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SesionSeguraTest {
+    @Test void recoveredLoginGetsFreshTokenAndFixedNoticeWithoutEchoingUserInput() throws Exception {
+        for (String path : new String[]{"/login/paciente", "/login/personal"}) {
+            var servlet = new LoginServlet();
+            var x = new HttpExchange();
+            x.path = path;
+            x.method = "GET";
+            x.session = null;
+            x.parameters.put("error", "sesion_formulario");
+            new CsrfFilter().doFilter(x.request, x.response, (req, res) -> servlet.doGet(x.request, x.response));
+            assertNotNull(x.session.getAttribute("csrfToken"));
+            assertTrue(x.attributes.get("errorMessage").toString().contains("venció o cambió"));
+            assertEquals(path.endsWith("personal") ? "/WEB-INF/views/login-personal.jsp" : "/WEB-INF/views/login-paciente.jsp", x.forward);
+        }
+        var unexpected = new HttpExchange();
+        unexpected.method = "GET";
+        unexpected.path = "/login/paciente";
+        unexpected.parameters.put("error", "<script>prueba</script>");
+        new LoginServlet().doGet(unexpected.request, unexpected.response);
+        assertNull(unexpected.attributes.get("errorMessage"));
+    }
+
     @Test void loginReplacesSessionAndCsrfToken() throws Exception {
         LoginServlet servlet = new LoginServlet();
         var field = LoginServlet.class.getDeclaredField("authService");

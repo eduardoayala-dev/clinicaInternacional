@@ -110,17 +110,13 @@ public class RegistroPacienteServlet extends HttpServlet {
                 }
             }
 
-            jakarta.servlet.http.HttpSession oldSession = request.getSession(false);
-            if (oldSession != null) {
-                oldSession.invalidate();
+            jakarta.servlet.http.HttpSession newSession;
+            try {
+                newSession=pe.edu.utp.clinica.auth.InicioSesion.iniciar(request,response,u);
+            } catch (java.sql.SQLException e) {
+                pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath()+"/login/paciente?error=acceso_temporal");
+                return;
             }
-            jakarta.servlet.http.HttpSession newSession = request.getSession(true);
-            newSession.setAttribute("usuarioLogueado", u);
-            pe.edu.utp.clinica.util.CsrfToken.getOrCreate(newSession);
-            newSession.setAttribute("usuarioId", u.getIdUsuario());
-            newSession.setAttribute("rol", "PACIENTE");
-            newSession.setAttribute("nombreUsuario", u.getNombreCompleto());
-            
             newSession.setAttribute("canalPreferido", p.getCanalAviso());
             newSession.setMaxInactiveInterval(30 * 60);
 

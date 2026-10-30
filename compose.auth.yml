@@ -1,0 +1,7 @@
+services:
+  app:
+    environment:
+      AUTH_MODE: jwt
+      AUTH_JWT_KEY: ${AUTH_JWT_KEY:?Define AUTH_JWT_KEY en .env.auth}
+      AUTH_ISSUER: clinica-internacional
+      AUTH_AUDIENCE: clinica-web
