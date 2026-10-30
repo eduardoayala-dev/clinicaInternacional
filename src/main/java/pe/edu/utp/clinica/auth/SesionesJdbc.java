@@ -32,18 +32,21 @@ public final class SesionesJdbc implements AlmacenSesiones {
         }
     }
     @Override public SesionAutenticada resolver(String id, byte[] refresh, Instant now, boolean actividad) throws SQLException {
-        String predicate = id != null ? "s.id_sesion=?" : "s.refresh_hash=?";
         String sql = "SELECT s.*,u.nombres,u.apellidos,u.email,u.password_hash,u.rol,u.activo "
-                + "FROM sesion_autenticacion s JOIN usuario u ON u.id_usuario=s.id_usuario WHERE " + predicate + " FOR UPDATE";
+                + "FROM sesion_autenticacion s JOIN usuario u ON u.id_usuario=s.id_usuario "
+                + "WHERE s.id_sesion=? OR (? IS NULL AND s.refresh_hash=?) FOR UPDATE";
         try (var conn = conexion.abrir()) {
             conn.setAutoCommit(false);
             try {
                 SesionAutenticada sesion = null;
                 try (var st = conn.prepareStatement(sql)) {
-                    if (id != null) st.setString(1,id); else st.setBytes(1,refresh);
+                    st.setString(1,id);
+                    st.setString(2,id);
+                    st.setBytes(3,refresh);
                     try (var rs = st.executeQuery()) {
                         if (rs.next()) {
-                            String sid=rs.getString("id_sesion"), rol=rs.getString("rol");
+                            String sid=rs.getString("id_sesion");
+                            String rol=rs.getString("rol");
                             Instant vence=fecha(rs,"vence_en");
                             boolean valida=rs.getTimestamp("revocada_en")==null && rs.getBoolean("activo")
                                     && now.isBefore(vence) && now.isBefore(fecha(rs,"ultima_actividad_en").plusSeconds(1800))

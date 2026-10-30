@@ -5,7 +5,8 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
 public final class CookiesAutenticacion {
-    public static final String ACCESO="CLINICA_ACCESS", RENOVACION="CLINICA_REFRESH";
+    public static final String ACCESO="CLINICA_ACCESS";
+    public static final String RENOVACION="CLINICA_REFRESH";
     private CookiesAutenticacion() { }
     public static String leer(HttpServletRequest request, String nombre) {
         String value=null;

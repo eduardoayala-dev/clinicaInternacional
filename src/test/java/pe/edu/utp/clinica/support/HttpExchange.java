@@ -25,7 +25,7 @@ public class HttpExchange {
     public final Map<String,Object> contextAttributes = new HashMap<>();
     private final jakarta.servlet.ServletContext context = (jakarta.servlet.ServletContext) Proxy.newProxyInstance(
             jakarta.servlet.ServletContext.class.getClassLoader(),new Class<?>[]{jakarta.servlet.ServletContext.class},
-            (proxy,method,args)-> "getAttribute".equals(method.getName())?contextAttributes.get(args[0]):null);
+            (proxy,operacion,args)-> "getAttribute".equals(operacion.getName())?contextAttributes.get(args[0]):null);
     public String method = "POST";
     public String path = "/paciente/historial";
     public int status = 200;
@@ -33,6 +33,8 @@ public class HttpExchange {
     public String redirect;
     public String forward;
     public java.io.IOException writerFailure;
+    public java.io.IOException redirectFailure;
+    public java.io.IOException errorFailure;
     public jakarta.servlet.ServletException forwardFailure;
     public String requestBody = "";
     public String requestContentType = "application/json";
@@ -100,10 +102,15 @@ public class HttpExchange {
                 switch (m.getName()) {
                     case "addCookie": responseCookies.add((jakarta.servlet.http.Cookie)args[0]); return null;
                     case "isCommitted": return false;
-                    case "setStatus": case "sendError": status = (Integer) args[0]; return null;
+                    case "setStatus": status = (Integer) args[0]; return null;
+                    case "sendError":
+                        if(errorFailure!=null) throw errorFailure;
+                        status = (Integer) args[0]; return null;
                     case "setContentType": contentType = (String) args[0]; return null;
                     case "setHeader": responseHeaders.put((String) args[0], (String) args[1]); return null;
-                    case "sendRedirect": redirect = (String) args[0]; status = 302; return null;
+                    case "sendRedirect":
+                        if(redirectFailure!=null) throw redirectFailure;
+                        redirect = (String) args[0]; status = 302; return null;
                     case "getWriter":
                         if(writerFailure!=null) throw writerFailure;
                         return new PrintWriter(body);
