@@ -17,11 +17,11 @@ import static pe.edu.utp.clinica.recuperacion.VerificacionJdbc.Proposito;
 public final class RecuperacionServlet extends HttpServlet {
     private static final String RUTA_RECUPERAR="/recuperar";
     private static final String RUTA_CODIGO="/verificar-codigo";
-    private static final String RUTA_PASSWORD="/restablecer";
+    private static final String RUTA_RESTABLECER="/restablecer";
     private static final String RUTA_CUENTA="/cuenta/seguridad";
     private static final String RUTA_CORREO="/cuenta/nuevo-correo";
     private static final String CODIGO="codigo";
-    private static final String PASSWORD="password";
+    private static final String CAMPO_CLAVE="password";
     private static final String NUEVO_CORREO="nuevo-correo";
     private static final String SOLICITUD="solicitud";
     private static final String CUENTA="cuenta";
@@ -40,7 +40,7 @@ public final class RecuperacionServlet extends HttpServlet {
             String path=request.getServletPath();
             if(RUTA_RECUPERAR.equals(path) || RUTA_CUENTA.equals(path))request.getSession().removeAttribute(PASO);
             if(path.startsWith("/cuenta/") && !autenticada(request)){TransporteHttp.redirigir(response,request.getContextPath()+"/login");return;}
-            if(RUTA_PASSWORD.equals(path) || RUTA_CORREO.equals(path)) {
+            if(RUTA_RESTABLECER.equals(path) || RUTA_CORREO.equals(path)) {
                 mostrarPasoAutorizado(request,response,path);
                 return;
             }
@@ -65,7 +65,7 @@ public final class RecuperacionServlet extends HttpServlet {
             mostrar(request,response,CODIGO);
             return;
         }
-        mostrar(request,response,correo?NUEVO_CORREO:PASSWORD);
+        mostrar(request,response,correo?NUEVO_CORREO:CAMPO_CLAVE);
     }
 
     @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) {
@@ -79,7 +79,7 @@ public final class RecuperacionServlet extends HttpServlet {
                 case RUTA_CUENTA->iniciarCambio(request,response);
                 case RUTA_CODIGO->verificar(request,response);
                 case RUTA_CORREO->nuevoCorreo(request,response);
-                case RUTA_PASSWORD->restablecer(request,response);
+                case RUTA_RESTABLECER->restablecer(request,response);
                 default->response.setStatus(405);
             }
         }catch(SQLException e){fallo(request,response);}
@@ -97,7 +97,7 @@ public final class RecuperacionServlet extends HttpServlet {
         var actual=actual(request);
         if(actual==null){response.setStatus(403);mostrar(request,response,CUENTA);return;}
         Proposito proposito=switch(String.valueOf(request.getParameter("operacion"))){
-            case PASSWORD->Proposito.CAMBIAR_PASSWORD;case "correo"->Proposito.CAMBIAR_CORREO;default->throw new IllegalArgumentException("Operación inválida.");};
+            case CAMPO_CLAVE->Proposito.CAMBIAR_PASSWORD;case "correo"->Proposito.CAMBIAR_CORREO;default->throw new IllegalArgumentException("Operación inválida.");};
         var id=servicio(request).iniciarCambio(actual.usuario().getIdUsuario(),actual.id(),vinculo(request),proposito,request.getParameter("actual"),request.getRemoteAddr());
         if(id.isEmpty()){response.setStatus(400);request.setAttribute(MENSAJE,"No se pudo iniciar el cambio. Comprueba tu contraseña actual y espera si superaste el límite de solicitudes.");mostrar(request,response,CUENTA);return;}
         request.getSession().setAttribute(PASO,new Paso(id.get(),proposito,!PACIENTE.equals(actual.usuario().getRol()),actual.id(),false));
@@ -111,7 +111,7 @@ public final class RecuperacionServlet extends HttpServlet {
                 request.getSession().removeAttribute(PASO);request.setAttribute(MENSAJE,"Tu correo se actualizó y se cerraron tus otras sesiones.");mostrar(request,response,"completado");return;
             }
         }else if(servicio(request).verificar(paso.id(),vinculo(request),paso.proposito(),paso.sesion(),codigo)){
-            TransporteHttp.redirigir(response,request.getContextPath()+(paso.proposito()==Proposito.CAMBIAR_CORREO?RUTA_CORREO:RUTA_PASSWORD));return;
+            TransporteHttp.redirigir(response,request.getContextPath()+(paso.proposito()==Proposito.CAMBIAR_CORREO?RUTA_CORREO:RUTA_RESTABLECER));return;
         }
         response.setStatus(400);request.setAttribute(MENSAJE,"El código es incorrecto, venció o alcanzó el límite de intentos. Revisa el último código recibido o inicia otra solicitud.");mostrar(request,response,CODIGO);
     }
@@ -127,7 +127,7 @@ public final class RecuperacionServlet extends HttpServlet {
     }
     private void restablecer(HttpServletRequest request,HttpServletResponse response)throws SQLException {
         Paso paso=exigirPaso(request);
-        String nueva=request.getParameter(PASSWORD);
+        String nueva=request.getParameter(CAMPO_CLAVE);
         if(nueva==null || !nueva.equals(request.getParameter("confirmacion")))throw new IllegalArgumentException("Las contraseñas no coinciden.");
         if(servicio(request).cambiarPassword(paso.id(),vinculo(request),paso.proposito(),paso.sesion(),nueva)){
             request.setAttribute("portalFinalPersonal",paso.personal());request.getSession().removeAttribute(PASO);
@@ -136,14 +136,14 @@ public final class RecuperacionServlet extends HttpServlet {
                     :"Tu contraseña se actualizó. Esta sesión sigue activa y tus otras sesiones quedaron cerradas.");
             mostrar(request,response,"completado");return;
         }
-        response.setStatus(400);request.setAttribute(MENSAJE,"La verificación venció o no es válida. La contraseña tampoco puede contener tu DNI. Inicia otra solicitud si es necesario.");mostrar(request,response,PASSWORD);
+        response.setStatus(400);request.setAttribute(MENSAJE,"La verificación venció o no es válida. La contraseña tampoco puede contener tu DNI. Inicia otra solicitud si es necesario.");mostrar(request,response,CAMPO_CLAVE);
     }
     private Paso exigirPaso(HttpServletRequest request){Paso paso=paso(request);if(!pasoValido(request,paso)){throw new IllegalArgumentException("La verificación no está vigente.");}
         return paso;}
     private boolean pasoValido(HttpServletRequest request,Paso paso){return paso!=null && (paso.proposito()==Proposito.RECUPERAR || actual(request)!=null && actual(request).id().equals(paso.sesion()));}
     private boolean autenticada(HttpServletRequest request){return actual(request)!=null;}
     private SesionAutenticada actual(HttpServletRequest request){return (SesionAutenticada)request.getAttribute(GestorAutenticacion.SESION);}
-    private String vistaActual(HttpServletRequest request){return switch(request.getServletPath()){case RUTA_CODIGO->CODIGO;case RUTA_PASSWORD->PASSWORD;case RUTA_CORREO->NUEVO_CORREO;case RUTA_CUENTA->CUENTA;default->SOLICITUD;};}
+    private String vistaActual(HttpServletRequest request){return switch(request.getServletPath()){case RUTA_CODIGO->CODIGO;case RUTA_RESTABLECER->CAMPO_CLAVE;case RUTA_CORREO->NUEVO_CORREO;case RUTA_CUENTA->CUENTA;default->SOLICITUD;};}
     private void fallo(HttpServletRequest request,HttpServletResponse response){response.setStatus(503);request.setAttribute(MENSAJE,"No se pudo completar la operación. Inténtalo más tarde.");LOGGER.warning("No se pudo completar la verificación de cuenta: SQLException.");mostrar(request,response,vistaActual(request));}
     private void mostrar(HttpServletRequest request,HttpServletResponse response,String vista){
         response.setHeader("Cache-Control","no-store");response.setHeader("Referrer-Policy","no-referrer");response.setHeader("X-Frame-Options","DENY");response.setHeader("X-Content-Type-Options","nosniff");
