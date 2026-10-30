@@ -45,7 +45,6 @@ public class RegistroPacienteServlet extends HttpServlet {
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
-        String canalAviso = SecurityUtil.sanitizeInput(request.getParameter("canalAviso"));
         String alergias = SecurityUtil.sanitizeInput(request.getParameter("alergias"));
         String cobertura = SecurityUtil.sanitizeInput(request.getParameter("cobertura"));
         String password = request.getParameter("password");
@@ -95,7 +94,7 @@ public class RegistroPacienteServlet extends HttpServlet {
         }
         p.setTelefono(telefono);
         p.setDireccion(direccion);
-        p.setCanalAviso((canalAviso != null && !canalAviso.trim().isEmpty()) ? canalAviso : "WhatsApp");
+        p.setCanalAviso("Correo");
         p.setSedePreferida("Sede San Borja");
         p.setAlergias(alergias != null ? alergias.trim() : "");
         p.setTipoCobertura((cobertura != null && !cobertura.trim().isEmpty()) ? cobertura : "EPS");

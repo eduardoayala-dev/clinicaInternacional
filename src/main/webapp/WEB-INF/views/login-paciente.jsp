@@ -22,6 +22,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/login-paciente.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/registro-pasos.css">
     <script defer src="${pageContext.request.contextPath}/assets/js/acceso.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-contenido.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-inline.css">
@@ -122,26 +123,18 @@
                     <c:remove var="registerError" scope="session" />
                 </c:if>
 
-                <div id="dniSubmitError" class="alert-error" style="display:none;">
-                    <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                    <span>Por seguridad, la contraseña no debe contener tu número de documento.</span>
+                <div class="registro-progreso" aria-live="polite" aria-atomic="true">
+                    <div class="registro-progreso-texto"><p id="registroPasoTitulo">Paso 1 de 4 · Datos personales</p><span id="registroPasoDetalle">Identificación</span></div>
+                    <div class="registro-progreso-barras" role="progressbar" aria-label="Progreso del registro" aria-valuemin="1" aria-valuemax="4" aria-valuenow="1"><span></span><span></span><span></span><span></span></div>
                 </div>
-
-                <div id="pwdMismatchError" class="alert-error" style="display:none;">
-                    <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                    <span>Las contraseñas no coinciden. Por favor verifícalas.</span>
-                </div>
+                <p id="registroError" class="alert-error" role="alert" hidden></p>
 
                 <form id="registerForm" action="${pageContext.request.contextPath}/registro" method="POST" autocomplete="off">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                    <input type="hidden" name="terminos" value="on">
 
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">01</span>
-                            <span class="reg-card-title">Datos personales</span>
-                            <span class="reg-card-subtitle">· Identificación</span>
-                        </div>
+
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 1: Datos personales</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
@@ -177,21 +170,17 @@
                             <div class="form-group">
                                 <label class="form-label" for="regGenero">Sexo / género *</label>
                                 <select name="genero" class="form-select" required id="regGenero">
-                                    <option value="" disabled selected>Seleccionar</option>
+                                    <option value="" disabled selected hidden>Selecciona una opción</option>
                                     <option value="F">Femenino</option>
                                     <option value="M">Masculino</option>
                                     <option value="O">Otro</option>
                                 </select>
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">02</span>
-                            <span class="reg-card-title">Datos de contacto y ubicación</span>
-                            <span class="reg-card-subtitle">· Notificaciones y citas</span>
-                        </div>
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 2: Contacto y ubicación</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
@@ -207,44 +196,41 @@
                         <div class="form-group">
                             <label class="form-label">Canal preferido de aviso *</label>
                             <div class="channel-options">
-                                <label class="channel-pill" onclick="selectChannel(this)">
-                                    <input type="radio" name="canalAviso" value="SMS">
+                                <label class="channel-pill canal-no-disponible" title="SMS todavía no está disponible">
+                                    <input type="radio" name="canalAviso" value="SMS" disabled>
                                     <span class="radio-circle"></span>
                                     <span>SMS</span>
                                 </label>
-                                <label class="channel-pill active" onclick="selectChannel(this)">
-                                    <input type="radio" name="canalAviso" value="WhatsApp" checked>
+                                <label class="channel-pill canal-no-disponible" title="WhatsApp todavía no está disponible">
+                                    <input type="radio" name="canalAviso" value="WhatsApp" disabled>
                                     <span class="radio-circle"></span>
                                     <span>WhatsApp</span>
                                 </label>
-                                <label class="channel-pill" onclick="selectChannel(this)">
-                                    <input type="radio" name="canalAviso" value="Correo">
+                                <label class="channel-pill active">
+                                    <input type="radio" name="canalAviso" value="Correo" checked>
                                     <span class="radio-circle"></span>
                                     <span>Correo</span>
                                 </label>
                             </div>
+                            <p class="registro-ayuda">Por ahora los avisos se envían por correo. SMS y WhatsApp no están disponibles.</p>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 6px;">
                             <label class="form-label" for="regDireccion">Dirección / zona de residencia *</label>
                             <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. San Borja Norte, San Borja" id="regDireccion">
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">03</span>
-                            <span class="reg-card-title">Credenciales de acceso</span>
-                            <span class="reg-card-subtitle">· Portal del paciente</span>
-                        </div>
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 3: Credenciales de acceso</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
                                 <label class="form-label" for="regPwd">Crear contraseña *</label>
                                 <div class="input-box has-right-icon">
-                                    <input type="password" name="password" id="regPwd" class="form-input" required placeholder="••••••••">
-                                    <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwd', this)" title="Mostrar/ocultar contraseña">
-                                        <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                                    <input type="password" name="password" id="regPwd" class="form-input" required minlength="8" autocomplete="new-password" aria-describedby="registroPasswordAyuda" placeholder="Crea una contraseña">
+                                    <button type="button" class="btn-toggle-eye" data-password-toggle="regPwd" aria-pressed="false" title="Mostrar contraseña">
+                                        <img src="${pageContext.request.contextPath}/assets/images/seguridad/registro-ojo.svg" alt="">
                                     </button>
                                 </div>
                             </div>
@@ -252,24 +238,21 @@
                             <div class="form-group">
                                 <label class="form-label" for="regPwdConfirm">Confirmar contraseña *</label>
                                 <div class="input-box has-right-icon">
-                                    <input type="password" name="confirmPassword" id="regPwdConfirm" class="form-input" required placeholder="••••••••">
-                                    <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwdConfirm', this)" title="Mostrar/ocultar contraseña">
-                                        <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                                    <input type="password" name="confirmPassword" id="regPwdConfirm" class="form-input" required autocomplete="new-password" placeholder="Repite tu contraseña">
+                                    <button type="button" class="btn-toggle-eye" data-password-toggle="regPwdConfirm" aria-pressed="false" title="Mostrar contraseña">
+                                        <img src="${pageContext.request.contextPath}/assets/images/seguridad/registro-ojo.svg" alt="">
                                     </button>
                                 </div>
                                 <div class="pwd-match-indicator" id="pwdMatchMsg" style="display: none;">
-                                    <i data-lucide="check" style="width: 14px; height: 14px;"></i> Las contraseñas coinciden
+                                    <img src="${pageContext.request.contextPath}/assets/images/seguridad/coincide.svg" alt=""> <span>Las contraseñas coinciden</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <p class="registro-ayuda" id="registroPasswordAyuda">Usa al menos 8 caracteres, con mayúscula, minúscula, número y un símbolo (@ # $ % ^ &amp; + = ! _ -). No incluyas tu documento.</p>
+                    </fieldset>
 
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">04</span>
-                            <span class="reg-card-title">Datos de salud y cobertura</span>
-                            <span class="reg-card-subtitle">· Información del paciente</span>
-                        </div>
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 4: Salud y cobertura</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
@@ -278,8 +261,8 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="regCobertura">Tipo de cobertura *</label>
-                                <select name="cobertura" class="form-select" id="regCobertura">
-                                    <option value="Particular / EPS" selected>EPS / seguro privado / particular</option>
+                                <select name="cobertura" class="form-select" id="regCobertura" required>
+                                    <option value="" disabled selected hidden>Selecciona tu cobertura</option>
                                     <option value="Particular">Particular</option>
                                     <option value="EPS Rimac">EPS Rímac</option>
                                     <option value="EPS Pacifico">EPS Pacífico</option>
@@ -287,22 +270,17 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
+                        <label class="registro-consentimiento"><input type="checkbox" name="terminos" required> <span>Autorizo el tratamiento de mis datos para gestionar mi cuenta y mis citas.</span></label>
+                    </fieldset>
 
-                    <div class="reg-footer-bar">
-                        <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-cancel-link">
-                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Cancelar y volver
-                        </a>
-                        <div class="reg-footer-right">
-                            <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-login-link">
-                                Ya tengo cuenta, iniciar sesión
-                            </a>
-                            <button type="submit" id="btnSubmitReg" class="btn-register-action">
-                                <span>Registrarme</span>
-                                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
-                            </button>
-                        </div>
+                    <p class="req-note">* Campos obligatorios</p>
+                    <div class="registro-navegacion">
+                        <button type="button" id="registroCancelar" class="reg-cancel-link" onclick="toggleView('view-login')"><img src="${pageContext.request.contextPath}/assets/images/seguridad/atras.svg" alt="">Cancelar y volver</button>
+                        <button type="button" id="registroAtras" class="registro-atras" hidden><img src="${pageContext.request.contextPath}/assets/images/seguridad/atras.svg" alt="">Atrás</button>
+                        <button type="button" id="registroContinuar" class="btn-register-action"><span>Continuar</span><img src="${pageContext.request.contextPath}/assets/images/seguridad/continuar.svg" alt=""></button>
+                        <button type="submit" id="btnSubmitReg" class="btn-register-action" hidden><span>Registrarme</span><img src="${pageContext.request.contextPath}/assets/images/seguridad/registrar.svg" alt=""></button>
                     </div>
+                    <div class="registro-volver"><button type="button" onclick="toggleView('view-login')" class="reg-login-link">Ya tengo cuenta, iniciar sesión</button></div>
                 </form>
             </section>
 
@@ -314,18 +292,6 @@
 
 <script>
     lucide.createIcons();
-
-    function togglePwdVisibility(inputId, btnEl) {
-        const input = document.getElementById(inputId);
-        if (input.type === 'password') {
-            input.type = 'text';
-            btnEl.innerHTML = '<i data-lucide="eye-off" style="width: 18px; height: 18px;"></i>';
-        } else {
-            input.type = 'password';
-            btnEl.innerHTML = '<i data-lucide="eye" style="width: 18px; height: 18px;"></i>';
-        }
-        lucide.createIcons({root: btnEl});
-    }
 
     function toggleView(targetId) {
         const currentView = document.querySelector('.auth-view.active');
@@ -375,73 +341,9 @@
         }, 160);
     }
 
-    function selectChannel(pillEl) {
-        document.querySelectorAll('.channel-pill').forEach(p => p.classList.remove('active'));
-        pillEl.classList.add('active');
-        const radio = pillEl.querySelector('input[type="radio"]');
-        if (radio) radio.checked = true;
-    }
-
-    const pwd = document.getElementById('regPwd');
-    const pwdConfirm = document.getElementById('regPwdConfirm');
-    const pwdMatchMsg = document.getElementById('pwdMatchMsg');
-    const dniInput = document.getElementById('regDni');
-    const registerForm = document.getElementById('registerForm');
-    const dniSubmitError = document.getElementById('dniSubmitError');
-    const pwdMismatchError = document.getElementById('pwdMismatchError');
-
-    function checkPasswordMatch() {
-        if (!pwd || !pwdConfirm || !pwdMatchMsg) return;
-        const val1 = pwd.value;
-        const val2 = pwdConfirm.value;
-
-        if (val1 && val2 && val1 === val2) {
-            pwdMatchMsg.style.display = 'flex';
-            pwdMatchMsg.classList.remove('mismatch');
-            pwdMatchMsg.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i> Las contraseñas coinciden';
-            lucide.createIcons({root: pwdMatchMsg});
-        } else if (val1 && val2 && val1 !== val2) {
-            pwdMatchMsg.style.display = 'flex';
-            pwdMatchMsg.classList.add('mismatch');
-            pwdMatchMsg.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Las contraseñas no coinciden';
-            lucide.createIcons({root: pwdMatchMsg});
-        } else {
-            pwdMatchMsg.style.display = 'none';
-        }
-    }
-
-    if (pwd) pwd.addEventListener('input', checkPasswordMatch);
-    if (pwdConfirm) pwdConfirm.addEventListener('input', checkPasswordMatch);
-
-    if (registerForm) {
-        registerForm.addEventListener('submit', function(e) {
-            const val = pwd.value;
-            const val2 = pwdConfirm.value;
-            const dniVal = dniInput.value;
-
-            if (val !== val2) {
-                e.preventDefault();
-                pwdMismatchError.style.display = 'flex';
-                pwdConfirm.focus();
-                document.getElementById('formPane').scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            } else {
-                pwdMismatchError.style.display = 'none';
-            }
-
-            if (dniVal.length > 0 && val.includes(dniVal)) {
-                e.preventDefault();
-                dniSubmitError.style.display = 'flex';
-                pwd.focus();
-                document.getElementById('formPane').scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            } else {
-                dniSubmitError.style.display = 'none';
-            }
-        });
-    }
 </script>
 
 <script src="${pageContext.request.contextPath}/assets/js/consulta-dni.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/registro-pasos.js" defer></script>
 </body>
 </html>

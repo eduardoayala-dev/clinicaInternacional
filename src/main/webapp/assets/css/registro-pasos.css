@@ -1,0 +1,65 @@
+.login-container.is-registering .form-inner-box { max-width: 440px; margin: auto 0; padding: 0; }
+#view-register [hidden] { display: none !important; }
+.reg-header-row { margin-bottom: 18px; }
+.reg-title { font-size: 30px; font-weight: 400; letter-spacing: normal; }
+.reg-header-row > .req-note { display: none; }
+.registro-progreso { margin-bottom: 18px; }
+.registro-progreso-texto { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; margin-bottom: 8px; }
+.registro-progreso-texto p { color: var(--acceso-texto); font-size: 13px; font-weight: 600; }
+.registro-progreso-texto span { color: var(--acceso-tenue); font-size: 12px; text-align: right; }
+.registro-progreso-barras { display: flex; gap: 6px; }
+.registro-progreso-barras span { height: 6px; flex: 1; border-radius: 3px; background: var(--acceso-borde); transition: background-color .28s ease; }
+.registro-progreso-barras .completo { background: var(--acceso-primario); }
+.registro-paso { border: 0; padding: 0; min-width: 0; }
+.registro-paso .form-grid-2 { display: flex; flex-direction: column; gap: 0; }
+.registro-paso .form-group { margin-bottom: 18px; }
+.registro-paso .form-label { font-size: 13px; font-weight: 500; color: var(--acceso-texto); margin-bottom: 6px; }
+.registro-paso .form-input,.registro-paso .form-select { height: 46px; border-radius: 10px; font-size: 14px; box-shadow: none; }
+.registro-paso .form-input[readonly] { color: var(--acceso-tenue); }
+@supports selector(input::-webkit-calendar-picker-indicator) {
+    #regFechaNacimiento { background-image: url('../images/seguridad/nacimiento.svg'); background-repeat: no-repeat; background-position: right 14px center; }
+    #regFechaNacimiento::-webkit-calendar-picker-indicator { opacity: 0; cursor: pointer; }
+}
+.registro-paso .dni-lookup-status:empty { display: none; }
+.registro-paso .form-select { appearance: none; width: 100%; padding: 0 42px 0 14px; color: var(--acceso-texto); background: var(--acceso-campo) url('../images/seguridad/desplegar.svg') no-repeat right 14px center; border: 1.5px solid var(--acceso-borde); cursor: pointer; transition: border-color .2s, box-shadow .2s; }
+.registro-paso .form-select:required:invalid { color: #64748b; }
+.registro-paso .form-select:hover { border-color: var(--acceso-primario); }
+.registro-paso .form-select:focus-visible { outline: none; border-color: var(--acceso-primario); box-shadow: 0 0 0 3px #1668b826; }
+.registro-paso .form-select option { color: var(--acceso-texto); background: white; }
+.registro-navegacion { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 30px; }
+.registro-navegacion button { font-size: 14px; }
+.registro-navegacion .reg-cancel-link { padding: 12px 0; font-size: 13px; }
+.registro-navegacion .btn-register-action { padding: 13px 22px; gap: 8px; }
+.registro-atras { border: 1.5px solid var(--acceso-borde); border-radius: 10px; padding: 13px 22px; display: inline-flex; align-items: center; gap: 8px; color: var(--acceso-primario); background: white; cursor: pointer; font-weight: 600; }
+.registro-atras:hover { background: var(--acceso-campo); border-color: var(--acceso-primario); }
+.registro-atras:disabled { cursor: wait; opacity: .6; }
+.registro-navegacion .reg-cancel-link,.registro-volver .reg-login-link { border: 0; background: transparent; }
+.registro-volver { text-align: center; margin-top: 18px; }
+.registro-volver .reg-login-link { font-size: 13px; }
+.registro-ayuda { color: var(--acceso-tenue); font-size: 12px; line-height: 1.5; margin-top: 8px; }
+.registro-consentimiento { display: flex; align-items: flex-start; gap: 10px; font-size: 13px; line-height: 1.5; margin: 8px 0 18px; color: var(--acceso-texto); }
+.registro-consentimiento input { width: 18px; height: 18px; flex-shrink: 0; margin-top: 1px; accent-color: var(--acceso-primario); }
+.registro-paso .channel-options { gap: 8px; }
+.registro-paso .channel-pill { padding: 11px 10px; font-size: 13px; position: relative; }
+.registro-paso .channel-pill input { display: block; position: absolute; opacity: 0; width: 1px; height: 1px; }
+.registro-paso .channel-pill:focus-within { outline: 3px solid #1668b84d; outline-offset: 2px; }
+.registro-paso .canal-no-disponible { color: #64748b; background: #f1f5f9; border-color: #e2e8f0; cursor: not-allowed; }
+.registro-paso .canal-no-disponible .radio-circle { border-color: #cbd5e1; }
+.solo-lectores { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; border: 0; }
+@supports (appearance: base-select) {
+    .registro-paso .form-select,.registro-paso .form-select::picker(select) { appearance: base-select; }
+    .registro-paso .form-select { display: flex; align-items: center; }
+    .registro-paso .form-select::picker-icon { display: none; }
+    .registro-paso .form-select::picker(select) { border: 1px solid var(--acceso-borde); border-radius: 10px; padding: 6px; margin-top: 6px; box-shadow: 0 8px 28px #0d2b4e1f; }
+    .registro-paso .form-select option { padding: 10px 12px; border-radius: 6px; font-size: 14px; min-height: 40px; }
+    .registro-paso .form-select option:hover,.registro-paso .form-select option:focus { background: var(--acceso-aviso); }
+    .registro-paso .form-select option:checked { color: var(--acceso-primario); background: var(--acceso-aviso); font-weight: 600; }
+    .registro-paso .form-select option[disabled] { display: none; }
+}
+@media(max-width:860px) {
+    .login-container.is-registering .form-inner-box { margin: 0 auto; }
+    .registro-progreso-texto { align-items: flex-start; }
+    .registro-progreso-texto span { max-width: 110px; }
+    .reg-title { font-size: 28px; }
+}
+@media(prefers-reduced-motion:reduce) { .registro-progreso-barras span { transition: none; } }
