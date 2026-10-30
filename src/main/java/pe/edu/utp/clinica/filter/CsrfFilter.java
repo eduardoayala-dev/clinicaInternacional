@@ -45,8 +45,8 @@ public class CsrfFilter implements Filter {
             boolean autenticado = session != null && session.getAttribute("usuarioLogueado") != null;
             res.setStatus(HttpServletResponse.SC_SEE_OTHER);
             res.setHeader(CACHE_CONTROL, NO_STORE);
-            res.setHeader("Location", req.getContextPath() + (autenticado
-                    ? "/login?error=sesion_formulario" : "/login?msg=sesion_cerrada"));
+            res.setHeader("Location", req.getContextPath() + pe.edu.utp.clinica.util.PortalAcceso.login(req) + (autenticado
+                    ? "?error=sesion_formulario" : "?msg=sesion_cerrada"));
             return;
         }
         if (loginHtml(req)) {

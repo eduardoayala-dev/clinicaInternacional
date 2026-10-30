@@ -24,6 +24,14 @@
         button.onclick = () => { if (portal) window.location.assign(portal); else dialog.close(); };
         if (!dialog.open) dialog.showModal();
     }
+    function destinoSesion(data, codigo) {
+        const portal = new URL(data.portal, window.location.origin);
+        if (portal.origin !== window.location.origin) throw new Error('invalid');
+        if (codigo === 'SESION_ANONIMA' && document.querySelector('meta[name="login-portal"]')?.content === 'personal') {
+            portal.pathname += '/personal';
+        }
+        return portal;
+    }
     async function state() {
         if (pending) return pending;
         pending = (async () => {
@@ -37,8 +45,7 @@
                 if (!['SESION_ACTIVA', 'SESION_ANONIMA'].includes(result.code)) throw new Error('invalid');
                 const data = result.data;
                 if (!data || typeof data.sid !== 'string' || typeof data.portal !== 'string') throw new Error('invalid');
-                const portal = new URL(data.portal, window.location.origin);
-                if (portal.origin !== window.location.origin) throw new Error('invalid');
+                const portal = destinoSesion(data, result.code);
                 if (data.sid !== context) {
                     blocked = true;
                     if (result.code === 'SESION_ANONIMA' || (context === 'anonymous' && result.code === 'SESION_ACTIVA')) {

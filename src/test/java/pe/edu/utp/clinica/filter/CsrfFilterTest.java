@@ -154,7 +154,7 @@ class CsrfFilterTest {
         x.parameters.put("csrfToken", "token-de-otra-pestana");
         assertEquals(0, execute(x));
         assertEquals(303, x.status);
-        assertEquals("/login?error=sesion_formulario", x.responseHeaders.get("Location"));
+        assertEquals("/login/paciente?error=sesion_formulario", x.responseHeaders.get("Location"));
         assertEquals(sessionId, x.session.getId());
         assertEquals(currentToken, x.session.getAttribute("csrfToken"));
         assertEquals("", x.body.toString());
@@ -169,5 +169,21 @@ class CsrfFilterTest {
         assertEquals(303, x.status);
         assertEquals("/login?msg=sesion_cerrada", x.responseHeaders.get("Location"));
         assertNull(x.session);
+    }
+    @Test void logoutPersonalRepetidoConservaElPortalSinCrearSesion() throws Exception {
+        var x=new HttpExchange();x.path="/logout";x.session=null;
+        x.headers.put("Accept","text/html");x.parameters.put("portal","personal");
+        assertEquals(0,execute(x));
+        assertEquals("/login/personal?msg=sesion_cerrada",x.responseHeaders.get("Location"));
+        assertNull(x.session);
+    }
+    @Test void logoutVencidoUsaElOrigenSoloParaElegirUnLoginInterno() throws Exception {
+        for(String origen:new String[]{"http://localhost/admin/dashboard","http://localhost/medico/agenda","http://localhost/sysadmin/usuarios"}) {
+            var x=new HttpExchange();x.path="/logout";x.session=null;
+            x.headers.put("Accept","text/html");x.headers.put("Referer",origen);
+            assertEquals(0,execute(x));
+            assertEquals("/login/personal?msg=sesion_cerrada",x.responseHeaders.get("Location"));
+            assertNull(x.session);
+        }
     }
 }
