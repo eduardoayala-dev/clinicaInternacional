@@ -535,21 +535,25 @@ public class UsuarioDAO {
 
     public boolean actualizarPerfilCompletoPaciente(pe.edu.utp.clinica.model.PerfilPaciente perfil) {
         try (Connection conn=abrirConexion()) {
-            boolean autoCommit=conn.getAutoCommit();
-            conn.setAutoCommit(false);
-            try {
-                guardarPerfil(conn,perfil);
-                conn.commit();
-                return true;
-            } catch (SQLException | RuntimeException e) {
-                conn.rollback();
-                throw e;
-            } finally {
-                conn.setAutoCommit(autoCommit);
-            }
+            return guardarPerfilEnTransaccion(conn,perfil);
         } catch (SQLException | RuntimeException e) {
             LOGGER.log(Level.SEVERE,"Error al actualizar el perfil del paciente.",e);
             return false;
+        }
+    }
+
+    private boolean guardarPerfilEnTransaccion(Connection conn,pe.edu.utp.clinica.model.PerfilPaciente perfil)throws SQLException {
+        boolean autoCommit=conn.getAutoCommit();
+        conn.setAutoCommit(false);
+        try {
+            guardarPerfil(conn,perfil);
+            conn.commit();
+            return true;
+        } catch (SQLException | RuntimeException e) {
+            conn.rollback();
+            throw e;
+        } finally {
+            conn.setAutoCommit(autoCommit);
         }
     }
 
