@@ -46,6 +46,7 @@
             <div>
                 <h1 class="med-title">Perfil del Médico</h1>
                 <p class="med-subtitle">Información profesional, especialidad y credenciales registradas.</p>
+                <p><a href="${pageContext.request.contextPath}/cuenta/seguridad">Cambiar correo o contraseña con verificación</a></p>
             </div>
             <a href="${pageContext.request.contextPath}/medico/agenda" class="med-btn-outline"><img src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt="" class="med-icon"> Mi agenda</a>
         </div>

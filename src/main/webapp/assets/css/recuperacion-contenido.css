@@ -1,0 +1,31 @@
+.contenido-seguridad p,.contenido-seguridad h1,.contenido-seguridad h2,.contenido-seguridad h3 { margin: 0; }
+.contenido-seguridad { width: 400px; max-width: 100%; display: flex; flex-direction: column; align-items: stretch; gap: 20px; }
+.contenido-seguridad h1 { font: 32px/1.35 'DM Serif Display', Georgia, serif; }
+.contenido-seguridad .subtitulo { margin-top: 6px; font-size: 14px; line-height: normal; color: var(--seg-tenue); }
+.contenido-seguridad form { display: flex; flex-direction: column; gap: 6px; }
+.contenido-seguridad label { font-size: 13px; font-weight: 500; }
+.contenido-seguridad input,.contenido-seguridad select { width: 100%; min-height: 46px; border: 1.5px solid var(--seg-borde); border-radius: 10px; padding: 12px 14px; background: var(--seg-campo); color: var(--seg-texto); font: inherit; }
+.contenido-seguridad input::placeholder { color: #64748b; opacity: 1; }
+.contenido-seguridad input + label,.contenido-seguridad select + label { margin-top: 14px; }
+.contenido-seguridad .boton { width: 100%; margin-top: 14px; border: 0; border-radius: 10px; padding: 13px 20px; min-height: 43px; background: var(--seg-azul); color: white; font: 600 14px 'Inter',sans-serif; box-shadow: 0 4px 12px #1a7fd438; cursor: pointer; text-align: center; }
+.contenido-seguridad .boton:hover { filter: brightness(.94); }
+.contenido-seguridad .boton:disabled { opacity: .65; cursor: wait; }
+.contenido-seguridad .boton:disabled::before { content: ''; display: inline-block; width: 13px; height: 13px; border: 2px solid #ffffff80; border-top-color: white; border-radius: 50%; margin-right: 9px; animation: giro .8s linear infinite; }
+.contenido-seguridad .boton-enlace { text-decoration: none; }
+.contenido-seguridad .aviso { display: flex; align-items: flex-start; gap: 10px; padding: 14px; border-radius: 10px; font-size: 13px; line-height: normal; background: var(--seg-aviso); }
+.contenido-seguridad .aviso img { flex-shrink: 0; display: block; }
+.contenido-seguridad .mensaje { border: 1px solid var(--seg-borde); line-height: 1.5; }
+.contenido-seguridad .volver { display: flex; gap: 6px; align-items: center; color: var(--seg-azul); font-size: 13px; font-weight: 600; text-decoration: none; width: fit-content; }
+.contenido-seguridad .volver img { display: block; }
+.contenido-seguridad .volver:hover { text-decoration: underline; }
+.contenido-seguridad .entrada-codigo { font-size: 24px; letter-spacing: .4em; text-align: center; min-height: 56px; }
+.contenido-seguridad .ayuda { font-size: 12px; line-height: 1.6; color: var(--seg-tenue); margin-top: 8px; }
+.contenido-seguridad .acceso-alterno { display: flex; justify-content: flex-end; }
+.contenido-seguridad .acceso-alterno a { padding: 6px 12px; color: #334155; background: #f1f5f9; border-radius: 8px; font-weight: 500; font-size: 13px; text-decoration: none; }
+.portal-personal .contenido-seguridad .boton { min-height: 48px; font-size: 15px; box-shadow: 0 4px 12px #0f172940; }
+.portal-personal .contenido-seguridad .aviso { color: #334155; padding: 12px 14px; }
+.portal-personal .contenido-seguridad .volver { color: #334155; font-size: 14px; }
+.contenido-seguridad :focus-visible { outline: 3px solid #1688f8; outline-offset: 3px; }
+@keyframes giro { to { transform: rotate(360deg); } }
+@media(max-width:760px) { .contenido-seguridad h1 { font-size: 30px; } }
+@media(prefers-reduced-motion:reduce) { .contenido-seguridad .boton:disabled::before { animation: none; } }

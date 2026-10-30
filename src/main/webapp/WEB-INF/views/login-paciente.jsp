@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
+    request.setAttribute("portalPersonal", false);
     boolean showRegister = false;
     if ("register".equals(request.getParameter("action")) || session.getAttribute("registerError") != null) {
         showRegister = true;
@@ -13,58 +14,30 @@
     <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <%@ include file="/WEB-INF/jspf/disponibilidad-head.jspf" %>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clínica Internacional - Portal del Paciente</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/login-paciente.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
+    <script defer src="${pageContext.request.contextPath}/assets/js/acceso.js"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-contenido.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-inline.css">
+    <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion.js"></script>
+    <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion-inline.js"></script>
 </head>
-<body>
+<body class="portal-paciente">
 
 <div class="login-container ${showRegister ? 'is-registering' : ''}" id="mainContainer">
 
-    <aside class="hero-pane">
-        <div class="hero-brand">
-            <div class="brand-icon-box">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Sistema de citas</span>
-            </div>
-        </div>
-
-        <div class="hero-body">
-            <h1 class="hero-title">
-                Tu salud, gestionada<br>
-                con precisión
-            </h1>
-            <p class="hero-desc">
-                Reserva, reprograma o cancela tus citas, y recibe la oferta de un cupo liberado si estás en la lista de espera.
-            </p>
-
-            <ul class="hero-features">
-                <li><span class="bullet"></span> Pacientes</li>
-                <li><span class="bullet"></span> Médicos</li>
-                <li><span class="bullet"></span> Personal administrativo</li>
-                <li><span class="bullet"></span> Administradores</li>
-            </ul>
-        </div>
-
-        <div class="hero-footer">
-            <span>Portal de Pacientes</span>
-            <a href="${pageContext.request.contextPath}/login/personal">
-                Acceso Médicos y Admisión &rarr;
-            </a>
-        </div>
-    </aside>
+    <%@ include file="/WEB-INF/jspf/acceso-marca.jspf" %>
 
     <main class="form-pane" id="formPane">
         <div class="form-inner-box">
             
-            <section id="view-login" class="auth-view ${not showRegister ? 'active' : ''}">
+            <section id="view-login" data-acceso-login class="auth-view ${not showRegister ? 'active' : ''}">
                 <div class="auth-header">
                     <h2 class="auth-title">Iniciar sesión</h2>
                     <p class="auth-subtitle">Ingresa con tu documento de identidad registrado.</p>
@@ -105,14 +78,14 @@
                         <label class="form-label" for="password">Contraseña *</label>
                         <div class="input-box has-right-icon">
                             <input type="password" id="password" name="password" class="form-input" required placeholder="Ingresa tu contraseña">
-                            <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('password', this)" title="Mostrar/ocultar contraseña">
-                                <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                            <button type="button" class="btn-toggle-eye" data-password-toggle="password" aria-pressed="false" title="Mostrar/ocultar contraseña">
+                                <img src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt="">
                             </button>
                         </div>
                     </div>
 
                     <div class="forgot-pwd-row">
-                        <a href="javascript:void(0)" onclick="toggleView('view-recovery')" class="forgot-pwd-link">
+                        <a href="${pageContext.request.contextPath}/recuperar" class="forgot-pwd-link" data-abrir-recuperacion>
                             ¿Olvidó su contraseña?
                         </a>
                     </div>
@@ -133,42 +106,6 @@
                 <div class="auth-help-footer">
                     ¿Necesita ayuda? Contactar call center citas
                 </div>
-            </section>
-
-            <section id="view-recovery" class="auth-view">
-                <div class="auth-header">
-                    <h2 class="auth-title">Recuperar contraseña</h2>
-                    <p class="auth-subtitle">Ingresa el correo con el que creaste tu cuenta.</p>
-                </div>
-
-                <div id="recoverySuccessAlert" class="alert-success" style="display: none;"></div>
-
-                <form id="recoveryForm" onsubmit="handleRecoverySubmit(event)">
-                    <div class="form-group">
-                        <label class="form-label" for="recoveryEmail">Correo electrónico registrado *</label>
-                        <div class="input-box has-right-icon">
-                            <input type="email" id="recoveryEmail" name="recoveryEmail" class="form-input" required placeholder="correo@ejemplo.com">
-                            <span class="btn-toggle-eye" style="pointer-events: none;">
-                                <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
-                            </span>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-submit-primary">
-                        Enviar enlace de recuperación
-                    </button>
-
-                    <div class="recovery-info-card">
-                        <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
-                        <span>Si el correo está registrado, te enviaremos un enlace para crear una nueva contraseña.</span>
-                    </div>
-
-                    <div style="margin-top: 16px;">
-                        <a href="javascript:void(0)" onclick="toggleView('view-login')" class="btn-back-link">
-                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Volver a iniciar sesión
-                        </a>
-                    </div>
-                </form>
             </section>
 
             <section id="view-register" class="auth-view ${showRegister ? 'active' : ''}">
@@ -369,6 +306,7 @@
                 </form>
             </section>
 
+            <section class="acceso-recuperacion" data-recuperacion-inline hidden></section>
         </div>
     </main>
 
@@ -435,17 +373,6 @@
                 targetView.style.transform = '';
             }, 300);
         }, 160);
-    }
-
-    function handleRecoverySubmit(e) {
-        e.preventDefault();
-        const email = document.getElementById('recoveryEmail').value;
-        const alertBox = document.getElementById('recoverySuccessAlert');
-        if (alertBox) {
-            alertBox.style.display = 'flex';
-            alertBox.innerHTML = '<i data-lucide="check-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i> <span>Hemos enviado un correo a <strong>' + email + '</strong> con las instrucciones para restablecer su contraseña.</span>';
-            lucide.createIcons({root: alertBox});
-        }
     }
 
     function selectChannel(pillEl) {

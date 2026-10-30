@@ -83,7 +83,15 @@ public final class DisponibilidadSistema implements AutoCloseable {
             }
             if ("jwt".equals(System.getenv("AUTH_MODE"))) {
                 try (var schema=statement.executeQuery("SELECT id_sesion,id_usuario,refresh_hash,csrf_token,rol_inicial,credencial_hash,creada_en,ultima_actividad_en,vence_en,revocada_en FROM sesion_autenticacion WHERE 1=0")) {
-                    return schema.getMetaData().getColumnCount()==10;
+                    if (schema.getMetaData().getColumnCount()!=10) return false;
+                }
+            }
+            if (Boolean.parseBoolean(System.getenv().getOrDefault("RECOVERY_ENABLED","false"))) {
+                try (var schema=statement.executeQuery("SELECT id_verificacion,id_usuario,proposito,vinculo_hash,codigo_hash,etapa,intentos,vence_en FROM verificacion_cuenta WHERE 1=0")) {
+                    if (schema.getMetaData().getColumnCount()!=8) return false;
+                }
+                try (var schema=statement.executeQuery("SELECT clave_hash,solicitudes,vence_en FROM limite_recuperacion WHERE 1=0")) {
+                    if (schema.getMetaData().getColumnCount()!=3) return false;
                 }
             }
             return true;

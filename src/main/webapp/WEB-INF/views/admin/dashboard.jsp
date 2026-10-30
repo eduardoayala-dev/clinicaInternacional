@@ -109,6 +109,7 @@
             <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
                 <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
             </a>
+            <a href="${pageContext.request.contextPath}/cuenta/seguridad" class="adm-nav-item"><i data-lucide="shield-check" style="width:18px;height:18px;flex-shrink:0;"></i><span>Seguridad de cuenta</span></a>
         </nav>
 
         <div class="adm-user-footer">

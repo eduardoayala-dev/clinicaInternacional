@@ -520,6 +520,7 @@
             document.getElementById("formNombres").value = "";
             document.getElementById("formApellidos").value = "";
             document.getElementById("formEmail").value = "";
+            document.getElementById("formEmail").readOnly = false;
             document.getElementById("formRol").value = "MEDICO";
             document.getElementById("formEstado").value = "ACTIVO";
             document.getElementById("formSede").value = "3"; // Sede San Borja por defecto
@@ -544,6 +545,7 @@
             document.getElementById("formNombres").value = fila.getAttribute("data-nombres") || "";
             document.getElementById("formApellidos").value = fila.getAttribute("data-apellidos") || "";
             document.getElementById("formEmail").value = fila.getAttribute("data-email") || "";
+            document.getElementById("formEmail").readOnly = true;
             
             const rolCode = fila.getAttribute("data-rol-code") || "MEDICO";
             document.getElementById("formRol").value = rolCode;

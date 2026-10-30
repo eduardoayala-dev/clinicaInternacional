@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
+<% request.setAttribute("portalPersonal", true); %>
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -11,7 +12,7 @@
     <!-- Fuentes Google -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@1,600;1,700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
     <!-- Lucide Icons SVG sin emojis -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
@@ -49,165 +50,6 @@
             display: flex;
             width: 100%;
             min-height: 100vh;
-        }
-
-        /* SECCIÓN IZQUIERDA CORPORATIVA PERSONAL (62% ANCHO) */
-        .hero-section {
-            flex: 1.6;
-            background: radial-gradient(circle at 15% 20%, rgba(56, 189, 248, 0.1) 0%, transparent 45%),
-                        radial-gradient(circle at 85% 80%, rgba(30, 41, 59, 0.5) 0%, transparent 50%),
-                        linear-gradient(135deg, var(--slate-dark-start) 0%, var(--slate-dark-end) 100%);
-            color: #ffffff;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .hero-section::before {
-            content: '';
-            position: absolute;
-            top: -120px;
-            right: -120px;
-            width: 450px;
-            height: 450px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.02);
-            pointer-events: none;
-        }
-
-        .hero-inner {
-            width: 100%;
-            max-width: 720px;
-            padding: 50px 48px;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            position: relative;
-            z-index: 2;
-        }
-
-        /* LOGO PROMINENTE Y MAS GRANDE */
-        .hero-brand {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.12);
-        }
-
-        .hero-brand img {
-            height: 58px;
-            width: auto;
-            object-fit: contain;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
-        }
-
-        .brand-text-wrapper {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .brand-text-main {
-            font-size: 20px;
-            font-weight: 800;
-            letter-spacing: 1.2px;
-            text-transform: uppercase;
-            color: #ffffff;
-            line-height: 1.1;
-        }
-
-        .brand-text-sub {
-            font-size: 12px;
-            font-weight: 500;
-            letter-spacing: 1.5px;
-            text-transform: uppercase;
-            color: var(--brand-cyan);
-            margin-top: 2px;
-        }
-
-        .hero-middle {
-            margin: auto 0;
-            padding: 30px 0;
-        }
-
-        .hero-title {
-            font-family: 'Playfair Display', serif;
-            font-size: 46px;
-            font-weight: 700;
-            line-height: 1.15;
-            margin-bottom: 20px;
-            color: #ffffff;
-        }
-
-        .hero-desc {
-            font-size: 16px;
-            color: rgba(255, 255, 255, 0.82);
-            line-height: 1.6;
-            max-width: 580px;
-            margin-bottom: 32px;
-        }
-
-        /* TARJETAS DE MODULOS DEL SISTEMA INTERNO */
-        .modules-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 16px;
-            margin-bottom: 32px;
-        }
-
-        .module-card-glass {
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(12px);
-            border: 1px solid rgba(255, 255, 255, 0.09);
-            border-radius: 12px;
-            padding: 16px;
-            display: flex;
-            align-items: flex-start;
-            gap: 14px;
-        }
-
-        .module-icon-box {
-            width: 36px;
-            height: 36px;
-            border-radius: 8px;
-            background: rgba(56, 189, 248, 0.15);
-            color: var(--brand-cyan);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-
-        .module-title {
-            font-size: 13.5px;
-            font-weight: 700;
-            color: #ffffff;
-            margin-bottom: 4px;
-        }
-
-        .module-desc {
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.65);
-            line-height: 1.4;
-        }
-
-        .hero-footer-trust {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            font-size: 12px;
-            color: rgba(255, 255, 255, 0.6);
-            padding-top: 20px;
-            border-top: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .trust-icon {
-            width: 16px;
-            height: 16px;
-            stroke: var(--brand-cyan);
         }
 
         /* SECCIÓN DERECHA FORMULARIO INSTITUCIONAL (38% ANCHO) */
@@ -349,86 +191,25 @@
             .form-section { width: 100%; }
         }
     </style>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
+    <script defer src="${pageContext.request.contextPath}/assets/js/acceso.js"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-contenido.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-inline.css">
+    <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion.js"></script>
+    <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion-inline.js"></script>
 </head>
-<body>
+<body class="portal-personal">
 
 <div class="login-wrapper">
 
-    <!-- HERO PERSONAL INSTITUCIONAL (SECCIÓN IZQUIERDA ENRIQUECIDA) -->
-    <div class="hero-section">
-        <div class="hero-inner">
-            <!-- LOGO MAS GRANDE Y DESTACADO -->
-            <div class="hero-brand">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clinica Internacional Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-                <div class="brand-text-wrapper">
-                    <span class="brand-text-main">CLÍNICA INTERNACIONAL</span>
-                    <span class="brand-text-sub">SISTEMA INSTITUCIONAL</span>
-                </div>
-            </div>
-
-            <div class="hero-middle">
-                <h1 class="hero-title">Sistema Interno de<br>Gestión y Control.</h1>
-                <p class="hero-desc">
-                    Módulo unificado para médicos especialistas, personal administrativo y admisiones para la gestión de agendas, triaje y control operativo.
-                </p>
-
-                <!-- TARJETAS DE MODULOS DEL SISTEMA -->
-                <div class="modules-grid">
-                    <div class="module-card-glass">
-                        <div class="module-icon-box">
-                            <i data-lucide="calendar" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="module-title">Agenda Médica</div>
-                            <div class="module-desc">Programación y gestión de citas de especialistas en tiempo real.</div>
-                        </div>
-                    </div>
-
-                    <div class="module-card-glass">
-                        <div class="module-icon-box">
-                            <i data-lucide="refresh-cw" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="module-title">Reasignación de Cupos</div>
-                            <div class="module-desc">Control automatizado de citas canceladas y lista de espera.</div>
-                        </div>
-                    </div>
-
-                    <div class="module-card-glass">
-                        <div class="module-icon-box">
-                            <i data-lucide="users" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="module-title">Admisión & Pacientes</div>
-                            <div class="module-desc">Registro y validación de identidad para ingreso a consultorio.</div>
-                        </div>
-                    </div>
-
-                    <div class="module-card-glass">
-                        <div class="module-icon-box">
-                            <i data-lucide="shield-alert" style="width: 20px; height: 20px;"></i>
-                        </div>
-                        <div>
-                            <div class="module-title">Auditoría de Seguridad</div>
-                            <div class="module-desc">Trazabilidad completa de accesos y prevención de amenazas.</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="hero-footer-trust">
-                <i data-lucide="lock" class="trust-icon"></i>
-                <span>Red Privada Corporativa &bull; Acceso Restringido a Personal Autorizado</span>
-            </div>
-        </div>
-    </div>
+    <%@ include file="/WEB-INF/jspf/acceso-marca.jspf" %>
 
     <!-- FORMULARIO INSTITUCIONAL -->
     <div class="form-section">
         <div class="form-inner">
+            <section data-acceso-login>
             <div class="portal-switch">
                 <a href="${pageContext.request.contextPath}/login/paciente">
-                    <i data-lucide="user" style="width: 15px; height: 15px;"></i>
                     <span>Ir al Portal de Pacientes</span>
                 </a>
             </div>
@@ -451,7 +232,6 @@
                 <div class="form-group">
                     <label for="identificador">Correo Institucional</label>
                     <div class="input-icon-wrapper">
-                        <i data-lucide="mail" class="input-icon"></i>
                         <input type="email" id="identificador" name="identificador" required placeholder="usuario@clinicainternacional.pe">
                     </div>
                 </div>
@@ -459,13 +239,16 @@
                 <div class="form-group">
                     <label for="password">Contraseña</label>
                     <div class="input-icon-wrapper">
-                        <i data-lucide="lock" class="input-icon"></i>
-                        <input type="password" id="password" name="password" required placeholder="••••••••">
+                        <input type="password" id="password" name="password" required placeholder="Ingresa tu contraseña">
+                        <button type="button" class="acceso-ver-password" data-password-toggle="password" aria-pressed="false" title="Mostrar contraseña"><img src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt=""></button>
                     </div>
                 </div>
 
                 <button type="submit" class="btn-primary">Acceder al Sistema</button>
+                <p><a class="forgot-personal" data-abrir-recuperacion href="${pageContext.request.contextPath}/recuperar?portal=personal">¿Olvidaste tu contraseña?</a></p>
             </form>
+            </section>
+            <section class="acceso-recuperacion" data-recuperacion-inline hidden></section>
         </div>
     </div>
 

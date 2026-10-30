@@ -495,7 +495,8 @@
                         </div>
                         <div class="adm-modal-field">
                             <label class="adm-modal-label">Correo electrónico</label>
-                            <input type="email" id="editEmail" name="email" class="adm-modal-input">
+                            <input type="email" id="editEmail" name="email" class="adm-modal-input" readonly aria-describedby="avisoCambioCorreoPaciente">
+                            <small id="avisoCambioCorreoPaciente">El paciente cambia su correo desde Seguridad de cuenta, con verificación.</small>
                         </div>
                     </div>
 

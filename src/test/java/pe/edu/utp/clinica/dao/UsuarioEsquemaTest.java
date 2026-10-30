@@ -68,10 +68,21 @@ class UsuarioEsquemaTest {
         try (Connection conn=DriverManager.getConnection(url,"sa",""); var st=conn.createStatement()) {
             st.execute("ALTER TABLE paciente DROP COLUMN alergias");
         }
-        assertFalse(dao.actualizarPerfilCompletoPaciente(u.getIdUsuario(),"Cambio","Paciente","nuevo@test.local",
-                "2000-01-01","888888888","Nueva dirección","Correo","Central","Ninguna","EPS"));
+        assertFalse(dao.actualizarPerfilCompletoPaciente(new pe.edu.utp.clinica.model.PerfilPaciente(u.getIdUsuario(),"Cambio","Paciente",
+                "2000-01-01","888888888","Nueva dirección","Correo","Central","Ninguna","EPS")));
         try (Connection conn=DriverManager.getConnection(url,"sa",""); var st=conn.createStatement(); var rs=st.executeQuery("SELECT nombres,email FROM usuario")) {
             assertTrue(rs.next()); assertEquals("Prueba",rs.getString(1)); assertEquals("prueba@test.local",rs.getString(2));
+        }
+    }
+    @Test void profileUpdatePersistsDataWithoutChangingVerifiedEmail() throws Exception {
+        Usuario u=user();assertTrue(dao.crearCuentaPaciente(u,patient()));
+        var perfil=new pe.edu.utp.clinica.model.PerfilPaciente(u.getIdUsuario(),"Cambio","Paciente",
+                "02/03/2000","888888888","Nueva dirección","Correo","Central","Ninguna","EPS");
+        assertTrue(dao.actualizarPerfilCompletoPaciente(perfil));
+        try(var conn=DriverManager.getConnection(url,"sa","");var st=conn.createStatement();
+            var rs=st.executeQuery("SELECT u.nombres,u.email,p.fecha_nacimiento,p.direccion,p.canal_aviso FROM usuario u JOIN paciente p ON p.id_usuario=u.id_usuario")) {
+            assertTrue(rs.next());assertEquals("Cambio",rs.getString(1));assertEquals("prueba@test.local",rs.getString(2));
+            assertEquals(java.sql.Date.valueOf("2000-03-02"),rs.getDate(3));assertEquals("Nueva dirección",rs.getString(4));assertEquals("Correo",rs.getString(5));
         }
     }
 }
