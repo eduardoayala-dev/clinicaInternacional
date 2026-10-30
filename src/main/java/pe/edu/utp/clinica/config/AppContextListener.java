@@ -19,9 +19,20 @@ public class AppContextListener implements ServletContextListener {
         jakarta.servlet.SessionCookieConfig cookie = sce.getServletContext().getSessionCookieConfig();
         cookie.setHttpOnly(true);
         cookie.setAttribute("SameSite", "Lax");
-        boolean produccion = System.getenv("RAILWAY_ENVIRONMENT") != null
-                || "production".equalsIgnoreCase(System.getenv("APP_ENV"));
+        boolean produccion = EntornoAplicacion.produccion(System.getenv());
         cookie.setSecure(produccion);
+        String modo=System.getenv().getOrDefault("AUTH_MODE","session");
+        if ("jwt".equals(modo)) {
+            var reloj=java.time.Clock.systemUTC();
+            var jwt=new pe.edu.utp.clinica.auth.JwtAcceso(System.getenv("AUTH_JWT_KEY"),
+                    System.getenv().getOrDefault("AUTH_ISSUER","clinica-internacional"),
+                    System.getenv().getOrDefault("AUTH_AUDIENCE","clinica-web"),reloj);
+            var gestor=new pe.edu.utp.clinica.auth.GestorAutenticacion(jwt,new pe.edu.utp.clinica.auth.SesionesJdbc(),reloj,produccion);
+            sce.getServletContext().setAttribute(pe.edu.utp.clinica.auth.GestorAutenticacion.CONTEXTO,gestor);
+        } else if (!"session".equals(modo)) {
+            throw new IllegalArgumentException("AUTH_MODE debe ser jwt o session.");
+        }
+
         disponibilidad = new DisponibilidadSistema();
         sce.getServletContext().setAttribute(DisponibilidadSistema.CONTEXT_ATTRIBUTE, disponibilidad);
         disponibilidad.iniciar();

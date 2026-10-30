@@ -26,6 +26,30 @@ public class CsrfFilter implements Filter {
         if (!SAFE_METHODS.contains(req.getMethod())) {
             // No crear una sesión/token para legitimar un POST que llegó sin sesión.
             if (!CsrfToken.isValid(req)) {
+                if ("POST".equals(req.getMethod()) && "/logout".equals(req.getServletPath()) && htmlRequest(req)) {
+                    var session = req.getSession(false);
+                    boolean autenticado = session != null && session.getAttribute("usuarioLogueado") != null;
+                    res.setStatus(HttpServletResponse.SC_SEE_OTHER);
+                    res.setHeader("Cache-Control", "no-store");
+                    res.setHeader("Location", req.getContextPath() + (autenticado
+                            ? "/login?error=sesion_formulario" : "/login?msg=sesion_cerrada"));
+                    return;
+                }
+                if (loginHtml(req)) {
+                    res.setHeader("Cache-Control", "no-store");
+                    res.setStatus(HttpServletResponse.SC_SEE_OTHER);
+                    res.setHeader("Location", req.getContextPath() + req.getServletPath() + "?error=sesion_formulario");
+                    return;
+                }
+                if (htmlRequest(req)) {
+                    res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                    res.setHeader("Cache-Control", "no-store");
+                    res.setHeader("X-Content-Type-Options", "nosniff");
+                    req.setAttribute("jakarta.servlet.error.status_code", HttpServletResponse.SC_FORBIDDEN);
+                    req.setAttribute("csrfRejected", true);
+                    req.getRequestDispatcher("/WEB-INF/views/error.jsp").forward(req, res);
+                    return;
+                }
                 ApiJson.write(res, HttpServletResponse.SC_FORBIDDEN, new ApiResponse<>("CSRF_INVALIDO",
                         "La sesión o el token de seguridad no es válido. Recarga la página.", null));
                 return;
@@ -36,5 +60,18 @@ public class CsrfFilter implements Filter {
             res.setHeader("Cache-Control", "no-store");
         }
         chain.doFilter(request, response);
+    }
+
+    private static boolean loginHtml(HttpServletRequest request) {
+        String path = request.getServletPath();
+        return "POST".equals(request.getMethod())
+                && Set.of("/login", "/login/paciente", "/login/personal").contains(path)
+                && htmlRequest(request);
+    }
+
+    private static boolean htmlRequest(HttpServletRequest request) {
+        String accept = request.getHeader("Accept");
+        return !request.getServletPath().startsWith("/api/") && accept != null
+                && accept.contains("text/html") && !accept.contains("application/json");
     }
 }

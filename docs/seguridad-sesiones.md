@@ -1,5 +1,7 @@
 # Sesiones, tokens y autorización de citas
 
+Documento histórico de la primera corrección; para la implementación actual en modo JWT consultar [autenticacion-jwt.md](autenticacion-jwt.md).
+
 Primera corrección del diagnóstico, en `fix/seguridad-sesiones-citas`, creada desde `develop`.
 
 ## Controles implementados
@@ -14,7 +16,7 @@ El identificador de sesión y el token CSRF se renuevan al iniciar sesión o reg
 
 Las cookies se configuran HttpOnly y SameSite=Lax. En producción, `APP_ENV=production` (o el indicador Railway reconocido) activa Secure; el acceso debe ser HTTPS y debe comprobarse la cookie real detrás del proxy. Esta revisión verificó HttpOnly/SameSite en Jetty local por HTTP, no HTTPS cloud.
 
-JWT no es necesario para esta aplicación JSP/Servlets con sesiones. Un token JWT tampoco sustituiría permisos por recurso ni la protección CSRF cuando la credencial se envía automáticamente en cookies.
+La implementación actual añade un gestor JWT con activación explícita por entorno. JWT no sustituye permisos por recurso ni CSRF cuando la credencial se envía automáticamente en cookies.
 
 ## Contrato de solicitudes que modifican datos
 

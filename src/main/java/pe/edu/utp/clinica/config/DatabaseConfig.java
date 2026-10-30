@@ -52,7 +52,7 @@ public class DatabaseConfig {
     private DatabaseConfig() {
     }
 
-    static String diagnosticoSeguro(Throwable error) {
+    public static String diagnosticoSeguro(Throwable error) {
         StringBuilder resultado = new StringBuilder();
         var visitados = java.util.Collections.newSetFromMap(
                 new java.util.IdentityHashMap<Throwable, Boolean>());

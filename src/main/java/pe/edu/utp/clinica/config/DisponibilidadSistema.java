@@ -79,8 +79,15 @@ public final class DisponibilidadSistema implements AutoCloseable {
         try (var connection = DatabaseConfig.getConnection(); var statement = connection.createStatement()) {
             statement.setQueryTimeout(2);
             try (var rows = statement.executeQuery("SELECT 1")) {
-                return rows.next() && rows.getInt(1) == 1;
+                if (!rows.next() || rows.getInt(1)!=1) return false;
             }
+            if ("jwt".equals(System.getenv("AUTH_MODE"))) {
+                try (var schema=statement.executeQuery("SELECT id_sesion,id_usuario,refresh_hash,csrf_token,rol_inicial,credencial_hash,creada_en,ultima_actividad_en,vence_en,revocada_en FROM sesion_autenticacion WHERE 1=0")) {
+                    return schema.getMetaData().getColumnCount()==10;
+                }
+            }
+            return true;
+
         }
     }
 

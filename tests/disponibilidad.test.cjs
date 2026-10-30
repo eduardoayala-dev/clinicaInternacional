@@ -9,6 +9,7 @@ function setup(fetch, step = 1000) {
     let submitted = 0;
     let listener;
     let pageshow;
+    let reloads = 0;
     const element = () => ({textContent: '', attrs: {}, childNodes: [],
         setAttribute(name, value) { this.attrs[name] = value; },
         removeAttribute(name) { delete this.attrs[name]; },
@@ -33,13 +34,15 @@ function setup(fetch, step = 1000) {
     vm.runInNewContext(source, {
         document: {currentScript: {dataset: {readyUrl: '/health/ready'}},
             querySelectorAll: () => [form], createElement: (name) => name === 'p' ? message : element()},
-        window: {addEventListener(name, callback) { if (name === 'pageshow') pageshow = callback; }},
+        window: {location: {reload() { reloads++; }},
+            addEventListener(name, callback) { if (name === 'pageshow') pageshow = callback; }},
         fetch, AbortController,
         Date: {now: () => { now += step; return now; }},
         setTimeout(fn, ms) { if (ms === 3000) queueMicrotask(fn); return 1; },
         clearTimeout() {}
     });
-    return {button, message, form, pageshow: (persisted = true) => pageshow({persisted}), submitted: () => submitted,
+    return {button, message, form, reloads: () => reloads,
+        pageshow: (persisted = true) => pageshow({persisted}), submitted: () => submitted,
         submit: () => listener({submitter: button, preventDefault() {}})};
 }
 
@@ -59,11 +62,13 @@ test('waits for DB availability and sends exactly one normal login submission', 
     assert.equal(ui.button.disabled, true);
     ui.pageshow(false);
     assert.equal(ui.button.disabled, true);
+    assert.equal(ui.reloads(), 0);
     assert.equal(ui.button.childNodes[1].textContent, 'Iniciando sesión…');
     assert.match(ui.message.textContent, /Validando/);
     await ui.submit();
     assert.equal(ui.submitted(), 1);
     ui.pageshow();
+    assert.equal(ui.reloads(), 1);
     assert.equal(ui.button.disabled, false);
     assert.deepEqual(ui.button.childNodes, ['Ingresar']);
 });

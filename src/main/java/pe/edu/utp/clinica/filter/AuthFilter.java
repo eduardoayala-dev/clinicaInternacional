@@ -31,7 +31,7 @@ public class AuthFilter implements Filter {
         HttpServletResponse res = (HttpServletResponse) response;
         HttpSession session = req.getSession(false);
 
-        String uri = req.getRequestURI();
+        String uri = req.getServletPath();
         Usuario usuario = (session != null) ? (Usuario) session.getAttribute("usuarioLogueado") : null;
 
         if (usuario == null) {
@@ -42,22 +42,22 @@ public class AuthFilter implements Filter {
 
         String rol = usuario.getRol();
 
-        if (uri.contains("/paciente/") && !"PACIENTE".equals(rol)) {
+        if (uri.startsWith("/paciente/") && !"PACIENTE".equals(rol)) {
             redirigirSegunRol(res, req, rol);
             return;
         }
 
-        if (uri.contains("/medico/") && !"MEDICO".equals(rol)) {
+        if (uri.startsWith("/medico/") && !"MEDICO".equals(rol)) {
             redirigirSegunRol(res, req, rol);
             return;
         }
 
-        if (uri.contains("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
+        if (uri.startsWith("/sysadmin/") && !"ADMINISTRADOR".equals(rol)) {
             redirigirSegunRol(res, req, rol);
             return;
         }
 
-        if (uri.contains("/admin/") && !uri.contains("/sysadmin/") && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
+        if (uri.startsWith("/admin/") && !"PERSONAL_ADMINISTRATIVO".equals(rol)) {
             redirigirSegunRol(res, req, rol);
             return;
         }

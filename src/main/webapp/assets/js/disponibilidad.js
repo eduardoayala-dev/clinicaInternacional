@@ -76,6 +76,7 @@
             if (!event.persisted) return;
             restaurar();
             mensaje.textContent = '';
+            window.location.reload();
         });
         form.addEventListener('submit', async (event) => {
             if (autorizados.has(form)) {

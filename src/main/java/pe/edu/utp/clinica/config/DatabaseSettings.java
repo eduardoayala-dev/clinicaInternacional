@@ -24,8 +24,7 @@ final class DatabaseSettings {
         if (!Set.of("development", "test", "production").contains(appEnv)) {
             throw new IllegalArgumentException("APP_ENV debe ser development, test o production");
         }
-        production = "production".equals(appEnv) || env.containsKey("RAILWAY_ENVIRONMENT")
-                || env.containsKey("RAILWAY_ENVIRONMENT_NAME") || env.containsKey("RAILWAY_PROJECT_ID");
+        production = EntornoAplicacion.produccion(env);
         String mode = value("DB_MODE", "mysql").toLowerCase(Locale.ROOT);
         if (!"mysql".equals(mode)) throw new IllegalArgumentException("Solo se admite MySQL; DB_MODE debe ser mysql");
 

@@ -7,6 +7,28 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.*;
 
 class AuthFilterTest {
+    @Test void eachRoleCanAccessOnlyItsOwnPortal() throws Exception {
+        String[] roles = {"PACIENTE", "MEDICO", "PERSONAL_ADMINISTRATIVO", "ADMINISTRADOR"};
+        String[] portals = {"/paciente/dashboard", "/medico/agenda", "/admin/dashboard", "/sysadmin/dashboard"};
+        for (int role = 0; role < roles.length; role++) {
+            for (int portal = 0; portal < portals.length; portal++) {
+                var exchange = new HttpExchange();
+                exchange.path = portals[portal];
+                exchange.headers.put("Accept", "application/json");
+                exchange.session.setAttribute("usuarioLogueado",
+                        new Usuario(1, "Usuario", "Prueba", "u@example.test", "", roles[role], null, true));
+                var called = new AtomicBoolean();
+                new AuthFilter().doFilter(exchange.request, exchange.response,
+                        (request, response) -> called.set(true));
+                String scenario = roles[role] + " -> " + portals[portal];
+                assertEquals(role == portal, called.get(), scenario);
+                assertEquals(role == portal ? 200 : 403, exchange.status, scenario);
+                if (role != portal) assertTrue(exchange.body.toString().contains("ACCESO_DENEGADO"), scenario);
+                assertNull(exchange.redirect, scenario);
+            }
+        }
+    }
+
     @Test void jsonWithoutSessionIsForbiddenInsteadOfRedirectingToHtml() throws Exception {
         var x=new HttpExchange(); x.session=null; x.headers.put("Accept","application/json");
         new AuthFilter().doFilter(x.request,x.response,(request,response)->fail("No debe continuar"));

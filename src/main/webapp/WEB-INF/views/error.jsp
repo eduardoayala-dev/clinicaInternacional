@@ -1,4 +1,4 @@
-<%@ page contentType="text/html;charset=UTF-8" language="java" isErrorPage="true" %>
+<%@ page contentType="text/html;charset=UTF-8" language="java" isErrorPage="true" session="false" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
     // Obtener información del error
@@ -20,6 +20,14 @@
         title = "Acceso Denegado";
         description = "No tienes los privilegios necesarios para acceder a este módulo del sistema.";
         icon = "shield-alert";
+        if (Boolean.TRUE.equals(request.getAttribute("csrfRejected"))) {
+            title = "El formulario ya no está vigente";
+            description = "Tu sesión venció o cambió en otra pestaña. No se realizó la operación. Vuelve a abrir tu portal e inténtalo nuevamente.";
+        }
+    } else if (statusCode == 503) {
+        title = "Servicio temporalmente no disponible";
+        description = "No pudimos completar la comprobación del sistema. Espera unos segundos e inténtalo nuevamente.";
+        icon = "server-crash";
     } else if (statusCode == 500) {
         title = "Error del Sistema";
         description = "Ha ocurrido un error interno en el servidor. Nuestro equipo técnico ha sido notificado automáticamente.";

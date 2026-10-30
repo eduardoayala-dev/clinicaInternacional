@@ -53,6 +53,13 @@ public class LoginServlet extends HttpServlet {
 
         HttpSession session = request.getSession(true);
         CsrfToken.getOrCreate(session);
+        if ("acceso_temporal".equals(request.getParameter("error"))) {
+            request.setAttribute("errorMessage","Tu cuenta se creó. Inicia sesión para continuar.");
+        }
+        if ("sesion_formulario".equals(request.getParameter("error"))) {
+            request.setAttribute("errorMessage",
+                    "La sesión del formulario venció o cambió. Por seguridad, vuelve a ingresar tus datos.");
+        }
 
         if ("/login/personal".equals(path)) {
             request.setAttribute("tipoPortal", "PERSONAL");
@@ -70,7 +77,13 @@ public class LoginServlet extends HttpServlet {
 
         // El filtro valida CSRF también para login, registro y cierre de sesión.
         if ("/logout".equals(path)) {
-            if (session != null) session.invalidate();
+            try {
+                var gestor=pe.edu.utp.clinica.auth.GestorAutenticacion.obtener(request);
+                if (gestor!=null) gestor.cerrar(request,response);
+                else if (session!=null) session.invalidate();
+            } catch (java.sql.SQLException e) {
+                response.setHeader("Retry-After","3"); response.sendError(503); return;
+            }
             response.sendRedirect(request.getContextPath() + "/login?msg=sesion_cerrada");
             return;
         }
@@ -100,16 +113,11 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
-            if (session != null) {
-                session.invalidate();
+            try {
+                pe.edu.utp.clinica.auth.InicioSesion.iniciar(request,response,usuario);
+            } catch (java.sql.SQLException e) {
+                response.setHeader("Retry-After","3"); response.sendError(503); return;
             }
-            HttpSession newSession = request.getSession(true);
-            newSession.setAttribute("usuarioLogueado", usuario);
-            CsrfToken.getOrCreate(newSession);
-            newSession.setAttribute("usuarioId", usuario.getIdUsuario());
-            newSession.setAttribute("rol", usuario.getRol());
-            newSession.setAttribute("nombreUsuario", usuario.getNombreCompleto());
-            newSession.setMaxInactiveInterval(30 * 60);
 
             switch (usuario.getRol()) {
                 case "PACIENTE":
