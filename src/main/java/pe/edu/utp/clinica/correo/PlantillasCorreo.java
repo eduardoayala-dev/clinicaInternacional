@@ -6,7 +6,7 @@ public final class PlantillasCorreo {
     private PlantillasCorreo() {}
 
     public static Correo verificacion(String destinatario,String operacion,String codigo) {
-        if(codigo==null || !codigo.matches("[0-9]{6}"))throw new IllegalArgumentException("Código de verificación inválido.");
+        if(codigo==null || !codigo.matches("\\d{6}"))throw new IllegalArgumentException("Código de verificación inválido.");
         String texto="Tu código para "+operacion+" es: "+codigo
                 +"\n\nVence en 10 minutos y sólo puede utilizarse una vez. Tienes hasta 5 intentos."
                 +"\nIngresa el código en la ventana donde solicitaste el cambio. No compartas este código."

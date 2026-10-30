@@ -533,70 +533,64 @@ public class UsuarioDAO {
         }
     }
 
-    public boolean actualizarPerfilCompletoPaciente(int idUsuario, String nombres, String apellidos,
-                                                    String fechaNacimiento, String telefono, String direccion,
-                                                    String canalAviso, String sedePreferida, String alergias, String tipoCobertura) {
-        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ? WHERE id_usuario = ?";
-        Connection conn = null;
-        try {
-            conn = abrirConexion();
+    public boolean actualizarPerfilCompletoPaciente(pe.edu.utp.clinica.model.PerfilPaciente perfil) {
+        try (Connection conn=abrirConexion()) {
+            boolean autoCommit=conn.getAutoCommit();
             conn.setAutoCommit(false);
-            try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
-                stmtU.setString(1, nombres);
-                stmtU.setString(2, apellidos);
-                stmtU.setInt(3, idUsuario);
-                stmtU.executeUpdate();
+            try {
+                guardarPerfil(conn,perfil);
+                conn.commit();
+                return true;
+            } catch (SQLException | RuntimeException e) {
+                conn.rollback();
+                throw e;
+            } finally {
+                conn.setAutoCommit(autoCommit);
             }
-
-            // Actualizar paciente basico
-            boolean tieneFecha = (fechaNacimiento != null && !fechaNacimiento.trim().isEmpty());
-            String sqlPaciente = tieneFecha ?
-                "UPDATE paciente SET telefono = ?, direccion = ?, fecha_nacimiento = ? WHERE id_usuario = ?" :
-                "UPDATE paciente SET telefono = ?, direccion = ? WHERE id_usuario = ?";
-
-            try (PreparedStatement stmtP = conn.prepareStatement(sqlPaciente)) {
-                stmtP.setString(1, telefono);
-                stmtP.setString(2, direccion);
-                if (tieneFecha) {
-                    java.time.LocalDate ld;
-                    String f = fechaNacimiento.trim();
-                    if (f.contains("/")) {
-                        String[] partes = f.split("/");
-                        ld = java.time.LocalDate.of(Integer.parseInt(partes[2]), Integer.parseInt(partes[1]), Integer.parseInt(partes[0]));
-                    } else {
-                        ld = java.time.LocalDate.parse(f);
-                    }
-                    stmtP.setDate(3, java.sql.Date.valueOf(ld));
-                    stmtP.setInt(4, idUsuario);
-                } else {
-                    stmtP.setInt(3, idUsuario);
-                }
-                stmtP.executeUpdate();
-            }
-
-            String sqlExt = "UPDATE paciente SET canal_aviso = ?, sede_preferida = ?, alergias = ?, tipo_cobertura = ? WHERE id_usuario = ?";
-            try (PreparedStatement stmtExt = conn.prepareStatement(sqlExt)) {
-                stmtExt.setString(1, canalAviso != null ? canalAviso : "WhatsApp");
-                stmtExt.setString(2, sedePreferida != null ? sedePreferida : "Sede San Borja");
-                stmtExt.setString(3, alergias != null ? alergias : "");
-                stmtExt.setString(4, tipoCobertura != null ? tipoCobertura : "EPS");
-                stmtExt.setInt(5, idUsuario);
-                stmtExt.executeUpdate();
-            }
-
-            conn.commit();
-            return true;
-        } catch (Exception e) {
-            if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) {}
-            }
-            LOGGER.log(Level.SEVERE, "Error al actualizar perfil completo del paciente: " + e.getMessage(), e);
+        } catch (SQLException | RuntimeException e) {
+            LOGGER.log(Level.SEVERE,"Error al actualizar el perfil del paciente.",e);
             return false;
-        } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
-            }
         }
     }
-}
 
+    private void guardarPerfil(Connection conn,pe.edu.utp.clinica.model.PerfilPaciente perfil)throws SQLException {
+        try (var stmt=conn.prepareStatement("UPDATE usuario SET nombres=?,apellidos=? WHERE id_usuario=?")) {
+            stmt.setString(1,perfil.nombres());
+            stmt.setString(2,perfil.apellidos());
+            stmt.setInt(3,perfil.idUsuario());
+            stmt.executeUpdate();
+        }
+        java.sql.Date fecha=fechaPerfil(perfil.fechaNacimiento());
+        try (var stmt=conn.prepareStatement(fecha==null
+                ?"UPDATE paciente SET telefono=?,direccion=? WHERE id_usuario=?"
+                :"UPDATE paciente SET telefono=?,direccion=?,fecha_nacimiento=? WHERE id_usuario=?")) {
+            stmt.setString(1,perfil.telefono());
+            stmt.setString(2,perfil.direccion());
+            if(fecha==null) {
+                stmt.setInt(3,perfil.idUsuario());
+            } else {
+                stmt.setDate(3,fecha);
+                stmt.setInt(4,perfil.idUsuario());
+            }
+            stmt.executeUpdate();
+        }
+        try (var stmt=conn.prepareStatement("UPDATE paciente SET canal_aviso=?,sede_preferida=?,alergias=?,tipo_cobertura=? WHERE id_usuario=?")) {
+            stmt.setString(1,perfil.canalAviso()!=null?perfil.canalAviso():"WhatsApp");
+            stmt.setString(2,perfil.sedePreferida()!=null?perfil.sedePreferida():"Sede San Borja");
+            stmt.setString(3,perfil.alergias()!=null?perfil.alergias():"");
+            stmt.setString(4,perfil.tipoCobertura()!=null?perfil.tipoCobertura():"EPS");
+            stmt.setInt(5,perfil.idUsuario());
+            stmt.executeUpdate();
+        }
+    }
+
+    private static java.sql.Date fechaPerfil(String valor) {
+        if(valor==null || valor.isBlank())return null;
+        String fecha=valor.trim();
+        if(fecha.contains("/")) {
+            String[] partes=fecha.split("/");
+            return java.sql.Date.valueOf(java.time.LocalDate.of(Integer.parseInt(partes[2]),Integer.parseInt(partes[1]),Integer.parseInt(partes[0])));
+        }
+        return java.sql.Date.valueOf(java.time.LocalDate.parse(fecha));
+    }
+}

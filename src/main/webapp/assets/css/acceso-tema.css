@@ -33,7 +33,7 @@ body {
     color: var(--acceso-texto);
     background: white;
 }
-.marca-panel { width: min(38.889vw, 560px); flex-shrink: 0; min-height: 100dvh; padding: 56px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 44px; color: white; background: var(--acceso-paciente-fondo); }
+.marca-panel { view-transition-name: acceso-marca; font-size: 14px; width: min(38.889vw, 560px); flex-shrink: 0; min-height: 100dvh; padding: 56px; display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 44px; color: white; background: var(--acceso-paciente-fondo); }
 .marca-cabecera { display: flex; gap: 12px; align-items: center; }
 .marca-icono { width: 48px; height: 48px; border-radius: 12px; background: white; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .marca-icono img { display: block; }
@@ -60,7 +60,6 @@ body {
 
 .form-pane,.form-section,.formulario-panel { min-width: 0; }
 .form-inner-box,.form-inner,.contenido-seguridad { view-transition-name: acceso-formulario; }
-.marca-panel { view-transition-name: acceso-marca; font-size: 14px; }
 .form-pane { flex: 1; padding: 48px 32px; }
 .login-container:not(.is-registering) .form-inner-box { max-width: 400px; }
 .auth-title,.form-header h2 { font: 400 32px/1.35 'DM Serif Display', Georgia, serif; color: var(--acceso-texto); letter-spacing: normal; }
