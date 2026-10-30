@@ -78,6 +78,7 @@ public class LoginServlet extends HttpServlet {
 
         // El filtro valida CSRF también para login, registro y cierre de sesión.
         if ("/logout".equals(path)) {
+            String login=pe.edu.utp.clinica.util.PortalAcceso.login(request);
             try {
                 var gestor=pe.edu.utp.clinica.auth.GestorAutenticacion.obtener(request);
                 if (gestor!=null) gestor.cerrar(request,response);
@@ -85,7 +86,7 @@ public class LoginServlet extends HttpServlet {
             } catch (java.sql.SQLException e) {
                 response.setHeader("Retry-After","3"); pe.edu.utp.clinica.util.TransporteHttp.error(response,503); return;
             }
-            response.sendRedirect(request.getContextPath() + "/login?msg=sesion_cerrada");
+            response.sendRedirect(request.getContextPath() + login + "?msg=sesion_cerrada");
             return;
         }
 

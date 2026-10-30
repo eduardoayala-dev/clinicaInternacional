@@ -184,7 +184,7 @@
             </div>
             <div class="user-avatar"><i data-lucide="user" style="width: 18px; height: 18px;"></i></div>
             <div style="width: 1px; height: 24px; background: var(--border-light); margin: 0 4px;"></div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+            <form method="POST" action="${pageContext.request.contextPath}/logout?portal=personal" style="margin:0;display:inline;">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 <button type="submit" class="btn-logout" style="border:0;cursor:pointer;font-family:inherit;"><i data-lucide="log-out" style="width: 16px; height: 16px;"></i> Salir</button>
 </form>

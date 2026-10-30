@@ -39,6 +39,9 @@
                 if (!data || typeof data.sid !== 'string' || typeof data.portal !== 'string') throw new Error('invalid');
                 const portal = new URL(data.portal, window.location.origin);
                 if (portal.origin !== window.location.origin) throw new Error('invalid');
+                if (result.code === 'SESION_ANONIMA' && document.querySelector('meta[name="login-portal"]')?.content === 'personal') {
+                    portal.pathname += '/personal';
+                }
                 if (data.sid !== context) {
                     blocked = true;
                     if (result.code === 'SESION_ANONIMA' || (context === 'anonymous' && result.code === 'SESION_ACTIVA')) {

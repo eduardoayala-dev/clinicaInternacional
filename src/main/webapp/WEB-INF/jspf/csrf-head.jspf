@@ -1,4 +1,5 @@
 <meta name="csrf-token" content="${sessionScope.csrfToken}">
+<meta name="login-portal" content="${sessionScope.rol == 'MEDICO' or sessionScope.rol == 'PERSONAL_ADMINISTRATIVO' or sessionScope.rol == 'ADMINISTRADOR' or requestScope.tipoPortal == 'PERSONAL' ? 'personal' : 'paciente'}">
 <% if (application.getAttribute("pe.edu.utp.clinica.auth.GestorAutenticacion") != null) { %>
 <meta name="auth-context" content="${empty sessionScope.authSid ? 'anonymous' : sessionScope.authSid}">
 <script defer src="${pageContext.request.contextPath}/assets/js/sesion.js" data-state-url="${pageContext.request.contextPath}/auth/estado"></script>

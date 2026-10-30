@@ -62,4 +62,24 @@ class SesionSeguraTest {
         new CsrfFilter().doFilter(x.request,x.response,(req,res) -> servlet.doPost(x.request,x.response));
         assertNull(x.session); assertEquals("/login?msg=sesion_cerrada",x.redirect);
     }
+    @Test void logoutConservaElPortalDeCadaRolAntesDeInvalidarLaSesion() throws Exception {
+        for (String rol : new String[]{"PACIENTE","MEDICO","PERSONAL_ADMINISTRATIVO","ADMINISTRADOR"}) {
+            var x=new HttpExchange();x.path="/logout";
+            x.session.setAttribute("usuarioLogueado",new Usuario(10,"Prueba","Local","demo@example.test","",rol,null,true));
+            x.parameters.put("portal","personal");
+            x.parameters.put("csrfToken",CsrfToken.getOrCreate(x.session));
+            new CsrfFilter().doFilter(x.request,x.response,(req,res)->new LoginServlet().doPost(x.request,x.response));
+            assertNull(x.session);
+            assertEquals(("PACIENTE".equals(rol)?"/login/paciente":"/login/personal")+"?msg=sesion_cerrada",x.redirect);
+        }
+    }
+    @Test void logoutSinSesionSoloAdmiteElDestinoPersonalConocido() throws Exception {
+        for (String portal : new String[]{"personal","https://otro.example/","//otro.example/"}) {
+            var x=new HttpExchange();x.path="/logout";
+            x.parameters.put("portal",portal);
+            x.parameters.put("csrfToken",CsrfToken.getOrCreate(x.session));
+            new CsrfFilter().doFilter(x.request,x.response,(req,res)->new LoginServlet().doPost(x.request,x.response));
+            assertEquals(("personal".equals(portal)?"/login/personal":"/login")+"?msg=sesion_cerrada",x.redirect);
+        }
+    }
 }
