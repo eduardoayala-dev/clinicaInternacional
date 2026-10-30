@@ -21,7 +21,7 @@ abstract class AgendaCitaContrato {
     protected AgendaCitaDAO dao;
     protected final Clock clock = Clock.fixed(Instant.parse("2026-10-27T15:10:00Z"), ZoneId.of("America/Lima"));
     protected abstract void configurar();
-    protected Connection abrir() throws SQLException { return DriverManager.getConnection(url, user, password); }
+    protected Connection abrir() throws SQLException { return url.startsWith("jdbc:mysql:") ? MySqlPruebas.abrir() : DriverManager.getConnection(url, user, password); }
 
     @BeforeEach void preparar() throws Exception {
         configurar();
@@ -29,7 +29,7 @@ abstract class AgendaCitaContrato {
             String catalogo = conn.getCatalog();
             if (url.startsWith("jdbc:mysql:")) assertTrue(catalogo.startsWith("clinica_agendas_test_"));
         }
-        for (String table : List.of("reasignacion_inteligente", "lista_espera", "notificacion", "cita", "disponibilidad", "motivo_cita", "medico", "paciente", "usuario", "especialidad", "sede")) sql("DROP TABLE IF EXISTS " + table);
+        try (var conn=abrir()) { EsquemaPruebas.limpiar(conn); }
         sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR(100),apellidos VARCHAR(100),rol VARCHAR(30),activo BOOLEAN)");
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");

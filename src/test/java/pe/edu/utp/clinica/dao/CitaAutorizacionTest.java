@@ -26,22 +26,7 @@ class CitaAutorizacionTest {
             @Override protected java.time.Clock relojClinico() { return reloj(); }
         };
         try (Connection conn = abrir(); Statement st = conn.createStatement()) {
-            st.execute("DROP TABLE IF EXISTS seguimiento_cita");
-            st.execute("DROP TABLE IF EXISTS consulta_clinica");
-            st.execute("DROP TABLE IF EXISTS atencion_cita");
-            st.execute("DROP TABLE IF EXISTS inasistencia_cita");
-            st.execute("DROP TABLE IF EXISTS reasignacion_inteligente");
-            st.execute("DROP TABLE IF EXISTS historial_asistencia");
-            st.execute("DROP TABLE IF EXISTS admision_cita");
-            st.execute("DROP TABLE IF EXISTS personal_administrativo");
-            st.execute("DROP TABLE IF EXISTS cita");
-            st.execute("DROP TABLE IF EXISTS motivo_cita");
-            st.execute("DROP TABLE IF EXISTS disponibilidad");
-            st.execute("DROP TABLE IF EXISTS medico");
-            st.execute("DROP TABLE IF EXISTS paciente");
-            st.execute("DROP TABLE IF EXISTS sede");
-            st.execute("DROP TABLE IF EXISTS especialidad");
-            st.execute("DROP TABLE IF EXISTS usuario");
+            EsquemaPruebas.limpiar(conn);
             st.execute("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR(100),apellidos VARCHAR(100),email VARCHAR(150),activo BOOLEAN DEFAULT TRUE,rol VARCHAR(30) DEFAULT 'PACIENTE')");
             st.execute("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT,dni VARCHAR(15),telefono VARCHAR(20),fecha_nacimiento DATE,direccion VARCHAR(255),alergias VARCHAR(100),tipo_cobertura VARCHAR(50),canal_aviso VARCHAR(20),FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario))");
             st.execute("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,nombre VARCHAR(100),estado VARCHAR(20) DEFAULT 'ACTIVO')");
