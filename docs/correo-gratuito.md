@@ -1,9 +1,11 @@
 # Correo gratuito con Gmail API
 
 La cuenta Gmail dedicada al proyecto envía mediante Google con OAuth2 y HTTPS.
-No requiere dominio propio ni contraseña SMTP. El conector y la herramienta de
-autorización están preparados; todavía no hay autorización real, mensajes enviados,
-formulario de recuperación ni confirmaciones conectadas. Railway no se cambió.
+No requiere dominio propio ni contraseña SMTP. El buzón local fue autorizado y
+el usuario confirmó recepción de cuatro mensajes de prueba. La recuperación está
+preparada junto a los cambios de contraseña y correo por códigos para prueba
+manual según `recuperacion-contrasena.md`. Las confirmaciones de citas y la
+verificación de correo durante el registro siguen pendientes. Railway no se cambió.
 
 ## Configuración por el propietario
 
@@ -57,32 +59,33 @@ como aprobada. Cambios de contraseña o revocación también pueden invalidar to
 | GMAIL_CLIENT_ID | Cliente OAuth |
 | GMAIL_CLIENT_SECRET | Secreto del cliente |
 | GMAIL_REFRESH_TOKEN | Autorización renovable del buzón |
+| ACCOUNT_VERIFICATION_KEY | Clave privada HMAC de los códigos de cuenta |
+| RECOVERY_ENABLED | Activa los recorridos de verificación |
 
 `compose.mail.yml` inyecta estas variables al servicio app. Añadir
 `--env-file .env.mail -f compose.mail.yml` a los archivos Compose actuales,
 conservando proyecto, JWT, DNI y los volúmenes. En Railway se configuran en Java,
 nunca en MySQL. Añadir variables no conecta por sí solo los formularios pendientes.
 
-El adaptador renueva y comparte accesos entre hilos. Envía MIME UTF-8 en texto;
-las futuras plantillas HTML conservarán una alternativa de texto y escape de datos.
+El adaptador renueva y comparte accesos entre hilos. Las verificaciones y el aviso
+de cambio de correo usan MIME UTF-8 multipart/alternative: una plantilla HTML con
+estilos integrados y una alternativa de texto. Los datos variables se escapan;
+la plantilla no carga imágenes ni recursos externos.
 Las credenciales se envían sólo a endpoints fijos de Google, sin redirecciones.
 El ID significa aceptación por Google, no entrega al destinatario. Una desconexión
 de resultado incierto no dispara reenvío automático. El OAuth del buzón es
 independiente del JWT de los usuarios.
 
-## Siguientes entregas
+## Flujos de seguridad y próximos pasos
 
-- Recuperación: tokens aleatorios de un solo uso, hash, caducidad, límites
-  persistentes, respuesta genérica y revocación de sesiones al cambiar contraseña.
-- Verificación y cambio de correo: contraseña actual, verificar nuevo correo y
-  avisar al anterior; cerrar también los cambios directos desde perfiles.
-- Confirmaciones: cola durable después del commit de la reserva, deduplicación,
-  prioridad para correos de seguridad y pruebas de entrega real.
+Los tres recorridos con códigos están preparados para prueba manual: recuperación,
+cambio de contraseña y cambio de correo con comprobación de ambas direcciones.
+Consultar `recuperacion-contrasena.md`. La clave adicional se genera una vez con
+`./scripts/Preparar-Verificacion.ps1` y se conserva fuera de Git.
 
-Estos flujos necesitan migraciones, vistas y pruebas propias; aún no están
-implementados por el conector. Recordatorios programados requieren resolver la
-ejecución con Railway dormido. Se conservan los avisos dentro del portal. SMS y
-WhatsApp automáticos no se habilitan en esta entrega gratuita.
+Siguen pendientes verificación de correo durante el registro y confirmaciones de
+citas mediante cola durable. Los recordatorios requieren resolver la ejecución
+cuando Railway duerme. SMS y WhatsApp automáticos no se habilitan aquí.
 
 ## Fuentes oficiales (30 de octubre de 2026)
 

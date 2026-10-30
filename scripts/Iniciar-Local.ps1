@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch]$Jwt)
+param([switch]$Jwt,[switch]$Correo)
 
 $ErrorActionPreference = 'Stop'
 $proyecto = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -16,8 +16,14 @@ try {
         if (-not (Test-Path -LiteralPath '.env.auth' -PathType Leaf)) { throw 'Falta .env.auth con AUTH_JWT_KEY.' }
         $opciones += @('--env-file', '.env.auth')
     }
+    if ($Correo) {
+        if (-not $Jwt) { throw 'La recuperación requiere iniciar con -Jwt -Correo.' }
+        if (-not (Test-Path -LiteralPath '.env.mail' -PathType Leaf)) { throw 'Falta .env.mail.' }
+        $opciones += @('--env-file', '.env.mail')
+    }
     $opciones += @('-f', 'docker-compose.yml', '-f', 'compose.dni.yml')
     if ($Jwt) { $opciones += @('-f', 'compose.auth.yml') }
+    if ($Correo) { $opciones += @('-f', 'compose.mail.yml') }
     & docker @opciones up -d --build app
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo iniciar el entorno local. Revisa Docker y la configuración privada.' }
     Write-Host 'Entorno local completo: http://localhost:8080/login/paciente'

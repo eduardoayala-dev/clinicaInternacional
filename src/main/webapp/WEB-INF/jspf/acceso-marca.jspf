@@ -1,0 +1,31 @@
+<%@ page pageEncoding="UTF-8" %>
+    <aside class="marca-panel" aria-label="Clínica Internacional">
+        <div class="marca-cabecera">
+            <div class="marca-icono"><img src="${pageContext.request.contextPath}/assets/images/seguridad/logo.svg" alt=""></div>
+            <div><p class="marca-titulo">${portalPersonal ? 'CLÍNICA INTERNACIONAL' : 'Clínica Internacional'}</p><p class="marca-subtitulo">${portalPersonal ? 'SISTEMA INSTITUCIONAL' : 'Portal del paciente'}</p></div>
+        </div>
+        <div class="marca-mensaje">
+            <c:choose>
+                <c:when test="${portalPersonal}">
+                    <h2>Sistema Interno de<br>Gestión y Control.</h2>
+                    <p class="marca-descripcion">Módulo unificado para médicos especialistas, personal administrativo y admisión para la gestión de agendas y el control operativo.</p>
+                    <div class="marca-funciones">
+                        <div class="funcion"><span class="funcion-icono"><img src="${pageContext.request.contextPath}/assets/images/seguridad/agenda.svg" alt=""></span><div><h3>Agenda Médica</h3><p>Programación y gestión de las agendas de los especialistas.</p></div></div>
+                        <div class="funcion"><span class="funcion-icono"><img src="${pageContext.request.contextPath}/assets/images/seguridad/reasignacion.svg" alt=""></span><div><h3>Reasignación de Cupos</h3><p>Control automatizado de citas canceladas y lista de espera.</p></div></div>
+                        <div class="funcion"><span class="funcion-icono"><img src="${pageContext.request.contextPath}/assets/images/seguridad/pacientes.svg" alt=""></span><div><h3>Admisión &amp; Pacientes</h3><p>Registro y validación de identidad para el ingreso a consultorio.</p></div></div>
+                        <div class="funcion"><span class="funcion-icono"><img src="${pageContext.request.contextPath}/assets/images/seguridad/seguridad.svg" alt=""></span><div><h3>Auditoría de Seguridad</h3><p>Trazabilidad de los cambios y control de acceso por rol.</p></div></div>
+                    </div>
+                </c:when>
+                <c:otherwise>
+                    <h2>Tu salud, gestionada<br>con precisión</h2>
+                    <p class="marca-descripcion">Reserva, reprograma o cancela tus citas, y recibe la oferta de un cupo liberado si estás en la lista de espera.</p>
+                    <ul class="marca-ventajas">
+                        <li><img src="${pageContext.request.contextPath}/assets/images/seguridad/punto.svg" alt="">Reserva y reprograma tus citas</li>
+                        <li><img src="${pageContext.request.contextPath}/assets/images/seguridad/punto.svg" alt="">Lista de espera y oferta de cupos</li>
+                        <li><img src="${pageContext.request.contextPath}/assets/images/seguridad/punto.svg" alt="">Verificaciones por correo electrónico</li>
+                    </ul>
+                </c:otherwise>
+            </c:choose>
+        </div>
+        <p class="marca-pie">${portalPersonal ? 'Acceso restringido a personal autorizado' : 'Acceso exclusivo para pacientes'}</p>
+    </aside>

@@ -1,0 +1,8 @@
+[data-acceso-login][hidden],.acceso-recuperacion[hidden] { display: none !important; }
+.acceso-recuperacion { width: 100%; }
+.acceso-recuperacion .contenido-seguridad { width: 100%; view-transition-name: none; }
+.acceso-recuperacion .contenido-seguridad h1 { font-weight: 400; }
+.acceso-recuperacion[aria-busy='true'] a { cursor: wait; opacity: .65; }
+.acceso-recuperacion .recuperacion-fallo { margin-bottom: 20px; color: var(--acceso-texto); line-height: 1.5; }
+.acceso-recuperacion .recuperacion-fallo button { margin-top: 16px; }
+[data-abrir-recuperacion][aria-busy='true']::after { content: ' · Cargando…'; }

@@ -1,0 +1,5 @@
+* { box-sizing: border-box; }
+body { margin: 0; font: 14px 'Inter', sans-serif; color: var(--seg-texto); background: white; }
+.seguridad-layout { display: flex; min-height: 100dvh; }
+.formulario-panel { flex: 1; display: flex; align-items: center; justify-content: center; padding: 48px 32px; min-width: 0; }
+@media(max-width:760px) { .seguridad-layout { flex-direction: column; } .formulario-panel { padding: 40px 24px; align-items: flex-start; } }

@@ -234,7 +234,8 @@
                                 </div>
                                 <div class="form-group-item">
                                     <label for="emailInput">Correo electrónico principal *</label>
-                                    <input type="email" id="emailInput" name="email" value="<%= emailVal %>" required class="perfil-input">
+                                    <input type="email" id="emailInput" name="email" value="<%= pe.edu.utp.clinica.util.Html.texto(emailVal) %>" readonly class="perfil-input readonly-input">
+                                    <a href="${pageContext.request.contextPath}/cuenta/seguridad">Cambiar correo o contraseña con verificación</a>
                                 </div>
                             </div>
 

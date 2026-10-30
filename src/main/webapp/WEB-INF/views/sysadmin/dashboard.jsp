@@ -157,6 +157,7 @@
                 <i data-lucide="trending-up"></i>
                 <span>Indicadores y analítica</span>
             </a>
+            <a href="${pageContext.request.contextPath}/cuenta/seguridad" class="nav-link"><i data-lucide="shield-check"></i><span>Seguridad de cuenta</span></a>
         </nav>
 
         <div class="sidebar-footer">

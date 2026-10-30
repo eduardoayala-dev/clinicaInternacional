@@ -68,7 +68,7 @@ class UsuarioEsquemaTest {
         try (Connection conn=DriverManager.getConnection(url,"sa",""); var st=conn.createStatement()) {
             st.execute("ALTER TABLE paciente DROP COLUMN alergias");
         }
-        assertFalse(dao.actualizarPerfilCompletoPaciente(u.getIdUsuario(),"Cambio","Paciente","nuevo@test.local",
+        assertFalse(dao.actualizarPerfilCompletoPaciente(u.getIdUsuario(),"Cambio","Paciente",
                 "2000-01-01","888888888","Nueva dirección","Correo","Central","Ninguna","EPS"));
         try (Connection conn=DriverManager.getConnection(url,"sa",""); var st=conn.createStatement(); var rs=st.executeQuery("SELECT nombres,email FROM usuario")) {
             assertTrue(rs.next()); assertEquals("Prueba",rs.getString(1)); assertEquals("prueba@test.local",rs.getString(2));

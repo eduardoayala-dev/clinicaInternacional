@@ -277,7 +277,7 @@ public class UsuarioDAO {
     }
 
     public boolean actualizarPersonal(Usuario u, String cmp, Integer idEspecialidad, Integer idSede, String cargo) {
-        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ?, email = ? WHERE id_usuario = ?";
+        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ? WHERE id_usuario = ?";
         String sqlMedico = "UPDATE medico SET cmp = ?, id_especialidad = ?, id_sede = ? WHERE id_usuario = ?";
         String sqlPersonal = "UPDATE personal_administrativo SET id_sede = ?, cargo = ? WHERE id_usuario = ?";
 
@@ -289,8 +289,7 @@ public class UsuarioDAO {
             try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
                 stmtU.setString(1, u.getNombres());
                 stmtU.setString(2, u.getApellidos());
-                stmtU.setString(3, u.getEmail());
-                stmtU.setInt(4, u.getIdUsuario());
+                stmtU.setInt(3, u.getIdUsuario());
                 stmtU.executeUpdate();
             }
 
@@ -534,43 +533,10 @@ public class UsuarioDAO {
         }
     }
 
-    public boolean actualizarContactoPaciente(int idUsuario, String email, String telefono, String direccion) {
-        String sqlUsuario = "UPDATE usuario SET email = ? WHERE id_usuario = ?";
-        String sqlPaciente = "UPDATE paciente SET telefono = ?, direccion = ? WHERE id_usuario = ?";
-        Connection conn = null;
-        try {
-            conn = abrirConexion();
-            conn.setAutoCommit(false);
-            try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
-                stmtU.setString(1, email);
-                stmtU.setInt(2, idUsuario);
-                stmtU.executeUpdate();
-            }
-            try (PreparedStatement stmtP = conn.prepareStatement(sqlPaciente)) {
-                stmtP.setString(1, telefono);
-                stmtP.setString(2, direccion);
-                stmtP.setInt(3, idUsuario);
-                stmtP.executeUpdate();
-            }
-            conn.commit();
-            return true;
-        } catch (SQLException e) {
-            if (conn != null) {
-                try { conn.rollback(); } catch (SQLException ex) {}
-            }
-            LOGGER.log(Level.SEVERE, "Error al actualizar contacto del paciente: " + e.getMessage(), e);
-            return false;
-        } finally {
-            if (conn != null) {
-                try { conn.setAutoCommit(true); conn.close(); } catch (SQLException e) {}
-            }
-        }
-    }
-
-    public boolean actualizarPerfilCompletoPaciente(int idUsuario, String nombres, String apellidos, String email,
+    public boolean actualizarPerfilCompletoPaciente(int idUsuario, String nombres, String apellidos,
                                                     String fechaNacimiento, String telefono, String direccion,
                                                     String canalAviso, String sedePreferida, String alergias, String tipoCobertura) {
-        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ?, email = ? WHERE id_usuario = ?";
+        String sqlUsuario = "UPDATE usuario SET nombres = ?, apellidos = ? WHERE id_usuario = ?";
         Connection conn = null;
         try {
             conn = abrirConexion();
@@ -578,8 +544,7 @@ public class UsuarioDAO {
             try (PreparedStatement stmtU = conn.prepareStatement(sqlUsuario)) {
                 stmtU.setString(1, nombres);
                 stmtU.setString(2, apellidos);
-                stmtU.setString(3, email);
-                stmtU.setInt(4, idUsuario);
+                stmtU.setInt(3, idUsuario);
                 stmtU.executeUpdate();
             }
 

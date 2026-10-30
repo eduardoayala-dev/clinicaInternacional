@@ -509,6 +509,7 @@
 
         function abrirModal() {
             document.getElementById('formUsuario').reset();
+            document.getElementById('inputEmail').readOnly = false;
             document.getElementById('modalTitle').innerText = 'Registrar Nuevo Personal';
             document.getElementById('formAction').value = 'registrar';
             document.getElementById('formIdUsuario').value = '';
@@ -530,6 +531,7 @@
             document.getElementById('inputNombres').value = tr.dataset.nombres;
             document.getElementById('inputApellidos').value = tr.dataset.apellidos;
             document.getElementById('inputEmail').value = tr.dataset.email;
+            document.getElementById('inputEmail').readOnly = true;
             
             const rol = tr.dataset.rol;
             document.getElementById('rolSelect').value = rol;

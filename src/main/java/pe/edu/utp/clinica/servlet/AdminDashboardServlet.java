@@ -429,7 +429,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 String apellidos = request.getParameter("apellidos");
                 String dni = request.getParameter("dni");
                 String telefono = request.getParameter("telefono");
-                String email = request.getParameter("email");
                 String direccion = request.getParameter("direccion");
                 String sedePreferida = request.getParameter("sede_preferida");
                 String cobertura = request.getParameter("cobertura");
@@ -446,12 +445,11 @@ public class AdminDashboardServlet extends HttpServlet {
                         psP.setInt(6, idPaciente);
                         psP.executeUpdate();
                     }
-                    String sqlU = "UPDATE usuario u JOIN paciente p ON u.id_usuario = p.id_usuario SET u.nombres = ?, u.apellidos = ?, u.email = ? WHERE p.id_paciente = ?";
+                    String sqlU = "UPDATE usuario u JOIN paciente p ON u.id_usuario = p.id_usuario SET u.nombres = ?, u.apellidos = ? WHERE p.id_paciente = ?";
                     try (PreparedStatement psU = conn.prepareStatement(sqlU)) {
                         psU.setString(1, nombres);
                         psU.setString(2, apellidos);
-                        psU.setString(3, email);
-                        psU.setInt(4, idPaciente);
+                        psU.setInt(3, idPaciente);
                         psU.executeUpdate();
                     }
                 }

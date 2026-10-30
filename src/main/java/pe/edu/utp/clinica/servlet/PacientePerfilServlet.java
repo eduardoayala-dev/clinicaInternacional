@@ -97,7 +97,8 @@ public class PacientePerfilServlet extends HttpServlet {
 
         String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
         String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));
-        String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
+        String email = request.getParameter("email");
+        if (email != null) email = email.trim();
         String fechaNacimiento = SecurityUtil.sanitizeInput(request.getParameter("fechaNacimiento"));
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
@@ -110,11 +111,16 @@ public class PacientePerfilServlet extends HttpServlet {
         if (apellidos == null || apellidos.trim().isEmpty()) apellidos = usuario.getApellidos();
         if (email == null || email.trim().isEmpty()) email = usuario.getEmail();
 
+        if (!usuario.getEmail().equalsIgnoreCase(email)) {
+            session.setAttribute("mensajeError", "Utiliza Seguridad de cuenta para verificar el cambio de correo.");
+            response.sendRedirect(request.getContextPath() + "/paciente/perfil");
+            return;
+        }
+
         boolean exito = usuarioDAO.actualizarPerfilCompletoPaciente(
             usuario.getIdUsuario(),
             nombres,
             apellidos,
-            email,
             fechaNacimiento,
             telefono,
             direccion,
@@ -127,7 +133,6 @@ public class PacientePerfilServlet extends HttpServlet {
         if (exito) {
             usuario.setNombres(nombres);
             usuario.setApellidos(apellidos);
-            usuario.setEmail(email);
             session.setAttribute("usuarioLogueado", usuario);
             session.setAttribute("mensajeExito", "Los cambios en tu perfil fueron guardados correctamente.");
         } else {
