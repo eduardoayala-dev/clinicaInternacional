@@ -25,29 +25,37 @@ class JwtAccesoTest {
     }
     @Test void expiredAccessCannotAuthenticate() {
         String token=jwt(now).emitir(42,sid,"PACIENTE");
-        assertThrows(ExpiredJwtException.class,()->jwt(Clock.offset(now,Duration.ofSeconds(301))).verificar(token));
+        var expired=jwt(Clock.offset(now,Duration.ofSeconds(301)));
+        assertThrows(ExpiredJwtException.class,()->expired.verificar(token));
     }
     @Test void rejectsTamperingWrongKeyIssuerAudienceAndUnsignedTokens() {
         String token=jwt(now).emitir(42,sid,"MEDICO");
         byte[] other=new byte[32]; Arrays.fill(other,(byte)1);
-        assertThrows(JwtException.class,()->new JwtAcceso(Base64.getEncoder().encodeToString(other),"clinica","web",now).verificar(token));
-        assertThrows(JwtException.class,()->new JwtAcceso(key,"otro","web",now).verificar(token));
-        assertThrows(JwtException.class,()->new JwtAcceso(key,"clinica","otra",now).verificar(token));
-        assertThrows(JwtException.class,()->jwt(now).verificar(token.substring(0,token.lastIndexOf('.')+1)));
-        assertThrows(JwtException.class,()->jwt(now).verificar("eyJhbGciOiJub25lIn0.e30."));
+        var wrongKey=new JwtAcceso(Base64.getEncoder().encodeToString(other),"clinica","web",now);
+        var wrongIssuer=new JwtAcceso(key,"otro","web",now);
+        var wrongAudience=new JwtAcceso(key,"clinica","otra",now);
+        var validator=jwt(now);
+        String truncated=token.substring(0,token.lastIndexOf('.')+1);
+        assertThrows(JwtException.class,()->wrongKey.verificar(token));
+        assertThrows(JwtException.class,()->wrongIssuer.verificar(token));
+        assertThrows(JwtException.class,()->wrongAudience.verificar(token));
+        assertThrows(JwtException.class,()->validator.verificar(truncated));
+        assertThrows(JwtException.class,()->validator.verificar("eyJhbGciOiJub25lIn0.e30."));
     }
     @Test void rejectsMissingClaimsAndDifferentAlgorithms() {
         var key512=new SecretKeySpec(new byte[64],"HmacSHA512");
         String wrong=Jwts.builder().subject("42").signWith(key512,Jwts.SIG.HS512).compact();
-        assertThrows(JwtException.class,()->jwt(now).verificar(wrong));
+        var validator=jwt(now);
+        assertThrows(JwtException.class,()->validator.verificar(wrong));
         var signing=new SecretKeySpec(new byte[32],"HmacSHA256");
         String missing=Jwts.builder().issuer("clinica").audience().add("web").and().subject("42").signWith(signing,Jwts.SIG.HS256).compact();
-        assertThrows(JwtException.class,()->jwt(now).verificar(missing));
+        assertThrows(JwtException.class,()->validator.verificar(missing));
     }
     @Test void rejectsWeakConfigurationAndFutureTokens() {
         assertThrows(IllegalArgumentException.class,()->new JwtAcceso("short","clinica","web",now));
         assertThrows(IllegalArgumentException.class,()->new JwtAcceso(key,"","web",now));
         String token=jwt(Clock.offset(now,Duration.ofMinutes(1))).emitir(42,sid,"MEDICO");
-        assertThrows(JwtException.class,()->jwt(now).verificar(token));
+        var validator=jwt(now);
+        assertThrows(JwtException.class,()->validator.verificar(token));
     }
 }

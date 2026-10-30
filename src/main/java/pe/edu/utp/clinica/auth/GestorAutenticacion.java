@@ -12,7 +12,9 @@ import java.time.Duration;
 import java.util.UUID;
 
 public final class GestorAutenticacion {
-    public static final String CONTEXTO=GestorAutenticacion.class.getName(), SESION=CONTEXTO+".sesion";
+    public static final String CONTEXTO=GestorAutenticacion.class.getName();
+    public static final String SESION=CONTEXTO+".sesion";
+    private static final String AUTH_SID="authSid";
     private final JwtAcceso jwt;
     private final AlmacenSesiones almacen;
     private final Clock clock;
@@ -25,7 +27,9 @@ public final class GestorAutenticacion {
         return context==null?null:(GestorAutenticacion)context.getAttribute(CONTEXTO);
     }
     public void iniciar(HttpServletRequest request,HttpServletResponse response,Usuario usuario) throws SQLException {
-        String refresh=SecretosSesion.nuevo(), sid=UUID.randomUUID().toString(), csrf=SecretosSesion.nuevo();
+        String refresh=SecretosSesion.nuevo();
+        String sid=UUID.randomUUID().toString();
+        String csrf=SecretosSesion.nuevo();
         var now=clock.instant();
         var sesion=new SesionAutenticada(sid,usuario,csrf,now.plusSeconds(28800));
         almacen.crear(sid,usuario,SecretosSesion.hash(refresh),csrf,now,sesion.vence());
@@ -47,8 +51,7 @@ public final class GestorAutenticacion {
         SesionAutenticada sesion;
         if (identidad!=null) {
             sesion=almacen.resolver(identidad.sesion(),null,clock.instant(),actividad);
-            if (sesion!=null && (identidad.usuario()!=sesion.usuario().getIdUsuario()
-                    || !identidad.rol().equals(sesion.usuario().getRol()))) sesion=null;
+            if (!coincide(identidad,sesion)) sesion=null;
         } else if (refresh!=null && refresh.matches("[A-Za-z0-9_-]{43}")) {
             sesion=almacen.resolver(null,SecretosSesion.hash(refresh),clock.instant(),actividad);
             if (sesion!=null) emitir(request,response,sesion);
@@ -57,6 +60,10 @@ public final class GestorAutenticacion {
         proyectar(request,sesion,false);
         return sesion;
     }
+    private static boolean coincide(JwtAcceso.Identidad identidad,SesionAutenticada sesion) {
+        return sesion!=null && identidad.usuario()==sesion.usuario().getIdUsuario()
+                && identidad.rol().equals(sesion.usuario().getRol());
+    }
     private void emitir(HttpServletRequest request,HttpServletResponse response,SesionAutenticada sesion) {
         int segundos=(int)Math.min(JwtAcceso.DURACION_SEGUNDOS,Duration.between(clock.instant(),sesion.vence()).toSeconds());
         CookiesAutenticacion.escribir(request,response,CookiesAutenticacion.ACCESO,
@@ -64,7 +71,7 @@ public final class GestorAutenticacion {
     }
     private void proyectar(HttpServletRequest request,SesionAutenticada sesion,boolean nueva) {
         var http=request.getSession(false);
-        if (http!=null && (nueva || !sesion.id().equals(http.getAttribute("authSid")))) {
+        if (http!=null && (nueva || !sesion.id().equals(http.getAttribute(AUTH_SID)))) {
             http.invalidate(); http=null;
         }
         if (http==null) http=request.getSession(true);
@@ -72,7 +79,7 @@ public final class GestorAutenticacion {
         http.setAttribute("usuarioId",sesion.usuario().getIdUsuario());
         http.setAttribute("nombreUsuario",sesion.usuario().getNombreCompleto());
         http.setAttribute("rol",sesion.usuario().getRol());
-        http.setAttribute("authSid",sesion.id());
+        http.setAttribute(AUTH_SID,sesion.id());
         http.setAttribute(CsrfToken.ATTRIBUTE,sesion.csrf());
         http.setMaxInactiveInterval(1800);
         request.setAttribute(SESION,sesion);
@@ -91,6 +98,6 @@ public final class GestorAutenticacion {
         }
         request.removeAttribute(SESION);
         var http=request.getSession(false);
-        if (http!=null && (http.getAttribute("usuarioLogueado")!=null || http.getAttribute("authSid")!=null)) http.invalidate();
+        if (http!=null && (http.getAttribute("usuarioLogueado")!=null || http.getAttribute(AUTH_SID)!=null)) http.invalidate();
     }
 }

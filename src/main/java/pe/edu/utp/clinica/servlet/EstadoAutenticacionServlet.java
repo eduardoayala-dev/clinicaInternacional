@@ -10,10 +10,18 @@ import java.util.Map;
 
 @WebServlet(urlPatterns="/auth/estado")
 public final class EstadoAutenticacionServlet extends HttpServlet {
-    @Override protected void doGet(HttpServletRequest request,HttpServletResponse response) throws IOException {
+    private static final java.util.logging.Logger LOGGER=java.util.logging.Logger.getLogger(EstadoAutenticacionServlet.class.getName());
+    @Override protected void doGet(HttpServletRequest request,HttpServletResponse response) {
+        try {
+            responder(request,response);
+        } catch (IOException e) {
+            LOGGER.warning("No se pudo entregar el estado de autenticación.");
+        }
+    }
+    private void responder(HttpServletRequest request,HttpServletResponse response) throws IOException {
         response.setHeader("Cache-Control","no-store");
         response.setHeader("X-Content-Type-Options","nosniff");
-        if (GestorAutenticacion.obtener(request)==null) { response.sendError(404); return; }
+        if (GestorAutenticacion.obtener(request)==null) { pe.edu.utp.clinica.util.TransporteHttp.error(response,404); return; }
         var sesion=(SesionAutenticada)request.getAttribute(GestorAutenticacion.SESION);
         String contexto=request.getHeader("X-Session-Context");
         if (sesion==null) {
@@ -30,7 +38,7 @@ public final class EstadoAutenticacionServlet extends HttpServlet {
             ApiJson.write(response,200,new ApiResponse<>("SESION_ACTIVA","",Map.of("sid",sesion.id(),"csrf",csrf,"portal",request.getContextPath()+path)));
         }
     }
-    @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) throws IOException {
-        response.setHeader("Allow","GET, HEAD"); response.sendError(405);
+    @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) {
+        response.setHeader("Allow","GET, HEAD"); pe.edu.utp.clinica.util.TransporteHttp.error(response,405);
     }
 }

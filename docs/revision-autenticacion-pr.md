@@ -175,3 +175,17 @@ el cierre de sesión sincronizado entre pestañas y autorizó continuar con el P
 Pendientes revisión SonarCloud del commit y validación cloud cuando se publique
 el despliegue. Railway no se cambió.
 Guía: [autenticacion-jwt.md](autenticacion-jwt.md).
+
+## Revisión de SonarCloud del PR 39
+
+La primera revisión señaló la composición dinámica de la consulta de sesiones,
+complejidad y propagación de errores de transporte. La consulta ahora es estática
+y parametrizada para ambas formas de búsqueda; se comprueba que un ID desconocido
+no pueda resolverse por un refresh presentado a la vez. Se separó el rechazo CSRF
+en un método y se manejan las desconexiones sin repetir las operaciones.
+
+La suite Java posterior aprobó 363 casos y omitió 185 por entorno, sin fallos.
+Incluye la prueba de desconexión HTTP y los contratos de sesiones actualizados.
+La comprobación MySQL específica se repite por el cambio de consulta. Estos
+ajustes no cambian la interfaz ni los permisos; la nueva revisión de SonarCloud
+debe aprobar antes de fusionar el PR.

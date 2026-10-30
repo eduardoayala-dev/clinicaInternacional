@@ -114,7 +114,7 @@ public class RegistroPacienteServlet extends HttpServlet {
             try {
                 newSession=pe.edu.utp.clinica.auth.InicioSesion.iniciar(request,response,u);
             } catch (java.sql.SQLException e) {
-                response.sendRedirect(request.getContextPath()+"/login/paciente?error=acceso_temporal");
+                pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath()+"/login/paciente?error=acceso_temporal");
                 return;
             }
             newSession.setAttribute("canalPreferido", p.getCanalAviso());

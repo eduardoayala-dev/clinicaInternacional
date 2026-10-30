@@ -34,6 +34,8 @@ abstract class SesionesContrato {
         assertEquals(csrf,dao.resolver(sid,null,now.plusSeconds(300),true).csrf());
         assertNotNull(dao.resolver(sid,null,now.plusSeconds(1900),false));
         assertNull(dao.resolver(null,SecretosSesion.hash("wrong"),now,false));
+        assertNull(dao.resolver("desconocida",refresh,now,false));
+        assertNull(dao.resolver("' OR 1=1 --",null,now,false));
     }
     @Test void logoutIsImmediateAndRepeatedRevocationIsSafe() throws Exception {
         dao.revocar(sid,now); dao.revocar(sid,now);

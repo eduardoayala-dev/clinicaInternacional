@@ -54,7 +54,8 @@ public final class JwtAcceso {
         Claims c = signed.getPayload();
         try {
             int usuario = Integer.parseInt(c.getSubject());
-            String sid = c.get("sid", String.class), rol = c.get("rol", String.class);
+            String sid = c.get("sid", String.class);
+            String rol = c.get("rol", String.class);
             UUID.fromString(sid);
             UUID.fromString(c.getId());
             if (!"at+jwt".equals(signed.getHeader().getType()) || usuario <= 0 || !ROLES.contains(rol)
