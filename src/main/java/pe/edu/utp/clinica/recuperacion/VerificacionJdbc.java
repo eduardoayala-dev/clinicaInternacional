@@ -19,6 +19,9 @@ public final class VerificacionJdbc {
     public record CambioCorreo(boolean cambiado,String anterior) {
         @Override public String toString(){return "CambioCorreo[privado]";}
     }
+    public record InicioCambio(int usuario,String sesion,String vinculo,Proposito proposito,String password,String ip) {
+        @Override public String toString(){return "InicioCambio[privado]";}
+    }
     private record Cuenta(int id,String correo,String password,String rol) {
         @Override public String toString(){return "Cuenta[privada]";}
     }
@@ -26,6 +29,19 @@ public final class VerificacionJdbc {
                         byte[] credencial,byte[] correo,byte[] codigo,Etapa etapa,int intentos,
                         String nuevo,Instant creada,Instant vence) {
         @Override public String toString(){return "Reto[privado]";}
+        @Override public boolean equals(Object objeto) {
+            if(this==objeto)return true;
+            if(!(objeto instanceof Reto otro))return false;
+            return usuario==otro.usuario && intentos==otro.intentos && proposito==otro.proposito && etapa==otro.etapa
+                    && Objects.equals(id,otro.id) && Objects.equals(sesion,otro.sesion) && Objects.equals(nuevo,otro.nuevo)
+                    && Objects.equals(creada,otro.creada) && Objects.equals(vence,otro.vence)
+                    && Arrays.equals(vinculo,otro.vinculo) && Arrays.equals(credencial,otro.credencial)
+                    && Arrays.equals(correo,otro.correo) && Arrays.equals(codigo,otro.codigo);
+        }
+        @Override public int hashCode() {
+            return Objects.hash(id,usuario,proposito,sesion,Arrays.hashCode(vinculo),Arrays.hashCode(credencial),
+                    Arrays.hashCode(correo),Arrays.hashCode(codigo),etapa,intentos,nuevo,creada,vence);
+        }
     }
     private final SesionesJdbc.Conexion conexiones;
     private final CodigosVerificacion codigos;
@@ -42,9 +58,9 @@ public final class VerificacionJdbc {
     public Optional<Entrega> iniciarRecuperacion(String id,String identificador,boolean personal,String vinculo,String ip,Instant ahora)throws SQLException {
         return transaccion(conn->{
             if(!LimitesVerificacion.solicitud(conn,ip,(personal?"personal:":"paciente:")+identificador,ahora))return Optional.empty();
-            try(var st=personal
-                    ?conn.prepareStatement("SELECT id_usuario,email,password_hash,rol FROM usuario WHERE LOWER(email)=? AND rol IN ('MEDICO','PERSONAL_ADMINISTRATIVO','ADMINISTRADOR') AND activo=1 FOR UPDATE")
-                    :conn.prepareStatement("SELECT u.id_usuario,u.email,u.password_hash,u.rol FROM usuario u JOIN paciente p ON p.id_usuario=u.id_usuario WHERE p.dni=? AND u.rol='PACIENTE' AND u.activo=1 FOR UPDATE")) {
+            try(var st=conn.prepareStatement(personal
+                    ?"SELECT id_usuario,email,password_hash,rol FROM usuario WHERE LOWER(email)=? AND rol IN ('MEDICO','PERSONAL_ADMINISTRATIVO','ADMINISTRADOR') AND activo=1 FOR UPDATE"
+                    :"SELECT u.id_usuario,u.email,u.password_hash,u.rol FROM usuario u JOIN paciente p ON p.id_usuario=u.id_usuario WHERE p.dni=? AND u.rol='PACIENTE' AND u.activo=1 FOR UPDATE")) {
                 st.setString(1,identificador);
                 try(var rs=st.executeQuery()){
                     if(!rs.next())return Optional.empty();
@@ -54,7 +70,13 @@ public final class VerificacionJdbc {
         });
     }
 
-    public Optional<Entrega> iniciarCambio(String id,int usuario,String sesion,String vinculo,Proposito proposito,String password,String ip,Instant ahora)throws SQLException {
+    public Optional<Entrega> iniciarCambio(String id,InicioCambio cambio,Instant ahora)throws SQLException {
+        int usuario=cambio.usuario();
+        String sesion=cambio.sesion();
+        String vinculo=cambio.vinculo();
+        Proposito proposito=cambio.proposito();
+        String password=cambio.password();
+        String ip=cambio.ip();
         if(proposito==Proposito.RECUPERAR)throw new IllegalArgumentException("Operación autenticada inválida.");
         return transaccion(conn->{
             if(!LimitesVerificacion.permitir(conn,"reauth:"+usuario,5,900,ahora)
@@ -94,7 +116,8 @@ public final class VerificacionJdbc {
 
     public boolean autorizada(String id,String vinculo,Proposito proposito,String sesion,Instant ahora)throws SQLException {
         return transaccion(conn->{
-            Cuenta cuenta=cuentaDelReto(conn,id);Reto reto=reto(conn,id);
+            Cuenta cuenta=cuentaDelReto(conn,id);
+            Reto reto=reto(conn,id);
             return vigente(conn,reto,cuenta,vinculo,proposito,sesion,ahora) && reto.etapa()==Etapa.AUTORIZADO;
         });
     }
@@ -102,7 +125,8 @@ public final class VerificacionJdbc {
     public boolean cambiarPassword(String id,String vinculo,Proposito proposito,String sesion,String password,Instant ahora)throws SQLException {
         if(proposito==Proposito.CAMBIAR_CORREO || !passwordValida(password))throw new IllegalArgumentException("Contraseña inválida.");
         return transaccion(conn->{
-            Cuenta cuenta=cuentaDelReto(conn,id);Reto reto=reto(conn,id);
+            Cuenta cuenta=cuentaDelReto(conn,id);
+            Reto reto=reto(conn,id);
             if(!vigente(conn,reto,cuenta,vinculo,proposito,sesion,ahora) || reto.etapa()!=Etapa.AUTORIZADO || contieneDni(conn,cuenta.id(),password))return false;
             String hash=SecurityUtil.hashPassword(password);
             try(var st=conn.prepareStatement("UPDATE usuario SET password_hash=? WHERE id_usuario=?")){
@@ -120,7 +144,8 @@ public final class VerificacionJdbc {
         if(correo.length()>150)throw new IllegalArgumentException("El correo supera el tamaño admitido por la cuenta.");
         return transaccion(conn->{
             if(!LimitesVerificacion.permitir(conn,"nuevo-correo:"+id,3,3600,ahora))return Optional.empty();
-            Cuenta cuenta=cuentaDelReto(conn,id);Reto reto=reto(conn,id);
+            Cuenta cuenta=cuentaDelReto(conn,id);
+            Reto reto=reto(conn,id);
             if(!vigente(conn,reto,cuenta,vinculo,Proposito.CAMBIAR_CORREO,sesion,ahora) || reto.etapa()!=Etapa.AUTORIZADO
                     || cuenta.correo().equalsIgnoreCase(correo) || correoOcupado(conn,correo))return Optional.empty();
             String codigo=codigos.nuevo();
@@ -134,7 +159,8 @@ public final class VerificacionJdbc {
 
     public CambioCorreo confirmarCorreo(String id,String vinculo,String sesion,String codigo,Instant ahora)throws SQLException {
         return transaccion(conn->{
-            Cuenta cuenta=cuentaDelReto(conn,id);Reto reto=reto(conn,id);
+            Cuenta cuenta=cuentaDelReto(conn,id);
+            Reto reto=reto(conn,id);
             if(!vigente(conn,reto,cuenta,vinculo,Proposito.CAMBIAR_CORREO,sesion,ahora) || reto.etapa()!=Etapa.CODIGO_NUEVO
                     || !codigoCorrecto(conn,reto,codigo) || correoOcupado(conn,reto.nuevo()))return new CambioCorreo(false,null);
             try(var st=conn.prepareStatement("UPDATE usuario SET email=? WHERE id_usuario=?")){
@@ -146,7 +172,7 @@ public final class VerificacionJdbc {
     }
 
     private boolean codigoCorrecto(Connection conn,Reto reto,String codigo)throws SQLException {
-        boolean formato=codigo!=null && codigo.matches("[0-9]{6}");
+        boolean formato=codigo!=null && codigo.matches("\\d{6}");
         boolean coincide=formato && MessageDigest.isEqual(reto.codigo(),codigos.hash(reto.id(),reto.proposito().name(),reto.etapa().name(),codigo));
         try(var st=conn.prepareStatement("UPDATE verificacion_cuenta SET intentos=intentos+1,etapa=?,codigo_hash=? WHERE id_verificacion=?")){
             boolean bloquear=!coincide && reto.intentos()+1>=5;
@@ -212,7 +238,9 @@ public final class VerificacionJdbc {
     }
     private boolean contieneDni(Connection conn,int usuario,String password)throws SQLException {
         try(var st=conn.prepareStatement("SELECT dni FROM paciente WHERE id_usuario=?")){
-            st.setInt(1,usuario);try(var rs=st.executeQuery()){if(!rs.next())return false;String dni=rs.getString(1);return dni!=null && !dni.isBlank() && password.contains(dni);}
+            st.setInt(1,usuario);try(var rs=st.executeQuery()){if(!rs.next()){return false;}
+                String dni=rs.getString(1);
+                return dni!=null && !dni.isBlank() && password.contains(dni);}
         }
     }
     private static Instant minimo(Instant uno,Instant dos){return uno.isBefore(dos)?uno:dos;}

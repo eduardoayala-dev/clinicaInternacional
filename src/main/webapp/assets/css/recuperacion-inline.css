@@ -1,4 +1,4 @@
-[data-acceso-login][hidden],.acceso-recuperacion[hidden] { display: none !important; }
+[data-acceso-login][hidden],.acceso-recuperacion[hidden] { display: none; }
 .acceso-recuperacion { width: 100%; }
 .acceso-recuperacion .contenido-seguridad { width: 100%; view-transition-name: none; }
 .acceso-recuperacion .contenido-seguridad h1 { font-weight: 400; }

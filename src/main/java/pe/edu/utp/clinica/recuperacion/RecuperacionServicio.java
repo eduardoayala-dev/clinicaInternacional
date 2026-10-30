@@ -36,7 +36,7 @@ public final class RecuperacionServicio {
 
     public Optional<String> iniciarCambio(int usuario,String sesion,String vinculo,Proposito proposito,String password,String ip)throws SQLException {
         String id=UUID.randomUUID().toString();
-        var entrega=almacen.iniciarCambio(id,usuario,sesion,vinculo,proposito,password,ip,reloj.instant());
+        var entrega=almacen.iniciarCambio(id,new VerificacionJdbc.InicioCambio(usuario,sesion,vinculo,proposito,password,ip),reloj.instant());
         if(entrega.isEmpty())return Optional.empty();
         tareas.execute(()->enviarCodigo(entrega.get(),proposito,false));
         return Optional.of(id);
