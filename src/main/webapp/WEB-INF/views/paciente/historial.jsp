@@ -268,7 +268,7 @@
                                             <span class="cell-secondary"><%= Html.texto(c.get("consultorio")) %></span>
                                         </td>
                                         <td>
-                                            <span class="badge-status completada"><%= Html.texto(c.get("estadoTexto")) %></span>
+                                            <span class="badge-status <%= Boolean.TRUE.equals(c.get("pendienteCierre")) ? "pendiente" : "completada" %>"><%= Html.texto(c.get("estadoTexto")) %></span>
                                         </td>
                                         <td class="actions-cell">
                                             <button type="button" class="action-link" data-cita="<%= Html.texto(c.get("id")) %>" data-medico="<%= Html.texto(c.get("medico")) %>" data-especialidad="<%= Html.texto(c.get("especialidad")) %>" data-fecha="<%= Html.texto(c.get("fechaFormateada") + " " + c.get("horaFormateada")) %>" data-sede="<%= Html.texto(c.get("sede")) %>" data-consultorio="<%= Html.texto(c.get("consultorio")) %>" onclick="abrirModalDetalle(this.dataset.cita,this.dataset.medico,this.dataset.especialidad,this.dataset.fecha,this.dataset.sede,this.dataset.consultorio)">Ver detalle</button>
@@ -281,7 +281,7 @@
                         <div class="table-empty-state">
                             <i data-lucide="clock" style="width: 44px; height: 44px;"></i>
                             <div class="empty-title">Sin historial de citas pasadas</div>
-                            <div class="empty-desc">Las consultas médicas que concluyas se archivarán en esta sección para tu revisión.</div>
+                            <div class="empty-desc">Aquí aparecen las citas de días anteriores y sus resultados. Si falta registrar la asistencia, se indicará en su estado.</div>
                         </div>
                     <% } %>
                 </div>
