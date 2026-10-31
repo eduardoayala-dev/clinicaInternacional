@@ -23,7 +23,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/confirmaciones-asistencia.css">
 </head>
 <body>
-<aside class="adm-sidebar">
+<aside class="adm-sidebar" aria-label="Navegación administrativa">
     <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
         <div class="adm-brand-logo-wrap"><img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="" class="adm-brand-logo-img"></div>
         <div><div class="adm-brand-name">Clínica Internacional</div><div class="adm-brand-sub">Portal administrativo</div></div>
@@ -45,12 +45,12 @@
     <header class="adm-topbar"><div class="adm-breadcrumb">Admisión <span>/ Confirmaciones y seguimiento</span></div></header>
     <main class="adm-content-scroll seguimiento-page">
         <section class="seguimiento-heading"><div><h1 class="adm-page-title">Confirmaciones de asistencia</h1><p class="adm-page-subtitle">Revisa próximas citas y registra el resultado de cada contacto con el paciente.</p></div><a class="seguimiento-refresh" href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones"><i data-lucide="refresh-cw"></i>Actualizar</a></section>
-        <% if (mensaje != null) { %><div class="seguimiento-flash" role="status"><i data-lucide="circle-check"></i><span><%= Html.texto(mensaje) %></span></div><% } %>
+        <% if (mensaje != null) { %><output class="seguimiento-flash"><i data-lucide="circle-check"></i><span><%= Html.texto(mensaje) %></span></output><% } %>
         <section class="seguimiento-metricas" aria-label="Resumen de seguimiento">
             <article class="seguimiento-metrica"><span>Citas sin confirmar</span><strong><%= Html.texto(pendientes == null ? 0 : pendientes) %></strong><small>En tu sede y con fecha futura</small></article>
             <article class="seguimiento-metrica vencidas"><span>Requieren seguimiento</span><strong><%= Html.texto(vencidas == null ? 0 : vencidas) %></strong><small>El plazo de confirmación venció</small></article>
         </section>
-        <aside class="seguimiento-nota"><i data-lucide="info"></i><p>Registra una llamada o un correo que realizaste. Esta pantalla no envía mensajes. La cita permanece vigente si el paciente no responde; registra “Confirmó” solo cuando el paciente lo indique.</p></aside>
+        <aside class="seguimiento-nota" aria-label="Instrucciones de contacto"><i data-lucide="info"></i><p>Registra una llamada o un correo que realizaste. Esta pantalla no envía mensajes. La cita permanece vigente si el paciente no responde; registra “Confirmó” solo cuando el paciente lo indique.</p></aside>
         <section class="seguimiento-tabla-card">
             <div class="seguimiento-tabla-titulo"><div><h2>Próximas citas pendientes</h2><p>Los datos se limitan a la sede de tu perfil.</p></div><span><%= Html.texto(seguimientos == null ? 0 : seguimientos.size()) %> registros</span></div>
             <% if (seguimientos == null || seguimientos.isEmpty()) { %>

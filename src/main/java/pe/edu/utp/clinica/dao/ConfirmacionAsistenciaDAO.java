@@ -35,16 +35,17 @@ public final class ConfirmacionAsistenciaDAO {
 
     public Map<Integer, EstadoAsistencia> estadoDelPaciente(int idUsuario, List<Integer> citas) {
         if (idUsuario <= 0 || citas == null || citas.isEmpty()) return Map.of();
-        String marcas = String.join(",", java.util.Collections.nCopies(citas.size(), "?"));
+        Set<Integer> solicitadas = Set.copyOf(citas);
         String sql = "SELECT ca.id_cita,ca.confirmada_en,ca.vence_en FROM confirmacion_asistencia ca JOIN cita c ON c.id_cita=ca.id_cita "
-                + "JOIN paciente p ON p.id_paciente=c.id_paciente WHERE p.id_usuario=? AND ca.id_cita IN (" + marcas + ")";
+                + "JOIN paciente p ON p.id_paciente=c.id_paciente WHERE p.id_usuario=?";
         try (Connection conn = connections.open(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idUsuario);
-            for (int i = 0; i < citas.size(); i++) ps.setInt(i + 2, citas.get(i));
+
             try (ResultSet rs = ps.executeQuery()) {
                 Map<Integer, EstadoAsistencia> estados = new java.util.HashMap<>();
                 LocalDateTime ahora = LocalDateTime.now(clock);
                 while (rs.next()) {
+                    if (!solicitadas.contains(rs.getInt(1))) continue;
                     LocalDateTime confirmada = rs.getObject(2, LocalDateTime.class);
                     LocalDateTime vence = rs.getObject(3, LocalDateTime.class);
                     estados.put(rs.getInt(1), new EstadoAsistencia(confirmada != null, confirmada == null && !ahora.isBefore(vence),
@@ -139,7 +140,8 @@ public final class ConfirmacionAsistenciaDAO {
     private int pacientePropio(Connection conn, int usuario) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT p.id_paciente FROM paciente p JOIN usuario u ON u.id_usuario=p.id_usuario WHERE u.id_usuario=? AND u.activo=TRUE AND u.rol='PACIENTE'")) {
             ps.setInt(1, usuario);
-            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw new AgendaException(403, "PACIENTE_NO_HABILITADO", "El perfil de paciente no está habilitado."); return rs.getInt(1); }
+            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) { throw new AgendaException(403, "PACIENTE_NO_HABILITADO", "El perfil de paciente no está habilitado."); }
+                return rs.getInt(1); }
         }
     }
 
@@ -162,7 +164,8 @@ public final class ConfirmacionAsistenciaDAO {
 
     private static int sedePersonal(Connection conn, int usuario) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT p.id_sede FROM personal_administrativo p JOIN usuario u ON u.id_usuario=p.id_usuario JOIN sede s ON s.id_sede=p.id_sede WHERE u.id_usuario=? AND u.activo=TRUE AND u.rol='PERSONAL_ADMINISTRATIVO' AND s.estado='ACTIVO'")) {
-            ps.setInt(1, usuario); try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw new AgendaException(403, "ADMISION_NO_HABILITADA", "Tu perfil de admisión no está habilitado."); return rs.getInt(1); }
+            ps.setInt(1, usuario); try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) { throw new AgendaException(403, "ADMISION_NO_HABILITADA", "Tu perfil de admisión no está habilitado."); }
+                return rs.getInt(1); }
         }
     }
 
@@ -170,7 +173,8 @@ public final class ConfirmacionAsistenciaDAO {
         String sql = "SELECT c.estado,c.fecha_hora,ca.vence_en,ca.confirmada_en FROM cita c JOIN medico m ON m.id_medico=c.id_medico JOIN confirmacion_asistencia ca ON ca.id_cita=c.id_cita WHERE c.id_cita=? AND m.id_sede=? FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idCita); ps.setInt(2, sede);
-            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw noConfirmable(); return new Cita(rs.getString(1), rs.getObject(2, LocalDateTime.class), rs.getObject(3, LocalDateTime.class), rs.getObject(4, LocalDateTime.class) != null); }
+            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) { throw noConfirmable(); }
+                return new Cita(rs.getString(1), rs.getObject(2, LocalDateTime.class), rs.getObject(3, LocalDateTime.class), rs.getObject(4, LocalDateTime.class) != null); }
         }
     }
 

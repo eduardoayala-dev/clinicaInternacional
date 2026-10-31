@@ -21,6 +21,9 @@ import java.util.Map;
 public class PacienteHistorialServlet extends HttpServlet {
     private static final java.util.logging.Logger LOGGER = java.util.logging.Logger.getLogger(PacienteHistorialServlet.class.getName());
 
+    private static final String ID_CITA = "idCita";
+    private static final String FLASH_MESSAGE = "flashMessage";
+
     protected CitaDAO crearCitaDAO() {
         return new CitaDAO();
     }
@@ -30,7 +33,7 @@ public class PacienteHistorialServlet extends HttpServlet {
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
-            response.sendRedirect(request.getContextPath() + "/login?error=sesion_requerida");
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/login?error=sesion_requerida");
             return;
         }
 
@@ -43,11 +46,11 @@ public class PacienteHistorialServlet extends HttpServlet {
         List<Map<String, Object>> citasActivas = idPaciente > 0 ? citaDAO.obtenerProximasCitasPaciente(idPaciente) : new ArrayList<>();
         List<Map<String, Object>> historialPasadas = idPaciente > 0 ? citaDAO.obtenerHistorialPaciente(idPaciente) : new ArrayList<>();
         List<Map<String, Object>> citasCanceladas = idPaciente > 0 ? citaDAO.obtenerCitasCanceladasPaciente(idPaciente) : new ArrayList<>();
-        List<Integer> idsCitasActivas = citasActivas.stream().map(c -> (Integer) c.get("idCita")).filter(id -> id != null && id > 0).toList();
+        List<Integer> idsCitasActivas = citasActivas.stream().map(c -> (Integer) c.get(ID_CITA)).filter(id -> id != null && id > 0).toList();
         Map<Integer, ConfirmacionAsistenciaDAO.EstadoAsistencia> estadosAsistencia = usuario != null
                 ? crearConfirmacionDAO().estadoDelPaciente(usuario.getIdUsuario(), idsCitasActivas) : Map.of();
         for (Map<String, Object> cita : citasActivas) {
-            ConfirmacionAsistenciaDAO.EstadoAsistencia estado = estadosAsistencia.get(cita.get("idCita"));
+            ConfirmacionAsistenciaDAO.EstadoAsistencia estado = estadosAsistencia.get(cita.get(ID_CITA));
             cita.put("asistenciaConfirmada", estado != null && estado.confirmada());
             cita.put("confirmacionVencida", estado != null && estado.vencida());
             cita.put("venceConfirmacion", estado == null ? null : estado.venceEn());
@@ -69,7 +72,7 @@ public class PacienteHistorialServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
-            response.sendRedirect(request.getContextPath() + "/login?error=sesion_requerida");
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/login?error=sesion_requerida");
             return;
         }
 
@@ -80,18 +83,8 @@ public class PacienteHistorialServlet extends HttpServlet {
         }
         String action = request.getParameter("action");
         if ("confirmar_asistencia".equals(action)) {
-            int idCita;
-            try {
-                idCita = Integer.parseInt(request.getParameter("idCita"));
-                if (idCita <= 0) throw new NumberFormatException();
-                crearConfirmacionDAO().confirmarPaciente(usuario.getIdUsuario(), idCita);
-                session.setAttribute("flashMessage", "Asistencia confirmada. Tu cita continúa programada.");
-            } catch (NumberFormatException e) {
-                session.setAttribute("flashMessage", "Selecciona una cita válida.");
-            } catch (AgendaException e) {
-                session.setAttribute("flashMessage", e.getMessage());
-            }
-            response.sendRedirect(request.getContextPath() + "/paciente/historial");
+            confirmarAsistencia(request, session, usuario);
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/paciente/historial");
             return;
         }
         String estado;
@@ -103,7 +96,7 @@ public class PacienteHistorialServlet extends HttpServlet {
         }
         int idCita;
         try {
-            idCita = Integer.parseInt(request.getParameter("idCita"));
+            idCita = Integer.parseInt(request.getParameter(ID_CITA));
             if (idCita <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
             response.sendError(HttpServletResponse.SC_BAD_REQUEST);
@@ -125,6 +118,20 @@ public class PacienteHistorialServlet extends HttpServlet {
                 LOGGER.warning("La cita se canceló; el procesamiento posterior se reintentará para la lista de espera.");
             }
         }
-        response.sendRedirect(request.getContextPath() + "/paciente/historial");
+        pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/paciente/historial");
+    }
+
+    private void confirmarAsistencia(HttpServletRequest request, HttpSession session, Usuario usuario) {
+            int idCita;
+            try {
+                idCita = Integer.parseInt(request.getParameter(ID_CITA));
+                if (idCita <= 0) throw new NumberFormatException();
+                crearConfirmacionDAO().confirmarPaciente(usuario.getIdUsuario(), idCita);
+                session.setAttribute(FLASH_MESSAGE, "Asistencia confirmada. Tu cita continúa programada.");
+            } catch (NumberFormatException e) {
+                session.setAttribute(FLASH_MESSAGE, "Selecciona una cita válida.");
+            } catch (AgendaException e) {
+                session.setAttribute(FLASH_MESSAGE, e.getMessage());
+            }
     }
 }

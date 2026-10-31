@@ -84,7 +84,7 @@
             </section>
 
             <% if (mensajeFlash != null) { %>
-                <div class="citas-flash" role="status"><i data-lucide="circle-check" aria-hidden="true"></i><span><%= Html.texto(mensajeFlash) %></span></div>
+                <output class="citas-flash"><i data-lucide="circle-check" aria-hidden="true"></i><span><%= Html.texto(mensajeFlash) %></span></output>
             <% } %>
 
             <% if ("ok".equals(request.getParameter("reprogramada"))) { %>
