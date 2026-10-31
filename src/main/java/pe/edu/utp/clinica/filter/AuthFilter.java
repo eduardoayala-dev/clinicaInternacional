@@ -16,7 +16,7 @@ import pe.edu.utp.clinica.api.ApiResponse;
 
 import java.io.IOException;
 
-@WebFilter(filterName = "AuthFilter", urlPatterns = {"/paciente/*", "/medico/*", "/admin/*", "/sysadmin/*", "/cuenta/*"})
+@WebFilter(asyncSupported = true, filterName = "AuthFilter", urlPatterns = {"/paciente/*", "/medico/*", "/admin/*", "/sysadmin/*", "/cuenta/*"})
 public class AuthFilter implements Filter {
 
     @Override

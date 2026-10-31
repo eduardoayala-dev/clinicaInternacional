@@ -132,6 +132,12 @@
             <version>5.10.2</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.apache.tomcat.embed</groupId>
+            <artifactId>tomcat-embed-core</artifactId>
+            <version>10.1.61</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>

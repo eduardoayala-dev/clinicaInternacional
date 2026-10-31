@@ -34,6 +34,7 @@ public class AdmisionCitaDAO {
         if (usuario <= 0 || cita <= 0) throw new AgendaException(400, "DATOS_INVALIDOS", "Selecciona una cita válida.");
         return TransaccionJdbc.ejecutar(connections, conn -> {
             int sede = sedePersonal(conn, usuario);
+            TransaccionJdbc.avisarSede(sede);
             CitaAdmision actual = bloquear(conn,sede,cita);
             LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
             if (!"CONFIRMADA".equals(actual.estado()) || !actual.programada().toLocalDate().equals(ahora.toLocalDate())) {
@@ -92,6 +93,7 @@ public class AdmisionCitaDAO {
         if(usuario<=0 || cita<=0) throw new AgendaException(400,"DATOS_INVALIDOS","Selecciona una cita válida.");
         return TransaccionJdbc.ejecutar(connections,conn->{
             int sede=sedePersonal(conn,usuario);
+            TransaccionJdbc.avisarSede(sede);
             CitaAdmision actual=bloquear(conn,sede,cita);
             LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
             if(!"CONFIRMADA".equals(actual.estado()) || actual.llegada() || !actual.programada().toLocalDate().equals(ahora.toLocalDate())

@@ -62,6 +62,7 @@ public final class AgendaCitaDAO {
         libre(conn, medico, inicio, bloque.minutos(), oferta);
         validarFutura(inicio);
         int id = insertarCita(conn, paciente, medico, bloque.id(), inicio, null, prioridad);
+        TransaccionJdbc.avisarSede(perfil.sede());
         notificar(conn, usuario, id, "Cita confirmada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
         return id;
     }
@@ -92,6 +93,7 @@ public final class AgendaCitaDAO {
                 if (ps.executeUpdate() != 1) throw noDisponible();
             }
             int nueva = insertarCita(conn, paciente, medico, bloque.id(), inicio, motivo, prioridad);
+            TransaccionJdbc.avisarSede(perfil.sede());
             notificar(conn, usuario, nueva, "Cita reprogramada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
             return true;
         });

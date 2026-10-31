@@ -72,8 +72,14 @@ public final class ConfirmacionAsistenciaDAO {
                 ps.setObject(1, ahora); ps.setInt(2, idUsuario); ps.setInt(3, idCita);
                 if (ps.executeUpdate() != 1) throw noConfirmable();
             }
+            TransaccionJdbc.avisarSede(cita.sede());
             return null;
         });
+    }
+
+    public int sedeDelPersonal(int usuario) {
+        try (Connection conn = connections.open()) { return sedePersonal(conn, usuario); }
+        catch (SQLException e) { throw new AgendaException(503, "SEGUIMIENTO_NO_DISPONIBLE", "No se pudo comprobar la sede."); }
     }
 
     public List<Seguimiento> listarPendientes(int idUsuario) {
@@ -131,11 +137,12 @@ public final class ConfirmacionAsistenciaDAO {
                     if (ps.executeUpdate() != 1) throw noConfirmable();
                 }
             }
+            TransaccionJdbc.avisarSede(sede);
             return new ResultadoContacto(confirmada);
         });
     }
 
-    private record Cita(String estado, LocalDateTime fechaHora, LocalDateTime venceEn, boolean confirmada) {}
+    private record Cita(String estado, LocalDateTime fechaHora, LocalDateTime venceEn, boolean confirmada, int sede) {}
 
     private int pacientePropio(Connection conn, int usuario) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT p.id_paciente FROM paciente p JOIN usuario u ON u.id_usuario=p.id_usuario WHERE u.id_usuario=? AND u.activo=TRUE AND u.rol='PACIENTE'")) {
@@ -152,12 +159,12 @@ public final class ConfirmacionAsistenciaDAO {
     }
 
     private static Cita citaPaciente(Connection conn, int cita, int paciente) throws SQLException {
-        String sql = "SELECT c.estado,c.fecha_hora,ca.vence_en,ca.confirmada_en FROM cita c JOIN confirmacion_asistencia ca ON ca.id_cita=c.id_cita WHERE c.id_cita=? AND c.id_paciente=? FOR UPDATE";
+        String sql = "SELECT c.estado,c.fecha_hora,ca.vence_en,ca.confirmada_en,m.id_sede FROM cita c JOIN medico m ON m.id_medico=c.id_medico JOIN confirmacion_asistencia ca ON ca.id_cita=c.id_cita WHERE c.id_cita=? AND c.id_paciente=? FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, cita); ps.setInt(2, paciente);
             try (ResultSet rs = ps.executeQuery()) {
                 if (!rs.next()) throw noConfirmable();
-                return new Cita(rs.getString(1), rs.getObject(2, LocalDateTime.class), rs.getObject(3, LocalDateTime.class), rs.getObject(4, LocalDateTime.class) != null);
+                return new Cita(rs.getString(1), rs.getObject(2, LocalDateTime.class), rs.getObject(3, LocalDateTime.class), rs.getObject(4, LocalDateTime.class) != null, rs.getInt(5));
             }
         }
     }
@@ -170,11 +177,11 @@ public final class ConfirmacionAsistenciaDAO {
     }
 
     private static Cita bloquearCitaAdmision(Connection conn, int idCita, int sede) throws SQLException {
-        String sql = "SELECT c.estado,c.fecha_hora,ca.vence_en,ca.confirmada_en FROM cita c JOIN medico m ON m.id_medico=c.id_medico JOIN confirmacion_asistencia ca ON ca.id_cita=c.id_cita WHERE c.id_cita=? AND m.id_sede=? FOR UPDATE";
+        String sql = "SELECT c.estado,c.fecha_hora,ca.vence_en,ca.confirmada_en,m.id_sede FROM cita c JOIN medico m ON m.id_medico=c.id_medico JOIN confirmacion_asistencia ca ON ca.id_cita=c.id_cita WHERE c.id_cita=? AND m.id_sede=? FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idCita); ps.setInt(2, sede);
             try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) { throw noConfirmable(); }
-                return new Cita(rs.getString(1), rs.getObject(2, LocalDateTime.class), rs.getObject(3, LocalDateTime.class), rs.getObject(4, LocalDateTime.class) != null); }
+                return new Cita(rs.getString(1), rs.getObject(2, LocalDateTime.class), rs.getObject(3, LocalDateTime.class), rs.getObject(4, LocalDateTime.class) != null, rs.getInt(5)); }
         }
     }
 
