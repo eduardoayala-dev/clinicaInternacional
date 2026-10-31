@@ -20,7 +20,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/confirmaciones-asistencia.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/confirmaciones-asistencia.css?v=20261031-2">
 </head>
 <body>
 <aside class="adm-sidebar" aria-label="Navegación administrativa">
@@ -43,15 +43,18 @@
 </aside>
 <div class="adm-main-wrapper">
     <header class="adm-topbar"><div class="adm-breadcrumb">Admisión <span>/ Confirmaciones y seguimiento</span></div></header>
-    <main class="adm-content-scroll seguimiento-page">
-        <section class="seguimiento-heading"><div><h1 class="adm-page-title">Confirmaciones de asistencia</h1><p class="adm-page-subtitle">Revisa próximas citas y registra el resultado de cada contacto con el paciente.</p></div><a class="seguimiento-refresh" href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones"><i data-lucide="refresh-cw"></i>Actualizar</a></section>
+    <main class="adm-content-scroll seguimiento-page" data-seguimiento-panel>
+        <section class="seguimiento-heading"><div><h1 class="adm-page-title">Confirmaciones de asistencia</h1><p class="adm-page-subtitle">Revisa próximas citas y registra el resultado de cada contacto con el paciente.</p></div><a id="seguimientoActualizar" data-eventos-url="${pageContext.request.contextPath}/admin/eventos-confirmaciones" class="seguimiento-refresh" href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones"><i data-lucide="refresh-cw"></i>Actualizar</a></section>
         <% if (mensaje != null) { %><output class="seguimiento-flash"><i data-lucide="circle-check"></i><span><%= Html.texto(mensaje) %></span></output><% } %>
+        <div class="seguimiento-actualizacion-fila"><p id="seguimientoEstado" class="seguimiento-actualizacion">Conectando actualización en vivo…</p><button type="button" id="seguimientoDescartar" class="seguimiento-descartar" hidden>Descartar selección y actualizar</button></div>
+        <output id="seguimientoError" class="seguimiento-error" hidden></output>
+        <div id="seguimientoDatos" class="seguimiento-datos">
         <section class="seguimiento-metricas" aria-label="Resumen de seguimiento">
             <article class="seguimiento-metrica"><span>Citas sin confirmar</span><strong><%= Html.texto(pendientes == null ? 0 : pendientes) %></strong><small>En tu sede y con fecha futura</small></article>
             <article class="seguimiento-metrica vencidas"><span>Requieren seguimiento</span><strong><%= Html.texto(vencidas == null ? 0 : vencidas) %></strong><small>El plazo de confirmación venció</small></article>
         </section>
         <aside class="seguimiento-nota" aria-label="Instrucciones de contacto"><i data-lucide="info"></i><p>Registra una llamada o un correo que realizaste. Esta pantalla no envía mensajes. La cita permanece vigente si el paciente no responde; registra “Confirmó” solo cuando el paciente lo indique.</p></aside>
-        <section class="seguimiento-tabla-card">
+        <section class="seguimiento-tabla-card" aria-label="Citas pendientes de confirmación">
             <div class="seguimiento-tabla-titulo"><div><h2>Próximas citas pendientes</h2><p>Los datos se limitan a la sede de tu perfil.</p></div><span><%= Html.texto(seguimientos == null ? 0 : seguimientos.size()) %> registros</span></div>
             <% if (seguimientos == null || seguimientos.isEmpty()) { %>
                 <div class="seguimiento-vacio"><i data-lucide="calendar-check"></i><strong>Todo al día</strong><p>No hay confirmaciones pendientes en tu sede.</p></div>
@@ -75,8 +78,10 @@
                 </tbody></table></div>
             <% } %>
         </section>
+        </div>
     </main>
 </div>
+<script src="${pageContext.request.contextPath}/assets/js/seguimiento-confirmaciones.js?v=20261031-2" defer></script>
 <script>if(window.lucide)lucide.createIcons();</script>
 </body>
 </html>

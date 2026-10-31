@@ -10,6 +10,7 @@ La cita conserva su estado operativo (`CONFIRMADA`, `EN_SALA`, etc.). La confirm
 - Admisión solo ve citas futuras de su sede y puede registrar una llamada o un correo que realizó. El formulario guarda canal y resultado, pero no envía mensajes.
 - “Confirmó asistencia” solo crea la confirmación cuando el personal registra que el paciente respondió afirmativamente. “Sin respuesta” y “No confirma” permanecen como intentos en el historial y no cancelan la reserva.
 - SMS y WhatsApp no forman parte de este flujo porque no hay proveedor configurado.
+- El panel de admisión recibe eventos por sede tras el commit de reservas, reprogramaciones, cancelaciones, confirmaciones y gestiones. Reconcilia cada 60 segundos para reflejar plazos vencidos y usa consultas cada 15 segundos como respaldo si se interrumpe el canal. Solo funciona con la pestaña visible y pausa los cambios de tabla al preparar una gestión.
 
 ## Actualización de base de datos
 
@@ -25,3 +26,12 @@ En Railway, se agrega `CONFIRMACION_CITA_HORAS_ANTES=24` como variable del servi
 4. En una sesión de personal administrativo abre **Confirmaciones y seguimiento**, registra un intento “Sin respuesta” y verifica que la cita continúa programada.
 5. Registra un contacto con “Confirmó asistencia” y verifica que desaparece de pendientes y queda identificado como confirmación de admisión.
 6. Verifica que el personal de otra sede no puede consultar ni modificar esa cita, y que una cita ajena no puede confirmarse con una petición manipulada.
+
+## Canal de eventos
+
+- Endpoint autenticado: `GET /admin/eventos-confirmaciones`. La sede se obtiene del perfil de admisión, nunca de un parámetro del navegador.
+- Los eventos solo avisan de un cambio; no contienen nombres, documentos, correos ni detalles de citas. La tabla se consulta por el acceso habitual con permisos.
+- Se usa I/O asíncrona de Tomcat, con un máximo de 128 conexiones y 3 por usuario. Las conexiones se renuevan como máximo cada 45 segundos para volver a comprobar el acceso.
+- El canal no renueva el tiempo de actividad JWT. Cerrar u ocultar la pantalla cierra la conexión.
+- El publicador está en memoria y corresponde al despliegue actual de una instancia. Un despliegue con varias réplicas requerirá un transporte compartido para avisos inmediatos entre ellas; la reconciliación periódica sigue recuperando el estado desde MySQL.
+- La dependencia Tomcat embebido es solo de pruebas y no se incluye en el WAR.

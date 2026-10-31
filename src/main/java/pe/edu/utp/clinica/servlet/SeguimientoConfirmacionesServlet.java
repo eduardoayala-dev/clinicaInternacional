@@ -22,6 +22,7 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
     @Override public void init() { confirmaciones=crearDAO(); }
 
     private void mostrar(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+        response.setHeader("Cache-Control", "no-store");
         Usuario usuario=usuario(request);
         if(usuario==null) { response.sendRedirect(request.getContextPath()+"/login/personal?error=acceso_denegado"); return; }
         try {
@@ -29,8 +30,10 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
             request.setAttribute("seguimientos",pendientes);
             request.setAttribute("totalPendientes",pendientes.size());
             request.setAttribute("totalVencidas",pendientes.stream().filter(ConfirmacionAsistenciaDAO.Seguimiento::vencida).count());
-            request.setAttribute("mensajeFlash",request.getSession(false).getAttribute(FLASH_MESSAGE));
-            request.getSession(false).removeAttribute(FLASH_MESSAGE);
+            if (!"XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
+                request.setAttribute("mensajeFlash",request.getSession(false).getAttribute(FLASH_MESSAGE));
+                request.getSession(false).removeAttribute(FLASH_MESSAGE);
+            }
             request.getRequestDispatcher("/WEB-INF/views/admin/seguimiento-confirmaciones.jsp").forward(request,response);
         } catch(AgendaException e) { error(response,e.status(),e.code(),e.getMessage()); }
     }
