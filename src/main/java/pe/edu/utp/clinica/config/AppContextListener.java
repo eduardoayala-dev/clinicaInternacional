@@ -36,7 +36,11 @@ public class AppContextListener implements ServletContextListener {
         disponibilidad = new DisponibilidadSistema();
         sce.getServletContext().setAttribute(DisponibilidadSistema.CONTEXT_ATTRIBUTE, disponibilidad);
         disponibilidad.iniciar();
-        ofertas = new MantenimientoOfertas();
+        ofertas = new MantenimientoOfertas(() -> {
+            if(sce.getServletContext().getAttribute(CorreosCitaContextListener.DESPERTAR) instanceof Runnable despertar) {
+                despertar.run();
+            }
+        });
         ofertas.iniciar();
         LOGGER.info("Aplicación Clínica Internacional iniciada correctamente.");
     }

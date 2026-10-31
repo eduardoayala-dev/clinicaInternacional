@@ -6,6 +6,14 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import pe.edu.utp.clinica.correo.Correo;
+import pe.edu.utp.clinica.correo.CorreosOfertaJdbc;
+import pe.edu.utp.clinica.correo.CorreosCitaJdbc;
+import pe.edu.utp.clinica.correo.CorreosServicio;
+import pe.edu.utp.clinica.correo.EnvioCorreoException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
@@ -55,6 +63,116 @@ abstract class OfertasContrato extends AgendaCitaContrato {
     }
 
     private int registrar(int paciente) { return lista.registrar(paciente,1,1,"MANANA","MEDIA","CORREO,WHATSAPP"); }
+
+    private CorreosOfertaJdbc activarCorreos() throws Exception {
+        sql("ALTER TABLE usuario ADD COLUMN email VARCHAR(254)");
+        sql("UPDATE usuario SET email='paciente@example.test'");
+        for(String archivo:new String[]{"V008__correo_confirmacion_cita.sql","V011__correo_oferta_cupo.sql"}) {
+            String ddl=Files.readString(Path.of("sql/migrations",archivo));
+            if(url.startsWith("jdbc:h2:"))ddl=ddl.replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");
+            sql(ddl);
+        }
+        ofertas=new OfertasDAO(this::abrir,reloj,true);
+        return new CorreosOfertaJdbc(this::abrir);
+    }
+
+    @Test void ofertaEncolaUnSoloCorreoYUsaDatosActualesSinContenidoInseguro() throws Exception {
+        var almacen=activarCorreos(); registrar(2); int original=cancelada();
+        int id=ofertas.generar(original); assertEquals(0,ofertas.generar(original));
+        sql("UPDATE usuario SET email='actual@example.test',nombres='<script>alert(1)</script>' WHERE id_usuario=2");
+        var enviados=new ArrayList<Correo>();
+        var servicio=new CorreosServicio(almacen,c->{enviados.add(c);return "simulado";},reloj);
+        assertTrue(servicio.procesarUno()); assertFalse(servicio.procesarUno());
+        assertEquals(1,enviados.size()); var correo=enviados.get(0);
+        assertEquals("actual@example.test",correo.destinatario());
+        assertTrue(correo.texto().contains("OF-"+id));
+        assertTrue(correo.texto().contains("01/12/2026 09:00"));
+        assertTrue(correo.texto().contains("27/10/2026 10:25"));
+        assertFalse(correo.html().contains("<script>"));
+        assertTrue(correo.html().contains("&lt;script&gt;"));
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='ENVIADO'"));
+        assertEquals(1,count("SELECT COUNT(*) FROM reasignacion_inteligente WHERE estado='PENDIENTE'"));
+    }
+
+    @Test void rechazarOExpirarOmiteElCorreoViejoYNotificaAlSiguiente() throws Exception {
+        var almacen=activarCorreos(); registrar(2); registrar(3); registrar(4);
+        int original=cancelada(); int primera=ofertas.generar(original);
+        ofertas.rechazar(2,primera);
+        reloj.avanzar(Duration.ofMinutes(15));
+        ofertas.procesarPendientes();
+        var enviados=new ArrayList<Correo>(); var servicio=new CorreosServicio(almacen,c->{enviados.add(c);return "simulado";},reloj);
+        assertTrue(servicio.procesarUno());
+        assertTrue(servicio.procesarUno());
+        assertTrue(servicio.procesarUno());
+        assertFalse(servicio.procesarUno());
+        assertEquals(1,enviados.size());
+        assertEquals(2,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='OMITIDO'"));
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='ENVIADO'"));
+        assertFalse(ofertas.obtenerParaPaciente(4).isEmpty());
+    }
+
+    @Test void aceptarAntesDelEnvioOmiteLaOfertaYEncolaLaReservaReal() throws Exception {
+        var almacen=activarCorreos(); registrar(2); int id=ofertas.generar(cancelada());
+        int cita=ofertas.aceptar(2,id);
+        assertEquals(cita,ofertas.aceptar(2,id));
+        assertTrue(new CorreosServicio(almacen,c->{fail("Oferta ya aceptada");return "";},reloj).procesarUno());
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='OMITIDO'"));
+        var enviados=new ArrayList<Correo>();
+        var confirmaciones=new CorreosServicio(new CorreosCitaJdbc(this::abrir),c->{enviados.add(c);return "simulado";},reloj);
+        assertTrue(confirmaciones.procesarUno()); assertFalse(confirmaciones.procesarUno());
+        assertEquals(1,enviados.size()); assertTrue(enviados.get(0).texto().contains("CIT-"+cita));
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE id_cita="+cita+" AND confirmada_en IS NULL"));
+    }
+
+    @Test void retirarseDeLaListaImpideEnviar() throws Exception {
+        var almacen=activarCorreos(); int inscripcion=registrar(2); ofertas.generar(cancelada());
+        lista.retirarListaEspera(inscripcion,2);
+        assertTrue(new CorreosServicio(almacen,c->{fail("Inscripción retirada");return "";},reloj).procesarUno());
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='OMITIDO'"));
+    }
+
+    @Test void noEnviaOfertasDeCuentasInactivasNiAgendasRetiradas() throws Exception {
+        var almacen=activarCorreos(); registrar(2); ofertas.generar(cancelada());
+        sql("UPDATE usuario SET activo=FALSE WHERE id_usuario=2");
+        sql("UPDATE disponibilidad SET estado='CANCELADO'");
+        assertTrue(new CorreosServicio(almacen,c->{fail("Oferta no disponible");return "";},reloj).procesarUno());
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='OMITIDO'"));
+    }
+
+    @Test void reintentaUnFalloTemporalSinReservarNiEnviarDespuesDelPlazo() throws Exception {
+        var almacen=activarCorreos(); registrar(2); ofertas.generar(cancelada());
+        var servicio=new CorreosServicio(almacen,c->{throw new EnvioCorreoException("Temporal",true);},reloj);
+        assertTrue(servicio.procesarUno()); assertFalse(servicio.procesarUno());
+        reloj.avanzar(Duration.ofMinutes(15));
+        assertTrue(new CorreosServicio(almacen,c->{fail("Plazo terminado");return "";},reloj).procesarUno());
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='OMITIDO' AND intentos=2"));
+        assertEquals(0,count("SELECT COUNT(*) FROM cita WHERE id_paciente=2"));
+    }
+
+    @Test void falloDeEncoladoRevierteOfertaListaYAvisoEnLaMismaTransaccion() throws Exception {
+        activarCorreos(); registrar(2); int original=cancelada();
+        int avisos=count("SELECT COUNT(*) FROM notificacion");
+        sql("DROP TABLE correo_oferta");
+        assertThrows(AgendaException.class,()->ofertas.generar(original));
+        assertEquals(0,count("SELECT COUNT(*) FROM reasignacion_inteligente"));
+        assertEquals(1,count("SELECT COUNT(*) FROM lista_espera WHERE estado='ACTIVA'"));
+        assertEquals(avisos,count("SELECT COUNT(*) FROM notificacion"));
+    }
+
+    @Test void dosTrabajadoresNoEnvianDosVecesLaMismaOferta() throws Exception {
+        var almacen=activarCorreos(); registrar(2); ofertas.generar(cancelada());
+        var envios=new java.util.concurrent.atomic.AtomicInteger();
+        var servicio=new CorreosServicio(almacen,c->{envios.incrementAndGet();return "simulado";},reloj);
+        var inicio=new CountDownLatch(1); var executor=Executors.newFixedThreadPool(2);
+        try {
+            var a=executor.submit(()->{assertTrue(inicio.await(5,TimeUnit.SECONDS));return servicio.procesarUno();});
+            var b=executor.submit(()->{assertTrue(inicio.await(5,TimeUnit.SECONDS));return servicio.procesarUno();});
+            inicio.countDown();
+            assertEquals(1,(a.get(15,TimeUnit.SECONDS)?1:0)+(b.get(15,TimeUnit.SECONDS)?1:0));
+        } finally { executor.shutdownNow(); }
+        assertEquals(1,envios.get());
+        assertEquals(1,count("SELECT COUNT(*) FROM correo_oferta WHERE estado='ENVIADO'"));
+    }
     private int cancelada() throws Exception {
         dao.publicar(1,1,FECHA,"09:00","11:00",30);
         int cita=dao.reservar(1,1,FECHA,"09:00","MEDIA");

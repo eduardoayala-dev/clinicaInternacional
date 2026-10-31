@@ -34,18 +34,19 @@ reenvía automáticamente si Gmail aceptó el mensaje pero falló el registro de
 resultado. Esto reduce duplicados; no garantiza entrega exactamente una vez.
 Una caída del proveedor no borra la cita confirmada.
 
-El arranque y las operaciones POST despiertan al procesador. Se agrupan los avisos
-en una única tarea pendiente. Solo se programa una nueva ejecución si quedan
-trabajos o envíos por revisar. No se consulta periódicamente una cola vacía ni se
-crea un heartbeat. Si falla la base, los pendientes se retoman ante otra operación
-o en el siguiente arranque.
+El arranque y las operaciones POST despiertan al procesador. Cada cola agrupa sus
+avisos en una única tarea pendiente. El mantenimiento de ofertas también despierta
+ambas colas cada 60 segundos para recoger las ofertas que crea sin intervención
+del navegador. Si falla la base, el procesador programa un reintento a los 60
+segundos. Esto no utiliza un servicio externo de heartbeat.
 
 ## Configuración
 
 1. Respaldar la base existente y aplicar únicamente
-   `sql/migrations/V008__correo_confirmacion_cita.sql`. Es idempotente y no modifica
-   las filas de citas o usuarios. Añade una tabla técnica; la entidad de propuestas
-   de horarios se incorpora por separado mediante V009.
+   `sql/migrations/V008__correo_confirmacion_cita.sql` y, para la versión que envía
+   ofertas, `sql/migrations/V011__correo_oferta_cupo.sql`. Son idempotentes y no
+   modifican las filas de citas o usuarios. Cada cola utiliza su propia tabla
+   técnica. Las propuestas de horarios se incorporan por separado mediante V009.
 2. Conservar las credenciales privadas de Gmail ya configuradas.
 3. Añadir `APPOINTMENT_EMAIL_ENABLED=true` a `.env.mail` en local o a las variables
    del servicio Java en Railway. Requiere `MAIL_MODE=gmail`.

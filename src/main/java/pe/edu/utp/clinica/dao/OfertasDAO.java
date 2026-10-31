@@ -32,15 +32,20 @@ public class OfertasDAO {
     private final AgendaCitaDAO.ConnectionSource connections;
     private final Clock clock;
     private final AgendaCitaDAO agenda;
+    private final boolean correosActivos;
     private record Cupo(int cita, int medico, int disponibilidad, int especialidad, int sede, int paciente, LocalDateTime inicio) {}
     private record Oferta(int id, int lista, String estado, LocalDateTime vence, Integer citaAsignada, Cupo cupo) {}
     private record Resultado(int cita, AgendaException error) {}
 
     public OfertasDAO() { this(DatabaseConfig::getConnection, Clock.system(LIMA)); }
     OfertasDAO(AgendaCitaDAO.ConnectionSource connections, Clock clock) {
+        this(connections,clock,Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false")));
+    }
+    OfertasDAO(AgendaCitaDAO.ConnectionSource connections, Clock clock,boolean correosActivos) {
         this.connections = connections;
         this.clock = clock;
-        agenda = new AgendaCitaDAO(connections, clock);
+        this.correosActivos = correosActivos;
+        agenda = new AgendaCitaDAO(connections, clock,correosActivos);
     }
 
     public int generar(int citaOriginal) {
@@ -77,6 +82,7 @@ public class OfertasDAO {
         }
         cambiarLista(conn, lista, "OFERTADA");
         avisoLista(conn, lista, "Tienes una oferta de cupo para el " + cupo.inicio().format(FECHA) + ". Revísala en tus notificaciones antes del vencimiento.");
+        if(correosActivos)pe.edu.utp.clinica.correo.CorreosOfertaJdbc.encolar(conn,id,clock.instant());
         return id;
     }
 

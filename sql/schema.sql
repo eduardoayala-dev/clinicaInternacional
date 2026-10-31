@@ -14,6 +14,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS reporte;
 DROP TABLE IF EXISTS indicador;
 DROP TABLE IF EXISTS reasignacion_inteligente;
+DROP TABLE IF EXISTS correo_oferta;
 DROP TABLE IF EXISTS correo_cita;
 DROP TABLE IF EXISTS notificacion;
 DROP TABLE IF EXISTS historial_asistencia;
@@ -770,4 +771,17 @@ CREATE TABLE IF NOT EXISTS limite_recuperacion (
     solicitudes INT NOT NULL,
     vence_en DATETIME(6) NOT NULL,
     INDEX idx_limite_recuperacion_vence (vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS correo_oferta (
+    id_oferta INT PRIMARY KEY,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    intentos SMALLINT NOT NULL DEFAULT 0,
+    disponible_en DATETIME(6) NOT NULL,
+    iniciada_en DATETIME(6) NULL,
+    finalizada_en DATETIME(6) NULL,
+    CONSTRAINT fk_correo_oferta FOREIGN KEY (id_oferta) REFERENCES reasignacion_inteligente(id_reasignacion),
+    CONSTRAINT chk_correo_oferta_estado CHECK (estado IN ('PENDIENTE','ENVIANDO','ENVIADO','NO_CONFIRMADO','OMITIDO')),
+    CONSTRAINT chk_correo_oferta_intentos CHECK (intentos BETWEEN 0 AND 3),
+    INDEX idx_correo_oferta_pendiente (estado,disponible_en)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
