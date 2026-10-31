@@ -5,12 +5,12 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 
 public record ConfirmacionCita(int id,String destinatario,String paciente,String medico,String especialidad,String sede,LocalDateTime fecha) {
-    private static final DateTimeFormatter FECHA=DateTimeFormatter.ofPattern("dd/MM/yyyy");
+    private static final DateTimeFormatter FORMATO_FECHA=DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final DateTimeFormatter HORA=DateTimeFormatter.ofPattern("HH:mm");
 
     public Correo correo() {
         String codigo="CIT-"+id;
-        String texto="Hola, "+paciente+". Tu cita está confirmada.\n\nCódigo: "+codigo+"\nFecha: "+fecha.format(FECHA)
+        String texto="Hola, "+paciente+". Tu cita está confirmada.\n\nCódigo: "+codigo+"\nFecha: "+fecha.format(FORMATO_FECHA)
                 +"\nHora de Perú: "+fecha.format(HORA)+"\nMédico: "+medico+"\nEspecialidad: "+especialidad+"\nSede: "+sede
                 +"\n\nPuedes consultar el estado actualizado de tu cita en tu portal. Si necesitas cambiarla o cancelarla, ingresa a tu cuenta."
                 +"\nEste correo es informativo y no requiere responder ni confirmar nuevamente tu reserva.";
@@ -27,7 +27,7 @@ public record ConfirmacionCita(int id,String destinatario,String paciente,String
                 <tr><td><strong>Sede</strong></td><td>%s</td></tr></table>
                 <p style="color:#406c96;line-height:1.6;font-size:14px">Consulta el estado actualizado en tu portal. Para cambiar o cancelar tu cita, ingresa a tu cuenta.</p>
                 <p style="color:#64748b;font-size:12px;line-height:1.6">Este correo es informativo. No necesitas responder ni confirmar nuevamente la reserva.</p>
-                """.formatted(Html.texto(paciente),codigo,fecha.format(FECHA),fecha.format(HORA),Html.texto(medico),Html.texto(especialidad),Html.texto(sede));
+                """.formatted(Html.texto(paciente),codigo,fecha.format(FORMATO_FECHA),fecha.format(HORA),Html.texto(medico),Html.texto(especialidad),Html.texto(sede));
         return new Correo(destinatario,"Confirmación de cita "+codigo+" — Sistema de citas",texto,PlantillasCorreo.marco(contenido,"Confirmación de cita"));
     }
 
