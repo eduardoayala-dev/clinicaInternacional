@@ -4,7 +4,7 @@
 <%
     Usuario usuario = (Usuario) request.getAttribute("usuario");
     if (usuario == null) usuario = (Usuario) session.getAttribute("usuarioLogueado");
-    
+
     Paciente paciente = (Paciente) request.getAttribute("paciente");
 
     String nombrePaciente = (String) request.getAttribute("nombrePaciente");
@@ -19,7 +19,7 @@
     String apellidosVal = usuario != null && usuario.getApellidos() != null ? usuario.getApellidos() : "";
     String emailVal = usuario != null && usuario.getEmail() != null ? usuario.getEmail() : "";
     String dniVal = (paciente != null && paciente.getDni() != null) ? paciente.getDni() : "";
-    
+
     String fechaNacVal = "";
     if (paciente != null && paciente.getFechaNacimiento() != null) {
         fechaNacVal = paciente.getFechaNacimiento().toString(); // YYYY-MM-DD
@@ -62,7 +62,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/perfil-paciente.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/perfil-paciente.css?v=20261030-7">
 </head>
 <body style="display: flex; height: 100vh; overflow: hidden; background: #f4f7fb; font-family: 'Inter', sans-serif;">
 
@@ -72,7 +72,7 @@
 
     <!-- ÁREA PRINCIPAL -->
     <main class="perfil-main-container">
-        
+
         <!-- BARRA SUPERIOR INSTITUCIONAL (ESTÁNDAR COMPARTIDO) -->
         <header class="dash-top-header">
             <div class="breadcrumb-trail">
@@ -123,22 +123,22 @@
             <!-- FORMULARIO GENERAL DE PERFIL -->
             <form id="perfilForm" action="${pageContext.request.contextPath}/paciente/perfil" method="POST">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                
+
                 <!-- GRID DE TARJETAS (2 COLUMNAS SUPERIORES) -->
                 <div class="perfil-grid-container">
 
                     <!-- COLUMNA IZQUIERDA: DATOS PERSONALES E IDENTIFICACIÓN -->
                     <div class="perfil-card">
-                        <h2 class="perfil-card-title">Datos personales e identificación</h2>
+                        <h2 class="perfil-card-title">Datos personales e identificación</h2><p class="perfil-identity-note">Datos de identidad de solo lectura. Si necesitas corregirlos, contacta con admisión.</p>
 
                         <div class="form-row-2col">
                             <div class="form-group-item">
                                 <label for="nombresInput">Nombres completos *</label>
-                                <input type="text" id="nombresInput" name="nombres" value="<%= nombresVal %>" required class="perfil-input">
+                                <input type="text" id="nombresInput" name="nombres" value="<%= Html.texto(nombresVal) %>" readonly class="perfil-input readonly-input">
                             </div>
                             <div class="form-group-item">
                                 <label for="apellidosInput">Apellidos completos *</label>
-                                <input type="text" id="apellidosInput" name="apellidos" value="<%= apellidosVal %>" required class="perfil-input">
+                                <input type="text" id="apellidosInput" name="apellidos" value="<%= Html.texto(apellidosVal) %>" readonly class="perfil-input readonly-input">
                             </div>
                         </div>
 
@@ -156,7 +156,7 @@
                             <div class="form-group-item">
                                 <label for="fechaNacimientoInput">Fecha de nacimiento *</label>
                                 <div class="input-wrapper-relative">
-                                    <input type="date" id="fechaNacimientoInput" name="fechaNacimiento" value="<%= fechaNacVal %>" required class="perfil-input" onchange="calcularEdad(this.value)">
+                                    <input type="date" id="fechaNacimientoInput" name="fechaNacimiento" value="<%= fechaNacVal %>" readonly class="perfil-input readonly-input">
                                 </div>
                             </div>
                             <div class="form-group-item">
@@ -171,20 +171,20 @@
 
                     <!-- COLUMNA DERECHA: CONTACTO Y UBICACIÓN -->
                     <div class="right-column-stack">
-                        
+
                         <!-- TARJETA: CONTACTO Y NOTIFICACIÓN -->
                         <div class="perfil-card">
                             <h2 class="perfil-card-title">Datos de contacto y notificación</h2>
 
-                            <div class="form-row-2col">
+                            <div class="form-row-2col perfil-contact-fields">
                                 <div class="form-group-item">
-                                    <label for="telefonoInput">Teléfono celular / WhatsApp *</label>
+                                    <label for="telefonoInput">Teléfono celular *</label>
                                     <input type="tel" id="telefonoInput" name="telefono" value="<%= telefonoVal %>" required class="perfil-input">
                                 </div>
                                 <div class="form-group-item">
                                     <label for="emailInput">Correo electrónico principal *</label>
-                                    <input type="email" id="emailInput" name="email" value="<%= pe.edu.utp.clinica.util.Html.texto(emailVal) %>" readonly class="perfil-input readonly-input">
-                                    <a href="${pageContext.request.contextPath}/cuenta/seguridad">Cambiar correo o contraseña con verificación</a>
+                                    <output id="emailInput" class="perfil-input readonly-input perfil-email-display"><%= Html.texto(emailVal) %></output>
+                                    <input type="hidden" name="email" value="<%= Html.texto(emailVal) %>">
                                 </div>
                             </div>
 
@@ -192,16 +192,10 @@
                                 <div class="form-group-item">
                                     <label>Canal preferido de aviso *</label>
                                     <div class="radio-options-row">
-                                        <label class="radio-pill-option <%= "SMS".equalsIgnoreCase(canalAvisoVal) ? "active" : "" %>">
-                                            <input type="radio" name="canalAviso" value="SMS" <%= "SMS".equalsIgnoreCase(canalAvisoVal) ? "checked" : "" %> onchange="actualizarRadioPills()">
-                                            <span>SMS</span>
-                                        </label>
-                                        <label class="radio-pill-option <%= "WhatsApp".equalsIgnoreCase(canalAvisoVal) ? "active" : "" %>">
-                                            <input type="radio" name="canalAviso" value="WhatsApp" <%= "WhatsApp".equalsIgnoreCase(canalAvisoVal) ? "checked" : "" %> onchange="actualizarRadioPills()">
-                                            <span>WhatsApp</span>
-                                        </label>
-                                        <label class="radio-pill-option <%= "Correo".equalsIgnoreCase(canalAvisoVal) ? "active" : "" %>">
-                                            <input type="radio" name="canalAviso" value="Correo" <%= "Correo".equalsIgnoreCase(canalAvisoVal) ? "checked" : "" %> onchange="actualizarRadioPills()">
+
+
+                                        <label class="radio-pill-option active">
+                                            <input type="radio" name="canalAviso" value="Correo" checked onchange="actualizarRadioPills()">
                                             <span>Correo</span>
                                         </label>
                                     </div>
@@ -254,6 +248,7 @@
                     </div>
                 </div>
 
+                <section class="perfil-card perfil-security"><div><h2 class="perfil-card-title">Seguridad de la cuenta</h2><p>Verifica tu identidad por correo para cambiar tu dirección de correo o contraseña.</p></div><a href="${pageContext.request.contextPath}/cuenta/seguridad" class="perfil-security-link"><i data-lucide="shield-check" aria-hidden="true"></i>Gestionar seguridad<i data-lucide="chevron-right" aria-hidden="true"></i></a></section>
                 <!-- BARRA DE ACCIONES INFERIOR -->
                 <div class="perfil-footer-bar">
                     <span class="footnote-required">Los campos con (*) son obligatorios</span>

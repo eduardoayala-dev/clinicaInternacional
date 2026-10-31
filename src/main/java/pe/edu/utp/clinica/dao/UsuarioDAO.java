@@ -558,28 +558,14 @@ public class UsuarioDAO {
     }
 
     private void guardarPerfil(Connection conn,pe.edu.utp.clinica.model.PerfilPaciente perfil)throws SQLException {
-        try (var stmt=conn.prepareStatement("UPDATE usuario SET nombres=?,apellidos=? WHERE id_usuario=?")) {
-            stmt.setString(1,perfil.nombres());
-            stmt.setString(2,perfil.apellidos());
+        try (var stmt=conn.prepareStatement("UPDATE paciente SET telefono=?,direccion=? WHERE id_usuario=?")) {
+            stmt.setString(1,perfil.telefono());
+            stmt.setString(2,perfil.direccion());
             stmt.setInt(3,perfil.idUsuario());
             stmt.executeUpdate();
         }
-        java.sql.Date fecha=fechaPerfil(perfil.fechaNacimiento());
-        try (var stmt=conn.prepareStatement(fecha==null
-                ?"UPDATE paciente SET telefono=?,direccion=? WHERE id_usuario=?"
-                :"UPDATE paciente SET telefono=?,direccion=?,fecha_nacimiento=? WHERE id_usuario=?")) {
-            stmt.setString(1,perfil.telefono());
-            stmt.setString(2,perfil.direccion());
-            if(fecha==null) {
-                stmt.setInt(3,perfil.idUsuario());
-            } else {
-                stmt.setDate(3,fecha);
-                stmt.setInt(4,perfil.idUsuario());
-            }
-            stmt.executeUpdate();
-        }
         try (var stmt=conn.prepareStatement("UPDATE paciente SET canal_aviso=?,sede_preferida=?,alergias=?,tipo_cobertura=? WHERE id_usuario=?")) {
-            stmt.setString(1,perfil.canalAviso()!=null?perfil.canalAviso():"WhatsApp");
+            stmt.setString(1,"Correo");
             stmt.setString(2,perfil.sedePreferida()!=null?perfil.sedePreferida():"Sede San Borja");
             stmt.setString(3,perfil.alergias()!=null?perfil.alergias():"");
             stmt.setString(4,perfil.tipoCobertura()!=null?perfil.tipoCobertura():"EPS");
@@ -588,13 +574,4 @@ public class UsuarioDAO {
         }
     }
 
-    private static java.sql.Date fechaPerfil(String valor) {
-        if(valor==null || valor.isBlank())return null;
-        String fecha=valor.trim();
-        if(fecha.contains("/")) {
-            String[] partes=fecha.split("/");
-            return java.sql.Date.valueOf(java.time.LocalDate.of(Integer.parseInt(partes[2]),Integer.parseInt(partes[1]),Integer.parseInt(partes[0])));
-        }
-        return java.sql.Date.valueOf(java.time.LocalDate.parse(fecha));
-    }
 }

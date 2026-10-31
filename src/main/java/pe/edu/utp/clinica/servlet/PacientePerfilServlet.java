@@ -95,13 +95,13 @@ public class PacientePerfilServlet extends HttpServlet {
             }
         }
 
-        String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
-        String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));
+        String nombres = usuario.getNombres();
+        String apellidos = usuario.getApellidos();
         String email = correoPerfil(request,usuario);
-        String fechaNacimiento = SecurityUtil.sanitizeInput(request.getParameter("fechaNacimiento"));
+        String fechaNacimiento = null;
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
-        String canalAviso = SecurityUtil.sanitizeInput(request.getParameter("canalAviso"));
+        String canalAviso = "Correo";
         String sedePreferida = SecurityUtil.sanitizeInput(request.getParameter("sedePreferida"));
         String alergias = SecurityUtil.sanitizeInput(request.getParameter("alergias"));
         String tipoCobertura = SecurityUtil.sanitizeInput(request.getParameter("tipoCobertura"));
