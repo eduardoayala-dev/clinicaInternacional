@@ -16,7 +16,7 @@ public final class EsquemaPruebas {
             for(String table:List.of("verificacion_cuenta","recuperacion_contrasena","limite_recuperacion","sesion_autenticacion","auditoria_seguridad","seguimiento_cita","consulta_clinica","atencion_cita",
                     "inasistencia_cita","reasignacion_inteligente","historial_asistencia","admision_cita",
                     "personal_administrativo","notificacion","lista_espera","cita","motivo_cita",
-                    "disponibilidad","medico","paciente","sede","especialidad","usuario")) {
+                    "disponibilidad","propuesta_horario","medico","paciente","sede","especialidad","usuario")) {
                 st.execute("DROP TABLE IF EXISTS "+table);
             }
         }

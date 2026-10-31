@@ -3,6 +3,7 @@ import subprocess,os,uuid,time,sys,argparse
 parser=argparse.ArgumentParser(description='Pruebas MySQL en un contenedor temporal aislado.')
 parser.add_argument('--solo-sesiones',action='store_true')
 parser.add_argument('--solo-recuperacion',action='store_true')
+parser.add_argument('--solo-horarios',action='store_true')
 argumentos=parser.parse_args()
 root=Path(__file__).resolve().parents[1]; tag=uuid.uuid4().hex[:12]; name='clinica-pr-mysql-'+tag; schema='clinica_agendas_test_'+tag
 assert name.startswith('clinica-pr-mysql-') and schema.startswith('clinica_agendas_test_')
@@ -17,8 +18,9 @@ try:
         if probe.returncode==0:break
         time.sleep(1)
     else:raise RuntimeError('MySQL aislado no inicio')
-    suites='MySqlPruebasTest,SesionesMySqlTest' if argumentos.solo_sesiones else 'AgendaCitaMySqlTest,AtencionCitaMySqlTest,AdmisionCitaMySqlTest,HistorialMedicoMySqlTest,OfertasMySqlTest,MedicoPortalMySqlTest,MySqlPruebasTest,SesionesMySqlTest,RecuperacionMySqlTest'
+    suites='MySqlPruebasTest,SesionesMySqlTest' if argumentos.solo_sesiones else 'AgendaCitaMySqlTest,AtencionCitaMySqlTest,AdmisionCitaMySqlTest,HistorialMedicoMySqlTest,OfertasMySqlTest,MedicoPortalMySqlTest,MySqlPruebasTest,SesionesMySqlTest,RecuperacionMySqlTest,PropuestaHorarioMySqlTest'
     if argumentos.solo_recuperacion: suites='MySqlPruebasTest,RecuperacionMySqlTest'
+    if argumentos.solo_horarios: suites='MySqlPruebasTest,PropuestaHorarioMySqlTest'
     shell='mkdir -p /tmp/revision-pr && cp /work/pom.xml /tmp/revision-pr/ && cp -r /work/src /work/sql /tmp/revision-pr/ && cd /tmp/revision-pr && mvn -B -Dtest='+suites+' -DargLine=-Xmx256m -Dsurefire.reportNameSuffix=mysql test; resultado=$?; if [ -d target/surefire-reports ]; then cp target/surefire-reports/* /work/target/pruebas-mysql/reports/; fi; exit "$resultado"'
     (root/'target/pruebas-mysql/reports').mkdir(parents=True,exist_ok=True)
     with (root/'target/pruebas-mysql/ejecucion.log').open('wb') as log:

@@ -1,0 +1,46 @@
+<%@ page pageEncoding="UTF-8" %>
+    <aside class="adm-sidebar">
+        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
+            <div class="adm-brand-logo-wrap">
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img">
+            </div>
+            <div>
+                <div class="adm-brand-name">Clínica Internacional</div>
+                <div class="adm-brand-sub">Portal administrativo</div>
+            </div>
+        </a>
+
+        <nav class="adm-nav">
+            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item">
+                <img class="med-icon adm-nav-icon" src="${pageContext.request.contextPath}/assets/images/medico/inicio.svg" alt=""> <span>Inicio</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item active">
+                <img class="med-icon adm-nav-icon" src="${pageContext.request.contextPath}/assets/images/medico/atencion-activa.svg" alt=""> <span>Médicos y especialidades</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
+                <img class="med-icon adm-nav-icon" src="${pageContext.request.contextPath}/assets/images/medico/pacientes.svg" alt=""> <span>Pacientes</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
+                <img class="med-icon adm-nav-icon" src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt=""> <span>Reasignaciones y excepciones</span>
+            </a>
+            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
+                <img class="med-icon adm-nav-icon" src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt=""> <span>Dashboard operativo</span>
+            </a>
+        </nav>
+
+        <div class="adm-user-footer">
+            <div class="adm-user-info-link">
+                <div class="adm-avatar"><%= Html.texto(inicialesPersonal) %></div>
+                <div class="adm-user-text">
+                    <div class="adm-user-name" title="<%= Html.texto(nombrePersonal) %>"><%= Html.texto(nombrePersonal) %></div>
+                    <div class="adm-user-role">Personal administrativo</div>
+                </div>
+            </div>
+            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button type="submit" class="adm-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
+                <img class="med-icon adm-nav-icon" src="${pageContext.request.contextPath}/assets/images/medico/salir.svg" alt="">
+            </button>
+</form>
+        </div>
+    </aside>

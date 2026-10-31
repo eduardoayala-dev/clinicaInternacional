@@ -5,6 +5,7 @@
     else if ("agenda".equals(seccionMedico)) nombreSeccionMedico = "Mi agenda";
     else if ("pacientes".equals(seccionMedico)) nombreSeccionMedico = "Mis pacientes";
     else if ("seguimientos".equals(seccionMedico)) nombreSeccionMedico = "Seguimientos";
+    else if ("horarios".equals(seccionMedico)) nombreSeccionMedico = "Mis horarios";
     else if ("atencion".equals(seccionMedico)) nombreSeccionMedico = "Atención de paciente actual";
 %>
 <header class="med-topbar">

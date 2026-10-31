@@ -37,3 +37,7 @@ WHERE table_schema=DATABASE() AND (
  OR (table_name='reasignacion_inteligente' AND column_name='id_cita_asignada')
  OR (table_name='cita' AND column_name='estado'))
 ORDER BY table_name,ordinal_position;
+
+
+SELECT 'propuestas_horarios' AS comprobacion, COUNT(*) AS columnas FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='propuesta_horario';
+SELECT 'vinculo_propuesta' AS comprobacion, COUNT(*) AS columnas FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='disponibilidad' AND column_name='id_propuesta';

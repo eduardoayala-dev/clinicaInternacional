@@ -25,6 +25,7 @@ DROP TABLE IF EXISTS admision_cita;
 DROP TABLE IF EXISTS cita;
 DROP TABLE IF EXISTS disponibilidad;
 DROP TABLE IF EXISTS motivo_cita;
+DROP TABLE IF EXISTS propuesta_horario;
 DROP TABLE IF EXISTS medico;
 DROP TABLE IF EXISTS personal_administrativo;
 DROP TABLE IF EXISTS paciente;
@@ -145,7 +146,36 @@ CREATE TABLE motivo_cita (
 -- -----------------------------------------------------------------------------
 -- 9. CLASE/TABLA: disponibilidad
 -- -----------------------------------------------------------------------------
+CREATE TABLE propuesta_horario (
+    id_propuesta INT AUTO_INCREMENT PRIMARY KEY,
+    id_medico INT NOT NULL,
+    id_sede INT NOT NULL,
+    dias_semana INT NOT NULL,
+    vigente_desde DATE NOT NULL,
+    vigente_hasta DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    duracion_minutos INT NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    creada_en DATETIME(6) NOT NULL,
+    revisada_en DATETIME(6) NULL,
+    id_revisor INT NULL,
+    motivo_revision VARCHAR(500) NULL,
+    CONSTRAINT fk_propuesta_medico FOREIGN KEY (id_medico) REFERENCES medico(id_medico),
+    CONSTRAINT fk_propuesta_sede FOREIGN KEY (id_sede) REFERENCES sede(id_sede),
+    CONSTRAINT fk_propuesta_revisor FOREIGN KEY (id_revisor) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_propuesta_dias CHECK (dias_semana BETWEEN 1 AND 127),
+    CONSTRAINT ck_propuesta_vigencia CHECK (vigente_hasta >= vigente_desde),
+    CONSTRAINT ck_propuesta_horas CHECK (hora_fin > hora_inicio AND duracion_minutos > 0),
+    CONSTRAINT ck_propuesta_estado CHECK (estado IN ('PENDIENTE','PUBLICADO','RECHAZADO')),
+    INDEX idx_propuesta_medico (id_medico, id_propuesta),
+    INDEX idx_propuesta_revision (id_sede, estado, id_propuesta)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 CREATE TABLE disponibilidad (
+    id_propuesta INT NULL,
+    CONSTRAINT fk_disponibilidad_propuesta FOREIGN KEY (id_propuesta) REFERENCES propuesta_horario(id_propuesta),
     id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,
     id_medico INT NOT NULL,
     id_sede INT NOT NULL,
@@ -203,6 +233,7 @@ CREATE TABLE lista_espera (
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
+
 -- 12. CLASE/TABLA: notificacion
 -- -----------------------------------------------------------------------------
 CREATE TABLE notificacion (

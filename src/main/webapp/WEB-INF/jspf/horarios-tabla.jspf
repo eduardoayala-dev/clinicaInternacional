@@ -1,0 +1,24 @@
+<%@ page pageEncoding="UTF-8" %>
+<section class="med-table-card hor-tabla" aria-label="Propuestas de horarios">
+<table class="med-table"><thead><tr><th>MÉDICO / SEDE</th><th>DÍAS Y VIGENCIA</th><th>TURNO</th><th>ESTADO / OBSERVACIÓN</th></tr></thead><tbody>
+<% for (PropuestaHorario p : propuestas) { %>
+<tr><td><%= Html.texto(p.nombreMedico()) %><br><%= Html.texto(p.nombreSede()) %></td>
+<td><%= Html.texto(p.diasTexto()) %><br><%= Html.texto(FormatoClinico.fecha(p.desde())) %> — <%= Html.texto(FormatoClinico.fecha(p.hasta())) %></td>
+<td><%= Html.texto(p.inicio()) %>–<%= Html.texto(p.fin()) %><br><%= p.minutos() %> min por cita</td>
+<td><strong><%= Html.texto(p.estadoVisible(hoy)) %></strong><% if (p.motivo()!=null && !p.motivo().isBlank()) { %><p><%= Html.texto(p.motivo()) %></p><% } %>
+<% if (Boolean.TRUE.equals(request.getAttribute("revisionHorarios")) && "PENDIENTE".equals(p.estado()) && !p.hasta().isBefore(hoy)) { %>
+    <form class="hor-revision" method="POST" action="${pageContext.request.contextPath}/admin/horarios" data-pending-label="Procesando…">
+        <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><input type="hidden" name="idPropuesta" value="<%= p.id() %>">
+        <label for="motivo-<%= p.id() %>">Observación (obligatoria al rechazar)</label>
+        <textarea class="med-form-input" name="motivo" id="motivo-<%= p.id() %>" maxlength="500" rows="2"></textarea>
+        <div class="hor-acciones"><button class="med-btn-primary" type="submit" name="accion" value="aprobar">Aprobar y publicar</button>
+        <button class="med-btn-outline" type="submit" name="accion" value="rechazar">Rechazar</button></div>
+    </form>
+<% } %></td></tr>
+<% } if (propuestas.isEmpty()) { %><tr><td colspan="4">No hay propuestas registradas.</td></tr><% } %>
+</tbody></table></section>
+<nav class="hor-paginacion" aria-label="Páginas de propuestas">
+    <c:if test="${paginaHorarios gt 1}"><a class="med-btn-outline" href="?pagina=${paginaHorarios - 1}">‹ Anterior</a></c:if>
+    <span>Página <c:out value="${paginaHorarios}"/> de <c:out value="${paginasHorarios}"/></span>
+    <c:if test="${paginaHorarios lt paginasHorarios}"><a class="med-btn-outline" href="?pagina=${paginaHorarios + 1}">Siguiente ›</a></c:if>
+</nav>

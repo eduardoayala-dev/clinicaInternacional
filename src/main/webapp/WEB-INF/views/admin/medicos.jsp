@@ -1,6 +1,6 @@
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
-<%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="pe.edu.utp.clinica.model.Usuario,pe.edu.utp.clinica.util.Html" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%
@@ -74,51 +74,7 @@
 <body>
 
     <!-- PANEL LATERAL INSTITUCIONAL (UNIFICADO) -->
-    <aside class="adm-sidebar">
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <div class="adm-brand-logo-wrap">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div>
-                <div class="adm-brand-name">Clínica Internacional</div>
-                <div class="adm-brand-sub">Portal administrativo</div>
-            </div>
-        </a>
-
-        <nav class="adm-nav">
-            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item active">
-                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
-                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
-            </a>
-        </nav>
-
-        <div class="adm-user-footer">
-            <div class="adm-user-info-link">
-                <div class="adm-avatar"><%= inicialesPersonal %></div>
-                <div class="adm-user-text">
-                    <div class="adm-user-name" title="<%= nombrePersonal %>"><%= nombrePersonal %></div>
-                    <div class="adm-user-role">Personal administrativo</div>
-                </div>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="adm-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </button>
-</form>
-        </div>
-    </aside>
+<%@ include file="/WEB-INF/jspf/admin-sidebar-medicos.jspf" %>
 
     <!-- CONTENEDOR PRINCIPAL -->
     <div class="adm-main-wrapper">
@@ -156,7 +112,7 @@
             <!-- TABS DE NAVEGACIÓN SECUNDARIA -->
             <div class="adm-tabs-row">
                 <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-tab-item active">Médicos</a>
-                <a href="${pageContext.request.contextPath}/admin/medicos?tab=horarios" class="adm-tab-item">Horarios</a>
+                <a href="${pageContext.request.contextPath}/admin/horarios" class="adm-tab-item">Propuestas de horarios</a>
                 <a href="${pageContext.request.contextPath}/admin/medicos?tab=motivos" class="adm-tab-item">Motivos de consulta</a>
             </div>
 
