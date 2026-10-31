@@ -38,7 +38,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/notificaciones.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/notificaciones.css?v=20261031-2">
 </head>
 <body style="display: flex; height: 100vh; overflow: hidden; background: #f8fafc; font-family: 'Inter', sans-serif;">
 
@@ -215,6 +215,12 @@
                                         </td>
                                         <td>
                                             <div class="td-detalle"><c:out value="${n.detalle}" /></div>
+                                            <c:if test="${not empty n.estadoAsistencia}">
+                                                <div class="notif-asistencia"><c:out value="${n.estadoAsistencia}" /></div>
+                                            </c:if>
+                                            <c:if test="${not empty n.venceConfirmacion}">
+                                                <div class="td-hora">Confirma antes del <c:out value="${n.venceConfirmacion}" /></div>
+                                            </c:if>
                                         </td>
                                         <td style="text-align: center;">
                                             <span class="badge-estado ${n.estado == 'Pendiente' ? 'pendiente' : 'leido'}">
@@ -222,22 +228,20 @@
                                             </span>
                                         </td>
                                         <td style="text-align: center;">
-                                            <c:choose>
-                                                <c:when test="${n.accion == 'Confirmar'}">
+                                            <div class="notif-actions">
+                                                <c:if test="${n.accion == 'Confirmar'}">
                                                     <form method="POST" action="${pageContext.request.contextPath}/paciente/notificaciones" style="margin:0;">
 <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 <input type="hidden" name="action" value="confirmar">
 <input type="hidden" name="id" value="${n.idNotificacion}">
 <button type="submit" class="btn-tb-confirmar" title="Confirmar asistencia">
-                                                        Confirmar
+                                                        Confirmar asistencia
                                                     </button></form>
-                                                </c:when>
-                                                <c:otherwise>
+                                                </c:if>
                                                     <button type="button" class="btn-tb-ver" data-notificacion="${n.idNotificacion}" data-categoria="<c:out value='${n.categoria}'/>" data-detalle="<c:out value='${n.detalle}'/>" data-fecha="<c:out value='${n.fechaEnvio}'/>" title="Ver detalle">
                                                         Ver
                                                     </button>
-                                                </c:otherwise>
-                                            </c:choose>
+                                            </div>
                                         </td>
                                     </tr>
                                 </c:forEach>
