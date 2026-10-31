@@ -80,9 +80,9 @@ public class PacienteNotificacionesServlet extends PacientePortalServlet {
     }
 
     private void marcar(HttpServletRequest request,HttpServletResponse response,Usuario usuario,int id,boolean confirmar) throws IOException {
-        boolean ok=confirmar?citas.confirmarRecordatorioCita(id,usuario.getIdUsuario()):citas.marcarNotificacionIndividualLeida(id,usuario.getIdUsuario());
+        boolean ok=confirmar?citas.confirmarAsistenciaDesdeNotificacion(id,usuario.getIdUsuario()):citas.marcarNotificacionIndividualLeida(id,usuario.getIdUsuario());
         if(!ok) throw inexistente();
-        resultado(request,response,200,new ApiResponse<>(confirmar?"RECORDATORIO_CONFIRMADO":"NOTIFICACION_LEIDA",confirmar?"Recordatorio confirmado.":"Notificación marcada como leída.",Map.of("idNotificacion",id)),ruta());
+        resultado(request,response,200,new ApiResponse<>(confirmar?"ASISTENCIA_CONFIRMADA":"NOTIFICACION_LEIDA",confirmar?"Asistencia confirmada. Tu cita continúa programada.":"Notificación marcada como leída.",Map.of("idNotificacion",id)),ruta());
     }
     private int identidad(Usuario usuario) {
         int paciente=citas.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());

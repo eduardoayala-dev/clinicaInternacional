@@ -27,6 +27,18 @@ En Railway, se agrega `CONFIRMACION_CITA_HORAS_ANTES=24` como variable del servi
 5. Registra un contacto con “Confirmó asistencia” y verifica que desaparece de pendientes y queda identificado como confirmación de admisión.
 6. Verifica que el personal de otra sede no puede consultar ni modificar esa cita, y que una cita ajena no puede confirmarse con una petición manipulada.
 
+## Confirmar desde Notificaciones
+
+Mis citas y Notificaciones utilizan la misma comprobación de propietario, estado futuro y plazo, y escriben en `confirmacion_asistencia`. Confirmar no cambia el estado operativo de `cita`. El aviso de reserva y los recordatorios muestran la respuesta de asistencia y el plazo disponible.
+
+Leer una notificación, individualmente o mediante Marcar todas como leídas, solo cambia su lectura. El botón Confirmar asistencia sigue disponible en los avisos leídos mientras la cita sea confirmable. Ver y Confirmar asistencia se presentan como acciones separadas.
+
+`POST /paciente/notificaciones` con `action=confirmar&id=<idNotificacion>` devuelve `ASISTENCIA_CONFIRMADA`. El alias `accion=confirmarCita&idNotificacion=...` utiliza la misma operación. Los errores de plazo y de estado conservan sus códigos, sin marcar el aviso como leído ni confirmar parcialmente. El paciente se obtiene de la sesión; una notificación ajena o vinculada a una cita ajena no permite confirmar.
+
+La asistencia y la lectura del aviso se guardan en una sola transacción. El evento de admisión se emite después del commit, y una confirmación repetida no duplica registros. Confirmar desde Mis citas actualiza el estado visible de todos los avisos relacionados al volver a consultar Notificaciones, sin marcar esos avisos como leídos. No requiere otra migración además de V010.
+
+Comprobación manual: reservar una cita futura con plazo abierto, abrir el aviso en Notificaciones y marcarlo como leído. Verificar que la asistencia sigue pendiente y el botón permanece disponible. Confirmar desde allí y revisar Mis citas y el seguimiento de admisión. Con otra cita, confirmar primero desde Mis citas y comprobar que Notificaciones muestra Asistencia confirmada sin ofrecer otra confirmación.
+
 ## Canal de eventos
 
 - Endpoint autenticado: `GET /admin/eventos-confirmaciones`. La sede se obtiene del perfil de admisión, nunca de un parámetro del navegador.

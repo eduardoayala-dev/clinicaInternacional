@@ -452,8 +452,8 @@ public class CitaDAO {
         return notificacionDAO.marcarNotificacionIndividualLeida(idNotificacion, idUsuario);
     }
 
-    public boolean confirmarRecordatorioCita(int idNotificacion, int idUsuario) {
-        return notificacionDAO.confirmarRecordatorioCita(idNotificacion, idUsuario);
+    public boolean confirmarAsistenciaDesdeNotificacion(int idNotificacion, int idUsuario) {
+        return notificacionDAO.confirmarAsistenciaDesdeNotificacion(idNotificacion, idUsuario);
     }
 
     public boolean inscribirListaEspera(int idPaciente, int idEspecialidad, Integer idSede, String rangoHorario, String urgenciaDisponibilidad, String canalesNotificacion) {

@@ -61,20 +61,24 @@ public final class ConfirmacionAsistenciaDAO {
     public void confirmarPaciente(int idUsuario, int idCita) {
         if (idUsuario <= 0 || idCita <= 0) throw invalida();
         TransaccionJdbc.ejecutar(connections, conn -> {
-            int paciente = pacientePropio(conn, idUsuario);
-            bloquearPaciente(conn, paciente);
-            Cita cita = citaPaciente(conn, idCita, paciente);
-            LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
-            if (!ESTADOS_ACTIVOS.contains(cita.estado()) || !cita.fechaHora().isAfter(ahora)) throw noConfirmable();
-            if (cita.confirmada()) return null;
-            if (!ahora.isBefore(cita.venceEn())) throw new AgendaException(409, "PLAZO_CONFIRMACION_VENCIDO", "El plazo de confirmación terminó. Contacta con admisión para coordinar tu cita.");
-            try (PreparedStatement ps = conn.prepareStatement("UPDATE confirmacion_asistencia SET confirmada_en=?,canal='WEB',id_usuario_confirmo=? WHERE id_cita=? AND confirmada_en IS NULL")) {
-                ps.setObject(1, ahora); ps.setInt(2, idUsuario); ps.setInt(3, idCita);
-                if (ps.executeUpdate() != 1) throw noConfirmable();
-            }
-            TransaccionJdbc.avisarSede(cita.sede());
+            confirmarPaciente(conn,idUsuario,idCita);
             return null;
         });
+    }
+
+    void confirmarPaciente(Connection conn,int idUsuario,int idCita) throws SQLException {
+        int paciente = pacientePropio(conn, idUsuario);
+        bloquearPaciente(conn, paciente);
+        Cita cita = citaPaciente(conn, idCita, paciente);
+        LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
+        if (!ESTADOS_ACTIVOS.contains(cita.estado()) || !cita.fechaHora().isAfter(ahora)) throw noConfirmable();
+        if (cita.confirmada()) return;
+        if (!ahora.isBefore(cita.venceEn())) throw new AgendaException(409, "PLAZO_CONFIRMACION_VENCIDO", "El plazo de confirmación terminó. Contacta con admisión para coordinar tu cita.");
+        try (PreparedStatement ps = conn.prepareStatement("UPDATE confirmacion_asistencia SET confirmada_en=?,canal='WEB',id_usuario_confirmo=? WHERE id_cita=? AND confirmada_en IS NULL")) {
+            ps.setObject(1, ahora); ps.setInt(2, idUsuario); ps.setInt(3, idCita);
+            if (ps.executeUpdate() != 1) throw noConfirmable();
+        }
+        TransaccionJdbc.avisarSede(cita.sede());
     }
 
     public int sedeDelPersonal(int usuario) {
