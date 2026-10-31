@@ -98,6 +98,9 @@ public final class DisponibilidadSistema implements AutoCloseable {
                 try(var schema=statement.executeQuery("SELECT id_cita,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_cita WHERE 1=0")) {
                     if(schema.getMetaData().getColumnCount()!=6)return false;
                 }
+                try(var schema=statement.executeQuery("SELECT id_oferta,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_oferta WHERE 1=0")) {
+                    if(schema.getMetaData().getColumnCount()!=6)return false;
+                }
             }
             try (var schema=statement.executeQuery("SELECT id_propuesta,id_medico,id_sede,estado FROM propuesta_horario WHERE 1=0")) {
                 if (schema.getMetaData().getColumnCount()!=4) return false;

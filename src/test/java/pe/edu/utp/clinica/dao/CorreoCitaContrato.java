@@ -36,7 +36,7 @@ abstract class CorreoCitaContrato extends AgendaCitaContrato {
             st.setInt(1,cita);try(var rs=st.executeQuery()){assertTrue(rs.next());return rs.getString(1);}
         }
     }
-    private CorreosCitaServicio servicio(EmisorCorreo emisor,Clock reloj){return new CorreosCitaServicio(almacen,emisor,reloj);}
+    private CorreosServicio servicio(EmisorCorreo emisor,Clock reloj){return new CorreosServicio(almacen,emisor,reloj);}
 
     @Test void enviaUnaSolaConfirmacionConDatosDeLaBase()throws Exception {
         int cita=reservar();var enviados=new ArrayList<Correo>();
