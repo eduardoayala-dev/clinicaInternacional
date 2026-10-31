@@ -23,6 +23,7 @@ public final class AgendaCitaDAO {
     private final ConnectionSource connections;
     private final Clock clock;
     private final boolean correosActivos;
+    private final int horasAnticipacionConfirmacion;
 
     @FunctionalInterface
     interface ConnectionSource { Connection open() throws SQLException; }
@@ -37,9 +38,15 @@ public final class AgendaCitaDAO {
         this(connections,clock,Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false")));
     }
     AgendaCitaDAO(ConnectionSource connections, Clock clock,boolean correosActivos) {
+        this(connections, clock, correosActivos,
+                Integer.parseInt(System.getenv().getOrDefault("CONFIRMACION_CITA_HORAS_ANTES", "24")));
+    }
+    AgendaCitaDAO(ConnectionSource connections, Clock clock, boolean correosActivos, int horasAnticipacionConfirmacion) {
+        if (horasAnticipacionConfirmacion < 1 || horasAnticipacionConfirmacion > 168) throw new IllegalArgumentException("El plazo debe estar entre 1 y 168 horas.");
         this.connections = connections;
         this.clock = clock;
         this.correosActivos=correosActivos;
+        this.horasAnticipacionConfirmacion=horasAnticipacionConfirmacion;
     }
 
     public int reservar(int paciente, int medico, String fecha, String hora, String urgencia) {
@@ -288,7 +295,7 @@ public final class AgendaCitaDAO {
         }
     }
 
-    private static int insertarCita(Connection conn, int paciente, int medico, int bloque, LocalDateTime inicio, Integer motivo, String urgencia) throws SQLException {
+    private int insertarCita(Connection conn, int paciente, int medico, int bloque, LocalDateTime inicio, Integer motivo, String urgencia) throws SQLException {
         String sql = "INSERT INTO cita (id_paciente,id_medico,id_disponibilidad,fecha_hora,id_motivo,estado,nivel_urgencia,riesgo_cancelacion) VALUES (?,?,?,?,?,'CONFIRMADA',?,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
             ps.setInt(1, paciente);
@@ -299,7 +306,14 @@ public final class AgendaCitaDAO {
             ps.setString(6, urgencia);
             ps.setString(7, riesgo(conn, paciente));
             ps.executeUpdate();
-            return clave(ps);
+            int id = clave(ps);
+            LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
+            LocalDateTime vence=inicio.minusHours(horasAnticipacionConfirmacion);
+            if (!vence.isAfter(ahora)) vence=inicio;
+            try (PreparedStatement confirmacion=conn.prepareStatement("INSERT INTO confirmacion_asistencia(id_cita,creada_en,vence_en) VALUES(?,?,?)")) {
+                confirmacion.setInt(1,id);confirmacion.setObject(2,ahora);confirmacion.setObject(3,vence);confirmacion.executeUpdate();
+            }
+            return id;
         }
     }
 

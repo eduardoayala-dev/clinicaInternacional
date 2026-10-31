@@ -38,6 +38,7 @@ abstract class AgendaCitaContrato {
         sql("CREATE TABLE motivo_cita(id_motivo INT PRIMARY KEY,id_especialidad INT,estado VARCHAR(20))");
         sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR(20))");
         sql("CREATE TABLE cita(id_cita INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora TIMESTAMP,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20))");
+        sql("CREATE TABLE confirmacion_asistencia(id_cita INT PRIMARY KEY,creada_en TIMESTAMP,vence_en TIMESTAMP,confirmada_en TIMESTAMP,canal VARCHAR(16),id_usuario_confirmo INT)");
         sql("CREATE TABLE notificacion(id_notificacion INT AUTO_INCREMENT PRIMARY KEY,id_usuario INT,id_cita INT,tipo VARCHAR(30),canal VARCHAR(30),mensaje VARCHAR(300),estado_envio VARCHAR(30),leida INT,fecha_envio DATETIME)");
         sql("CREATE TABLE lista_espera(id_lista_espera INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_especialidad INT,id_sede INT,nivel_urgencia VARCHAR(20),rango_horario VARCHAR(20),canal_notificacion VARCHAR(40),fecha_registro DATETIME,estado VARCHAR(20),posicion INT,anticipacion_minutos INT DEFAULT 180,id_medico_preferido INT)");
         sql("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_cita_original INT,id_lista_espera INT,id_disponibilidad INT,fecha_oferta DATETIME,fecha_limite_respuesta DATETIME,estado VARCHAR(20),id_cita_asignada INT)");
@@ -65,6 +66,7 @@ abstract class AgendaCitaContrato {
         assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_disponibilidad="+bloque+" AND estado='CONFIRMADA'"));
         assertEquals(1,count("SELECT COUNT(*) FROM notificacion WHERE id_usuario=1 AND id_cita="+cita));
         assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE fecha_hora='2026-12-01 09:00:00'"));
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia ca JOIN cita c ON c.id_cita=ca.id_cita WHERE c.id_disponibilidad="+bloque+" AND ca.confirmada_en IS NULL"));
     }
 
     @Test void neverInventsAnAgendaWhenThereAreNoPublishedSlots() throws Exception {

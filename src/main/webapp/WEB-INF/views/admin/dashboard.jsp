@@ -103,6 +103,9 @@
             <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
                 <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
             </a>
+            <a href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones" class="adm-nav-item">
+                <i data-lucide="phone-call" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Confirmaciones y seguimiento</span>
+            </a>
             <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
                 <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
             </a>

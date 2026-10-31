@@ -13,7 +13,7 @@ public final class EsquemaPruebas {
             if (!connection.getCatalog().startsWith("clinica_agendas_test_")) throw new SQLException("Catálogo de prueba inválido.");
         } else if (!url.startsWith("jdbc:h2:mem:")) throw new SQLException("Solo se permiten esquemas de prueba.");
         try (var st=connection.createStatement()) {
-            for(String table:List.of("correo_cita","verificacion_cuenta","recuperacion_contrasena","limite_recuperacion","sesion_autenticacion","auditoria_seguridad","seguimiento_cita","consulta_clinica","atencion_cita",
+            for(String table:List.of("correo_cita","contacto_admision_cita","confirmacion_asistencia","verificacion_cuenta","recuperacion_contrasena","limite_recuperacion","sesion_autenticacion","auditoria_seguridad","seguimiento_cita","consulta_clinica","atencion_cita",
                     "inasistencia_cita","reasignacion_inteligente","historial_asistencia","admision_cita",
                     "personal_administrativo","notificacion","lista_espera","cita","motivo_cita",
                     "disponibilidad","propuesta_horario","medico","paciente","sede","especialidad","usuario")) {
