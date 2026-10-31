@@ -29,7 +29,7 @@ class PacienteCitasFechaTest {
         sql("UPDATE cita SET fecha_hora='2026-10-27 23:50:00',estado='EN_ATENCION'");
         assertEquals(1,dao.obtenerProximasCitasPaciente(1).size());assertTrue(dao.obtenerHistorialPaciente(1).isEmpty());
     }
-    @Test void laClasificacionUsaElDiaDeLimaAunqueElRelojSeaUtc()throws Exception {
+    @Test void laClasificacionUsaElDiaDeLimaAunqueElRelojSeaUtc() {
         var madrugada=new CitaDAO(){
             @Override protected Connection abrirConexion()throws SQLException{return fixture.abrir();}
             @Override protected Clock relojClinico(){return Clock.fixed(Instant.parse("2026-10-29T03:00:00Z"),ZoneOffset.UTC);}

@@ -28,6 +28,7 @@ public class CitaDAO {
     private static final String ESTADO_CANCELADA = "CANCELADA";
     private static final String ESTADO_SOLICITADA = "SOLICITADA";
     private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
+    private static final String ESTADO = "estado";
     private static final String ESPECIALIDAD = "especialidad";
 
     private static final Logger LOGGER = Logger.getLogger(CitaDAO.class.getName());
@@ -137,7 +138,7 @@ public class CitaDAO {
                      "ORDER BY c.fecha_hora DESC";
         List<Map<String, Object>> list = ejecutarConsultaCitas(sql, idPaciente,inicioDiaClinico());
         for (Map<String, Object> c : list) {
-            boolean pendiente=Set.of(ESTADO_SOLICITADA,ESTADO_CONFIRMADA).contains(c.get("estado"));
+            boolean pendiente=Set.of(ESTADO_SOLICITADA,ESTADO_CONFIRMADA).contains(c.get(ESTADO));
             c.put("pendienteCierre",pendiente);
             c.put("tipo",pendiente?"Cita pasada":"Consulta");
             if(pendiente)c.put("estadoTexto","Pasada · asistencia por registrar");
@@ -221,8 +222,8 @@ public class CitaDAO {
         map.put("consultorio", "Sin asignar");
         map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
         map.put("modalidad", "Presencial");
-        String est = rs.getString("estado");
-        map.put("estado", est != null ? est : ESTADO_CONFIRMADA);
+        String est = rs.getString(ESTADO);
+        map.put(ESTADO, est != null ? est : ESTADO_CONFIRMADA);
         map.put("estadoTexto", switch(est == null ? "" : est) {
             case "EN_ATENCION" -> "En atención";
             case "NO_ATENDIDA" -> "No atendida";
