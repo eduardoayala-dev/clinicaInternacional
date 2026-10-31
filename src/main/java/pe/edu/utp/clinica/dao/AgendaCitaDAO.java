@@ -89,7 +89,11 @@ public final class AgendaCitaDAO {
         LocalDateTime desde = futura(fecha, inicio);
         LocalTime hasta = hora(fin);
         validarIntervalo(desde.toLocalTime(), hasta, minutos);
-        return transaccion(conn -> {
+        return transaccion(conn -> publicarEnConexion(conn, medico, sede, desde, hasta, minutos));
+    }
+
+    int publicarEnConexion(Connection conn, int medico, int sede, LocalDateTime desde, LocalTime hasta, int minutos) throws SQLException {
+            validarIntervalo(desde.toLocalTime(), hasta, minutos);
             Medico perfil = medico(conn, medico);
             validarFutura(desde);
             if (sede != perfil.sede()) throw invalida("La sede debe ser la asignada al médico.");
@@ -105,7 +109,6 @@ public final class AgendaCitaDAO {
                 ps.executeUpdate();
                 return clave(ps);
             }
-        });
     }
 
     public void cambiarEstado(int disponibilidad, String estado) {
