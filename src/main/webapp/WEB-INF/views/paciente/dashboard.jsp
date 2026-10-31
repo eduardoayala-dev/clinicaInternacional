@@ -118,7 +118,7 @@
                         <h2 class="summary-card-title">Próxima cita</h2>
                         <c:choose>
                             <c:when test="${not empty proximaCita}">
-                                <span class="status-badge-confirmed">Confirmada · Web</span>
+                                <span class="status-badge-confirmed">Cita programada</span>
                             </c:when>
                             <c:otherwise>
                                 <span class="status-badge-confirmed" style="background:#f1f5f9;color:#64748b;">Sin citas</span>
