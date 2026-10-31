@@ -46,7 +46,7 @@
 
     <!-- Estilos Base y Específicos -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css?v=20261030-5">
 </head>
 <body>
 
@@ -193,19 +193,11 @@
                         <!-- FILA 4: CANAL DE NOTIFICACIÓN -->
                         <div class="form-group" style="margin-top: 20px;">
                             <span class="field-label" id="preferenciaContacto">6. Preferencia de contacto *</span>
-                            <p>Las ofertas se notifican en este portal. Registramos WhatsApp y correo como preferencias de contacto.</p>
+                            <p class="espera-contact-help">Recibirás las ofertas en este portal. El canal de contacto disponible es el correo electrónico.</p>
                             <fieldset class="checkboxes-row-group" aria-labelledby="preferenciaContacto" style="border:0;padding:0;margin:0;min-width:0;">
-                                <label class="canal-card active" id="labelCanalWhatsapp">
-                                    <input type="checkbox" name="canales" value="whatsapp" checked onchange="toggleCheckboxCard(this, 'labelCanalWhatsapp')">
-                                    <span class="custom-checkbox">
-                                        <i data-lucide="check" style="width: 13px; height: 13px;"></i>
-                                    </span>
-                                    <i data-lucide="smartphone" class="canal-device-icon"></i>
-                                    <span class="card-item-label">SMS / WhatsApp</span>
-                                </label>
 
-                                <label class="canal-card" id="labelCanalEmail">
-                                    <input type="checkbox" name="canales" value="email" onchange="toggleCheckboxCard(this, 'labelCanalEmail')">
+                                <label class="canal-card active" id="labelCanalEmail">
+                                    <input type="checkbox" name="canales" value="email" checked onclick="return false" aria-readonly="true">
                                     <span class="custom-checkbox">
                                         <i data-lucide="check" style="width: 13px; height: 13px;"></i>
                                     </span>
