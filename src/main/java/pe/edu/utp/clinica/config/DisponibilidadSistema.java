@@ -94,6 +94,11 @@ public final class DisponibilidadSistema implements AutoCloseable {
                     if (schema.getMetaData().getColumnCount()!=3) return false;
                 }
             }
+            if(Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false"))) {
+                try(var schema=statement.executeQuery("SELECT id_cita,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_cita WHERE 1=0")) {
+                    if(schema.getMetaData().getColumnCount()!=6)return false;
+                }
+            }
             try (var schema=statement.executeQuery("SELECT id_propuesta,id_medico,id_sede,estado FROM propuesta_horario WHERE 1=0")) {
                 if (schema.getMetaData().getColumnCount()!=4) return false;
             }
