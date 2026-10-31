@@ -210,6 +210,33 @@ CREATE TABLE cita (
     CONSTRAINT fk_cita_motivo FOREIGN KEY (id_motivo) REFERENCES motivo_cita(id_motivo)
 ) ENGINE=InnoDB;
 
+CREATE TABLE confirmacion_asistencia (
+    id_cita INT PRIMARY KEY,
+    creada_en DATETIME(6) NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    confirmada_en DATETIME(6) DEFAULT NULL,
+    canal VARCHAR(16) DEFAULT NULL,
+    id_usuario_confirmo INT DEFAULT NULL,
+    CONSTRAINT fk_confirmacion_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_confirmacion_usuario FOREIGN KEY (id_usuario_confirmo) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_confirmacion_canal CHECK (canal IS NULL OR canal IN ('WEB','ADMISION')),
+    INDEX idx_confirmacion_pendiente (confirmada_en, vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE contacto_admision_cita (
+    id_contacto BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_cita INT NOT NULL,
+    id_usuario_personal INT NOT NULL,
+    fecha_contacto DATETIME(6) NOT NULL,
+    canal VARCHAR(16) NOT NULL,
+    resultado VARCHAR(24) NOT NULL,
+    CONSTRAINT fk_contacto_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_contacto_usuario FOREIGN KEY (id_usuario_personal) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_contacto_canal CHECK (canal IN ('LLAMADA','CORREO')),
+    CONSTRAINT ck_contacto_resultado CHECK (resultado IN ('SIN_RESPUESTA','CONFIRMA','NO_CONFIRMA')),
+    INDEX idx_contacto_cita_fecha (id_cita, fecha_contacto)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- -----------------------------------------------------------------------------
 -- 11. CLASE/TABLA: lista_espera
 -- -----------------------------------------------------------------------------

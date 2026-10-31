@@ -35,6 +35,8 @@ class CitaAutorizacionTest {
             st.execute("CREATE TABLE disponibilidad(id_disponibilidad INT PRIMARY KEY,id_medico INT,id_sede INT,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR(20))");
             st.execute("CREATE TABLE motivo_cita(id_motivo INT PRIMARY KEY,descripcion VARCHAR(255))");
             st.execute("CREATE TABLE cita(id_cita INT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora DATETIME,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20),fecha_recomendada_proxima DATE,fecha_creacion DATETIME,FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente),FOREIGN KEY(id_medico) REFERENCES medico(id_medico))");
+            st.execute("CREATE TABLE confirmacion_asistencia(id_cita INT PRIMARY KEY,creada_en DATETIME,vence_en DATETIME,confirmada_en DATETIME,canal VARCHAR(16),id_usuario_confirmo INT,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_confirmo) REFERENCES usuario(id_usuario))");
+            st.execute("CREATE TABLE contacto_admision_cita(id_contacto BIGINT AUTO_INCREMENT PRIMARY KEY,id_cita INT,id_usuario_personal INT,fecha_contacto DATETIME,canal VARCHAR(16),resultado VARCHAR(24),FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_personal) REFERENCES usuario(id_usuario))");
             st.execute("CREATE TABLE personal_administrativo(id_personal INT PRIMARY KEY,id_usuario INT,id_sede INT,FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario))");
             st.execute("CREATE TABLE admision_cita(id_cita INT PRIMARY KEY,id_usuario_personal INT NOT NULL,fecha_llegada DATETIME NOT NULL,tolerancia_minutos SMALLINT NOT NULL,llego_tarde BOOLEAN NOT NULL,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_personal) REFERENCES usuario(id_usuario))");
             String migracion = java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V004__flujo_atencion.sql"));
@@ -53,6 +55,7 @@ class CitaAutorizacionTest {
             st.execute("INSERT INTO especialidad(id_especialidad,nombre) VALUES(1,'General')");
             st.execute("INSERT INTO sede(id_sede,nombre) VALUES(1,'Central')");
             st.execute("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado,nivel_urgencia) VALUES(7,1,1,'2026-10-28 09:00:00','CONFIRMADA','MEDIA')");
+            st.execute("INSERT INTO confirmacion_asistencia(id_cita,creada_en,vence_en) VALUES(7,'2026-10-28 10:00:00','2026-10-29 09:00:00')");
         }
     }
 
