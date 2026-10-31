@@ -17,10 +17,20 @@ import java.util.Map;
 
 @WebServlet(name="AdmisionHorariosServlet", urlPatterns="/admin/horarios")
 public final class AdmisionHorariosServlet extends HttpServlet {
+    private static final String APROBAR = "aprobar";
     private transient PropuestaHorarioDAO propuestas;
     @Override public void init() { propuestas = new PropuestaHorarioDAO(); }
-    @Override protected void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException { atender(request, response, false); }
-    @Override protected void doPost(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException { atender(request, response, true); }
+    @Override protected void doGet(HttpServletRequest request, HttpServletResponse response) { responder(request, response, false); }
+    @Override protected void doPost(HttpServletRequest request, HttpServletResponse response) { responder(request, response, true); }
+
+    private void responder(HttpServletRequest request, HttpServletResponse response, boolean escritura) {
+        try {
+            atender(request, response, escritura);
+        } catch (IOException | ServletException e) {
+            java.util.logging.Logger.getLogger(getClass().getName()).warning("No se pudo entregar la respuesta de horarios de admisión.");
+            if (!response.isCommitted()) response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
 
     private void atender(HttpServletRequest request, HttpServletResponse response, boolean escritura) throws IOException, ServletException {
         try {
@@ -47,10 +57,10 @@ public final class AdmisionHorariosServlet extends HttpServlet {
 
     private void revisar(HttpServletRequest request, HttpServletResponse response, Usuario usuario) throws IOException {
         String accion = request.getParameter("accion");
-        if (!"aprobar".equals(accion) && !"rechazar".equals(accion)) throw new AgendaException(400, "ACCION_INVALIDA", "Selecciona aprobar o rechazar.");
+        if (!APROBAR.equals(accion) && !"rechazar".equals(accion)) throw new AgendaException(400, "ACCION_INVALIDA", "Selecciona aprobar o rechazar.");
         int id = MedicoPortalServlet.positivo(request.getParameter("idPropuesta"));
-        int bloques = propuestas.revisar(usuario.getIdUsuario(), id, "aprobar".equals(accion), request.getParameter("motivo"));
-        String mensaje = "aprobar".equals(accion) ? "Propuesta aprobada: "+bloques+" turnos publicados." : "Propuesta rechazada. El médico podrá consultar el motivo.";
+        int bloques = propuestas.revisar(usuario.getIdUsuario(), id, APROBAR.equals(accion), request.getParameter("motivo"));
+        String mensaje = APROBAR.equals(accion) ? "Propuesta aprobada: "+bloques+" turnos publicados." : "Propuesta rechazada. El médico podrá consultar el motivo.";
         if (MedicoPortalServlet.json(request)) ApiJson.write(response, 200, new ApiResponse<>("PROPUESTA_REVISADA", mensaje, Map.of("idPropuesta", id, "turnosPublicados", bloques)));
         else {
             request.getSession().setAttribute("horariosMensaje", mensaje);

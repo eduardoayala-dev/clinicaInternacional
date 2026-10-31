@@ -96,11 +96,17 @@ abstract class PropuestaHorarioContrato {
     }
 
     @Test void validaRangoDiasDuracionYTurnosCompletos() {
-        for(int dias:new int[]{0,128,-1}) assertThrows(AgendaException.class,()->propuestas.proponer(3,dias,LocalDate.of(2026,12,1),LocalDate.of(2026,12,8),LocalTime.of(9,0),LocalTime.of(11,0),30));
-        for(int minutos:new int[]{0,4,241,50}) assertThrows(AgendaException.class,()->propuestas.proponer(3,3,LocalDate.of(2026,12,1),LocalDate.of(2026,12,8),LocalTime.of(9,0),LocalTime.of(11,0),minutos));
-        assertThrows(AgendaException.class,()->propuestas.proponer(3,3,LocalDate.of(2026,10,26),LocalDate.of(2026,12,8),LocalTime.of(9,0),LocalTime.of(11,0),30));
-        assertThrows(AgendaException.class,()->propuestas.proponer(3,3,LocalDate.of(2026,12,1),LocalDate.of(2027,12,8),LocalTime.of(9,0),LocalTime.of(11,0),30));
-        assertThrows(AgendaException.class,()->propuestas.proponer(3,1,LocalDate.of(2026,12,1),LocalDate.of(2026,12,1),LocalTime.of(9,0),LocalTime.of(11,0),30));
+        LocalDate desde = LocalDate.of(2026,12,1);
+        LocalDate hasta = LocalDate.of(2026,12,8);
+        LocalDate pasada = LocalDate.of(2026,10,26);
+        LocalDate lejana = LocalDate.of(2027,12,8);
+        LocalTime inicio = LocalTime.of(9,0);
+        LocalTime fin = LocalTime.of(11,0);
+        for(int dias:new int[]{0,128,-1}) assertThrows(AgendaException.class,()->propuestas.proponer(3,dias,desde,hasta,inicio,fin,30));
+        for(int minutos:new int[]{0,4,241,50}) assertThrows(AgendaException.class,()->propuestas.proponer(3,3,desde,hasta,inicio,fin,minutos));
+        assertThrows(AgendaException.class,()->propuestas.proponer(3,3,pasada,hasta,inicio,fin,30));
+        assertThrows(AgendaException.class,()->propuestas.proponer(3,3,desde,lejana,inicio,fin,30));
+        assertThrows(AgendaException.class,()->propuestas.proponer(3,1,desde,desde,inicio,fin,30));
     }
 
     @Test void noApruebaPropuestaVencidaNiDeMedicoDesactivado() throws Exception {
