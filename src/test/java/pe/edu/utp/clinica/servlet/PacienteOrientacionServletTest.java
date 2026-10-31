@@ -24,15 +24,15 @@ class PacienteOrientacionServletTest {
         var body=new com.fasterxml.jackson.databind.ObjectMapper().readTree(x.body.toString());
         assertEquals(72,body.get("data").get("idEspecialidad").asInt());assertFalse(body.get("data").has("prioridad"));assertEquals("no-store",x.responseHeaders.get("Cache-Control"));
     }
-    @Test void otroRolOIdentidadAusenteNoConsultaDatos() throws Exception {
+    @Test void otroRolOIdentidadAusenteNoConsultaDatos() {
         for(String rol:List.of("MEDICO","ADMINISTRADOR","PERSONAL_ADMINISTRATIVO")) {var x=request(rol);servlet().doPost(x.request,x.response);assertEquals(403,x.status);}
         var x=request("PACIENTE");x.session=null;servlet().doPost(x.request,x.response);assertEquals(403,x.status);
     }
-    @Test void declaracionFicticiaEsObligatoriaYTextoLibreNoInventaResultados() throws Exception {
+    @Test void declaracionFicticiaEsObligatoriaYTextoLibreNoInventaResultados() {
         var x=request("PACIENTE");x.parameters.remove("casoFicticio");servlet().doPost(x.request,x.response);assertEquals(400,x.status);
         x=request("PACIENTE");x.parameters.put("relato","Otro caso de texto libre no predefinido");servlet().doPost(x.request,x.response);assertEquals(503,x.status);
     }
-    @Test void getRechazadoMantieneElContratoJson() throws Exception {
+    @Test void getRechazadoMantieneElContratoJson() {
         var x=request("PACIENTE");x.method="GET";servlet().doGet(x.request,x.response);
         assertEquals(405,x.status);assertEquals("POST",x.responseHeaders.get("Allow"));
         assertTrue(x.body.toString().contains("METODO_NO_PERMITIDO"));
