@@ -15,6 +15,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 import java.util.logging.Logger;
 
@@ -118,9 +119,9 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND c.estado IN ('SOLICITADA','CONFIRMADA','EN_SALA','EN_ATENCION') " +
+                     "WHERE c.id_paciente = ? AND (c.estado IN ('EN_SALA','EN_ATENCION') OR (c.estado IN ('SOLICITADA','CONFIRMADA') AND c.fecha_hora>=?)) " +
                      "ORDER BY c.fecha_hora ASC";
-        return ejecutarConsultaCitas(sql, idPaciente);
+        return ejecutarConsultaCitas(sql, idPaciente,inicioDiaClinico());
     }
 
     public List<Map<String, Object>> obtenerHistorialPaciente(int idPaciente) {
@@ -132,11 +133,14 @@ public class CitaDAO {
                      "JOIN usuario u ON m.id_usuario = u.id_usuario " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND c.estado IN ('ATENDIDA','NO_ASISTIO','NO_ATENDIDA') " +
+                     "WHERE c.id_paciente = ? AND (c.estado IN ('ATENDIDA','NO_ASISTIO','NO_ATENDIDA') OR (c.estado IN ('SOLICITADA','CONFIRMADA') AND c.fecha_hora<?)) " +
                      "ORDER BY c.fecha_hora DESC";
-        List<Map<String, Object>> list = ejecutarConsultaCitas(sql, idPaciente);
+        List<Map<String, Object>> list = ejecutarConsultaCitas(sql, idPaciente,inicioDiaClinico());
         for (Map<String, Object> c : list) {
-            c.put("tipo", "Consulta");
+            boolean pendiente=Set.of(ESTADO_SOLICITADA,ESTADO_CONFIRMADA).contains(c.get("estado"));
+            c.put("pendienteCierre",pendiente);
+            c.put("tipo",pendiente?"Cita pasada":"Consulta");
+            if(pendiente)c.put("estadoTexto","Pasada · asistencia por registrar");
         }
         return list;
     }
@@ -156,10 +160,19 @@ public class CitaDAO {
     }
 
     private List<Map<String, Object>> ejecutarConsultaCitas(String sql, int idPaciente) {
+        return ejecutarConsultaCitas(sql,idPaciente,null);
+    }
+
+    private java.time.LocalDateTime inicioDiaClinico() {
+        return LocalDate.now(relojClinico().withZone(java.time.ZoneId.of(ZONA_CLINICA))).atStartOfDay();
+    }
+
+    private List<Map<String, Object>> ejecutarConsultaCitas(String sql, int idPaciente,java.time.LocalDateTime limite) {
         List<Map<String, Object>> list = new ArrayList<>();
         try (Connection conn = abrirConexion();
              PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, idPaciente);
+            if(limite!=null)ps.setObject(2,limite);
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     list.add(mapearFilaCita(rs));
@@ -309,13 +322,14 @@ public class CitaDAO {
         if (idCita <= 0 || idPaciente <= 0) return false;
         if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
-        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?)";
+        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?) AND fecha_hora>=?";
         try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setString(1, nuevoEstado);
             ps.setInt(2, idCita);
             ps.setInt(3, idPaciente);
             ps.setString(4, ESTADO_SOLICITADA);
             ps.setString(5, alternativo);
+            ps.setObject(6,inicioDiaClinico());
             return ps.executeUpdate() == 1;
         } catch (SQLException e) {
             LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
