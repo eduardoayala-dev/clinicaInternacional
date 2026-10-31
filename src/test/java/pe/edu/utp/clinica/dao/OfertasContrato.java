@@ -361,7 +361,7 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         assertEquals(1,own.size());
         int id=(Integer)own.get(0).get("idNotificacion");
         assertFalse(notificaciones.marcarNotificacionIndividualLeida(id,5));
-        assertFalse(notificaciones.confirmarRecordatorioCita(id,2));
+        assertFalse(notificaciones.confirmarAsistenciaDesdeNotificacion(id,2));
         assertEquals(1,notificaciones.contarNotificacionesSinLeer(2));
         assertTrue(notificaciones.marcarNotificacionIndividualLeida(id,2));
         assertEquals(0,notificaciones.contarNotificacionesSinLeer(2));
@@ -374,10 +374,101 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         sql("UPDATE cita SET estado='SOLICITADA'");
         notificaciones.crearNotificacion(1,cita,"Recordatorio de cita","Confirma tu cita.");
         int id=count("SELECT MAX(id_notificacion) FROM notificacion");
-        assertFalse(notificaciones.confirmarRecordatorioCita(id,2));
-        assertTrue(notificaciones.confirmarRecordatorioCita(id,1));
-        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
+        assertFalse(notificaciones.confirmarAsistenciaDesdeNotificacion(id,2));
+        assertTrue(notificaciones.confirmarAsistenciaDesdeNotificacion(id,1));
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE id_cita="+cita+" AND confirmada_en IS NOT NULL"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='SOLICITADA'"));
         sql("UPDATE cita SET estado='CANCELADA'");
-        assertFalse(notificaciones.confirmarRecordatorioCita(id,1));
+        assertEquals(409,assertThrows(AgendaException.class,()->notificaciones.confirmarAsistenciaDesdeNotificacion(id,1)).status());
+    }
+
+    private int reservaParaConfirmar() {
+        dao.publicar(1,1,FECHA,"09:00","10:00",30);
+        return dao.reservar(1,1,FECHA,"09:00","MEDIA");
+    }
+
+    @Test void leerUnAvisoNoConfirmaAsistenciaNiOcultaLaAccion() throws Exception {
+        int cita=reservaParaConfirmar();
+        int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        assertTrue(notificaciones.marcarNotificacionesComoLeidas(1));
+        var datos=notificaciones.obtenerNotificacionesUsuario(1).get(0);
+        assertEquals("Leído",datos.get("estado"));
+        assertEquals("Confirmar",datos.get("accion"));
+        assertEquals("Asistencia pendiente",datos.get("estadoAsistencia"));
+        assertEquals(0,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE confirmada_en IS NOT NULL"));
+        assertTrue(notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1));
+        assertTrue(notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1));
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE id_cita="+cita+" AND confirmada_en IS NOT NULL AND canal='WEB' AND id_usuario_confirmo=1"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
+    }
+
+    @Test void confirmarEnMisCitasSeReflejaEnLaBandejaSinModificarLaLectura() throws Exception {
+        int cita=reservaParaConfirmar();
+        int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        var confirmaciones=new ConfirmacionAsistenciaDAO(this::abrir,reloj);
+        confirmaciones.confirmarPaciente(1,cita);
+        var datos=notificaciones.obtenerNotificacionesUsuario(1).get(0);
+        assertEquals("Asistencia confirmada",datos.get("estadoAsistencia"));
+        assertEquals("Ver",datos.get("accion"));
+        assertEquals("Pendiente",datos.get("estado"));
+        assertEquals(true,datos.get("asistenciaConfirmada"));
+        assertTrue(notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1));
+        assertTrue(confirmaciones.estadoDelPaciente(1,java.util.List.of(cita)).get(cita).confirmada());
+    }
+
+    @Test void notificacionesRespetaElInstanteExactoDeVencimiento() throws Exception {
+        reservaParaConfirmar(); int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        sql("UPDATE confirmacion_asistencia SET vence_en='2026-10-27 10:10:00'");
+        assertEquals("Ver",notificaciones.obtenerNotificacionesUsuario(1).get(0).get("accion"));
+        assertEquals("Plazo de confirmación vencido",notificaciones.obtenerNotificacionesUsuario(1).get(0).get("estadoAsistencia"));
+        assertEquals("PLAZO_CONFIRMACION_VENCIDO",assertThrows(AgendaException.class,()->notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1)).code());
+        assertEquals(0,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE confirmada_en IS NOT NULL"));
+        assertEquals(1,count("SELECT COUNT(*) FROM notificacion WHERE leida=0"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
+    }
+
+    @Test void unaNotificacionMalRelacionadaNoPermiteConfirmarUnaCitaAjena() throws Exception {
+        int cita=reservaParaConfirmar();
+        notificaciones.crearNotificacion(2,cita,"Recordatorio","Aviso mal relacionado");
+        int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        assertFalse(notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,2));
+        assertEquals("Ver",notificaciones.obtenerNotificacionesUsuario(2).get(0).get("accion"));
+        assertEquals(false,notificaciones.obtenerNotificacionesUsuario(2).get(0).get("asistenciaConfirmada"));
+        assertEquals(0,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE confirmada_en IS NOT NULL"));
+    }
+
+    @Test void citasPasadasNoSePuedenConfirmarDesdeUnaNotificacionAntigua() throws Exception {
+        reservaParaConfirmar(); int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        sql("UPDATE cita SET fecha_hora='2026-10-27 10:09:00'");
+        assertEquals("Ver",notificaciones.obtenerNotificacionesUsuario(1).get(0).get("accion"));
+        assertEquals(409,assertThrows(AgendaException.class,()->notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1)).status());
+        assertEquals(0,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE confirmada_en IS NOT NULL"));
+    }
+
+    @Test void ambasPantallasConfirmanALaVezSinDuplicarNiEmitirAntesDelCommit() throws Exception {
+        int cita=reservaParaConfirmar(); int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        var confirmaciones=new ConfirmacionAsistenciaDAO(this::abrir,reloj);
+        var eventos=new java.util.concurrent.atomic.AtomicInteger();
+        var inicio=new CountDownLatch(1);var executor=Executors.newFixedThreadPool(2);
+        try(var suscripcion=pe.edu.utp.clinica.eventos.EventosAgenda.INSTANCIA.suscribir(1,999,eventos::incrementAndGet)) {
+            assertNotNull(suscripcion);
+            var a=executor.submit(()->{assertTrue(inicio.await(5,TimeUnit.SECONDS));confirmaciones.confirmarPaciente(1,cita);return true;});
+            var b=executor.submit(()->{assertTrue(inicio.await(5,TimeUnit.SECONDS));return notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1);});
+            inicio.countDown();assertTrue(a.get(15,TimeUnit.SECONDS));assertTrue(b.get(15,TimeUnit.SECONDS));
+        } finally {executor.shutdownNow();}
+        assertEquals(1,eventos.get());
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE confirmada_en IS NOT NULL"));
+    }
+
+    @Test void falloAlMarcarElAvisoRevierteLaAsistenciaYNoEmiteEvento() throws Exception {
+        reservaParaConfirmar();int aviso=count("SELECT MAX(id_notificacion) FROM notificacion");
+        sql("ALTER TABLE notificacion DROP COLUMN leida");
+        var eventos=new java.util.concurrent.atomic.AtomicInteger();
+        try(var suscripcion=pe.edu.utp.clinica.eventos.EventosAgenda.INSTANCIA.suscribir(1,999,eventos::incrementAndGet)) {
+            assertNotNull(suscripcion);
+            assertEquals(503,assertThrows(AgendaException.class,()->notificaciones.confirmarAsistenciaDesdeNotificacion(aviso,1)).status());
+        }
+        assertEquals(0,eventos.get());
+        assertEquals(0,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE confirmada_en IS NOT NULL"));
     }
 }

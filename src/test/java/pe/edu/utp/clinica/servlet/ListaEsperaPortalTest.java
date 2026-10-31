@@ -14,10 +14,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 class ListaEsperaPortalTest {
     private static class Citas extends CitaDAO {
+        int confirmaciones;
+        int lecturas;
+        AgendaException errorConfirmacion;
         @Override public int obtenerIdPacientePorUsuarioId(int usuario) { return 5; }
         @Override public List<Map<String,Object>> obtenerNotificacionesUsuario(int usuario) { return List.of(); }
         @Override public int contarNotificacionesSinLeer(int usuario) { return 0; }
-        @Override public boolean marcarNotificacionIndividualLeida(int id,int usuario) { return id==20 && usuario==10; }
+        @Override public boolean marcarNotificacionIndividualLeida(int id,int usuario) { lecturas++; return id==20 && usuario==10; }
+        @Override public boolean confirmarAsistenciaDesdeNotificacion(int id,int usuario) {
+            confirmaciones++;
+            if(errorConfirmacion!=null)throw errorConfirmacion;
+            return id==20 && usuario==10;
+        }
     }
     private static class Lista extends ListaEsperaDAO {
         int llamadas, paciente, aviso;
@@ -52,8 +60,11 @@ class ListaEsperaPortalTest {
         servlet.init(); return servlet;
     }
     private PacienteNotificacionesServlet notificaciones(Ofertas dao) {
+        return notificaciones(dao,new Citas());
+    }
+    private PacienteNotificacionesServlet notificaciones(Ofertas dao,Citas citas) {
         var servlet=new PacienteNotificacionesServlet() {
-            @Override protected CitaDAO crearCitaDAO() { return new Citas(); }
+            @Override protected CitaDAO crearCitaDAO() { return citas; }
             @Override protected OfertasDAO crearOfertasDAO() { return dao; }
         };
         servlet.init(); return servlet;
@@ -118,5 +129,29 @@ class ListaEsperaPortalTest {
         x=request(); x.parameters.putAll(Map.of("action","marcarLeida","id","20"));
         notificaciones(new Ofertas()).doPost(x.request,x.response);
         assertEquals(200,x.status);
+    }
+
+    @Test void confirmarAsistenciaYLeerTienenContratosYOperacionesIndependientes() throws Exception {
+        var citas=new Citas();var servlet=notificaciones(new Ofertas(),citas);
+        var x=request();x.parameters.putAll(Map.of("action","marcarLeida","id","20"));
+        servlet.doPost(x.request,x.response);
+        assertEquals(200,x.status);assertEquals(1,citas.lecturas);assertEquals(0,citas.confirmaciones);
+        assertEquals("NOTIFICACION_LEIDA",new ObjectMapper().readTree(x.body.toString()).get("code").asText());
+        x=request();x.parameters.putAll(Map.of("action","confirmar","id","20","idUsuario","999"));
+        servlet.doPost(x.request,x.response);
+        assertEquals(200,x.status);assertEquals(1,citas.confirmaciones);assertEquals(1,citas.lecturas);
+        assertEquals("ASISTENCIA_CONFIRMADA",new ObjectMapper().readTree(x.body.toString()).get("code").asText());
+        x=request();x.parameters.putAll(Map.of("accion","confirmarCita","idNotificacion","20"));
+        servlet.doPost(x.request,x.response);
+        assertEquals(200,x.status);assertEquals(2,citas.confirmaciones);
+    }
+
+    @Test void confirmarFueraDePlazoConservaElErrorSinMarcarLectura() throws Exception {
+        var citas=new Citas();citas.errorConfirmacion=new AgendaException(409,"PLAZO_CONFIRMACION_VENCIDO","El plazo terminó.");
+        var x=request();x.parameters.putAll(Map.of("action","confirmar","id","20"));
+        notificaciones(new Ofertas(),citas).doPost(x.request,x.response);
+        assertEquals(409,x.status);assertEquals(0,citas.lecturas);
+        var body=new ObjectMapper().readTree(x.body.toString());
+        assertEquals("PLAZO_CONFIRMACION_VENCIDO",body.get("code").asText());assertTrue(body.get("data").isNull());
     }
 }
