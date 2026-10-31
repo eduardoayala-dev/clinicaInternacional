@@ -1,0 +1,48 @@
+<%@ page pageEncoding="UTF-8" %>
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
+<aside class="sidebar" aria-label="Navegación del paciente">
+    <a href="${pageContext.request.contextPath}/paciente/dashboard" class="brand-container">
+        <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="" class="brand-logo-img">
+        <span class="brand-text">
+            <span class="brand-title">Clínica Internacional</span>
+            <span class="brand-subtitle">Portal del paciente</span>
+        </span>
+    </a>
+    <nav class="nav-menu" aria-label="Secciones">
+        <%
+            String[][] enlacesPaciente = {
+                {"inicio", "dashboard", "home", "Inicio"},
+                {"citas", "citas", "search", "Programar cita"},
+                {"historial", "historial", "calendar", "Mis citas"},
+                {"espera", "lista-espera", "clock", "Lista de espera"},
+                {"notificaciones", "notificaciones", "bell", "Notificaciones"},
+                {"perfil", "perfil", "user", "Perfil"}
+            };
+            for (String[] enlacePaciente : enlacesPaciente) {
+                boolean activaPaciente = enlacePaciente[0].equals(seccionPaciente);
+        %>
+            <a href="${pageContext.request.contextPath}/paciente/<%= Html.texto(enlacePaciente[1]) %>" class="nav-item<%= activaPaciente ? " active" : "" %>" aria-current="<%= activaPaciente ? "page" : "false" %>">
+                <i data-lucide="<%= Html.texto(enlacePaciente[2]) %>" aria-hidden="true"></i>
+                <span><%= Html.texto(enlacePaciente[3]) %></span>
+                <% if ("notificaciones".equals(enlacePaciente[0]) && numNotifSinLeer > 0) { %>
+                    <span class="badge-count" aria-label="<%= numNotifSinLeer %> notificaciones sin leer"><%= numNotifSinLeer %></span>
+                <% } %>
+            </a>
+        <% } %>
+    </nav>
+    <div class="user-profile">
+        <a href="${pageContext.request.contextPath}/paciente/perfil" class="patient-user-link" aria-current="<%= "perfil".equals(seccionPaciente) ? "page" : "false" %>" title="<%= Html.texto(nombrePaciente) %>">
+            <span class="avatar"><%= Html.texto(inicialesPaciente) %></span>
+            <span class="user-info">
+                <span class="user-name"><%= Html.texto(nombrePaciente) %></span>
+                <span class="user-role">Paciente</span>
+            </span>
+        </a>
+        <form method="POST" action="${pageContext.request.contextPath}/logout" class="patient-logout-form">
+            <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+            <button type="submit" class="btn-logout" title="Cerrar sesión" aria-label="Cerrar sesión">
+                <i data-lucide="log-out" aria-hidden="true"></i>
+            </button>
+        </form>
+    </div>
+</aside>
