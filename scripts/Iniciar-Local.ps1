@@ -1,5 +1,5 @@
 [CmdletBinding()]
-param([switch]$Jwt,[switch]$Correo)
+param([switch]$Jwt,[switch]$Correo,[switch]$Gemini)
 
 $ErrorActionPreference = 'Stop'
 $proyecto = [IO.Path]::GetFullPath((Join-Path $PSScriptRoot '..'))
@@ -21,9 +21,14 @@ try {
         if (-not (Test-Path -LiteralPath '.env.mail' -PathType Leaf)) { throw 'Falta .env.mail.' }
         $opciones += @('--env-file', '.env.mail')
     }
+    if ($Gemini) {
+        if (-not (Test-Path -LiteralPath '.env.gemini' -PathType Leaf)) { throw 'Falta .env.gemini; usa config/gemini.env.example como plantilla.' }
+        $opciones += @('--env-file', '.env.gemini')
+    }
     $opciones += @('-f', 'docker-compose.yml', '-f', 'compose.dni.yml')
     if ($Jwt) { $opciones += @('-f', 'compose.auth.yml') }
     if ($Correo) { $opciones += @('-f', 'compose.mail.yml') }
+    if ($Gemini) { $opciones += @('-f', 'compose.gemini.yml') }
     & docker @opciones up -d --build app
     if ($LASTEXITCODE -ne 0) { throw 'No se pudo iniciar el entorno local. Revisa Docker y la configuración privada.' }
     Write-Host 'Entorno local completo: http://localhost:8080/login/paciente'
