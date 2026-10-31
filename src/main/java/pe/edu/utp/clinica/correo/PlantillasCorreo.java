@@ -41,15 +41,19 @@ public final class PlantillasCorreo {
     }
 
     private static String marco(String contenido) {
+        return marco(contenido,"Seguridad de cuenta");
+    }
+
+    static String marco(String contenido,String tema) {
         return """
-                <!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Seguridad de cuenta</title></head>
+                <!doctype html><html lang="es"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>%s</title></head>
                 <body style="margin:0;padding:0;background:#f1f5f9;font-family:Arial,Helvetica,sans-serif">
                 <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="background:#f1f5f9"><tr><td align="center" style="padding:32px 12px">
                 <table role="presentation" width="100%%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#fff;border:1px solid #daeaf8;border-radius:16px">
-                <tr><td style="padding:28px 32px;background:#0b4f8a;border-radius:16px 16px 0 0;color:#fff"><p style="margin:0;font-size:20px;font-weight:bold">Clínica Internacional</p><p style="margin:6px 0 0;font-size:13px;color:#c6e4ff">Sistema de citas · Seguridad de cuenta</p></td></tr>
+                <tr><td style="padding:28px 32px;background:#0b4f8a;border-radius:16px 16px 0 0;color:#fff"><p style="margin:0;font-size:20px;font-weight:bold">Clínica Internacional</p><p style="margin:6px 0 0;font-size:13px;color:#c6e4ff">Sistema de citas · %s</p></td></tr>
                 <tr><td style="padding:32px">%s</td></tr>
                 <tr><td style="padding:20px 32px;border-top:1px solid #daeaf8;color:#64748b;font-size:12px;line-height:1.6">Proyecto universitario · Mensaje automático<br>No respondas con tu contraseña ni compartas códigos de verificación.</td></tr>
                 </table></td></tr></table></body></html>
-                """.formatted(contenido);
+                """.formatted(Html.texto(tema),Html.texto(tema),contenido);
     }
 }

@@ -38,6 +38,7 @@ WHERE table_schema=DATABASE() AND (
  OR (table_name='cita' AND column_name='estado'))
 ORDER BY table_name,ordinal_position;
 
+SELECT id_cita,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_cita WHERE 1=0;
 
 SELECT 'propuestas_horarios' AS comprobacion, COUNT(*) AS columnas FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='propuesta_horario';
 SELECT 'vinculo_propuesta' AS comprobacion, COUNT(*) AS columnas FROM information_schema.columns WHERE table_schema=DATABASE() AND table_name='disponibilidad' AND column_name='id_propuesta';

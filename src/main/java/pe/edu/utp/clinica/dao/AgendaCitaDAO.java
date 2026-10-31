@@ -22,6 +22,7 @@ public final class AgendaCitaDAO {
     private static final String OCUPADO = "HORARIO_NO_DISPONIBLE";
     private final ConnectionSource connections;
     private final Clock clock;
+    private final boolean correosActivos;
 
     @FunctionalInterface
     interface ConnectionSource { Connection open() throws SQLException; }
@@ -33,8 +34,12 @@ public final class AgendaCitaDAO {
         this(connections, Clock.system(ZoneId.of("America/Lima")));
     }
     AgendaCitaDAO(ConnectionSource connections, Clock clock) {
+        this(connections,clock,Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false")));
+    }
+    AgendaCitaDAO(ConnectionSource connections, Clock clock,boolean correosActivos) {
         this.connections = connections;
         this.clock = clock;
+        this.correosActivos=correosActivos;
     }
 
     public int reservar(int paciente, int medico, String fecha, String hora, String urgencia) {
@@ -311,6 +316,7 @@ public final class AgendaCitaDAO {
     }
 
     private void notificar(Connection conn, int usuario, int cita, String mensaje) throws SQLException {
+        if(correosActivos)pe.edu.utp.clinica.correo.CorreosCitaJdbc.encolar(conn,cita,clock.instant());
         String sql = "INSERT INTO notificacion (id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida,fecha_envio) VALUES (?,?,'Citas','PLATAFORMA',?,'ENVIADA',0,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, usuario);
