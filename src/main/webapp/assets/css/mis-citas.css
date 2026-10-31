@@ -637,3 +637,8 @@
     border-color: #dc2626;
 }
 
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-confirmar-asistencia { transition: none; }
+    .btn-confirmar-asistencia:hover { transform: none; }
+}
