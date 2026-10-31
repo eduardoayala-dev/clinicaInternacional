@@ -9,6 +9,7 @@ import java.util.List;
 public record PropuestaHorario(int id, int medico, int sede, String nombreMedico, String nombreSede,
         int dias, LocalDate desde, LocalDate hasta, LocalTime inicio, LocalTime fin, int minutos,
         String estado, String motivo) {
+    private static final String PUBLICADO = "PUBLICADO";
     public boolean incluye(LocalDate fecha) {
         return (dias & (1 << (fecha.getDayOfWeek().getValue() - 1))) != 0;
     }
@@ -23,10 +24,10 @@ public record PropuestaHorario(int id, int medico, int sede, String nombreMedico
     }
 
     public String estadoVisible(LocalDate hoy) {
-        if (("PUBLICADO".equals(estado) || "PENDIENTE".equals(estado)) && hasta.isBefore(hoy)) return "Vencido";
-        if ("PUBLICADO".equals(estado) && !hasta.isAfter(hoy.plusDays(7))) return "Por vencer";
+        if ((PUBLICADO.equals(estado) || "PENDIENTE".equals(estado)) && hasta.isBefore(hoy)) return "Vencido";
+        if (PUBLICADO.equals(estado) && !hasta.isAfter(hoy.plusDays(7))) return "Por vencer";
         return switch (estado) {
-            case "PUBLICADO" -> "Publicado";
+            case PUBLICADO -> "Publicado";
             case "RECHAZADO" -> "Rechazado";
             default -> "Pendiente de revisión";
         };

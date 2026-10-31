@@ -2,7 +2,7 @@
     <aside class="adm-sidebar">
         <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
             <div class="adm-brand-logo-wrap">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
+                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img">
             </div>
             <div>
                 <div class="adm-brand-name">Clínica Internacional</div>

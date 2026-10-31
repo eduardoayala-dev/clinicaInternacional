@@ -50,11 +50,21 @@ public final class PropuestaHorarioDAO {
     }
 
     public List<PropuestaHorario> delMedico(int usuario) {
-        return TransaccionJdbc.ejecutar(connections, conn -> listar(conn, "WHERE p.id_medico=? ORDER BY p.id_propuesta DESC LIMIT 100", medicoUsuario(conn, usuario)));
+        return TransaccionJdbc.ejecutar(connections, conn -> {
+            try (var ps = conn.prepareStatement(SELECT + "WHERE p.id_medico=? ORDER BY p.id_propuesta DESC LIMIT 100")) {
+                ps.setInt(1, medicoUsuario(conn, usuario));
+                return listar(ps);
+            }
+        });
     }
 
     public List<PropuestaHorario> paraAdmision(int usuario) {
-        return TransaccionJdbc.ejecutar(connections, conn -> listar(conn, "WHERE p.id_sede=? ORDER BY CASE WHEN p.estado='PENDIENTE' THEN 0 ELSE 1 END,p.id_propuesta DESC LIMIT 100", sedePersonal(conn, usuario)));
+        return TransaccionJdbc.ejecutar(connections, conn -> {
+            try (var ps = conn.prepareStatement(SELECT + "WHERE p.id_sede=? ORDER BY CASE WHEN p.estado='PENDIENTE' THEN 0 ELSE 1 END,p.id_propuesta DESC LIMIT 100")) {
+                ps.setInt(1, sedePersonal(conn, usuario));
+                return listar(ps);
+            }
+        });
     }
 
     public int revisar(int usuario, int id, boolean aprobar, String motivo) {
@@ -77,13 +87,13 @@ public final class PropuestaHorarioDAO {
     private int publicar(Connection conn, PropuestaHorario p) throws SQLException {
         if (AgendaCitaDAO.medico(conn, p.medico()).sede() != p.sede()) throw invalida("La sede del médico cambió. Solicita una nueva propuesta.");
         int publicados = 0;
-        for (LocalDate fecha = p.desde(); !fecha.isAfter(p.hasta()); fecha = fecha.plusDays(1)) {
-            if (p.incluye(fecha) && LocalDateTime.of(fecha, p.inicio()).isAfter(LocalDateTime.now(clock))) {
-                int bloque = agenda.publicarEnConexion(conn, p.medico(), p.sede(), LocalDateTime.of(fecha, p.inicio()), p.fin(), p.minutos());
-                try (var ps = conn.prepareStatement("UPDATE disponibilidad SET id_propuesta=? WHERE id_disponibilidad=?")) {
+        try (var ps = conn.prepareStatement("UPDATE disponibilidad SET id_propuesta=? WHERE id_disponibilidad=?")) {
+            for (LocalDate fecha = p.desde(); !fecha.isAfter(p.hasta()); fecha = fecha.plusDays(1)) {
+                if (p.incluye(fecha) && LocalDateTime.of(fecha, p.inicio()).isAfter(LocalDateTime.now(clock))) {
+                    int bloque = agenda.publicarEnConexion(conn, p.medico(), p.sede(), LocalDateTime.of(fecha, p.inicio()), p.fin(), p.minutos());
                     ps.setInt(1, p.id()); ps.setInt(2, bloque); ps.executeUpdate();
+                    publicados++;
                 }
-                publicados++;
             }
         }
         if (publicados == 0) throw invalida("La propuesta ya no tiene turnos futuros. Solicita una nueva vigencia.");
@@ -137,14 +147,11 @@ public final class PropuestaHorarioDAO {
         }
     }
 
-    private static List<PropuestaHorario> listar(Connection conn, String condicion, int id) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement(SELECT + condicion)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                List<PropuestaHorario> lista = new ArrayList<>();
-                while (rs.next()) lista.add(leer(rs));
-                return List.copyOf(lista);
-            }
+    private static List<PropuestaHorario> listar(PreparedStatement ps) throws SQLException {
+        try (ResultSet rs = ps.executeQuery()) {
+            List<PropuestaHorario> lista = new ArrayList<>();
+            while (rs.next()) lista.add(leer(rs));
+            return List.copyOf(lista);
         }
     }
 
