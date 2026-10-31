@@ -55,3 +55,11 @@
     .seguimiento-nota { padding: 12px; }
 }
 @media (prefers-reduced-motion: reduce) { .seguimiento-refresh,.seguimiento-form button { transition: none; } }
+.seguimiento-datos { display: flex; flex-direction: column; gap: 22px; min-width: 0; }
+.seguimiento-actualizacion-fila { display: flex; align-items: center; flex-wrap: wrap; gap: 10px 16px; }
+.seguimiento-actualizacion { margin: 0; font-size: 12px; color: #52677f; }
+.seguimiento-descartar { padding: 7px 10px; border: 1px solid #cbd5e1; border-radius: 7px; background: #fff; color: #15518a; font: inherit; font-size: 12px; cursor: pointer; }
+.seguimiento-descartar[hidden] { display: none; }
+.seguimiento-error { padding: 12px 16px; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; line-height: 1.5; }
+.seguimiento-error[hidden] { display: none; }
+.seguimiento-refresh[aria-disabled="true"] { opacity: .65; cursor: wait; }

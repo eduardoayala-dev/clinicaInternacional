@@ -311,7 +311,9 @@ public class CitaDAO {
             ps.setInt(2, idCita);
             ps.setString(3, anterior);
             ps.setString(4, alternativo);
-            return ps.executeUpdate() == 1;
+            boolean actualizado = ps.executeUpdate() == 1;
+            if (actualizado) avisarCambioCita(conn, idCita);
+            return actualizado;
         } catch (SQLException e) {
             LOGGER.warning("No se pudo actualizar el estado de la cita.");
             return false;
@@ -331,7 +333,9 @@ public class CitaDAO {
             ps.setString(4, ESTADO_SOLICITADA);
             ps.setString(5, alternativo);
             ps.setObject(6,inicioDiaClinico());
-            return ps.executeUpdate() == 1;
+            boolean actualizado = ps.executeUpdate() == 1;
+            if (actualizado) avisarCambioCita(conn, idCita);
+            return actualizado;
         } catch (SQLException e) {
             LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
             return false;
@@ -586,5 +590,14 @@ public class CitaDAO {
         }
         String clean = rawCmp.trim().replaceAll("(?i)^CMP[-:\\s]*", "").trim();
         return "CMP " + clean;
+    }
+
+    private static void avisarCambioCita(Connection conn, int cita) {
+        try (PreparedStatement ps = conn.prepareStatement("SELECT m.id_sede FROM cita c JOIN medico m ON m.id_medico=c.id_medico WHERE c.id_cita=?")) {
+            ps.setInt(1, cita);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (rs.next()) pe.edu.utp.clinica.eventos.EventosAgenda.INSTANCIA.publicar(rs.getInt(1));
+            }
+        } catch (SQLException e) { LOGGER.warning("La cita se guardó; no se pudo avisar de su actualización."); }
     }
 }

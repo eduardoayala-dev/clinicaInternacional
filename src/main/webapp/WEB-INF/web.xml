@@ -9,6 +9,7 @@
     <filter>
         <filter-name>AutenticacionJwtFilter</filter-name>
         <filter-class>pe.edu.utp.clinica.filter.AutenticacionJwtFilter</filter-class>
+        <async-supported>true</async-supported>
     </filter>
     <filter-mapping>
         <filter-name>AutenticacionJwtFilter</filter-name><url-pattern>/*</url-pattern><dispatcher>REQUEST</dispatcher>
@@ -17,6 +18,7 @@
     <filter>
         <filter-name>CsrfFilter</filter-name>
         <filter-class>pe.edu.utp.clinica.filter.CsrfFilter</filter-class>
+        <async-supported>true</async-supported>
     </filter>
     <filter-mapping>
         <filter-name>CsrfFilter</filter-name>

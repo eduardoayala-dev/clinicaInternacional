@@ -20,7 +20,7 @@ public final class AutenticacionJwtFilter implements Filter {
             chain.doFilter(request,response); return;
         }
         try {
-            gestor.resolver(req,res,!"/auth/estado".equals(path));
+            gestor.resolver(req,res,actividadHumana(req,path));
         } catch (SQLException e) {
             LOGGER.warning("No se pudo verificar el acceso: "+pe.edu.utp.clinica.config.DatabaseConfig.diagnosticoSeguro(e));
             res.setHeader("Retry-After","3");
@@ -32,5 +32,10 @@ public final class AutenticacionJwtFilter implements Filter {
             return;
         }
         chain.doFilter(request,response);
+    }
+    private static boolean actividadHumana(HttpServletRequest request, String path) {
+        if ("/auth/estado".equals(path) || "/admin/eventos-confirmaciones".equals(path)) return false;
+        return !("/admin/seguimiento-confirmaciones".equals(path)
+                && "XMLHttpRequest".equals(request.getHeader("X-Requested-With")));
     }
 }
