@@ -48,6 +48,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css">
 </head>
 <body>
 
@@ -151,7 +152,7 @@
                 <div id="viewModeSelector">
                     <div class="mode-selection-grid">
                         
-                        <!-- TARJETA 1: ORIENTACIÓN MÉDICA POR IA -->
+                        <!-- TARJETA 1: ORIENTACIÓN POR ESPECIALIDAD -->
                         <div class="mode-card" onclick="iniciarModoIA()">
                             <div>
                                 <div class="mode-card-top-row">
@@ -159,19 +160,19 @@
                                         <i data-lucide="bot" style="width: 26px; height: 26px;"></i>
                                     </div>
                                     <span class="mode-badge-pill badge-pill-mint">
-                                        Nuevo · Asistido por IA
+                                        Prototipo · IA opcional
                                     </span>
                                 </div>
 
-                                <div class="mode-kicker">ORIENTACIÓN MÉDICA POR IA</div>
+                                <div class="mode-kicker">ORIENTACIÓN POR ESPECIALIDAD</div>
                                 <h2 class="mode-card-title">No sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
-                                    Describe lo que sientes. Nuestra IA analizará tus síntomas para sugerirte el especialista adecuado según disponibilidad, con validación de nuestro equipo médico si es necesario.
+                                    En esta demostración académica puedes probar casos ficticios para sugerir una especialidad del catálogo. La sugerencia no asigna prioridad clínica.
                                 </p>
                             </div>
 
                             <button type="button" class="btn-card-action">
-                                <span>Describir síntomas</span>
+                                <span>Probar un caso ficticio</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -220,8 +221,8 @@
                                 <i data-lucide="bot" style="width: 24px; height: 24px;"></i>
                             </div>
                             <div>
-                                <h3 style="font-size: 17px; font-weight: 700; color: #1e3a8a;">Asistente de Orientación Clínica por IA</h3>
-                                <p style="font-size: 13px; color: #64748b;">Describe tus síntomas para orientarte con la especialidad médica más adecuada.</p>
+                                <h3 style="font-size: 17px; font-weight: 700; color: #1e3a8a;">Prototipo de orientación por especialidad</h3>
+                                <p style="font-size: 13px; color: #64748b;">Demostración académica: utiliza únicamente casos ficticios, sin nombres, DNI ni datos reales de salud.</p>
                             </div>
                         </div>
                         <button type="button" onclick="cerrarPanelIA()" style="background: none; border: none; cursor: pointer; color: #64748b;" title="Cerrar">
@@ -231,27 +232,28 @@
 
                     <div style="margin-bottom: 12px;">
                         <label for="aiSintomasInput" style="font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 6px;">
-                            ¿Qué síntomas o molestias presentas?
+                            ¿Qué molestias describe el caso ficticio?
                         </label>
-                        <textarea id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Ej: Tengo dolor de cabeza punzante desde hace 2 días, mareos ligeros al levantarme y molestia con la luz..."></textarea>
+                        <textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Describe aquí un caso ficticio. Sin Gemini configurado solo funcionan los ejemplos de demostración."></textarea>
                     </div>
 
-                    <div class="quick-symptoms-label">O selecciona síntomas frecuentes:</div>
+                    <p id="aiAvisoDemo" class="ai-demo-note">Prototipo educativo. Los ejemplos locales son predefinidos y no se presentan como respuestas de Gemini. El texto libre requiere configurar el proveedor.</p>
+                    <label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Confirmo que este es un caso ficticio sin información personal.</label>
+                    <p class="ai-demo-status" id="aiEstadoOrientacion" role="status" aria-live="polite"></p>
+                    <p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
+                    <div class="quick-symptoms-label">Ejemplos ficticios para comprobar el flujo:</div>
                     <div class="quick-chips-wrapper">
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor de cabeza y mareos')">🤕 Dolor de cabeza y mareos</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Opresión en el pecho y palpitaciones')">❤️ Molestia en el pecho</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor articular o lesión en rodilla/espalda')">🦴 Articulaciones o columna</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Erupción o manchas en la piel')">🧴 Alergia o piel</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor estomacal y acidez')">🍏 Estómago o digestivo</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Fiebre persistente y malestar general')">🌡️ Fiebre y malestar</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Caso ficticio: picazón y manchas en la piel')">Ejemplo: piel</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Caso ficticio: molestia articular en la rodilla')">Ejemplo: rodilla</button>
+                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Caso ficticio: acidez y molestia estomacal')">Ejemplo: digestivo</button>
                     </div>
 
-                    <div style="display: flex; gap: 12px; align-items: center;">
+                    <div class="ai-demo-actions">
                         <button type="button" id="btnAnalizarIA" class="btn-card-action btn-card-royal" onclick="ejecutarAnalisisIA()">
                             <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
-                            <span>Analizar síntomas con IA</span>
+                            <span>Consultar especialidad</span>
                         </button>
-                        <button type="button" class="btn-secondary-flat" onclick="cerrarPanelIA()">Volver</button>
+                        <button type="button" class="btn-back-pill" onclick="cerrarPanelIA()">Volver</button>
                     </div>
 
                     <!-- RESULTADO DEL ANÁLISIS DE IA -->
@@ -261,25 +263,23 @@
                                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
                                     <span class="mode-badge-pill badge-pill-mint" style="margin-bottom: 0;">
                                         <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-                                        Especialidad sugerida: <strong id="aiEspecialidadNombre" style="margin-left: 4px;">Neurología</strong>
+                                        Especialidad sugerida: <strong id="aiEspecialidadNombre" style="margin-left: 4px;"></strong>
                                     </span>
-                                    <span id="aiPrioridadBadge" class="mode-badge-pill" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
-                                        Prioridad: Moderada
-                                    </span>
+
                                 </div>
-                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Orientación preliminar</h4>
+                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Resultado de la demostración</h4>
                                 <p id="aiExplicacionTexto" style="font-size: 13.5px; color: #334155; line-height: 1.5;">
-                                    Los síntomas ingresados coinciden con el área de Neurología para evaluar posibles cuadros de cefalea o migraña.
+
                                 </p>
                             </div>
                         </div>
 
-                        <div style="padding-top: 14px; border-top: 1px solid #dcfce7; display: flex; gap: 12px; align-items: center;">
-                            <button type="button" class="btn-primary-search" onclick="aplicarRecomendacionIA()">
+                        <div class="ai-demo-actions ai-demo-actions-result">
+                            <button type="button" id="aiAplicarSugerencia" class="btn-card-action btn-card-royal" onclick="aplicarRecomendacionIA()">
                                 <span>Continuar con esta especialidad</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button type="button" class="btn-secondary-flat" onclick="iniciarModoDirecto()">Elegir otra manualmente</button>
+                            <button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir otra manualmente</button>
                         </div>
                     </div>
                 </div>
@@ -530,7 +530,7 @@
                                 <!-- TARJETA DERECHA: DATOS DE LA RESERVA -->
                                 <div class="finalizar-card">
                                     <h3 class="finalizar-card-title">Datos de la reserva</h3>
-                                    
+
                                     <div class="form-group-motivo">
                                         <label for="selectMotivoPaso3" class="finalizar-field-label">Motivo de consulta *</label>
                                         <div class="select-with-icon-wrap">
@@ -741,8 +741,9 @@
         // --- NAVEGACIÓN DE MODOS ---
         function iniciarModoIA() {
             state.modo = 'IA';
-            document.getElementById('pageMainTitle').textContent = 'Orientación médica por IA';
-            document.getElementById('pageMainSubtitle').textContent = 'Describe tus síntomas para orientarte con la especialidad médica más adecuada.';
+            state.pasoActual = 1;
+            document.getElementById('pageMainTitle').textContent = 'Orientación por especialidad';
+            document.getElementById('pageMainSubtitle').textContent = 'Demostración académica: utiliza únicamente casos ficticios, sin nombres, DNI ni datos reales de salud.';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'block';
             document.getElementById('wizardFlowSection').style.display = 'none';
@@ -754,12 +755,14 @@
         }
 
         function cerrarPanelIA() {
+            invalidarOrientacion();
             document.getElementById('aiTriagePanel').style.display = 'none';
             volverASeleccionModos();
         }
 
-        function iniciarModoDirecto() {
-            state.modo = 'DIRECTO';
+        function iniciarModoDirecto(origen = 'DIRECTO') {
+            invalidarOrientacion();
+            state.modo = origen;
             document.getElementById('pageMainTitle').textContent = 'Buscar cita';
             document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
             document.getElementById('viewModeSelector').style.display = 'none';
@@ -773,12 +776,17 @@
         }
 
         function volverASeleccionModos() {
+            invalidarOrientacion();
             if (state.pasoActual === 2) {
                 volverAPaso1();
                 return;
             }
             if (state.pasoActual === 3) {
                 volverAPaso2();
+                return;
+            }
+            if (state.modo === 'IA' && document.getElementById('wizardFlowSection').style.display !== 'none') {
+                iniciarModoIA();
                 return;
             }
             state.modo = 'NINGUNO';
@@ -792,137 +800,91 @@
             lucide.createIcons();
         }
 
-        // --- ASISTENTE IA DE SÍNTOMAS ---
-        function agregarSintoma(btn, texto) {
-            const textarea = document.getElementById('aiSintomasInput');
-            if (textarea.value.trim() === '') {
-                textarea.value = texto;
-            } else if (!textarea.value.includes(texto)) {
-                textarea.value += ', ' + texto;
-            }
-            btn.classList.add('selected');
+        let sugerenciaOrientacion = null;
+        let peticionOrientacion = null;
+
+        function invalidarOrientacion() {
+            peticionOrientacion?.abort();
+            peticionOrientacion = null;
+            sugerenciaOrientacion = null;
+            document.getElementById('aiResultadoBox').style.display = 'none';
+            document.getElementById('aiEstadoOrientacion').textContent = '';
+            document.getElementById('aiErrorOrientacion').hidden = true;
+            const boton = document.getElementById('btnAnalizarIA');
+            boton.disabled = false;
+            boton.querySelector('span').textContent = 'Consultar especialidad';
         }
 
-        function ejecutarAnalisisIA() {
-            const texto = document.getElementById('aiSintomasInput').value.trim().toLowerCase();
-            if (!texto) {
-                alert('Por favor escribe tus síntomas o selecciona alguno de los sugeridos.');
-                document.getElementById('aiSintomasInput').focus();
+        function agregarSintoma(boton, texto) {
+            invalidarOrientacion();
+            document.getElementById('aiSintomasInput').value = texto;
+        }
+
+        async function ejecutarAnalisisIA() {
+            const boton = document.getElementById('btnAnalizarIA');
+            if (boton.disabled) return;
+            invalidarOrientacion();
+            const error = document.getElementById('aiErrorOrientacion');
+            const estado = document.getElementById('aiEstadoOrientacion');
+            if (!document.getElementById('aiCasoFicticio').checked) {
+                error.textContent = 'Confirma que estás usando un caso ficticio, sin datos personales.';
+                error.hidden = false;
                 return;
             }
-
-            const btn = document.getElementById('btnAnalizarIA');
-            btn.innerHTML = '<i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i> <span>Analizando con IA...</span>';
-            btn.disabled = true;
-
-            setTimeout(() => {
-                let recomendacion = clasificarSintomasIA(texto);
-
-                document.getElementById('aiEspecialidadNombre').textContent = recomendacion.especialidad;
-                document.getElementById('aiExplicacionTexto').textContent = recomendacion.explicacion;
-                
-                const badgePrioridad = document.getElementById('aiPrioridadBadge');
-                badgePrioridad.textContent = 'Prioridad: ' + recomendacion.prioridad;
-                if (recomendacion.prioridad === 'Alta') {
-                    badgePrioridad.style.background = '#fee2e2';
-                    badgePrioridad.style.color = '#b91c1c';
-                    badgePrioridad.style.borderColor = '#fca5a5';
-                } else if (recomendacion.prioridad === 'Media' || recomendacion.prioridad === 'Moderada') {
-                    badgePrioridad.style.background = '#fef3c7';
-                    badgePrioridad.style.color = '#b45309';
-                    badgePrioridad.style.borderColor = '#fde68a';
-                } else {
-                    badgePrioridad.style.background = '#dcfce7';
-                    badgePrioridad.style.color = '#15803d';
-                    badgePrioridad.style.borderColor = '#86efac';
-                }
-
-                state.especialidadNombre = recomendacion.especialidad;
-                state.especialidadId = recomendacion.idEsp;
-                state.urgencia = recomendacion.prioridad.toUpperCase();
-
+            const texto = document.getElementById('aiSintomasInput').value.trim();
+            if (texto.length < 12 || texto.length > 1200) {
+                error.textContent = 'Escribe un caso ficticio de entre 12 y 1200 caracteres.';
+                error.hidden = false;
+                return;
+            }
+            const controller = new AbortController();
+            peticionOrientacion = controller;
+            const timeout = setTimeout(() => controller.abort(), 15000);
+            boton.disabled = true;
+            boton.querySelector('span').textContent = 'Consultando…';
+            estado.textContent = 'Consultando el catálogo de especialidades…';
+            try {
+                const respuesta = await fetch('${pageContext.request.contextPath}/paciente/orientacion', {
+                    method: 'POST', credentials: 'same-origin', signal: controller.signal,
+                    headers: {Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams({relato: texto, casoFicticio: 'true', csrfToken: document.querySelector('meta[name="csrf-token"]').content})
+                });
+                const contenido = await respuesta.json();
+                if (peticionOrientacion !== controller) return;
+                if (!respuesta.ok) throw new Error(contenido.message || 'No se pudo obtener la sugerencia.');
+                const resultado = contenido.data;
+                if (resultado.tipo === 'ACLARAR') { estado.textContent = resultado.explicacion; return; }
+                const opciones = [...document.getElementById('selectEspecialidad').options];
+                if (resultado.tipo !== 'SUGERENCIA' || !opciones.some(o => o.value === String(resultado.idEspecialidad))) throw new Error('La especialidad no está disponible en este catálogo. Elige manualmente.');
+                sugerenciaOrientacion = resultado;
+                document.getElementById('aiEspecialidadNombre').textContent = resultado.especialidad;
+                document.getElementById('aiExplicacionTexto').textContent = resultado.explicacion;
+                estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Sugerencia demostrativa generada con Gemini y validada contra el catálogo.';
                 document.getElementById('aiResultadoBox').style.display = 'block';
-                btn.innerHTML = '<i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> <span>Analizar síntomas con IA</span>';
-                btn.disabled = false;
-                lucide.createIcons();
-            }, 550);
-        }
-
-        function clasificarSintomasIA(texto) {
-            if (texto.includes('pecho') || texto.includes('cardio') || texto.includes('presion') || texto.includes('palpitacion') || texto.includes('corazon')) {
-                return {
-                    especialidad: 'Cardiología',
-                    idEsp: '1',
-                    prioridad: 'Alta',
-                    explicacion: 'Se reportan síntomas de molestia torácica o palpitaciones. Recomendamos evaluación especializada con Cardiología.'
-                };
-            } else if (texto.includes('cabeza') || texto.includes('mareo') || texto.includes('migra') || texto.includes('vertigo') || texto.includes('neurol')) {
-                return {
-                    especialidad: 'Neurología',
-                    idEsp: '2',
-                    prioridad: 'Media',
-                    explicacion: 'Los episodios de cefalea y mareos corresponden al área de Neurología para un diagnóstico certero.'
-                };
-            } else if (texto.includes('rodilla') || texto.includes('hueso') || texto.includes('fractura') || texto.includes('espalda') || texto.includes('lumbar') || texto.includes('articular')) {
-                return {
-                    especialidad: 'Traumatología',
-                    idEsp: '4',
-                    prioridad: 'Media',
-                    explicacion: 'Las molestias osteoarticulares deben ser valoradas por Traumatología para determinar tratamiento o exámenes auxiliares.'
-                };
-            } else if (texto.includes('piel') || texto.includes('roncha') || texto.includes('mancha') || texto.includes('picaz') || texto.includes('acne')) {
-                return {
-                    especialidad: 'Dermatología',
-                    idEsp: '5',
-                    prioridad: 'Baja',
-                    explicacion: 'Las manifestaciones cutáneas sugieren consulta dermatológica para indicación de terapia tópica.'
-                };
-            } else if (texto.includes('estomago') || texto.includes('gast') || texto.includes('ardor') || texto.includes('reflujo') || texto.includes('vomito')) {
-                return {
-                    especialidad: 'Gastroenterología',
-                    idEsp: '6',
-                    prioridad: 'Media',
-                    explicacion: 'Los síntomas gástricos corresponden a Gastroenterología para evaluar reflujo o mucosa estomacal.'
-                };
-            } else {
-                return {
-                    especialidad: 'Medicina General',
-                    idEsp: '3',
-                    prioridad: 'Media',
-                    explicacion: 'Para evaluación médica inicial y descarte, Medicina General brindará un diagnóstico y plan de atención.'
-                };
+            } catch (fallo) {
+                if (peticionOrientacion !== controller) return;
+                error.textContent = fallo instanceof Error && fallo.name === 'Error' ? fallo.message : 'No se pudo completar la consulta. Puedes elegir la especialidad manualmente.';
+                error.hidden = false;
+                estado.textContent = '';
+            } finally {
+                clearTimeout(timeout);
+                if (peticionOrientacion === controller) {
+                    peticionOrientacion = null;
+                    boton.disabled = false;
+                    boton.querySelector('span').textContent = 'Consultar especialidad';
+                }
             }
         }
 
         function aplicarRecomendacionIA() {
-            document.getElementById('aiTriagePanel').style.display = 'none';
-            document.getElementById('wizardFlowSection').style.display = 'block';
-            document.getElementById('pageMainTitle').textContent = 'Buscar cita';
-            document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
-            const btnVolver = document.getElementById('btnVolverModos');
-            if (btnVolver) btnVolver.style.display = 'inline-flex';
-            
-            const selectEsp = document.getElementById('selectEspecialidad');
-            if (selectEsp) {
-                let found = false;
-                for (let i = 0; i < selectEsp.options.length; i++) {
-                    const opt = selectEsp.options[i];
-                    if (opt.text.toLowerCase().includes(state.especialidadNombre.toLowerCase())) {
-                        selectEsp.selectedIndex = i;
-                        state.especialidadId = opt.value;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found && selectEsp.options.length > 1) {
-                    selectEsp.selectedIndex = 1;
-                    state.especialidadId = selectEsp.value;
-                }
-            }
-
-            actualizarMedicosPorEspecialidad();
-            mostrarPaso(1);
-            lucide.createIcons();
+            if (!sugerenciaOrientacion) return;
+            const select = document.getElementById('selectEspecialidad');
+            const opcion = [...select.options].find(o => o.value === String(sugerenciaOrientacion.idEspecialidad));
+            if (!opcion) { invalidarOrientacion(); return; }
+            select.value = opcion.value;
+            state.especialidadId = opcion.value;
+            state.especialidadNombre = opcion.textContent;
+            iniciarModoDirecto('IA');
         }
 
         // --- CONTROL DEL STEPPER Y PANTALLAS ---
