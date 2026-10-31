@@ -12,14 +12,17 @@ class OrientacionCatalogoTest {
         assertEquals(72,r.idEspecialidad());assertEquals("EJEMPLO_LOCAL",r.proveedor());assertTrue(r.demostracion());
     }
     @Test void textoLibreSinProveedorNoSeClasificaConReglasOcultas() {
-        var error=assertThrows(AgendaException.class,()->new OrientacionCatalogo(null,false).orientar("Un relato libre distinto de los ejemplos",true,catalogo));assertEquals(503,error.status());
+        var servicio=new OrientacionCatalogo(null,false);
+        var error=assertThrows(AgendaException.class,()->servicio.orientar("Un relato libre distinto de los ejemplos",true,catalogo));assertEquals(503,error.status());
     }
     @Test void validaDatosAntesDeConsultarAlProveedor() {
         var s=new OrientacionCatalogo((relato,lista)->{fail("No debe enviar información");return null;},true);
         assertThrows(AgendaException.class,()->s.orientar("Texto largo ficticio",false,catalogo));
         assertThrows(AgendaException.class,()->s.orientar("corto",true,catalogo));
-        assertThrows(AgendaException.class,()->s.orientar("x".repeat(1201),true,catalogo));
-        assertThrows(AgendaException.class,()->s.orientar("Caso ficticio válido",true,List.of()));
+        String largo="x".repeat(1201);
+        var vacio=List.<OrientacionCatalogo.Especialidad>of();
+        assertThrows(AgendaException.class,()->s.orientar(largo,true,catalogo));
+        assertThrows(AgendaException.class,()->s.orientar("Caso ficticio válido",true,vacio));
     }
     @Test void rechazaIdentificadorAjenoYCualquierTextoDiagnosticoAdicional() {
         var ajeno=new OrientacionCatalogo((r,c)->new OrientacionCatalogo.Eleccion(999,"CATALOGO"),true);

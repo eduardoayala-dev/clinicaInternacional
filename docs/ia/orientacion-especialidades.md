@@ -60,10 +60,12 @@ Se repitieron 17 pruebas backend y 12 JavaScript. El recorrido de navegador con 
 
 La rama contiene únicamente la orientación por catálogo, su integración del paciente y la configuración opcional. Se exportaron sus commits con `git archive` a una copia aislada basada en `develop` (`7790a72`), excluyendo los trabajos locales pendientes de correo, horarios, citas pasadas, predicción de inasistencia y rendimiento.
 
-- Maven `package`: 652 casos descubiertos, 441 ejecutados, 211 omitidos por configuración, cero fallos/errores.
+- Maven `package`: 655 casos descubiertos, 444 ejecutados, 211 omitidos por configuración, cero fallos/errores.
 - JavaScript de reservas y catálogos: 12 pruebas aprobadas en esa misma copia.
-- Regresión de orientación: los 17 casos específicos están incluidos en la suite.
+- Regresión de orientación: los 20 casos específicos están incluidos en la suite.
 - Recorrido manual corregido aprobado por el usuario; reproducción de los tres ejemplos y del regreso desde calendario completada.
 - No requiere migración SQL ni configurar Gemini para utilizar los ejemplos. La prueba real de texto libre contra Gemini continúa pendiente; la conexión externa está apagada por defecto.
 
 Evidencia local: `target/orientacion-pr-aislado.log` y `target/orientacion-pr-js-aislado.log`. Los checks remotos de GitHub/SonarCloud se revisan por separado; una suite local aprobada no implica que el Quality Gate remoto ya esté aprobado.
+
+Las observaciones iniciales de SonarCloud se corrigieron manejando la desconexión del cliente dentro del servlet, usando configuración inmutable, trasladando la coordinación del límite de 15 segundos a un servicio propio y reemplazando el rol de estado por `output`. Se añadieron pruebas de desconexión y concurrencia; no cambian las sugerencias, la prioridad ni las reglas del recorrido aprobado. Evidencia de la copia aislada actualizada: `target/orientacion-pr-sonar-aislado.log` y `target/orientacion-pr-sonar-js.log`.

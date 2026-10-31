@@ -37,4 +37,10 @@ class PacienteOrientacionServletTest {
         assertEquals(405,x.status);assertEquals("POST",x.responseHeaders.get("Allow"));
         assertTrue(x.body.toString().contains("METODO_NO_PERMITIDO"));
     }
+    @Test void desconexionDelClienteNoPropagaUnaExcepcionDelServlet() {
+        var post=request("PACIENTE");post.writerFailure=new java.io.IOException("Desconexión de prueba");
+        var s=servlet();assertDoesNotThrow(()->s.doPost(post.request,post.response));assertEquals(500,post.status);
+        var get=request("PACIENTE");get.writerFailure=new java.io.IOException("Desconexión de prueba");
+        assertDoesNotThrow(()->s.doGet(get.request,get.response));assertEquals(500,get.status);
+    }
 }

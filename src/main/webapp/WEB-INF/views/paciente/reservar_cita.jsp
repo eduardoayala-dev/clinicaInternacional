@@ -239,7 +239,7 @@
 
                     <p id="aiAvisoDemo" class="ai-demo-note">Prototipo educativo. Los ejemplos locales son predefinidos y no se presentan como respuestas de Gemini. El texto libre requiere configurar el proveedor.</p>
                     <label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Confirmo que este es un caso ficticio sin información personal.</label>
-                    <p class="ai-demo-status" id="aiEstadoOrientacion" role="status" aria-live="polite"></p>
+                    <output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output>
                     <p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
                     <div class="quick-symptoms-label">Ejemplos ficticios para comprobar el flujo:</div>
                     <div class="quick-chips-wrapper">
