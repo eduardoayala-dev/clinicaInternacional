@@ -40,75 +40,24 @@
     <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programar Cita - Portal del Paciente | Clínica Internacional</title>
+    <title>Programar cita - Portal del Paciente | Clínica Internacional</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261030-3">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261030-4">
 </head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del paciente</span>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item active">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-                <span>Buscar cita</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-                <span>Mis citas</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                <span>Lista de espera</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                <span>Notificaciones</span>
-                <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-                <span>Perfil</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombrePaciente %></span>
-                <span class="user-role">Paciente</span>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </button>
-</form>
-        </div>
-    </aside>
+    <% String seccionPaciente = "citas"; %>
+    <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
 
     <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
+    <main class="main-content patient-booking">
         <c:if test="${not empty sessionScope.agendaError}">
             <p role="alert" class="catalogo-estado"><c:out value="${sessionScope.agendaError}"/></p>
             <c:remove var="agendaError" scope="session"/>
@@ -118,7 +67,7 @@
         <!-- HEADER INSTITUCIONAL -->
         <header class="dash-top-header">
             <nav class="breadcrumb-trail">
-                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Buscar cita</strong>
+                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Programar cita</strong>
             </nav>
 
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
@@ -137,7 +86,7 @@
                 <!-- CABECERA DE PÁGINA (TÍTULO, SUBTÍTULO Y BOTÓN VOLVER) -->
                 <div class="page-title-row-with-back" id="pageTitleRow">
                     <div>
-                        <h1 class="page-main-title" id="pageMainTitle">Programar Cita</h1>
+                        <h1 class="page-main-title" id="pageMainTitle">Programar cita</h1>
                         <p class="page-main-subtitle" id="pageMainSubtitle">Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.</p>
                     </div>
                     <button type="button" id="btnVolverModos" class="btn-back-pill" onclick="volverASeleccionModos()" style="display: none;">
@@ -153,32 +102,30 @@
                     <div class="mode-selection-grid">
                         
                         <!-- TARJETA 1: ORIENTACIÓN POR ESPECIALIDAD -->
-                        <div class="mode-card" onclick="iniciarModoIA()">
+                        <div class="mode-card">
                             <div>
                                 <div class="mode-card-top-row">
-                                    <div class="mode-card-icon">
-                                        <i data-lucide="bot" style="width: 26px; height: 26px;"></i>
+                                    <div class="mode-card-icon mode-card-icon-ai">
+                                        <span class="mode-ai-mark" aria-hidden="true">IA</span>
                                     </div>
                                     <span class="mode-badge-pill badge-pill-mint">
                                         Prototipo · IA opcional
                                     </span>
                                 </div>
-
-                                <div class="mode-kicker">ORIENTACIÓN POR ESPECIALIDAD</div>
                                 <h2 class="mode-card-title">No sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
                                     En esta demostración académica puedes probar casos ficticios para sugerir una especialidad del catálogo. La sugerencia no asigna prioridad clínica.
                                 </p>
                             </div>
 
-                            <button type="button" class="btn-card-action">
-                                <span>Probar un caso ficticio</span>
+                            <button type="button" class="btn-card-action" onclick="iniciarModoIA()">
+                                <span>Describir síntomas</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
 
                         <!-- TARJETA 2: RESERVA DIRECTA POR ESPECIALIDAD -->
-                        <div class="mode-card" onclick="iniciarModoDirecto()">
+                        <div class="mode-card">
                             <div>
                                 <div class="mode-card-top-row">
                                     <div class="mode-card-icon">
@@ -188,16 +135,14 @@
                                         Reserva directa
                                     </span>
                                 </div>
-
-                                <div class="mode-kicker">RESERVA DIRECTA POR ESPECIALIDAD</div>
                                 <h2 class="mode-card-title">Ya sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
                                     Elige directamente la especialidad, el médico de tu preferencia y el horario que mejor se acomode a ti.
                                 </p>
                             </div>
 
-                            <button type="button" class="btn-card-action">
-                                <span>Ver especialidades</span>
+                            <button type="button" class="btn-card-action" onclick="iniciarModoDirecto()">
+                                <span>Buscar cita</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -206,7 +151,6 @@
 
                     <!-- DISCLAIMER INFERIOR -->
                     <div class="disclaimer-banner">
-                        <i data-lucide="info" style="width: 20px; height: 20px;"></i>
                         <span>La orientación por IA no reemplaza una evaluación médica. Si presentas una emergencia, acude al centro de salud más cercano.</span>
                     </div>
                 </div>
@@ -215,47 +159,22 @@
                 <!-- PANEL ASISTENTE DE SÍNTOMAS IA                          -->
                 <!-- ======================================================= -->
                 <div id="aiTriagePanel" class="ai-triage-box">
-                    <div class="ai-triage-header">
-                        <div class="ai-triage-header-info">
-                            <div class="ai-badge-robot">
-                                <i data-lucide="bot" style="width: 24px; height: 24px;"></i>
-                            </div>
-                            <div>
-                                <h3 style="font-size: 17px; font-weight: 700; color: #1e3a8a;">Prototipo de orientación por especialidad</h3>
-                                <p style="font-size: 13px; color: #64748b;">Demostración académica: utiliza únicamente casos ficticios, sin nombres, DNI ni datos reales de salud.</p>
-                            </div>
-                        </div>
-                        <button type="button" onclick="cerrarPanelIA()" style="background: none; border: none; cursor: pointer; color: #64748b;" title="Cerrar">
-                            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
-                        </button>
-                    </div>
-
-                    <div style="margin-bottom: 12px;">
-                        <label for="aiSintomasInput" style="font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 6px;">
-                            ¿Qué molestias describe el caso ficticio?
-                        </label>
-                        <textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Describe aquí un caso ficticio. Sin Gemini configurado solo funcionan los ejemplos de demostración."></textarea>
-                    </div>
-
-                    <p id="aiAvisoDemo" class="ai-demo-note">Prototipo educativo. Los ejemplos locales son predefinidos y no se presentan como respuestas de Gemini. El texto libre requiere configurar el proveedor.</p>
-                    <label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Confirmo que este es un caso ficticio sin información personal.</label>
-                    <output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output>
-                    <p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
-                    <div class="quick-symptoms-label">Ejemplos ficticios para comprobar el flujo:</div>
-                    <div class="quick-chips-wrapper">
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Caso ficticio: picazón y manchas en la piel')">Ejemplo: piel</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Caso ficticio: molestia articular en la rodilla')">Ejemplo: rodilla</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Caso ficticio: acidez y molestia estomacal')">Ejemplo: digestivo</button>
-                    </div>
-
-                    <div class="ai-demo-actions">
-                        <button type="button" id="btnAnalizarIA" class="btn-card-action btn-card-royal" onclick="ejecutarAnalisisIA()">
-                            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
-                            <span>Consultar especialidad</span>
-                        </button>
-                        <button type="button" class="btn-back-pill" onclick="cerrarPanelIA()">Volver</button>
-                    </div>
-
+<div id="aiFormulario">
+<h2 class="orientation-question">¿Qué síntomas presenta el ejemplo?</h2><p class="orientation-help">Selecciona todos los que apliquen.</p>
+<div class="quick-chips-wrapper"><button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de cabeza')">Dolor de cabeza</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Fiebre')">Fiebre</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de pecho')">Dolor de pecho</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Malestar digestivo')">Malestar digestivo</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor muscular')">Dolor muscular</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Cansancio')">Cansancio</button></div>
+<p id="aiUrgenciaAviso" class="ai-demo-error" role="alert" hidden>Si se trata de una situación real con dolor de pecho intenso o dificultad para respirar, busca atención de emergencia; no esperes una cita.</p>
+<label for="aiSintomasInput" class="orientation-question">Describe cómo se siente (opcional)</label>
+<textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Por ejemplo: dolor de cabeza desde hace tres días…"></textarea>
+<p id="aiAvisoDemo" class="orientation-help">Demostración académica. Usa un caso de ejemplo sin nombres, DNI ni información personal. El texto libre requiere Gemini configurado; los ejemplos locales están predefinidos.</p>
+<label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Confirmo que el ejemplo no contiene datos personales ni información real de salud.</label>
+<button type="button" id="btnAnalizarIA" class="btn-card-action" onclick="ejecutarAnalisisIA()" disabled><span>Analizar síntomas</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+</div>
+<output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output><p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
                     <!-- RESULTADO DEL ANÁLISIS DE IA -->
                     <div id="aiResultadoBox" class="ai-response-result">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px;">
@@ -263,23 +182,23 @@
                                 <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
                                     <span class="mode-badge-pill badge-pill-mint" style="margin-bottom: 0;">
                                         <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-                                        Especialidad sugerida: <strong id="aiEspecialidadNombre" style="margin-left: 4px;"></strong>
+                                        Te sugerimos <strong id="aiEspecialidadNombre" style="margin-left: 4px;"></strong>
                                     </span>
 
                                 </div>
-                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Resultado de la demostración</h4>
+                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Orientación completada</h4>
                                 <p id="aiExplicacionTexto" style="font-size: 13.5px; color: #334155; line-height: 1.5;">
 
                                 </p>
                             </div>
                         </div>
 
-                        <div class="ai-demo-actions ai-demo-actions-result">
+                        <p class="orientation-result-note">Esta sugerencia orientativa no es un diagnóstico ni asigna prioridad clínica.</p><div class="ai-demo-actions ai-demo-actions-result">
                             <button type="button" id="aiAplicarSugerencia" class="btn-card-action btn-card-royal" onclick="aplicarRecomendacionIA()">
                                 <span>Continuar con esta especialidad</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir otra manualmente</button>
+                            <button type="button" class="btn-back-pill" onclick="editarSintomas()">Editar síntomas</button><button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir otra especialidad</button>
                         </div>
                     </div>
                 </div>
@@ -287,7 +206,7 @@
                 <!-- ======================================================= -->
                 <!-- WIZARD STEPPER Y FLUJO DE BÚSQUEDA                     -->
                 <!-- ======================================================= -->
-                <div id="wizardFlowSection" style="display: none;">
+                <div id="wizardFlowSection" style="display: none;"><div id="aiSugerenciaBuscador" class="orientation-search-note" hidden><span id="aiSugerenciaTexto"></span><button type="button" onclick="iniciarModoIA()">Volver a la orientación</button></div>
 
                     <!-- STEPPER (Alineado a la izquierda según diseño institucional) -->
                     <div class="wizard-stepper-container">
@@ -465,7 +384,7 @@
                                 </div>
                                 <div>
                                     <div class="waitlist-callout-title">No encontramos más citas disponibles para los criterios seleccionados</div>
-                                    <div class="waitlist-callout-sub">Sin costo adicional · confirmación vía SMS / email</div>
+                                    <div class="waitlist-callout-sub">Avisos por correo electrónico</div>
                                 </div>
                             </div>
                             <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-waitlist-action">
@@ -501,67 +420,13 @@
                             <input type="hidden" name="hora" id="finalHora" value="">
                             <input type="hidden" name="urgencia" id="finalUrgencia" value="MEDIA">
 
-                            <!-- GRID DE DOS TARJETAS -->
-                            <div class="finalizar-reserva-grid">
-                                
-                                <!-- TARJETA IZQUIERDA: RESUMEN DE LA CITA -->
-                                <div class="finalizar-card">
-                                    <h3 class="finalizar-card-title">Resumen de la cita</h3>
-                                    <div class="resumen-filas-list">
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Especialidad</span>
-                                            <span class="resumen-row-val" id="resumenEspecialidad">Cardiología</span>
-                                        </div>
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Médico / CMP</span>
-                                            <span class="resumen-row-val" id="resumenMedicoCMP">—</span>
-                                        </div>
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Sede y consultorio</span>
-                                            <span class="resumen-row-val" id="resumenSedeConsultorio">Sede San Borja · Consultorio 304</span>
-                                        </div>
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Fecha y hora</span>
-                                            <span class="resumen-row-val" id="resumenFechaHoraFormateada">Jueves 15 oct 2026 · 09:00</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- TARJETA DERECHA: DATOS DE LA RESERVA -->
-                                <div class="finalizar-card">
-                                    <h3 class="finalizar-card-title">Datos de la reserva</h3>
-
-                                    <div class="form-group-motivo">
-                                        <label for="selectMotivoPaso3" class="finalizar-field-label">Motivo de consulta *</label>
-                                        <div class="select-with-icon-wrap">
-                                            <select id="selectMotivoPaso3" name="motivo" class="finalizar-select-control" required>
-                                                <option value="" disabled selected>Selecciona un motivo</option>
-                                            </select>
-                                            <i data-lucide="chevron-down" class="select-chevron-icon"></i>
-                                        </div>
-                                        <div class="motivo-field-footnote">Solo se muestran los motivos de la especialidad elegida.</div>
-                                    </div>
-
-                                    <div class="notif-channels-section">
-                                        <label class="finalizar-field-label">Recibir los avisos de esta cita por:</label>
-                                        <div class="notif-channels-group">
-                                            <label class="notif-channel-card active" id="labelNotifSms">
-                                                <input type="checkbox" name="notifSms" id="checkNotifSms" checked onchange="toggleNotifChannel('sms')">
-                                                <i data-lucide="smartphone" class="notif-icon"></i>
-                                                <span class="notif-text">SMS / WhatsApp</span>
-                                            </label>
-                                            <label class="notif-channel-card" id="labelNotifEmail">
-                                                <input type="checkbox" name="notifEmail" id="checkNotifEmail" onchange="toggleNotifChannel('email')">
-                                                <i data-lucide="mail" class="notif-icon"></i>
-                                                <span class="notif-text">Correo electrónico</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                            </div>
-
+<div class="finalizar-card booking-summary"><h3 class="finalizar-card-title">Resumen de la cita</h3><div class="resumen-filas-list"><div class="resumen-row-item"><span class="resumen-row-label">Especialidad</span><span class="resumen-row-val" id="resumenEspecialidad">—</span></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Médico / CMP</span><span class="resumen-row-val" id="resumenMedicoCMP">—</span></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Sede y consultorio</span><span class="resumen-row-val" id="resumenSedeConsultorio">—</span></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Fecha y hora</span><span class="resumen-row-val" id="resumenFechaHoraFormateada">—</span></div>
+<div class="resumen-row-item"><label class="resumen-row-label" for="selectMotivoPaso3">Motivo de consulta</label><select id="selectMotivoPaso3" name="motivo" class="finalizar-select-control booking-reason" required><option value="" disabled selected>Selecciona un motivo</option></select></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Recordatorios y confirmación por</span><span class="resumen-row-val booking-email">Correo electrónico · <%= Html.texto(usuario != null ? usuario.getEmail() : "") %></span></div>
+</div></div>
                             <!-- ACCIONES INFERIORES: VOLVER A RESULTADOS / FINALIZAR RESERVA -->
                             <div class="finalizar-actions-bar">
                                 <button type="button" class="btn-volver-resultados" onclick="volverAPaso2()">
@@ -618,11 +483,11 @@
                                 </div>
 
                                 <div class="success-whatsapp-banner">
-                                    <i data-lucide="smartphone" class="success-whatsapp-icon"></i>
+                                    <i data-lucide="mail" class="success-whatsapp-icon"></i>
                                     <div>
                                         <div class="success-whatsapp-title">Reserva registrada</div>
                                         <div class="success-whatsapp-desc">
-                                            Enviamos el detalle a +51 987 ••• 482 (WhatsApp). 48 h antes te pediremos confirmar tu asistencia.
+                                            Correo registrado: <%= Html.texto(usuario != null ? usuario.getEmail() : "") %>. Puedes revisar los detalles y confirmar tu asistencia en Mis citas.
                                         </div>
                                     </div>
                                 </div>
@@ -740,10 +605,11 @@
 
         // --- NAVEGACIÓN DE MODOS ---
         function iniciarModoIA() {
+            document.getElementById('aiFormulario').hidden = false;
             state.modo = 'IA';
             state.pasoActual = 1;
-            document.getElementById('pageMainTitle').textContent = 'Orientación por especialidad';
-            document.getElementById('pageMainSubtitle').textContent = 'Demostración académica: utiliza únicamente casos ficticios, sin nombres, DNI ni datos reales de salud.';
+            document.getElementById('pageMainTitle').textContent = 'Orientación por síntomas';
+            document.getElementById('pageMainSubtitle').textContent = 'Explora una especialidad del catálogo a partir de un caso de ejemplo.';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'block';
             document.getElementById('wizardFlowSection').style.display = 'none';
@@ -761,7 +627,11 @@
         }
 
         function iniciarModoDirecto(origen = 'DIRECTO') {
-            invalidarOrientacion();
+            if (origen !== 'IA') invalidarOrientacion();
+            document.getElementById('aiSugerenciaBuscador').hidden = origen !== 'IA';
+            if (origen === 'IA' && sugerenciaOrientacion) {
+                document.getElementById('aiSugerenciaTexto').textContent = 'Especialidad sugerida: ' + sugerenciaOrientacion.especialidad + '. Elige la sede, la fecha y el turno que prefieras.';
+            }
             state.modo = origen;
             document.getElementById('pageMainTitle').textContent = 'Buscar cita';
             document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
@@ -790,7 +660,7 @@
                 return;
             }
             state.modo = 'NINGUNO';
-            document.getElementById('pageMainTitle').textContent = 'Programar Cita';
+            document.getElementById('pageMainTitle').textContent = 'Programar cita';
             document.getElementById('pageMainSubtitle').textContent = 'Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.';
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'none';
@@ -811,15 +681,19 @@
             document.getElementById('aiEstadoOrientacion').textContent = '';
             document.getElementById('aiErrorOrientacion').hidden = true;
             const boton = document.getElementById('btnAnalizarIA');
-            boton.disabled = false;
-            boton.querySelector('span').textContent = 'Consultar especialidad';
+            boton.disabled = !document.getElementById('aiCasoFicticio').checked || textoOrientacion().length < 12;
+            boton.querySelector('span').textContent = 'Analizar síntomas';
         }
 
+        const sintomasElegidos = new Set();
+        function textoOrientacion() { return [sintomasElegidos.size ? 'Caso ficticio: ' + [...sintomasElegidos].join(', ') : '', document.getElementById('aiSintomasInput').value.trim()].filter(Boolean).join('. '); }
+        function editarSintomas() { document.getElementById('aiFormulario').hidden = false; invalidarOrientacion(); }
         function agregarSintoma(boton, texto) {
+            if (sintomasElegidos.has(texto)) sintomasElegidos.delete(texto); else sintomasElegidos.add(texto);
+            boton.setAttribute('aria-pressed', String(sintomasElegidos.has(texto)));
+            document.getElementById('aiUrgenciaAviso').hidden = !sintomasElegidos.has('Dolor de pecho');
             invalidarOrientacion();
-            document.getElementById('aiSintomasInput').value = texto;
         }
-
         async function ejecutarAnalisisIA() {
             const boton = document.getElementById('btnAnalizarIA');
             if (boton.disabled) return;
@@ -831,7 +705,7 @@
                 error.hidden = false;
                 return;
             }
-            const texto = document.getElementById('aiSintomasInput').value.trim();
+            const texto = textoOrientacion();
             if (texto.length < 12 || texto.length > 1200) {
                 error.textContent = 'Escribe un caso ficticio de entre 12 y 1200 caracteres.';
                 error.hidden = false;
@@ -861,6 +735,7 @@
                 document.getElementById('aiExplicacionTexto').textContent = resultado.explicacion;
                 estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Sugerencia demostrativa generada con Gemini y validada contra el catálogo.';
                 document.getElementById('aiResultadoBox').style.display = 'block';
+                document.getElementById('aiFormulario').hidden = true;
             } catch (fallo) {
                 if (peticionOrientacion !== controller) return;
                 error.textContent = fallo instanceof Error && fallo.name === 'Error' ? fallo.message : 'No se pudo completar la consulta. Puedes elegir la especialidad manualmente.';
@@ -871,7 +746,7 @@
                 if (peticionOrientacion === controller) {
                     peticionOrientacion = null;
                     boton.disabled = false;
-                    boton.querySelector('span').textContent = 'Consultar especialidad';
+                    boton.querySelector('span').textContent = 'Analizar síntomas';
                 }
             }
         }
@@ -1495,17 +1370,6 @@
 
             if (state.motivo) {
                 selPaso3.value = state.motivo;
-            }
-        }
-
-        function toggleNotifChannel(tipo) {
-            const chk = document.getElementById(tipo === 'sms' ? 'checkNotifSms' : 'checkNotifEmail');
-            const lbl = document.getElementById(tipo === 'sms' ? 'labelNotifSms' : 'labelNotifEmail');
-            if (!chk || !lbl) return;
-            if (chk.checked) {
-                lbl.classList.add('active');
-            } else {
-                lbl.classList.remove('active');
             }
         }
 

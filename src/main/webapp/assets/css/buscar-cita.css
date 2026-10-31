@@ -3,6 +3,38 @@
    Portal del Paciente: Selección de modo (IA vs Directo), Stepper y Filtros
    ========================================================================== */
 
+.patient-booking {
+    --bg-page: #eef5ff;
+    --primary: #196cbd;
+    --primary-hover: #15599d;
+    --text-dark: #12345b;
+    --text-gray: #557ca6;
+    min-width: 0;
+}
+
+.booking-summary { margin-bottom: 20px; }
+.booking-reason { max-width: 440px; width: 55%; }
+.booking-email { overflow-wrap: anywhere; text-align: right; }
+.orientation-question { display: block; font-size: 15px; font-weight: 600; margin-bottom: 12px; }
+.orientation-help { font-size: 13px; line-height: 1.6; color: var(--text-gray); margin: 10px 0 14px; }
+.patient-booking .ai-triage-box { padding: 28px; border: 1px solid #d9e8f7; border-radius: 14px; box-shadow: none; }
+.patient-booking .ai-response-result { margin: 0; padding: 0; border: 0; background: transparent; }
+.patient-booking .ai-symptom-textarea { margin-top: 4px; min-height: 115px; background: #f7fbff; }
+.patient-booking .quick-chips-wrapper { margin-bottom: 22px; }
+.patient-booking .symptom-chip { background: #fff; color: #315f91; border-color: #d9e8f7; padding: 9px 16px; }
+.patient-booking .symptom-chip[aria-pressed="true"] { background: var(--primary); color: #fff; border-color: var(--primary); }
+.patient-booking .btn-card-action:disabled { background: #91b9de; cursor: not-allowed; box-shadow: none; }
+.orientation-result-note { margin: 18px 0; padding: 12px 16px; background: #eaf4ff; border: 1px solid #d9e8f7; border-radius: 8px; font-size: 13px; }
+.orientation-search-note { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #d1fae5; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #065f46; }
+.orientation-search-note[hidden] { display: none; }
+.orientation-search-note button { background: none; border: 0; color: #15599d; cursor: pointer; flex-shrink: 0; }
+@media (max-width: 600px) {
+    .booking-summary .resumen-row-item { align-items: flex-start; gap: 12px; flex-direction: column; }
+    .booking-reason { width: 100%; max-width: none; }
+    .booking-email { text-align: left; }
+    .orientation-search-note { align-items: flex-start; flex-direction: column; }
+}
+
 .citas-scroll-container {
     flex: 1;
     overflow-y: auto;
@@ -11,8 +43,8 @@
 }
 
 .buscar-wrapper {
-    max-width: 1060px;
-    margin: 0 auto;
+    width: 100%;
+    min-width: 0;
 }
 
 /* ==========================================================================
@@ -98,42 +130,35 @@
 .mode-selection-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
-    gap: 28px;
+    gap: 24px;
     margin-bottom: 24px;
 }
 
 .mode-card {
     background: #ffffff;
-    border: 1px solid #e2e8f0;
-    border-radius: 22px;
-    padding: 32px;
+    border: 1px solid #d9e8f7;
+    border-radius: 14px;
+    padding: 28px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    transition: all 0.25s ease;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-    cursor: pointer;
-    min-height: 380px;
-}
-
-.mode-card:hover {
-    border-color: #93c5fd;
-    transform: translateY(-2px);
-    box-shadow: 0 12px 30px rgba(37, 99, 235, 0.08);
+    gap: 24px;
+    min-width: 0;
+    min-height: 276px;
 }
 
 .mode-card-top-row {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 22px;
+    margin-bottom: 12px;
 }
 
 /* Iconos de cabecera de las tarjetas (unificados y armónicos con Mis Citas) */
 .mode-card-icon {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -143,12 +168,20 @@
     border: 1px solid #e0f2fe;
 }
 
+.mode-card-icon-ai {
+    background: #196cbd;
+    border-color: #196cbd;
+    color: #fff;
+}
+
+.mode-ai-mark { font-size: 20px; font-weight: 700; }
+
 /* Pills de cabecera */
 .mode-badge-pill {
-    padding: 5px 14px;
+    padding: 4px 10px;
     border-radius: 20px;
-    font-size: 12px;
-    font-weight: 700;
+    font-size: 11px;
+    font-weight: 500;
     display: inline-flex;
     align-items: center;
     gap: 4px;
@@ -176,18 +209,18 @@
 }
 
 .mode-card-title {
-    font-size: 21px;
+    font-size: 20px;
     font-weight: 700;
-    color: #0f172a;
-    margin-bottom: 14px;
+    color: #12345b;
+    margin-bottom: 10px;
     line-height: 1.25;
 }
 
 .mode-card-desc {
     font-size: 14px;
-    color: #64748b;
+    color: #557ca6;
     line-height: 1.6;
-    margin-bottom: 28px;
+    margin-bottom: 0;
 }
 
 /* Botones de acción inferiores (mismo color #0284c7 de Mis Citas) */
@@ -202,7 +235,7 @@
     font-weight: 600;
     border: none;
     cursor: pointer;
-    background-color: #0284c7;
+    background-color: #196cbd;
     color: #ffffff;
     box-shadow: 0 1px 3px rgba(2, 132, 199, 0.2);
     transition: all 0.2s ease;
@@ -210,20 +243,17 @@
 }
 
 .btn-card-action:hover {
-    background-color: #0369a1;
+    background-color: #15599d;
 }
 
 /* Disclaimer Banner */
 .disclaimer-banner {
-    background-color: #f0f9ff;
-    border: 1px solid #e0f2fe;
-    border-radius: 12px;
-    padding: 16px 20px;
+    padding: 8px 16px;
     display: flex;
     align-items: center;
     gap: 12px;
-    font-size: 13.5px;
-    color: #334155;
+    font-size: 12px;
+    color: #12345b;
     line-height: 1.5;
 }
 

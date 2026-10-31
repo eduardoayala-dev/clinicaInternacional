@@ -46,64 +46,13 @@
 
     <!-- Estilos Base y Específicos -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css?v=20261030-5">
 </head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del paciente</span>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-                <span>Buscar cita</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-                <span>Mis citas</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item active">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                <span>Lista de espera</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                <span>Notificaciones</span>
-                <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-                <span>Perfil</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombrePaciente %></span>
-                <span class="user-role">Paciente</span>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </button>
-</form>
-        </div>
-    </aside>
+    <% String seccionPaciente = "espera"; %>
+    <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
 
     <!-- ÁREA PRINCIPAL -->
     <main class="main-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f8fafc;">
@@ -244,19 +193,11 @@
                         <!-- FILA 4: CANAL DE NOTIFICACIÓN -->
                         <div class="form-group" style="margin-top: 20px;">
                             <span class="field-label" id="preferenciaContacto">6. Preferencia de contacto *</span>
-                            <p>Las ofertas se notifican en este portal. Registramos WhatsApp y correo como preferencias de contacto.</p>
+                            <p class="espera-contact-help">Recibirás las ofertas en este portal. El canal de contacto disponible es el correo electrónico.</p>
                             <fieldset class="checkboxes-row-group" aria-labelledby="preferenciaContacto" style="border:0;padding:0;margin:0;min-width:0;">
-                                <label class="canal-card active" id="labelCanalWhatsapp">
-                                    <input type="checkbox" name="canales" value="whatsapp" checked onchange="toggleCheckboxCard(this, 'labelCanalWhatsapp')">
-                                    <span class="custom-checkbox">
-                                        <i data-lucide="check" style="width: 13px; height: 13px;"></i>
-                                    </span>
-                                    <i data-lucide="smartphone" class="canal-device-icon"></i>
-                                    <span class="card-item-label">SMS / WhatsApp</span>
-                                </label>
 
-                                <label class="canal-card" id="labelCanalEmail">
-                                    <input type="checkbox" name="canales" value="email" onchange="toggleCheckboxCard(this, 'labelCanalEmail')">
+                                <label class="canal-card active" id="labelCanalEmail">
+                                    <input type="checkbox" name="canales" value="email" checked onclick="return false" aria-readonly="true">
                                     <span class="custom-checkbox">
                                         <i data-lucide="check" style="width: 13px; height: 13px;"></i>
                                     </span>

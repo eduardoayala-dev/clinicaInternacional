@@ -74,15 +74,15 @@ class UsuarioEsquemaTest {
             assertTrue(rs.next()); assertEquals("Prueba",rs.getString(1)); assertEquals("prueba@test.local",rs.getString(2));
         }
     }
-    @Test void profileUpdatePersistsDataWithoutChangingVerifiedEmail() throws Exception {
+    @Test void profileUpdatePreservesIdentityAndVerifiedEmail() throws Exception {
         Usuario u=user();assertTrue(dao.crearCuentaPaciente(u,patient()));
-        var perfil=new pe.edu.utp.clinica.model.PerfilPaciente(u.getIdUsuario(),"Cambio","Paciente",
+        var perfil=new pe.edu.utp.clinica.model.PerfilPaciente(u.getIdUsuario(),"Cambio","Alterado",
                 "02/03/2000","888888888","Nueva dirección","Correo","Central","Ninguna","EPS");
         assertTrue(dao.actualizarPerfilCompletoPaciente(perfil));
         try(var conn=DriverManager.getConnection(url,"sa","");var st=conn.createStatement();
-            var rs=st.executeQuery("SELECT u.nombres,u.email,p.fecha_nacimiento,p.direccion,p.canal_aviso FROM usuario u JOIN paciente p ON p.id_usuario=u.id_usuario")) {
-            assertTrue(rs.next());assertEquals("Cambio",rs.getString(1));assertEquals("prueba@test.local",rs.getString(2));
-            assertEquals(java.sql.Date.valueOf("2000-03-02"),rs.getDate(3));assertEquals("Nueva dirección",rs.getString(4));assertEquals("Correo",rs.getString(5));
+            var rs=st.executeQuery("SELECT u.nombres,u.email,p.fecha_nacimiento,p.direccion,p.canal_aviso,u.apellidos,p.telefono FROM usuario u JOIN paciente p ON p.id_usuario=u.id_usuario")) {
+            assertTrue(rs.next());assertEquals("Prueba",rs.getString(1));assertEquals("prueba@test.local",rs.getString(2));
+            assertEquals(java.sql.Date.valueOf("2000-01-01"),rs.getDate(3));assertEquals("Nueva dirección",rs.getString(4));assertEquals("Correo",rs.getString(5));assertEquals("Paciente",rs.getString(6));assertEquals("888888888",rs.getString(7));
         }
     }
 }
