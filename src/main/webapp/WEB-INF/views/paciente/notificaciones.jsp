@@ -144,7 +144,7 @@
                                     <i data-lucide="check" style="width: 16px; height: 16px;"></i> Aceptar oferta y reservar este cupo
                                 </button>
                                 <div class="oferta-legal-note">
-                                    Al aceptar, tu registro en la lista de espera se cierra y tu asistencia queda confirmada.
+                                    Al aceptar, tu registro en la lista de espera se cierra y la cita queda reservada. Podrás confirmar tu asistencia desde Mis citas.
                                 </div>
                             </div>
                         </div>
