@@ -25,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 public final class EventosConfirmacionesServlet extends HttpServlet {
     private final transient Set<CanalAgenda> canales = ConcurrentHashMap.newKeySet();
     private transient ScheduledExecutorService pulsos;
+    @SuppressWarnings("java:S2654")
     @Override public void init() {
         pulsos = Executors.newSingleThreadScheduledExecutor(runnable -> {
             Thread hilo = new Thread(runnable, "eventos-confirmaciones");

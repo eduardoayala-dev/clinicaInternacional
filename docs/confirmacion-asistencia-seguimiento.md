@@ -35,3 +35,4 @@ En Railway, se agrega `CONFIRMACION_CITA_HORAS_ANTES=24` como variable del servi
 - El canal no renueva el tiempo de actividad JWT. Cerrar u ocultar la pantalla cierra la conexión.
 - El publicador está en memoria y corresponde al despliegue actual de una instancia. Un despliegue con varias réplicas requerirá un transporte compartido para avisos inmediatos entre ellas; la reconciliación periódica sigue recuperando el estado desde MySQL.
 - La dependencia Tomcat embebido es solo de pruebas y no se incluye en el WAR.
+- Tomcat standalone no ofrece un executor administrado de Jakarta EE. El servlet mantiene un único temporizador daemon compartido para los latidos y lo detiene en `destroy()`, junto con sus canales. Por ese modelo de despliegue se excluye únicamente su inicialización de la regla `java:S2654`; no se crea un hilo por conexión. Si se migra a un servidor Jakarta EE completo, debe usarse su executor administrado.

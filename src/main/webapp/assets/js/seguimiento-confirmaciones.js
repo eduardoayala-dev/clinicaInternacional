@@ -76,7 +76,7 @@
             panel.setAttribute('aria-busy', 'true');
             estado.textContent = 'Actualizando…';
             try { aplicarDatos(await obtenerDatos(controller), controller); }
-            catch (fallo) { mostrarFallo(fallo); }
+            catch (error_) { mostrarFallo(error_); }
             finally {
                 timers.clearTimeout(limite);
                 peticion = null;
@@ -93,12 +93,12 @@
         }
         function recibirCambio() {
             cambioPendiente = true;
-            actualizar();
+            void actualizar();
         }
         function abrirCanal() {
             if (!FuenteEventos || canal || doc.hidden || detenido || sesionVencida) return;
             try { canal = new FuenteEventos(boton.dataset.eventosUrl); }
-            catch (fallo) { mostrarFallo(fallo); programar(); return; }
+            catch (error_) { mostrarFallo(error_); programar(); return; }
             const fuenteActual = canal;
             const vigente = () => canal === fuenteActual && !detenido && !doc.hidden;
             canal.addEventListener('open', () => {
@@ -124,7 +124,7 @@
         }
         function cambios() {
             if (editando()) pausar();
-            else if (!doc.hidden) actualizar();
+            else if (!doc.hidden) void actualizar();
         }
         function detener() {
             detenido = true;
@@ -132,12 +132,12 @@
             peticion?.abort();
             cerrarCanal();
         }
-        boton.addEventListener('click', event => { event.preventDefault(); actualizar(); });
+        boton.addEventListener('click', event => { event.preventDefault(); void actualizar(); });
         panel.addEventListener('change', cambios);
         descartar.addEventListener('click', () => {
             panel.querySelectorAll('.seguimiento-form').forEach(form => form.reset());
             descartar.hidden = true;
-            actualizar();
+            void actualizar();
         });
         panel.addEventListener('focusout', () => {
             timers.setTimeout(() => { if (!detenido) cambios(); }, 0);
