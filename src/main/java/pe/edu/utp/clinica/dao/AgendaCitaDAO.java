@@ -62,9 +62,10 @@ public final class AgendaCitaDAO {
     }
     private int reservarEnConexion(Connection conn,Reserva reserva,int oferta) throws SQLException {
         LocalDateTime inicio = futura(reserva.fecha(), reserva.hora());
-        String prioridad = prioridad(reserva.urgencia());
+        validarPrioridad(reserva.urgencia());
         int usuario = paciente(conn, reserva.paciente());
         Medico perfil = medico(conn, reserva.medico());
+        String prioridad=PrioridadClinicaJdbc.resolver(conn,reserva.paciente(),perfil.especialidad(),inicio.toLocalDate());
         verificarMotivo(conn,reserva.motivo(),perfil.especialidad());
         Bloque bloque = bloqueReservable(conn, reserva.medico(), perfil.sede(), inicio);
         libre(conn, reserva.medico(), inicio, bloque.minutos(), oferta);
@@ -86,11 +87,12 @@ public final class AgendaCitaDAO {
                                Integer motivo, String urgencia) {
         if (anterior <= 0) throw invalida("La cita no es válida.");
         LocalDateTime inicio = futura(fecha, hora);
-        String prioridad = prioridad(urgencia);
+        validarPrioridad(urgencia);
         return transaccion(conn -> {
             int usuario = paciente(conn, paciente);
             verificarAnterior(conn, anterior, paciente);
             Medico perfil = medico(conn, medico);
+            String prioridad=PrioridadClinicaJdbc.resolver(conn,paciente,perfil.especialidad(),inicio.toLocalDate());
             verificarMotivo(conn, motivo, perfil.especialidad());
             Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
             libre(conn, medico, inicio, bloque.minutos(), 0);
@@ -412,10 +414,9 @@ public final class AgendaCitaDAO {
         }
     }
 
-    private static String prioridad(String value) {
-        if (value == null || value.isBlank()) return "BAJA";
+    private static void validarPrioridad(String value) {
+        if (value == null || value.isBlank()) return;
         if (!Set.of("ALTA", "MEDIA", "BAJA").contains(value)) throw invalida("La urgencia no es válida.");
-        return value;
     }
 
     private static AgendaException invalida(String message) { return new AgendaException(400, "DATOS_INVALIDOS", message); }

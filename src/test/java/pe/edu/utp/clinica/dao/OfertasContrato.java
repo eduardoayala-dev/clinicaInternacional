@@ -64,6 +64,14 @@ abstract class OfertasContrato extends AgendaCitaContrato {
 
     private int registrar(int paciente) { return lista.registrar(paciente,1,1,"MANANA","MEDIA","CORREO,WHATSAPP"); }
 
+    @Test void listaNoPresentaComoEvaluadaUnaPrioridadSinSeguimientoVigente() throws Exception {
+        lista.registrar(2,1,1,"INDIFERENTE","ALTA","CORREO",180);
+        assertEquals("Sin evaluación vigente",lista.obtenerEstadoListaEspera(2).get("prioridad"));
+        evaluacionClinica(2,900,"ALTA","2026-10-26 08:30:00");
+        assertEquals("ALTA",lista.obtenerEstadoListaEspera(2).get("prioridad"));
+        sql("UPDATE cita SET fecha_recomendada_proxima='2026-10-01' WHERE id_cita=900");
+        assertEquals("Sin evaluación vigente",lista.obtenerEstadoListaEspera(2).get("prioridad"));
+    }
     @Test void nuevasOfertasUsanElPlazoGuardadoSinCambiarElVencimientoAnterior()throws Exception {
         registrar(2);registrar(3);
         sql("UPDATE configuracion_ofertas SET minutos_respuesta=7");
@@ -82,6 +90,48 @@ abstract class OfertasContrato extends AgendaCitaContrato {
         reloj.avanzar(Duration.between(reloj.instant(),hora));
         assertEquals(0,ofertas.generar(original));
         assertEquals(0,count("SELECT COUNT(*) FROM reasignacion_inteligente"));
+            }
+
+    @Test void cupoPosteriorAlSeguimientoNoDaVentajaClinica() throws Exception {
+        registrar(2);registrar(3);int original=cancelada();
+        evaluacionClinica(3,900,"ALTA","2026-10-26 08:30:00");
+        sql("UPDATE cita SET fecha_recomendada_proxima='2026-11-30' WHERE id_cita=900");
+        assertEquals("ALTA",lista.obtenerEstadoListaEspera(3).get("prioridad"));
+        ofertas.generar(original);
+        assertFalse(ofertas.obtenerParaPaciente(2).isEmpty());
+        assertTrue(ofertas.obtenerParaPaciente(3).isEmpty());
+    }
+    @Test void unaPrioridadClinicaAltaSuperaLaAntiguedadDePrioridadMedia()throws Exception {
+        registrar(2);registrar(3);int original=cancelada();
+        evaluacionClinica(3,900,"ALTA","2026-10-26 08:30:00");
+        assertTrue(ofertas.generar(original)>0);
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty());
+        assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
+        assertEquals("ALTA",lista.obtenerEstadoListaEspera(3).get("prioridad"));
+        int oferta=(Integer)ofertas.obtenerParaPaciente(3).get("idOferta");
+        int cita=ofertas.aceptar(3,oferta);
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita="+cita+" AND nivel_urgencia='ALTA'"));
+    }
+    @Test void manipularElNivelDeLaInscripcionNoDaPreferenciaSinEvaluacion()throws Exception {
+        registrar(2);registrar(3);int original=cancelada();
+        sql("UPDATE lista_espera SET nivel_urgencia='ALTA' WHERE id_paciente=3");
+        ofertas.generar(original);
+        assertFalse(ofertas.obtenerParaPaciente(2).isEmpty());
+        assertTrue(ofertas.obtenerParaPaciente(3).isEmpty());
+    }
+    @Test void actualizarPrioridadNoReiniciaLaAntiguedadAlReenviarPreferencias()throws Exception {
+        int inscripcion=registrar(2);
+        evaluacionClinica(2,900,"ALTA","2026-10-26 08:30:00");
+        assertEquals(inscripcion,registrar(2));
+        assertEquals(1,count("SELECT COUNT(*) FROM lista_espera"));
+    }
+    @Test void unaNuevaPrioridadNoRetiraLaOfertaQueOtroPacienteYaTiene()throws Exception {
+        registrar(2);registrar(3);int original=cancelada();
+        int oferta=ofertas.generar(original);
+        evaluacionClinica(3,900,"ALTA","2026-10-26 08:30:00");
+        assertEquals(0,ofertas.generar(original));
+        assertEquals(oferta,ofertas.obtenerParaPaciente(2).get("idOferta"));
+        assertTrue(ofertas.obtenerParaPaciente(3).isEmpty());
     }
 
     private CorreosOfertaJdbc activarCorreos() throws Exception {

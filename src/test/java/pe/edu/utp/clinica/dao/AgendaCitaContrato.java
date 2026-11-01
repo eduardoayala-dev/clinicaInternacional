@@ -33,13 +33,15 @@ abstract class AgendaCitaContrato {
         sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR(100),apellidos VARCHAR(100),rol VARCHAR(30),activo BOOLEAN)");
         String configuracion=java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V013__configuracion_ofertas.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", "");
         for(String sentencia:configuracion.split(";")){if(!sentencia.isBlank())sql(sentencia);}
+        sql("CREATE TABLE seguimiento_cita(id_cita_origen INT PRIMARY KEY,id_cita_control INT)");
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR(20))");
         sql("CREATE TABLE medico(id_medico INT PRIMARY KEY,id_usuario INT,id_sede INT,id_especialidad INT,estado VARCHAR(20))");
         sql("CREATE TABLE motivo_cita(id_motivo INT PRIMARY KEY,id_especialidad INT,estado VARCHAR(20))");
         sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR(20))");
-        sql("CREATE TABLE cita(id_cita INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora TIMESTAMP,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20))");
+        sql("CREATE TABLE cita(id_cita INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora TIMESTAMP,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20),fecha_recomendada_proxima DATE)");
+        sql("CREATE TABLE atencion_cita(id_cita INT PRIMARY KEY,id_medico INT,fecha_fin TIMESTAMP,id_especialidad_prioridad INT)");
         sql("CREATE TABLE confirmacion_asistencia(id_cita INT PRIMARY KEY,creada_en TIMESTAMP,vence_en TIMESTAMP,confirmada_en TIMESTAMP,canal VARCHAR(16),id_usuario_confirmo INT)");
         sql("CREATE TABLE notificacion(id_notificacion INT AUTO_INCREMENT PRIMARY KEY,id_usuario INT,id_cita INT,tipo VARCHAR(30),canal VARCHAR(30),mensaje VARCHAR(300),estado_envio VARCHAR(30),leida INT,fecha_envio DATETIME)");
         sql("CREATE TABLE lista_espera(id_lista_espera INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_especialidad INT,id_sede INT,nivel_urgencia VARCHAR(20),rango_horario VARCHAR(20),canal_notificacion VARCHAR(40),fecha_registro DATETIME,estado VARCHAR(20),posicion INT,anticipacion_minutos INT DEFAULT 180,id_medico_preferido INT)");
@@ -61,6 +63,67 @@ abstract class AgendaCitaContrato {
     }
     private int publicar() { return dao.publicar(1, 1, "2026-12-01", "09:00", "11:00", 30); }
     private int reservar(int paciente, String hora) { return dao.reservar(paciente, 1, "2026-12-01", hora, "MEDIA"); }
+
+    protected void evaluacionClinica(int paciente,int cita,String nivel,String fin)throws Exception {
+        sql("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado,nivel_urgencia) VALUES("+cita+","+paciente+",1,'2026-10-01 08:00:00','ATENDIDA','"+nivel+"')");
+        sql("UPDATE cita SET fecha_recomendada_proxima='2026-12-31' WHERE id_cita="+cita);
+        sql("INSERT INTO atencion_cita(id_cita,id_medico,fecha_fin,id_especialidad_prioridad) VALUES("+cita+",1,'"+fin+"',1)");
+    }
+    @Test void prioridadVenceSinReactivarEvaluacionesAnteriores() throws Exception {
+        evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
+        evaluacionClinica(1,1900,"BAJA","2026-10-26 08:30:00");
+        sql("UPDATE cita SET fecha_recomendada_proxima='2026-10-28' WHERE id_cita=1900");
+        try(var conexion=abrir()) {
+            assertEquals("BAJA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+            assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,29)));
+        }
+    }
+    @Test void nuevaEvaluacionSinSeguimientoRetiraLaPrioridadAnterior() throws Exception {
+        evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
+        evaluacionClinica(1,1900,"BAJA","2026-10-26 08:30:00");
+        sql("UPDATE cita SET fecha_recomendada_proxima=NULL WHERE id_cita=1900");
+        try(var conexion=abrir()) {
+            assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+        }
+    }
+    @Test void controlVinculadoFinalizadoConsumeLaPrioridadPeroCanceladoNo() throws Exception {
+        evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
+        sql("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado) VALUES(1900,1,1,'2026-10-26 08:00:00','CANCELADA')");
+        sql("INSERT INTO seguimiento_cita VALUES(900,1900)");
+        try(var conexion=abrir()) {
+            assertEquals("ALTA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+        }
+        sql("UPDATE cita SET estado='ATENDIDA' WHERE id_cita=1900");
+        try(var conexion=abrir()) {
+            assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+        }
+    }
+    @Test void reservaPosteriorALaFechaLimiteNoHeredaPrioridad() throws Exception {
+        evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
+        sql("UPDATE cita SET fecha_recomendada_proxima='2026-11-30' WHERE id_cita=900");
+        publicar();int cita=dao.reservar(1,1,"2026-12-01","09:00","ALTA");
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita="+cita+" AND nivel_urgencia='MEDIA'"));
+    }
+    @Test void elPacienteNoPuedeElevarSuPrioridadAlReservar()throws Exception {
+        publicar();int cita=dao.reservar(1,1,"2026-12-01","09:00","ALTA");
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita="+cita+" AND nivel_urgencia='MEDIA'"));
+    }
+    @Test void reservaYReprogramacionUsanLaUltimaEvaluacionDeLaEspecialidad()throws Exception {
+        evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
+        publicar();int cita=dao.reservar(1,1,"2026-12-01","09:00","BAJA");
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita="+cita+" AND nivel_urgencia='ALTA'"));
+        evaluacionClinica(1,1900,"BAJA","2026-10-26 08:30:00");
+        dao.reprogramar(cita,1,1,"2026-12-01","09:30",null,"ALTA");
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA' AND nivel_urgencia='BAJA'"));
+    }
+    @Test void cambiarEspecialidadDelMedicoNoReasignaLaEvaluacionHistorica()throws Exception {
+        evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
+        sql("UPDATE medico SET id_especialidad=2 WHERE id_medico=1");
+        try(var conexion=abrir()) {
+            assertEquals("ALTA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+            assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,2,java.time.LocalDate.of(2026,10,28)));
+        }
+    }
 
     @Test void reservaConservaElMotivoDelCatalogo() throws Exception {
         publicar();

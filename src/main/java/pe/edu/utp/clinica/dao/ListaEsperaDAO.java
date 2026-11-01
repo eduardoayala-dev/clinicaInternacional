@@ -44,9 +44,10 @@ public class ListaEsperaDAO {
 
     public int registrar(int paciente,Preferencias solicitud) {
         if(solicitud==null) throw invalida("Indica las preferencias de la inscripción.");
-        Preferencias prefs = preferencias(solicitud.especialidad(), solicitud.sede(), solicitud.horario(), solicitud.urgencia(), solicitud.canales(), solicitud.anticipacion(), solicitud.medico());
+        Preferencias recibidas = preferencias(solicitud.especialidad(), solicitud.sede(), solicitud.horario(), solicitud.urgencia(), solicitud.canales(), solicitud.anticipacion(), solicitud.medico());
         return TransaccionJdbc.ejecutar(connections, conn -> {
             AgendaCitaDAO.paciente(conn, paciente);
+            var prefs=new Preferencias(recibidas.especialidad(),recibidas.sede(),recibidas.horario(),PrioridadClinicaJdbc.resolver(conn,paciente,recibidas.especialidad(),java.time.LocalDate.now(clock)),recibidas.canales(),recibidas.anticipacion(),recibidas.medico());
             validarCatalogos(conn, prefs);
             int existente = actualIgual(conn, paciente, prefs);
             if (existente > 0) return existente;
@@ -92,13 +93,14 @@ public class ListaEsperaDAO {
 
     public Map<String, Object> obtenerEstadoListaEspera(int paciente) {
         if (paciente <= 0) return Map.of();
-        String sql = "SELECT le.id_lista_espera,le.rango_horario,le.canal_notificacion,le.anticipacion_minutos,e.nombre AS especialidad,s.nombre AS sede, "
+        String sql = "SELECT le.id_lista_espera,le.rango_horario,le.canal_notificacion,le.anticipacion_minutos,e.nombre AS especialidad,s.nombre AS sede, "+PrioridadClinicaJdbc.EVALUACION_LISTA+" AS prioridad_clinica, "
                 + "CASE WHEN EXISTS(SELECT 1 FROM reasignacion_inteligente r WHERE r.id_lista_espera=le.id_lista_espera AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>?) THEN 'OFERTADA' ELSE 'ACTIVA' END AS estado_real, "
                 + "(SELECT COUNT(*) FROM lista_espera otra WHERE otra.id_especialidad=le.id_especialidad AND (otra.id_sede=le.id_sede OR otra.id_sede IS NULL OR le.id_sede IS NULL) AND otra.estado IN ('ACTIVA','OFERTADA') AND otra.id_lista_espera<=le.id_lista_espera) AS posicion_real "
                 + "FROM lista_espera le JOIN especialidad e ON le.id_especialidad=e.id_especialidad LEFT JOIN sede s ON le.id_sede=s.id_sede WHERE le.id_paciente=? AND le.estado IN ('ACTIVA','OFERTADA') ORDER BY le.id_lista_espera DESC LIMIT 1";
         try (Connection conn = connections.open(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setObject(1, LocalDateTime.now(clock));
-            ps.setInt(2, paciente);
+            ps.setObject(1, java.time.LocalDate.now(clock));
+            ps.setObject(2, LocalDateTime.now(clock));
+            ps.setInt(3, paciente);
             try (ResultSet rs = ps.executeQuery()) { return rs.next() ? presentar(rs) : Map.of(); }
         } catch (SQLException e) { throw new CatalogoDatosException(e); }
     }
@@ -119,6 +121,7 @@ public class ListaEsperaDAO {
         data.put("especialidad", rs.getString("especialidad"));
         data.put("sede", rs.getString("sede") == null ? "Cualquier sede" : rs.getString("sede"));
         data.put("posicion", rs.getInt("posicion_real"));
+        data.put("prioridad",rs.getString("prioridad_clinica")==null?"Sin evaluación vigente":rs.getString("prioridad_clinica"));
         String horario = switch (rs.getString("rango_horario")) {
             case "MANANA" -> "Mañana";
             case "TARDE" -> "Tarde";
@@ -165,7 +168,7 @@ public class ListaEsperaDAO {
                 while (rs.next()) {
                     boolean mismaSede = java.util.Objects.equals(rs.getObject(3), prefs.sede());
                     if (rs.getInt(2) == prefs.especialidad() && mismaSede && prefs.horario().equals(rs.getString(4))
-                            && prefs.urgencia().equals(rs.getString(5)) && prefs.canales().equals(rs.getString(6)) && prefs.anticipacion() == rs.getInt(7) && java.util.Objects.equals(rs.getObject(8),prefs.medico())) return rs.getInt(1);
+                            && prefs.canales().equals(rs.getString(6)) && prefs.anticipacion() == rs.getInt(7) && java.util.Objects.equals(rs.getObject(8),prefs.medico())) return rs.getInt(1);
                 }
             }
         }

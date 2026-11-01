@@ -24,6 +24,18 @@ abstract class AtencionCitaContrato extends CitaAutorizacionTest {
     private void sql(String query)throws Exception {try(var c=abrir();var s=c.createStatement()){s.execute(query);}}
     private void error(int estado,Runnable accion){assertEquals(estado,assertThrows(AgendaException.class,accion::run).status());}
     private void sala() {admision.registrar(40,7);}
+
+    @Test void cerrarConsultaRegistraUnaPrioridadAutorizadaYAuditable()throws Exception {
+        sala();atencion.iniciar(1,7);atencion.finalizar(1,7,"ALTA","2026-11-01","Control preferente indicado por el médico");
+        try(var conexion=abrir()){assertEquals("ALTA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));}
+        assertEquals(1,count("SELECT COUNT(*) FROM auditoria_seguridad WHERE id_usuario=20 AND evento='PRIORIDAD_CLINICA_REGISTRADA'"));
+    }
+    @Test void falloDeAuditoriaNoPermiteCerrarNiActivarUnaPrioridadNueva()throws Exception {
+        sala();atencion.iniciar(1,7);sql("DROP TABLE auditoria_seguridad");
+        error(503,()->atencion.finalizar(1,7,"ALTA",null,"Control preferente"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita=7 AND estado='EN_ATENCION'"));
+        try(var conexion=abrir()){assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));}
+    }
     private AtencionCitaDAO aLas(String instante){return new AtencionCitaDAO(this::abrir,Clock.fixed(Instant.parse(instante),ZoneId.of("UTC")));}
     private void otraCita(int paciente,int medico)throws Exception {
         sql("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado,nivel_urgencia) VALUES(8,"+paciente+","+medico+",'2026-10-28 11:00:00','CONFIRMADA','ALTA')");

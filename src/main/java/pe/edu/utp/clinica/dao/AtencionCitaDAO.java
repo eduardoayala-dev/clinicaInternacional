@@ -60,6 +60,7 @@ final class AtencionCitaDAO {
                 ps.setString(1, prioridad); ps.setObject(2, seguimiento); ps.setInt(3, cita); ps.setInt(4, medico);
                 if (ps.executeUpdate() != 1) throw inexistente();
             }
+            PrioridadClinicaJdbc.auditar(conn,medico,cita,prioridad);
             try (PreparedStatement ps = conn.prepareStatement("INSERT INTO historial_asistencia(id_paciente,id_cita,asistio,observacion,fecha_registro) VALUES(?,?,TRUE,?,?)")) {
                 ps.setInt(1, actual.paciente()); ps.setInt(2, cita); ps.setString(3, notas.trim()); ps.setObject(4, ahora);
                 ps.executeUpdate();

@@ -274,7 +274,11 @@
                                         <strong class="detalle-activo-val"><c:out value="${estadoListaEspera.preferencias}" /></strong>
                                     </div>
                                     <div class="detalle-activo-row" style="align-items: center;">
-                                        <span class="detalle-activo-label">Estado</span>
+                                        <span class="detalle-activo-label">Prioridad para ofertas</span>
+                                        <strong class="detalle-activo-val"><c:out value="${estadoListaEspera.prioridad}" /></strong>
+                                    </div>
+                                    <div class="detalle-activo-row" style="align-items: center;">
+                                          <span class="detalle-activo-label">Estado</span>
                                         <span class="badge-status-oferta ${estadoListaEspera.estadoCodigo == 'OFERTADA' ? 'pendiente' : 'activa'}">
                                             <c:out value="${estadoListaEspera.estado}" />
                                         </span>
