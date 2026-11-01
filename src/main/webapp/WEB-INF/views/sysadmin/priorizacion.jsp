@@ -1,12 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="pe.edu.utp.clinica.dao.ConfiguracionOfertasDAO,pe.edu.utp.clinica.util.Html" %>
 <%
+    var parametros=(ConfiguracionOfertasDAO.Parametros)request.getAttribute("configuracionOfertas");
+    String flashError=(String)session.getAttribute("flashError");
+    session.removeAttribute("flashError");
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreAdmin = (String) request.getAttribute("nombreAdmin");
     if (nombreAdmin == null && usuario != null) {
         nombreAdmin = usuario.getNombres() + " " + usuario.getApellidos();
     }
-    if (nombreAdmin == null) nombreAdmin = "Roberto Vargas";
+    if (nombreAdmin == null) nombreAdmin = "Administrador";
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
@@ -176,7 +180,7 @@
             <div class="user-capsule">
                 <div class="user-avatar-circle"><%= nombreAdmin != null && !nombreAdmin.isEmpty() ? ("" + nombreAdmin.charAt(0)).toUpperCase() : "JV" %></div>
                 <div class="user-info-text">
-                    <span class="user-full-name"><%= nombreAdmin %></span>
+                    <span class="user-full-name"><%= Html.texto(nombreAdmin) %></span>
                     <span class="user-role-desc">Administrador</span>
                 </div>
                 <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
@@ -199,11 +203,13 @@
             <% if (flashMessage != null) { %>
                 <div class="flash-alert">
                     <i data-lucide="check-circle" style="width: 18px;"></i>
-                    <%= flashMessage %>
+                    <%= Html.texto(flashMessage) %>
                 </div>
             <% } %>
 
-            <form action="${pageContext.request.contextPath}/sysadmin/priorizacion" method="POST">
+            <% if(flashError!=null){ %><div class="flash-alert" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca"><%= Html.texto(flashError) %></div><% } %>
+            <form action="${pageContext.request.contextPath}/sysadmin/configuracion-ofertas" method="POST">
+                <input type="hidden" name="version" value="<%= parametros.version() %>">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="guardarPriorizacion">
 
@@ -211,7 +217,7 @@
                 <div class="panel">
                     <div class="panel-title">
                         <span>Criterios Principales de Asignación Algorítmica</span>
-                        <span class="panel-tag">ORDEN DE PRELACIÓN OBLIGATORIO</span>
+                        <span class="panel-tag">REGLAS DEL MOTOR ACTUAL</span>
                     </div>
                     <div class="step-list">
                         <div class="step-item">
@@ -253,40 +259,15 @@
                         <div class="step-item">
                             <div class="step-badge">5</div>
                             <div class="step-content">
-                                <div class="step-name">Proximidad Geográfica</div>
-                                <div class="step-desc">Cercanía de la zona de residencia del paciente a la sede del cupo disponible.</div>
+                                <div class="step-name">Preferencias del paciente</div>
+                                <div class="step-desc">Se respeta el médico preferido, el turno y la anticipación indicada por el paciente.</div>
                             </div>
-                            <span class="step-tag">UBICACIÓN</span>
+                            <span class="step-tag">PREFERENCIAS</span>
                         </div>
                     </div>
                 </div>
 
-                <!-- SECCIÓN 2 -->
-                <div class="panel">
-                    <div class="panel-title">
-                        <span>Criterios Complementarios de Desempate</span>
-                        <span class="panel-tag">REGLAS CONDICIONALES</span>
-                    </div>
-                    <div class="grid-2col">
-                        <div class="complementary-card">
-                            <div class="comp-title">
-                                <span>Disponibilidad Horaria</span>
-                                <span class="step-tag">DISPONIBILIDAD</span>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Preferencia horaria e historial de respuesta rápida informada por el paciente en la aplicación.</p>
-                            <span style="font-size: 11px; color: #166534; font-weight: 700;">ESTADO: ACTIVO</span>
-                        </div>
-
-                        <div class="complementary-card">
-                            <div class="comp-title">
-                                <span>Historial de Asistencia</span>
-                                <span class="step-tag">CUMPLIMIENTO</span>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Registro previo de cumplimiento y baja tasa de cancelación tardía o ausentismo.</p>
-                            <span style="font-size: 11px; color: #166534; font-weight: 700;">ESTADO: ACTIVO</span>
-                        </div>
-                    </div>
-                </div>
+                <div class="panel"><h2 class="panel-title">Una oferta exclusiva por cupo</h2><p>El siguiente candidato recibe la oferta cuando el anterior rechaza o deja vencer su plazo. El sistema conserva la prioridad clínica y la antigüedad en la lista.</p></div>
 
                 <!-- SECCIÓN 3 -->
                 <div class="panel">
@@ -296,21 +277,21 @@
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Tiempo límite de respuesta a la oferta (minutos): *</label>
-                            <input type="number" name="tiempoLimite" value="15" min="5" max="60" required>
+                            <label for="tiempoLimite">Tiempo límite de respuesta a la oferta (minutos): *</label>
+                            <input type="number" id="tiempoLimite" name="tiempoLimite" value="<%= parametros.minutosRespuesta() %>" min="5" max="60" required>
                             <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Ventana de bloqueo temporal del cupo antes de notificar al siguiente candidato.</span>
                         </div>
 
                         <div class="form-group">
-                            <label>Candidatos notificados en simultáneo: *</label>
-                            <input type="number" name="numCandidatos" value="1" min="1" max="5" required>
-                            <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Número de usuarios calificados que reciben la notificación de cupo disponible.</span>
+                            <label for="anticipacionMinima">Anticipación mínima global (minutos): *</label>
+                            <input type="number" id="anticipacionMinima" name="anticipacionMinima" value="<%= parametros.anticipacionMinima() %>" min="0" max="10080" required>
+                            <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Se respeta también la anticipación elegida por cada paciente; se aplica la más exigente.</span>
                         </div>
                     </div>
                 </div>
 
                 <div class="actions-row">
-                    <button type="button" class="btn-reset">Restablecer Valores</button>
+                    <button type="reset" class="btn-reset">Descartar cambios</button>
                     <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar Configuración</button>
                 </div>
             </form>
