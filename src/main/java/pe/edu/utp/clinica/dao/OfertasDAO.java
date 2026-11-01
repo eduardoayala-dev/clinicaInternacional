@@ -65,9 +65,11 @@ public class OfertasDAO {
             if (e.status() == 400 || e.status() == 409) return 0;
             throw e;
         }
+        var configuracion=ConfiguracionOfertasDAO.leer(conn);
+        if(cupo.inicio().isBefore(ahora().plusMinutes(configuracion.anticipacionMinima())))return 0;
         int lista = candidato(conn, cupo);
         if (lista == 0) return 0;
-        LocalDateTime vence = ahora().plusMinutes(15);
+        LocalDateTime vence = ahora().plusMinutes(configuracion.minutosRespuesta());
         if (vence.isAfter(cupo.inicio())) vence = cupo.inicio();
         String insert = "INSERT INTO reasignacion_inteligente(id_cita_original,id_lista_espera,id_disponibilidad,fecha_oferta,fecha_limite_respuesta,estado) VALUES(?,?,?,?,?,'PENDIENTE')";
         int id;

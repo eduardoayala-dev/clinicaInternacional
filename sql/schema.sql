@@ -14,6 +14,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS reporte;
 DROP TABLE IF EXISTS indicador;
 DROP TABLE IF EXISTS reasignacion_inteligente;
+DROP TABLE IF EXISTS configuracion_ofertas;
 DROP TABLE IF EXISTS invitacion_personal;
 DROP TABLE IF EXISTS correo_oferta;
 DROP TABLE IF EXISTS correo_cita;
@@ -800,3 +801,19 @@ CREATE TABLE IF NOT EXISTS invitacion_personal (
     CONSTRAINT fk_invitacion_actor FOREIGN KEY (creada_por) REFERENCES usuario(id_usuario),
     CONSTRAINT chk_invitacion_envio CHECK (estado_envio IN ('PENDIENTE','ENVIADO','NO_CONFIRMADO'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS configuracion_ofertas (
+    id_configuracion INT PRIMARY KEY,
+    minutos_respuesta INT NOT NULL DEFAULT 15,
+    anticipacion_minima INT NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
+    actualizado_por INT NULL,
+    actualizado_en DATETIME(6) NULL,
+    CONSTRAINT fk_configuracion_ofertas_actor FOREIGN KEY (actualizado_por) REFERENCES usuario(id_usuario),
+    CONSTRAINT chk_configuracion_unica CHECK (id_configuracion=1),
+    CONSTRAINT chk_configuracion_respuesta CHECK (minutos_respuesta BETWEEN 5 AND 60),
+    CONSTRAINT chk_configuracion_anticipacion CHECK (anticipacion_minima BETWEEN 0 AND 10080),
+    CONSTRAINT chk_configuracion_version CHECK (version>=0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO configuracion_ofertas(id_configuracion,minutos_respuesta,anticipacion_minima,version)
+SELECT 1,15,0,0 WHERE NOT EXISTS(SELECT 1 FROM configuracion_ofertas WHERE id_configuracion=1);

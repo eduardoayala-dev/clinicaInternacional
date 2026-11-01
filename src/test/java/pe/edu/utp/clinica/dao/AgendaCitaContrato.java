@@ -31,6 +31,8 @@ abstract class AgendaCitaContrato {
         }
         try (var conn=abrir()) { EsquemaPruebas.limpiar(conn); }
         sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR(100),apellidos VARCHAR(100),rol VARCHAR(30),activo BOOLEAN)");
+        String configuracion=java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V013__configuracion_ofertas.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", "");
+        for(String sentencia:configuracion.split(";")){if(!sentencia.isBlank())sql(sentencia);}
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR(20))");

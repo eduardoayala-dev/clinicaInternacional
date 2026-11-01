@@ -64,6 +64,26 @@ abstract class OfertasContrato extends AgendaCitaContrato {
 
     private int registrar(int paciente) { return lista.registrar(paciente,1,1,"MANANA","MEDIA","CORREO,WHATSAPP"); }
 
+    @Test void nuevasOfertasUsanElPlazoGuardadoSinCambiarElVencimientoAnterior()throws Exception {
+        registrar(2);registrar(3);
+        sql("UPDATE configuracion_ofertas SET minutos_respuesta=7");
+        int primera=ofertas.generar(cancelada());
+        assertEquals(420L,ofertas.obtenerParaPaciente(2).get("tiempoRestanteSegundos"));
+        sql("UPDATE configuracion_ofertas SET minutos_respuesta=11");
+        assertEquals(420L,ofertas.obtenerParaPaciente(2).get("tiempoRestanteSegundos"));
+        ofertas.rechazar(2,primera);
+        assertEquals(660L,ofertas.obtenerParaPaciente(3).get("tiempoRestanteSegundos"));
+    }
+    @Test void laAnticipacionGlobalImpideOfertarCuposDemasiadoProximos()throws Exception {
+        registrar(2);int original=cancelada();
+        sql("UPDATE lista_espera SET anticipacion_minutos=0");
+        sql("UPDATE configuracion_ofertas SET anticipacion_minima=120");
+        var hora=java.time.LocalDateTime.of(2026,12,1,8,0).atZone(ZoneId.of("America/Lima")).toInstant();
+        reloj.avanzar(Duration.between(reloj.instant(),hora));
+        assertEquals(0,ofertas.generar(original));
+        assertEquals(0,count("SELECT COUNT(*) FROM reasignacion_inteligente"));
+    }
+
     private CorreosOfertaJdbc activarCorreos() throws Exception {
         sql("ALTER TABLE usuario ADD COLUMN email VARCHAR(254)");
         sql("UPDATE usuario SET email='paciente@example.test'");

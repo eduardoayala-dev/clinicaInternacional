@@ -94,7 +94,7 @@ public class SysAdminServlet extends HttpServlet {
                 break;
 
             case "/sysadmin/priorizacion":
-                request.getRequestDispatcher("/WEB-INF/views/sysadmin/priorizacion.jsp").forward(request, response);
+                request.getRequestDispatcher("/sysadmin/configuracion-ofertas").forward(request, response);
                 break;
 
             case "/sysadmin/analitica":
@@ -198,7 +198,7 @@ public class SysAdminServlet extends HttpServlet {
         }
 
         switch(action==null?"":action) {
-            case "guardarPriorizacion" -> guardarPriorizacion(request,response,session);
+            case "guardarPriorizacion" -> guardarPriorizacion(request,response);
             case "crearSede" -> crearSede(request,response,session);
             case "editarSede" -> editarSede(request,response,session);
             case "cambiarEstadoSede" -> cambiarEstadoSede(request,response,session);
@@ -235,9 +235,8 @@ public class SysAdminServlet extends HttpServlet {
         request.setAttribute("especialidades", especialidades);
     }
 
-    private void guardarPriorizacion(HttpServletRequest request,HttpServletResponse response,HttpSession session) throws IOException {
-            session.setAttribute(FLASH_MESSAGE, "Parámetros de priorización y tiempo límite de respuesta actualizados correctamente.");
-            response.sendRedirect(request.getContextPath() + "/sysadmin/priorizacion");
+    private void guardarPriorizacion(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
+            request.getRequestDispatcher("/sysadmin/configuracion-ofertas").forward(request,response);
 
     }
 
