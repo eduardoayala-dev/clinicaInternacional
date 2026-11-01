@@ -19,7 +19,14 @@ public class RetencionCupoServlet extends HttpServlet {
     protected AgendaCitaDAO.Retencion retener(int paciente,int medico,String fecha,String hora) {
         return agenda().retener(paciente,medico,fecha,hora);
     }
-    @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) throws IOException {
+    @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) {
+        try { procesar(request,response); }
+        catch(IOException e) {
+            java.util.logging.Logger.getLogger(RetencionCupoServlet.class.getName()).log(java.util.logging.Level.WARNING,"No se pudo entregar la respuesta de retención.",e);
+            if(!response.isCommitted())response.setStatus(500);
+        }
+    }
+    private void procesar(HttpServletRequest request,HttpServletResponse response)throws IOException {
         var sesion=request.getSession(false);
         Usuario usuario=sesion==null?null:(Usuario)sesion.getAttribute("usuarioLogueado");
         if(usuario==null || !"PACIENTE".equals(usuario.getRol())) {

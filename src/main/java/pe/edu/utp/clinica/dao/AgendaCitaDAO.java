@@ -70,7 +70,7 @@ public final class AgendaCitaDAO {
             try(var ps=conn.prepareStatement("SELECT identificador,vence FROM retencion_cupo WHERE id_paciente=? AND id_medico=? AND inicio=? AND vence>?")) {
                 ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setObject(4,ahora);
                 try(var rs=ps.executeQuery()) {
-                    if(rs.next())return new Retencion(rs.getString(1),java.time.Duration.between(ahora,rs.getObject(2,LocalDateTime.class)).getSeconds());
+                    if(rs.next())return new Retencion(rs.getString(1),java.time.Duration.between(ahora.atZone(ZoneId.of("America/Lima")),rs.getObject(2,LocalDateTime.class).atZone(ZoneId.of("America/Lima"))).getSeconds());
                 }
             }
             try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? OR (id_medico=? AND vence<=?)")) {
@@ -83,7 +83,7 @@ public final class AgendaCitaDAO {
             try(var ps=conn.prepareStatement("INSERT INTO retencion_cupo(id_paciente,id_medico,inicio,duracion_minutos,identificador,vence) VALUES(?,?,?,?,?,?)")) {
                 ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setInt(4,bloque.minutos());ps.setString(5,id);ps.setObject(6,vence);ps.executeUpdate();
             }
-            return new Retencion(id,java.time.Duration.between(ahora,vence).getSeconds());
+            return new Retencion(id,java.time.Duration.between(ahora.atZone(ZoneId.of("America/Lima")),vence.atZone(ZoneId.of("America/Lima"))).getSeconds());
         });
     }
 
