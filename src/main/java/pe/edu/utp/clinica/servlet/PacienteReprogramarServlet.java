@@ -132,7 +132,7 @@ public class PacienteReprogramarServlet extends HttpServlet {
             String hora = request.getParameter("hora");   // HH:mm
             String idMotivoStr = request.getParameter("idMotivo");
             Integer idMotivo = (idMotivoStr != null && !idMotivoStr.trim().isEmpty()) ? Integer.parseInt(idMotivoStr) : null;
-            String nivelUrgencia = request.getParameter("urgencia");
+            String nivelUrgencia = "MEDIA";
 
             int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
 

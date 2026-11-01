@@ -19,6 +19,7 @@ class ReservarCitaServletTest {
         AgendaException error;
         @Override public int obtenerIdPacientePorUsuarioId(int id) { return 5; }
         @Override public int reservarCitaValidada(int paciente,int medico,String fecha,String hora,String urgencia,Integer motivo) {
+            assertEquals("MEDIA",urgencia);
             llamadas++; propietario=paciente;this.motivo=motivo;
             if(error!=null) throw error;
             return 72;
@@ -40,7 +41,7 @@ class ReservarCitaServletTest {
         servlet.init(); servlet.doPost(x.request,x.response);
     }
     @Test void createdContractUsesAuthenticatedPatientAndActualAppointmentId() throws Exception {
-        var x=request(); var dao=new Dao(); enviar(dao,x);
+        var x=request();x.parameters.put("urgencia","ALTA"); var dao=new Dao(); enviar(dao,x);
         assertEquals(201,x.status); assertEquals(5,dao.propietario);assertEquals(17,dao.motivo);
         var body=new ObjectMapper().readTree(x.body.toString());
         assertEquals("CITA_RESERVADA",body.get("code").asText());

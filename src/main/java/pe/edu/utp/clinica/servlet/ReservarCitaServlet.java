@@ -48,7 +48,7 @@ public class ReservarCitaServlet extends HttpServlet {
             if(motivo<=0)throw new NumberFormatException();
             int paciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
             int id = citaDAO.reservarCitaValidada(paciente, medico, request.getParameter("fecha"),
-                    request.getParameter("hora"), request.getParameter("urgencia"),motivo);
+                    request.getParameter("hora"), "MEDIA",motivo);
             String codigo = "CI-" + Year.now(ZoneId.of("America/Lima")) + "-" + String.format("%06d", id);
             if (json(request)) {
                 ApiJson.write(response, 201, new ApiResponse<>("CITA_RESERVADA", "Cita reservada correctamente.", new ReservaCreada(id, codigo)));

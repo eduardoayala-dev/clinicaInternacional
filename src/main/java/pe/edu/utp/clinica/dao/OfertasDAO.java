@@ -240,7 +240,7 @@ public class OfertasDAO {
                 + "WHERE le.estado='ACTIVA' AND le.id_paciente IN (SELECT p.id_paciente FROM paciente p JOIN usuario u ON p.id_usuario=u.id_usuario WHERE u.activo=TRUE AND u.rol='PACIENTE') AND le.id_especialidad=? AND (le.id_sede=? OR le.id_sede IS NULL) AND le.rango_horario IN (?, 'INDIFERENTE') AND le.id_paciente<>? "
                 + "AND NOT EXISTS (SELECT 1 FROM reasignacion_inteligente r WHERE r.id_cita_original=? AND r.id_lista_espera=le.id_lista_espera AND r.estado IN ('RECHAZADA','EXPIRADA','ACEPTADA')) "
                 + "AND NOT EXISTS (SELECT 1 FROM cita c WHERE c.id_paciente=le.id_paciente AND c.fecha_hora=? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA')) "
-                + "AND le.anticipacion_minutos<=? AND (le.id_medico_preferido IS NULL OR le.id_medico_preferido=?) ORDER BY CASE le.nivel_urgencia WHEN 'ALTA' THEN 1 WHEN 'MEDIA' THEN 2 ELSE 3 END,le.fecha_registro,le.id_lista_espera LIMIT 1 FOR UPDATE";
+                + "AND le.anticipacion_minutos<=? AND (le.id_medico_preferido IS NULL OR le.id_medico_preferido=?) ORDER BY CASE "+PrioridadClinicaJdbc.PARA_LISTA+" WHEN 'ALTA' THEN 1 WHEN 'MEDIA' THEN 2 ELSE 3 END,le.fecha_registro,le.id_lista_espera LIMIT 1 FOR UPDATE";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, cupo.especialidad());
             ps.setInt(2, cupo.sede());
@@ -250,6 +250,7 @@ public class OfertasDAO {
             ps.setObject(6, cupo.inicio());
             ps.setLong(7, Duration.between(ahora().atZone(LIMA), cupo.inicio().atZone(LIMA)).toMinutes());
             ps.setInt(8,cupo.medico());
+            ps.setObject(9,cupo.inicio().toLocalDate());
             try (ResultSet rs = ps.executeQuery()) { return rs.next() ? rs.getInt(1) : 0; }
         }
     }

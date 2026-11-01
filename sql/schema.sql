@@ -817,3 +817,6 @@ CREATE TABLE IF NOT EXISTS configuracion_ofertas (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 INSERT INTO configuracion_ofertas(id_configuracion,minutos_respuesta,anticipacion_minima,version)
 SELECT 1,15,0,0 WHERE NOT EXISTS(SELECT 1 FROM configuracion_ofertas WHERE id_configuracion=1);
+
+ALTER TABLE atencion_cita ADD COLUMN id_especialidad_prioridad INT NULL;
+ALTER TABLE atencion_cita ADD CONSTRAINT fk_atencion_especialidad_prioridad FOREIGN KEY(id_especialidad_prioridad) REFERENCES especialidad(id_especialidad);

@@ -34,6 +34,7 @@ class CitaAutorizacionTest {
             st.execute("CREATE TABLE medico(id_medico INT PRIMARY KEY,id_usuario INT,cmp VARCHAR(20),id_especialidad INT,id_sede INT,estado VARCHAR(20) DEFAULT 'ACTIVO',FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario))");
             st.execute("CREATE TABLE disponibilidad(id_disponibilidad INT PRIMARY KEY,id_medico INT,id_sede INT,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR(20))");
             st.execute("CREATE TABLE motivo_cita(id_motivo INT PRIMARY KEY,descripcion VARCHAR(255))");
+            st.execute("CREATE TABLE seguimiento_cita(id_cita_origen INT PRIMARY KEY,id_cita_control INT)");
             st.execute("CREATE TABLE cita(id_cita INT PRIMARY KEY,id_paciente INT,id_medico INT,id_disponibilidad INT,id_motivo INT,fecha_hora DATETIME,estado VARCHAR(20),nivel_urgencia VARCHAR(20),riesgo_cancelacion VARCHAR(20),fecha_recomendada_proxima DATE,fecha_creacion DATETIME,FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente),FOREIGN KEY(id_medico) REFERENCES medico(id_medico))");
             st.execute("CREATE TABLE confirmacion_asistencia(id_cita INT PRIMARY KEY,creada_en DATETIME,vence_en DATETIME,confirmada_en DATETIME,canal VARCHAR(16),id_usuario_confirmo INT,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_confirmo) REFERENCES usuario(id_usuario))");
             st.execute("CREATE TABLE contacto_admision_cita(id_contacto BIGINT AUTO_INCREMENT PRIMARY KEY,id_cita INT,id_usuario_personal INT,fecha_contacto DATETIME,canal VARCHAR(16),resultado VARCHAR(24),FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_usuario_personal) REFERENCES usuario(id_usuario))");
@@ -43,10 +44,12 @@ class CitaAutorizacionTest {
             for (String sentencia : migracion.split(";")) {
                 if (sentencia.strip().startsWith("CREATE TABLE")) st.execute(sentencia.replace(") ENGINE=InnoDB", ")"));
             }
+            st.execute("ALTER TABLE atencion_cita ADD COLUMN id_especialidad_prioridad INT");
             String clinica = java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V005__historial_seguimientos_clinicos.sql"));
             for (String sentencia : clinica.split(";")) {
                 if (sentencia.strip().startsWith("CREATE TABLE")) st.execute(sentencia.replace(") ENGINE=InnoDB", ")"));
             }
+            st.execute("CREATE TABLE auditoria_seguridad(id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
             st.execute("CREATE TABLE historial_asistencia(id_historial INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_cita INT,asistio BOOLEAN,observacion VARCHAR(255),fecha_registro DATETIME,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente))");
             st.execute("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_cita_asignada INT,estado VARCHAR(20),FOREIGN KEY(id_cita_asignada) REFERENCES cita(id_cita))");
             st.execute("INSERT INTO usuario(id_usuario,nombres,apellidos,email,rol) VALUES(10,'Paciente','Uno','p@test','PACIENTE'),(20,'Medico','Uno','m@test','MEDICO'),(30,'Medico','Dos','m2@test','MEDICO')");

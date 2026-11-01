@@ -258,6 +258,7 @@
                         <div class="med-atencion-tag-title">Plan de seguimiento</div>
 
                         <span class="med-field-label">Nivel de prioridad clínica *</span>
+                        <p class="med-subtitle">La prioridad del seguimiento se aplica en esta especialidad hasta la fecha límite recomendada. Al completar el control o registrar una nueva evaluación deja de aplicarse la anterior. Sin fecha, solo queda en el historial. No cambia ofertas ya emitidas.</p>
 
                         <fieldset class="med-prioridad-cards" aria-label="Nivel de prioridad clínica"><legend class="med-sr-only">Nivel de prioridad clínica</legend>
                             <button type="button" class="med-prio-card <%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "active" : "") %>" data-prioridad="ALTA" aria-pressed="<%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "true" : "false") %>" onclick="setPrioridad('ALTA', this)">
@@ -274,7 +275,7 @@
                             </button>
                         </fieldset>
 
-                        <label class="med-field-label" for="fechaProximaInput">Fecha recomendada de próxima atención (opcional)</label>
+                        <label class="med-field-label" for="fechaProximaInput">Fecha límite recomendada del seguimiento (opcional)</label>
                         <div class="med-date-group">
                             <div class="med-input-date-wrap">
                                 <input min="<%= Html.texto(java.time.LocalDate.now(java.time.ZoneId.of("America/Lima")).plusDays(1)) %>" type="date" name="fechaProxima" id="fechaProximaInput" class="med-input-date" value="<%= Html.texto(fechaRecomendadaProxima) %>" onchange="actualizarBadgeMeses()">
