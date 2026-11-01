@@ -10,6 +10,8 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 public class AdmisionCitaDAO {
+    private static final String CONFIRMADA="CONFIRMADA";
+
     private final AgendaCitaDAO.ConnectionSource connections;
     private final Clock clock;
     private final int tolerancia;
@@ -35,7 +37,7 @@ public class AdmisionCitaDAO {
             int sede=sedePersonal(conn,usuario);
             CitaAdmision actual=bloquear(conn,sede,cita);
             if("CANCELADA".equals(actual.estado()))return null;
-            if((!"CONFIRMADA".equals(actual.estado())&&!"SOLICITADA".equals(actual.estado()))||actual.llegada()||!actual.programada().isAfter(LocalDateTime.now(clock))) {
+            if((!CONFIRMADA.equals(actual.estado())&&!"SOLICITADA".equals(actual.estado()))||actual.llegada()||!actual.programada().isAfter(LocalDateTime.now(clock))) {
                 throw new AgendaException(409,"CANCELACION_NO_DISPONIBLE","Solo se cancelan citas futuras pendientes de llegada.");
             }
             try(var st=conn.prepareStatement("UPDATE cita SET estado='CANCELADA' WHERE id_cita=?")){st.setInt(1,cita);st.executeUpdate();}
@@ -53,7 +55,7 @@ public class AdmisionCitaDAO {
             TransaccionJdbc.avisarSede(sede);
             CitaAdmision actual = bloquear(conn,sede,cita);
             LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
-            if (!"CONFIRMADA".equals(actual.estado()) || !actual.programada().toLocalDate().equals(ahora.toLocalDate())) {
+            if (!CONFIRMADA.equals(actual.estado()) || !actual.programada().toLocalDate().equals(ahora.toLocalDate())) {
                 throw new AgendaException(409,"LLEGADA_NO_DISPONIBLE","Solo puedes registrar la llegada de una cita confirmada para hoy.");
             }
             LocalDateTime programada = actual.programada();
@@ -112,7 +114,7 @@ public class AdmisionCitaDAO {
             TransaccionJdbc.avisarSede(sede);
             CitaAdmision actual=bloquear(conn,sede,cita);
             LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
-            if(!"CONFIRMADA".equals(actual.estado()) || actual.llegada() || !actual.programada().toLocalDate().equals(ahora.toLocalDate())
+            if(!CONFIRMADA.equals(actual.estado()) || actual.llegada() || !actual.programada().toLocalDate().equals(ahora.toLocalDate())
                     || !ahora.isAfter(actual.programada().plusMinutes(tolerancia))) {
                 throw new AgendaException(409,"INASISTENCIA_NO_DISPONIBLE","Verifica la ausencia después de la hora de la cita y su tolerancia. Un paciente que llegó no puede registrarse como ausente.");
             }

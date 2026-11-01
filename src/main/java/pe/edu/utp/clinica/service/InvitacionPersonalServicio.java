@@ -19,12 +19,14 @@ public class InvitacionPersonalServicio {
         return new InvitacionPersonalServicio(new InvitacionPersonalDAO(),ConfiguracionCorreo.crear(entorno),basePublica(entorno));
     }
     public Resultado invitar(int actor,InvitacionPersonalDAO.Solicitud solicitud) {
-        String secreto=SecretosSesion.nuevo();byte[] hash=SecretosSesion.hash(secreto);
+        String secreto=SecretosSesion.nuevo();
+        byte[] hash=SecretosSesion.hash(secreto);
         var entrega=almacen.crear(actor,solicitud,hash);
         return enviar(entrega,secreto,hash);
     }
     public Resultado reenviar(int actor,int usuario) {
-        String secreto=SecretosSesion.nuevo();byte[] hash=SecretosSesion.hash(secreto);
+        String secreto=SecretosSesion.nuevo();
+        byte[] hash=SecretosSesion.hash(secreto);
         return enviar(almacen.reenviar(actor,usuario,hash),secreto,hash);
     }
     private Resultado enviar(InvitacionPersonalDAO.Entrega entrega,String secreto,byte[] hash) {
@@ -43,7 +45,10 @@ public class InvitacionPersonalServicio {
             boolean local="http".equals(uri.getScheme()) && !EntornoAplicacion.produccion(entorno)
                     && ("localhost".equals(uri.getHost())||"127.0.0.1".equals(uri.getHost()));
             if(uri.getHost()==null || (!"https".equals(uri.getScheme())&&!local) || uri.getUserInfo()!=null || uri.getRawQuery()!=null || uri.getRawFragment()!=null)throw new IllegalArgumentException();
-            return uri.toString().replaceAll("/+$","");
+            String direccion=uri.toString();
+            int fin=direccion.length();
+            while(fin>0 && direccion.charAt(fin-1)=='/')fin--;
+            return direccion.substring(0,fin);
         } catch(IllegalArgumentException e){throw new IllegalArgumentException("Configura APP_PUBLIC_URL con la dirección pública HTTPS del sistema.");}
     }
 }

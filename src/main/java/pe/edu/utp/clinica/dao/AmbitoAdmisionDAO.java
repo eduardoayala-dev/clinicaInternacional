@@ -21,12 +21,14 @@ public class AmbitoAdmisionDAO {
     }
     public String nombreSede(int usuario) {
         try(var c=conexiones.open();var st=c.prepareStatement("SELECT nombre FROM sede WHERE id_sede=?")) {
-            st.setInt(1,sede(c,usuario));try(var rs=st.executeQuery()){if(!rs.next())throw new AgendaException(403,"SEDE_NO_DISPONIBLE","La sede no está habilitada.");return rs.getString(1);}
+            st.setInt(1,sede(c,usuario));try(var rs=st.executeQuery()){if(!rs.next()){throw new AgendaException(403,"SEDE_NO_DISPONIBLE","La sede no está habilitada.");}
+                return rs.getString(1);}
         }catch(SQLException e){throw new AgendaException(503,"AMBITO_NO_DISPONIBLE","No se pudo comprobar la sede.");}
     }
     static int sede(Connection c,int usuario)throws SQLException {
         try(var st=c.prepareStatement("SELECT p.id_sede FROM personal_administrativo p JOIN usuario u ON u.id_usuario=p.id_usuario JOIN sede s ON s.id_sede=p.id_sede WHERE p.id_usuario=? AND u.activo=TRUE AND u.rol='PERSONAL_ADMINISTRATIVO' AND s.estado='ACTIVO' FOR UPDATE")) {
-            st.setInt(1,usuario);try(var rs=st.executeQuery()){if(!rs.next())throw new AgendaException(403,"ADMISION_NO_HABILITADA","El perfil de admisión no está habilitado.");return rs.getInt(1);}
+            st.setInt(1,usuario);try(var rs=st.executeQuery()){if(!rs.next()){throw new AgendaException(403,"ADMISION_NO_HABILITADA","El perfil de admisión no está habilitado.");}
+                return rs.getInt(1);}
         }
     }
     public void exigir(int usuario,Recurso recurso,int id) {

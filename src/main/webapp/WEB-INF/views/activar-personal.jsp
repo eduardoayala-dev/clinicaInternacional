@@ -18,7 +18,7 @@
     <main class="formulario-panel">
         <div class="contenido-seguridad">
             <header><h1>Activa tu cuenta</h1><p class="subtitulo">Crea tu contraseña para ingresar al portal de personal.</p></header>
-            <p id="activacionMensaje" role="status" aria-live="polite"><c:out value="${mensajeInvitacion}" /></p>
+            <output id="activacionMensaje" aria-live="polite"><c:out value="${mensajeInvitacion}" /></output>
             <c:choose><c:when test="${invitacionVigente}">
                 <form id="formActivacion" method="post" action="${pageContext.request.contextPath}/activar-personal">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><input type="hidden" name="action" value="activar">

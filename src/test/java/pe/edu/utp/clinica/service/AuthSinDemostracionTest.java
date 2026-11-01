@@ -9,8 +9,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class AuthSinDemostracionTest {
     private static class Usuarios extends UsuarioDAO {
         Usuario cuenta;
+        int auditorias;
         @Override public Usuario buscarPorEmailODni(String id){return cuenta;}
-        @Override public void registrarAuditoria(Integer id,String ip,String evento,String descripcion,boolean sospechoso){}
+        @Override public void registrarAuditoria(Integer id,String ip,String evento,String descripcion,boolean sospechoso){auditorias++;}
     }
     @Test void noHayUsuariosSinteticosNiUnaPasswordMaestra() {
         var usuarios=new Usuarios();var auth=new AuthService(usuarios);

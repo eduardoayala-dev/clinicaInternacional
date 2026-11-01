@@ -11,6 +11,10 @@ import java.util.Locale;
 import java.util.Set;
 
 public class InvitacionPersonalDAO {
+    private static final String ROL_MEDICO="MEDICO";
+    private static final String ROL_ADMISION="PERSONAL_ADMINISTRATIVO";
+    private static final String ROL_ADMIN="ADMINISTRADOR";
+
     private final AgendaCitaDAO.ConnectionSource conexiones;
     private final Clock reloj;
     public record Solicitud(String nombres,String apellidos,String correo,String rol,String cmp,Integer especialidad,Integer sede,String cargo) {}
@@ -33,7 +37,8 @@ public class InvitacionPersonalDAO {
             int id;
             try(var st=c.prepareStatement("INSERT INTO usuario(nombres,apellidos,email,password_hash,rol,activo) VALUES(?,?,?,?,?,FALSE)",Statement.RETURN_GENERATED_KEYS)) {
                 st.setString(1,s.nombres().trim());st.setString(2,s.apellidos().trim());st.setString(3,s.correo().trim().toLowerCase(Locale.ROOT));st.setString(4,hash);st.setString(5,s.rol());st.executeUpdate();
-                try(var rs=st.getGeneratedKeys()){if(!rs.next())throw new SQLException("No se obtuvo el usuario");id=rs.getInt(1);}
+                try(var rs=st.getGeneratedKeys()){if(!rs.next()){throw new SQLException("No se obtuvo el usuario");}
+                    id=rs.getInt(1);}
             }
             perfil(c,id,s);
             guardarInvitacion(c,id,actor,token,false);
@@ -161,7 +166,7 @@ public class InvitacionPersonalDAO {
         try(var st=c.prepareStatement("SELECT id_usuario FROM invitacion_personal WHERE id_usuario=? AND utilizada_en IS NULL")){st.setInt(1,usuario);try(var rs=st.executeQuery()){if(rs.next())throw error(409,"ACTIVACION_PENDIENTE","Debe crear su contraseña desde la invitación.");}}
     }
     private void validarCambioDeAgenda(Connection c,int usuario,Solicitud s)throws SQLException {
-        if(!"MEDICO".equals(s.rol()))return;
+        if(!ROL_MEDICO.equals(s.rol()))return;
         try(var st=c.prepareStatement("SELECT m.id_medico FROM medico m WHERE m.id_usuario=? AND (m.id_sede<>? OR m.id_especialidad<>?) AND (EXISTS(SELECT 1 FROM disponibilidad d WHERE d.id_medico=m.id_medico AND d.estado='PUBLICADO' AND d.fecha>=?) OR EXISTS(SELECT 1 FROM cita ci WHERE ci.id_medico=m.id_medico AND ci.fecha_hora>? AND ci.estado NOT IN ('CANCELADA','REPROGRAMADA')))")) {
             st.setInt(1,usuario);st.setInt(2,s.sede());st.setInt(3,s.especialidad());st.setObject(4,ahoraClinica().toLocalDate());st.setObject(5,ahoraClinica());
             try(var rs=st.executeQuery()){if(rs.next())throw error(409,"MEDICO_CON_AGENDA","Coordina la agenda vigente antes de cambiar la sede o especialidad del médico.");}
@@ -174,9 +179,9 @@ public class InvitacionPersonalDAO {
         }
     }
     private static void actualizarPerfil(Connection c,int usuario,Solicitud s)throws SQLException {
-        if("MEDICO".equals(s.rol())) {
+        if(ROL_MEDICO.equals(s.rol())) {
             try(var st=c.prepareStatement("UPDATE medico SET cmp=?,id_especialidad=?,id_sede=? WHERE id_usuario=?")){st.setString(1,s.cmp().trim());st.setInt(2,s.especialidad());st.setInt(3,s.sede());st.setInt(4,usuario);if(st.executeUpdate()!=1)throw error(409,"PERFIL_INVALIDO","No se encontró el perfil médico.");}
-        } else if("PERSONAL_ADMINISTRATIVO".equals(s.rol())) {
+        } else if(ROL_ADMISION.equals(s.rol())) {
             try(var st=c.prepareStatement("UPDATE personal_administrativo SET id_sede=?,cargo=? WHERE id_usuario=?")){st.setInt(1,s.sede());st.setString(2,s.cargo()==null||s.cargo().isBlank()?"Personal de admisión":s.cargo().trim());st.setInt(3,usuario);if(st.executeUpdate()!=1)throw error(409,"PERFIL_INVALIDO","No se encontró el perfil de admisión.");}
         }
     }
@@ -193,28 +198,28 @@ public class InvitacionPersonalDAO {
         try(var st=c.prepareStatement(sql)){st.setBytes(1,token);st.setInt(2,actor);st.setObject(3,ahora());st.setObject(4,ahora().plusMinutes(30));st.setInt(5,id);if(st.executeUpdate()!=1)throw invalida();}
     }
     private static void perfil(Connection c,int id,Solicitud s)throws SQLException {
-        if("MEDICO".equals(s.rol())) {
+        if(ROL_MEDICO.equals(s.rol())) {
             try(var st=c.prepareStatement("INSERT INTO medico(id_usuario,cmp,id_especialidad,id_sede,estado) VALUES(?,?,?,?,'ACTIVO')")){st.setInt(1,id);st.setString(2,s.cmp().trim());st.setInt(3,s.especialidad());st.setInt(4,s.sede());st.executeUpdate();}
-        } else if("PERSONAL_ADMINISTRATIVO".equals(s.rol())) {
+        } else if(ROL_ADMISION.equals(s.rol())) {
             try(var st=c.prepareStatement("INSERT INTO personal_administrativo(id_usuario,id_sede,codigo_empleado,cargo) VALUES(?,?,?,?)")){st.setInt(1,id);st.setInt(2,s.sede());st.setString(3,"ADM-"+id);st.setString(4,s.cargo()==null||s.cargo().isBlank()?"Personal de admisión":s.cargo().trim());st.executeUpdate();}
         } else {
             try(var st=c.prepareStatement("INSERT INTO administrador(id_usuario,estado) VALUES(?,'ACTIVO')")){st.setInt(1,id);st.executeUpdate();}
         }
     }
     private static void validarCatalogos(Connection c,Solicitud s,int excluirUsuario)throws SQLException {
-        if("ADMINISTRADOR".equals(s.rol()))return;
+        if(ROL_ADMIN.equals(s.rol()))return;
         try(var st=c.prepareStatement("SELECT id_sede FROM sede WHERE id_sede=? AND estado='ACTIVO'")){st.setInt(1,s.sede());try(var rs=st.executeQuery()){if(!rs.next())throw error(400,"SEDE_INVALIDA","Selecciona una sede activa.");}}
-        if("MEDICO".equals(s.rol())) {
+        if(ROL_MEDICO.equals(s.rol())) {
             try(var st=c.prepareStatement("SELECT id_especialidad FROM especialidad WHERE id_especialidad=? AND estado='ACTIVO'")){st.setInt(1,s.especialidad());try(var rs=st.executeQuery()){if(!rs.next())throw error(400,"ESPECIALIDAD_INVALIDA","Selecciona una especialidad activa.");}}
             try(var st=c.prepareStatement("SELECT id_medico FROM medico WHERE cmp=? AND id_usuario<>?")){st.setString(1,s.cmp().trim());st.setInt(2,excluirUsuario);try(var rs=st.executeQuery()){if(rs.next())throw error(409,"CMP_EXISTENTE","El CMP ya está registrado.");}}
         }
     }
     private static void validar(Solicitud s) {
-        if(s==null || !texto(s.nombres(),100) || !texto(s.apellidos(),100) || s.rol()==null || !Set.of("MEDICO","PERSONAL_ADMINISTRATIVO","ADMINISTRADOR").contains(s.rol()))throw error(400,"DATOS_INVALIDOS","Revisa los nombres y el rol del personal.");
+        if(s==null || !texto(s.nombres(),100) || !texto(s.apellidos(),100) || s.rol()==null || !Set.of(ROL_MEDICO,ROL_ADMISION,ROL_ADMIN).contains(s.rol()))throw error(400,"DATOS_INVALIDOS","Revisa los nombres y el rol del personal.");
         try{Correo.validarDireccion(s.correo()==null?null:s.correo().trim());}catch(IllegalArgumentException e){throw error(400,"CORREO_INVALIDO","Introduce un correo válido.");}
         if(s.correo().trim().length()>150)throw error(400,"CORREO_INVALIDO","El correo supera 150 caracteres.");
-        if(!"ADMINISTRADOR".equals(s.rol()) && (s.sede()==null||s.sede()<=0))throw error(400,"SEDE_INVALIDA","Selecciona una sede.");
-        if("MEDICO".equals(s.rol()) && (s.especialidad()==null||s.especialidad()<=0||s.cmp()==null||!s.cmp().trim().matches("[A-Za-z0-9-]{4,20}")))throw error(400,"MEDICO_INVALIDO","Completa CMP y especialidad.");
+        if(!ROL_ADMIN.equals(s.rol()) && (s.sede()==null||s.sede()<=0))throw error(400,"SEDE_INVALIDA","Selecciona una sede.");
+        if(ROL_MEDICO.equals(s.rol()) && (s.especialidad()==null||s.especialidad()<=0||s.cmp()==null||!s.cmp().trim().matches("[A-Za-z0-9-]{4,20}")))throw error(400,"MEDICO_INVALIDO","Completa CMP y especialidad.");
         if(s.cargo()!=null && s.cargo().length()>100)throw error(400,"CARGO_INVALIDO","El cargo supera 100 caracteres.");
     }
     private static boolean texto(String s,int max){return s!=null&&!s.isBlank()&&s.length()<=max&&s.chars().noneMatch(c->Character.isISOControl(c)||c=='<'||c=='>');}

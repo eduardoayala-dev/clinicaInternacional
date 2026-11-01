@@ -12,7 +12,10 @@ import java.io.IOException;
 public class ActivacionPersonalServlet extends HttpServlet {
     private static final String VINCULO="invitacionPersonalHash";
     protected InvitacionPersonalDAO almacen(){return new InvitacionPersonalDAO();}
-    @Override protected void doGet(HttpServletRequest request,HttpServletResponse response)throws IOException,ServletException {
+    @Override protected void doGet(HttpServletRequest request,HttpServletResponse response) {
+        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->mostrarActivacion(request,response));
+    }
+    private void mostrarActivacion(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         response.setHeader("Cache-Control","no-store");response.setHeader("Referrer-Policy","no-referrer");
         response.setHeader("X-Frame-Options","DENY");response.setHeader("X-Content-Type-Options","nosniff");
         request.setAttribute("portalPersonal",true);
@@ -24,16 +27,14 @@ public class ActivacionPersonalServlet extends HttpServlet {
         catch(AgendaException e){response.setStatus(e.status());request.setAttribute("mensajeInvitacion",e.getMessage());}
         request.getRequestDispatcher("/WEB-INF/views/activar-personal.jsp").forward(request,response);
     }
-    @Override protected void doPost(HttpServletRequest request,HttpServletResponse response)throws IOException {
+    @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) {
+        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesarActivacion(request,response));
+    }
+    private void procesarActivacion(HttpServletRequest request,HttpServletResponse response) throws IOException {
         response.setHeader("Cache-Control","no-store");response.setHeader("Referrer-Policy","no-referrer");
         try {
             if("preparar".equals(request.getParameter("action"))) {
-                request.getSession().removeAttribute(VINCULO);
-                String token=request.getParameter("token");
-                if(token==null||!token.matches("[A-Za-z0-9_-]{43}"))throw new AgendaException(410,"INVITACION_INVALIDA","La invitación no es válida o venció.");
-                byte[] hash=SecretosSesion.hash(token);
-                if(!almacen().vigente(hash))throw new AgendaException(410,"INVITACION_INVALIDA","La invitación no es válida, venció o ya se utilizó.");
-                request.getSession().setAttribute(VINCULO,hash);
+                preparar(request);
                 ApiJson.write(response,200,new ApiResponse<>("INVITACION_PREPARADA","Crea tu contraseña para continuar.",null));
             } else if("activar".equals(request.getParameter("action"))) {
                 byte[] hash=vinculo(request);
@@ -45,6 +46,14 @@ public class ActivacionPersonalServlet extends HttpServlet {
                 ApiJson.write(response,200,new ApiResponse<>("PERSONAL_ACTIVADO","Tu cuenta quedó activa. Ya puedes iniciar sesión.",null));
             } else throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");
         } catch(AgendaException e) {ApiJson.write(response,e.status(),new ApiResponse<>(e.code(),e.getMessage(),null));}
+    }
+    private void preparar(HttpServletRequest request) {
+        request.getSession().removeAttribute(VINCULO);
+        String token=request.getParameter("token");
+        if(token==null||!token.matches("[A-Za-z0-9_-]{43}"))throw new AgendaException(410,"INVITACION_INVALIDA","La invitación no es válida o venció.");
+        byte[] hash=SecretosSesion.hash(token);
+        if(!almacen().vigente(hash))throw new AgendaException(410,"INVITACION_INVALIDA","La invitación no es válida, venció o ya se utilizó.");
+        request.getSession().setAttribute(VINCULO,hash);
     }
     private static byte[] vinculo(HttpServletRequest request) {
         var sesion=request.getSession(false);

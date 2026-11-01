@@ -32,6 +32,34 @@ import java.util.*;
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
+    private static final String ESTADO="estado";
+    private static final String DNI="dni";
+    private static final String SIN_REGISTRAR="Sin registrar";
+    private static final String RUTA_DASHBOARD="/admin/dashboard";
+    private static final String NOMBRES="nombres";
+    private static final String APELLIDOS="apellidos";
+    private static final String TELEFONO="telefono";
+    private static final String HORA="hora";
+    private static final String RUTA_MEDICOS="/admin/medicos";
+    private static final String RUTA_PACIENTES="/admin/pacientes";
+    private static final String ID_CITA="idCita";
+    private static final String DIRECCION="direccion";
+    private static final String FECHA="fecha";
+    private static final String SEDES="sedes";
+    private static final String ESPECIALIDAD="especialidad";
+    private static final String SEDE="sede";
+    private static final String COBERTURA="cobertura";
+    private static final String FORMATO_PORCENTAJE="%.1f%%";
+    private static final String EMAIL="email";
+    private static final String ZONA_CLINICA="America/Lima";
+    private static final String SEDE_NOMBRE="sede_nombre";
+
+    private static final String ACTIVO="ACTIVO";
+    private static final String FLASH_ERROR="flashError";
+    private static final String ID_PACIENTE="idPaciente";
+    private static final String MEDICO="medico";
+    private static final String ID_DISPONIBILIDAD="idDisponibilidad";
+
     private static final String USUARIO_LOGUEADO = "usuarioLogueado";
     private static final String FLASH_MESSAGE = "flashMessage";
     private static final String ESTADO_CONFIRMADA = "CONFIRMADA";
@@ -52,8 +80,13 @@ public class AdminDashboardServlet extends HttpServlet {
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doGet(HttpServletRequest request, HttpServletResponse response) {
+        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->{
+            try {procesarGet(request,response);}
+            catch(AgendaException e){responderError(response,e.status(),e.getMessage());}
+        });
+    }
+    private void procesarGet(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute(USUARIO_LOGUEADO) == null) {
             response.sendRedirect(request.getContextPath() + "/login/personal?error=acceso_denegado");
@@ -76,11 +109,11 @@ public class AdminDashboardServlet extends HttpServlet {
 
         try {
         switch (path) {
-            case "/admin/medicos":
+            case RUTA_MEDICOS:
                 cargarDatosMedicos(request);
                 request.getRequestDispatcher("/WEB-INF/views/admin/medicos.jsp").forward(request, response);
                 break;
-            case "/admin/pacientes":
+            case RUTA_PACIENTES:
                 cargarDatosPacientes(request);
                 request.getRequestDispatcher("/WEB-INF/views/admin/pacientes.jsp").forward(request, response);
                 break;
@@ -92,7 +125,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 cargarDatosDashboardOperativo(request);
                 request.getRequestDispatcher("/WEB-INF/views/admin/dashboard_operativo.jsp").forward(request, response);
                 break;
-            case "/admin/dashboard":
+            case RUTA_DASHBOARD:
             case "/admin/inicio":
             default:
                 cargarDatosDashboardInicio(request);
@@ -143,7 +176,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
         // Sedes para el filtro
         MedicoDAO medicoDAO = new MedicoDAO();
-        request.setAttribute("sedes", medicoDAO.obtenerSedes());
+        request.setAttribute(SEDES, medicoDAO.obtenerSedes());
 
         // Feed de últimas operaciones en vivo desde la base de datos
         request.setAttribute("ultimasOperaciones", obtenerUltimasOperaciones());
@@ -151,20 +184,20 @@ public class AdminDashboardServlet extends HttpServlet {
 
     private void cargarDatosMedicos(HttpServletRequest request) {
         String query = request.getParameter("query");
-        String especialidad = request.getParameter("especialidad");
-        String sede = request.getParameter("sede");
-        String estado = request.getParameter("estado");
+        String especialidad = request.getParameter(ESPECIALIDAD);
+        String sede = request.getParameter(SEDE);
+        String estado = request.getParameter(ESTADO);
 
-        List<Map<String, Object>> medicos = obtenerMedicosPadrónBD(query, especialidad, sede, estado,ambitoSede(request));
+        List<Map<String, Object>> medicos = obtenerMedicosPadronBD(query, especialidad, sede, estado,ambitoSede(request));
         int totalMedicosBD = medicos.size();
         int totalActivosBD = 0;
         int totalLicenciaBD = 0;
         int totalEspecialidadesBD = 0;
 
         totalMedicosBD=medicos.size();
-        totalActivosBD=(int)medicos.stream().filter(m->"ACTIVO".equals(m.get("estado"))).count();
-        totalLicenciaBD=(int)medicos.stream().filter(m->"LICENCIA".equals(m.get("estado"))).count();
-        totalEspecialidadesBD=(int)medicos.stream().map(m->m.get("especialidad")).distinct().count();
+        totalActivosBD=(int)medicos.stream().filter(m->ACTIVO.equals(m.get(ESTADO))).count();
+        totalLicenciaBD=(int)medicos.stream().filter(m->"LICENCIA".equals(m.get(ESTADO))).count();
+        totalEspecialidadesBD=(int)medicos.stream().map(m->m.get(ESPECIALIDAD)).distinct().count();
 
         // Obtener sedes y especialidades para los filtros y modal
         MedicoDAO medicoDAO = new MedicoDAO();
@@ -172,7 +205,7 @@ public class AdminDashboardServlet extends HttpServlet {
         List<Map<String, Object>> especialidades = medicoDAO.obtenerEspecialidades();
 
         request.setAttribute("listaMedicos", medicos);
-        request.setAttribute("sedes", sedes);
+        request.setAttribute(SEDES, sedes);
         request.setAttribute("especialidades", especialidades);
         request.setAttribute("listaDisponibilidades", obtenerTodasDisponibilidades(ambitoSede(request)));
         request.setAttribute("totalMedicos", totalMedicosBD);
@@ -182,25 +215,24 @@ public class AdminDashboardServlet extends HttpServlet {
         request.setAttribute("filtroQuery", query != null ? query : "");
         request.setAttribute("filtroEspecialidad", especialidad != null ? especialidad : "");
         request.setAttribute("filtroSede", sede != null ? sede : "");
-        request.setAttribute("filtroEstado", estado != null ? estado : "ACTIVO");
+        request.setAttribute("filtroEstado", estado != null ? estado : ACTIVO);
     }
 
     private void cargarDatosPacientes(HttpServletRequest request) {
         String query = request.getParameter("query");
-        String cobertura = request.getParameter("cobertura");
-        String sede = request.getParameter("sede");
+        String cobertura = request.getParameter(COBERTURA);
+        String sede = request.getParameter(SEDE);
 
-        List<Map<String, Object>> pacientes = obtenerPacientesPadrónBD(query, cobertura, sede,ambitoSede(request));
+        List<Map<String, Object>> pacientes = obtenerPacientesPadronBD(query, cobertura, sede,ambitoSede(request));
         int totalPacientesBD = pacientes.size();
         // Sedes para el selector
         MedicoDAO medicoDAO = new MedicoDAO();
-        request.setAttribute("sedes", medicoDAO.obtenerSedes());
+        request.setAttribute(SEDES, medicoDAO.obtenerSedes());
 
         request.setAttribute("listaPacientes", pacientes);
         request.setAttribute("sedeAdmision",new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().nombreSede(((Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO)).getIdUsuario()));
         request.setAttribute("totalPacientes", totalPacientesBD);
         request.setAttribute("totalRegistradosFormat", String.format(Locale.US, "%,d", totalPacientesBD).replace(",", " "));
-        int verificados = 0;
         request.setAttribute("totalVerificadosFormat", "Sin datos");
 
         request.setAttribute("filtroQuery", query != null ? query : "");
@@ -257,19 +289,21 @@ public class AdminDashboardServlet extends HttpServlet {
         request.setAttribute("tiempoEspera", "18.5 min");
 
         request.setAttribute("riesgoBajoCount", riesgoBajoCount);
-        request.setAttribute("riesgoBajoPorc", String.format(Locale.US, "%.1f%%", porcBajo));
+        request.setAttribute("riesgoBajoPorc", String.format(Locale.US, FORMATO_PORCENTAJE, porcBajo));
         request.setAttribute("riesgoMedioCount", riesgoMedioCount);
-        request.setAttribute("riesgoMedioPorc", String.format(Locale.US, "%.1f%%", porcMedio));
+        request.setAttribute("riesgoMedioPorc", String.format(Locale.US, FORMATO_PORCENTAJE, porcMedio));
         request.setAttribute("riesgoAltoCount", riesgoAltoCount);
-        request.setAttribute("riesgoAltoPorc", String.format(Locale.US, "%.1f%%", porcAlto));
+        request.setAttribute("riesgoAltoPorc", String.format(Locale.US, FORMATO_PORCENTAJE, porcAlto));
 
         List<Map<String, Object>> citasRiesgo = obtenerCitasContactoPreventivo();
         request.setAttribute("listaCitasRiesgo", citasRiesgo);
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response)
-            throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesarPost(request,response));
+    }
+    private void procesarPost(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         String action = request.getParameter("action");
 
         HttpSession session = request.getSession(false);
@@ -281,161 +315,27 @@ public class AdminDashboardServlet extends HttpServlet {
         try { comprobarAmbito(request,usuario,action); }
         catch(IllegalArgumentException e){responderError(response,400,"Revisa los identificadores.");return;}
         catch(AgendaException e){responderError(response,e.status(),e.getMessage());return;}
-        if ("admitir_cita".equals(action)) {
-            try {
-                request.getRequestDispatcher("/admin/admision").forward(request,response);
-            } catch (ServletException | IOException e) {
-                responderError(response,500,"No se pudo completar la operación de admisión.");
-            }
-            return;
-        } else if ("cancelar_cita".equals(action)) {
-            try {
-                int idCita=Integer.parseInt(request.getParameter("idCita"));
-                admisionDAO.cancelar(usuario.getIdUsuario(),idCita);
-                try { citaDAO.ejecutarReasignacionInteligente(idCita); }
-                catch(AgendaException e) { request.getSession().setAttribute("flashError","La cita se canceló; el mantenimiento revisará la oferta del cupo."); }
-                session.setAttribute(FLASH_MESSAGE,"Cita cancelada correctamente.");
-            } catch(NumberFormatException e){session.setAttribute("flashError","Selecciona una cita válida.");}
-            catch(AgendaException e){session.setAttribute("flashError",e.getMessage());}
-            response.sendRedirect(request.getContextPath()+"/admin/dashboard");return;
-        } else if ("registrar_paciente".equals(action)) {
-            String redirect = request.getParameter("redirect");
-            if (redirect == null || redirect.trim().isEmpty()) {
-                redirect = "/admin/pacientes";
-            }
-            String nombres = request.getParameter("nombres");
-            String apellidos = request.getParameter("apellidos");
-            String dni = request.getParameter("dni");
-            String telefono = request.getParameter("telefono");
-            String email = request.getParameter("email");
-            String direccion = request.getParameter("direccion");
-            String sedePreferida = new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().nombreSede(usuario.getIdUsuario());
-            String cobertura = request.getParameter("cobertura");
-            String canalAviso = request.getParameter("canal_aviso");
-            String fechaNacStr = request.getParameter("fecha_nacimiento");
-
-            Usuario u = new Usuario();
-            u.setNombres(nombres != null ? nombres.trim() : "Paciente");
-            u.setApellidos(apellidos != null ? apellidos.trim() : "Registrado");
-            u.setEmail(email != null && !email.trim().isEmpty() ? email.trim() : ("paciente_" + dni + "@clinica.pe"));
-            u.setRol("PACIENTE");
-            u.setActivo(true);
-            u.setPasswordHash(pe.edu.utp.clinica.util.SecurityUtil.hashPassword(pe.edu.utp.clinica.auth.SecretosSesion.nuevo()));
-
-            pe.edu.utp.clinica.model.Paciente p = new pe.edu.utp.clinica.model.Paciente();
-            p.setDni(dni != null ? dni.trim() : "00000000");
-            p.setTelefono(telefono != null ? telefono.trim() : "999999999");
-            p.setDireccion(direccion != null && !direccion.trim().isEmpty() ? direccion.trim() : "San Borja, Lima");
-            
-            java.time.LocalDate fnac = java.time.LocalDate.of(1990, 1, 1);
-            if (fechaNacStr != null && !fechaNacStr.trim().isEmpty()) {
-                try {
-                    fnac = java.time.LocalDate.parse(fechaNacStr.trim());
-                } catch (Exception ignored) {}
-            }
-            p.setFechaNacimiento(fnac);
-            p.setCanalAviso("Correo");
-            p.setSedePreferida(sedePreferida != null && !sedePreferida.trim().isEmpty() ? sedePreferida.trim() : "Sede San Borja");
-            p.setTipoCobertura(cobertura != null && !cobertura.trim().isEmpty() ? cobertura.trim() : "EPS");
-
-            boolean ok = usuarioDAO.crearCuentaPaciente(u, p);
-            if (ok) {
-                String opMsg = "Registro: nuevo paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado en padrón";
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement("INSERT INTO notificacion (id_usuario, tipo, canal, mensaje, fecha_envio, estado_envio) VALUES (1, 'Registro', 'PLATAFORMA', ?, CURRENT_TIMESTAMP, 'ENVIADA')")) {
-                    ps.setString(1, opMsg);
-                    ps.executeUpdate();
-                } catch (Exception ignored) {}
-
-                request.getSession().setAttribute(FLASH_MESSAGE, "Paciente registrado. Para establecer su contraseña debe utilizar Recuperar contraseña con su DNI y correo.");
-            } else {
-                request.getSession().setAttribute("flashError", "No se pudo registrar: verifique que el DNI o correo no estén duplicados.");
-            }
-            response.sendRedirect(request.getContextPath() + redirect);
-            return;
-        } else if ("editar_paciente".equals(action)) {
-            try {
-                new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().editarPaciente(usuario.getIdUsuario(),Integer.parseInt(request.getParameter("idPaciente")),
-                    new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.EdicionPaciente(request.getParameter("nombres"),request.getParameter("apellidos"),request.getParameter("telefono"),request.getParameter("direccion"),request.getParameter("cobertura")));
-                session.setAttribute(FLASH_MESSAGE,"Datos del paciente actualizados.");
-            } catch(NumberFormatException e){session.setAttribute("flashError","Selecciona un paciente válido.");}
-            catch(AgendaException e){session.setAttribute("flashError",e.getMessage());}
-            response.sendRedirect(request.getContextPath()+"/admin/pacientes");return;
-        } else if ("reasignar".equals(action)) {
-            try {
-                int idCita = Integer.parseInt(request.getParameter("idCita"));
-                String mensaje = citaDAO.ejecutarReasignacionInteligente(idCita);
-                request.getSession().setAttribute(FLASH_MESSAGE, mensaje);
-            } catch (Exception e) {
-                request.getSession().setAttribute(FLASH_MESSAGE, "Error al procesar reasignación: " + e.getMessage());
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-            return;
-        } else if ("cambiar_estado".equals(action)) {
-            responderError(response,403,"Utiliza los flujos de admisión, confirmación y atención para cambiar el estado de una cita.");
-            return;
-        } else if ("registrar_cita_ventanilla".equals(action)) {
-            String dni = request.getParameter("dni");
-            String medicoStr = request.getParameter("medico");
-            String fecha = request.getParameter("fecha");
-            String hora = request.getParameter("hora");
-            int idMed = -1;
-            try { idMed = Integer.parseInt(medicoStr); } catch (Exception ignored) {}
-
-            int idPac = -1;
-            try (Connection conn = DatabaseConfig.getConnection();
-                 PreparedStatement psPac = conn.prepareStatement("SELECT id_paciente FROM paciente WHERE dni = ?")) {
-                psPac.setString(1, dni != null ? dni.trim() : "");
-                try (ResultSet rs = psPac.executeQuery()) {
-                    if (rs.next()) idPac = rs.getInt(1);
-                }
-            } catch (Exception ignored) {}
-
-            int idCitaNueva = citaDAO.reservarCitaConId(idPac, idMed, fecha, hora, "MEDIA");
-            if (idCitaNueva > 0) {
-                request.getSession().setAttribute(FLASH_MESSAGE, "¡Cita agendada exitosamente (ID #" + idCitaNueva + ") para el " + fecha + " a las " + hora + "!");
-            } else {
-                request.getSession().setAttribute("flashError", "No se pudo agendar la cita: el horario " + (fecha != null ? fecha : "") + " " + (hora != null ? hora : "") + " ya se encuentra ocupado por otro paciente.");
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-            return;
-        } else if ("publicar_horario_medico".equals(action)) {
-            try {
-                int medico = Integer.parseInt(request.getParameter(ID_MEDICO));
-                int sede = Integer.parseInt(request.getParameter(ID_SEDE));
-                String duracion = request.getParameter("duracion");
-                int minutos = duracion == null || duracion.isBlank() ? 30 : Integer.parseInt(duracion);
-                new AgendaCitaDAO().publicar(medico, sede, request.getParameter("fecha"),
-                        request.getParameter("horaInicio"), request.getParameter("horaFin"), minutos);
-                request.getSession().setAttribute(FLASH_MESSAGE, "Turno de atención publicado correctamente.");
-            } catch (NumberFormatException e) {
-                request.getSession().setAttribute("flashError", "Los identificadores y la duración deben ser números válidos.");
-            } catch (AgendaException e) {
-                request.getSession().setAttribute("flashError", e.getMessage());
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/medicos");
-            return;
-        } else if ("cambiar_estado_horario".equals(action)) {
-            try {
-                new AgendaCitaDAO().cambiarEstado(Integer.parseInt(request.getParameter("idDisponibilidad")),
-                        request.getParameter("nuevoEstado"));
-                request.getSession().setAttribute(FLASH_MESSAGE, "Estado del turno actualizado correctamente.");
-            } catch (NumberFormatException e) {
-                request.getSession().setAttribute("flashError", "El identificador del turno no es válido.");
-            } catch (AgendaException e) {
-                request.getSession().setAttribute("flashError", e.getMessage());
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/medicos");
-            return;
-        } else if ("nuevo_medico".equals(action) || "registrarMedico".equals(action)) {
-            responderError(response,403,"Las cuentas de personal se crean mediante invitación del administrador del sistema.");
-            return;
+        switch(action==null?"":action) {
+            case "admitir_cita" -> admitirCita(request,response);
+            case "cancelar_cita" -> cancelarCita(request,response,session,usuario);
+            case "registrar_paciente" -> registrarPaciente(request,response,usuario);
+            case "editar_paciente" -> editarPaciente(request,response,session,usuario);
+            case "reasignar" -> reasignarCita(request,response);
+            case "cambiar_estado" -> rechazarCambioGenerico(response);
+            case "registrar_cita_ventanilla" -> reservarEnVentanilla(request,response);
+            case "publicar_horario_medico" -> publicarHorario(request,response);
+            case "cambiar_estado_horario" -> cambiarEstadoHorario(request,response);
+            case "nuevo_medico","registrarMedico" -> rechazarAltaMedico(response);
+            default -> response.sendRedirect(request.getContextPath()+RUTA_DASHBOARD);
         }
+}
 
-        response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+    private void ofertarCancelacion(HttpServletRequest request,int cita) {
+        try {citaDAO.ejecutarReasignacionInteligente(cita);}
+        catch(AgendaException e){request.getSession().setAttribute(FLASH_ERROR,"La cita se canceló; el mantenimiento revisará la oferta del cupo.");}
     }
 
-    private List<Map<String, Object>> obtenerMedicosPadrónBD(String query, String especialidad, String sede, String estado,int ambito) {
+    private List<Map<String, Object>> obtenerMedicosPadronBD(String query, String especialidad, String sede, String estado,int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
             "SELECT m.id_medico, m.cmp, u.nombres, u.apellidos, COALESCE(p_dni.dni, 'Sin registrar') AS dni, " +
@@ -452,25 +352,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
         List<Object> params = new ArrayList<>();
         params.add(ambito);
-        if (query != null && !query.trim().isEmpty()) {
-            sql.append("AND (LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(m.cmp) LIKE ?) ");
-            String qLike = "%" + query.trim().toLowerCase() + "%";
-            params.add(qLike);
-            params.add(qLike);
-            params.add(qLike);
-        }
-        if (especialidad != null && !especialidad.trim().isEmpty() && !"Todas".equalsIgnoreCase(especialidad)) {
-            sql.append("AND e.nombre = ? ");
-            params.add(especialidad.trim());
-        }
-        if (sede != null && !sede.trim().isEmpty() && !"Todas las sedes".equalsIgnoreCase(sede)) {
-            sql.append("AND s.nombre = ? ");
-            params.add(sede.trim());
-        }
-        if (estado != null && !estado.trim().isEmpty() && !"Todos".equalsIgnoreCase(estado)) {
-            sql.append("AND (CASE WHEN u.activo=FALSE THEN 'INACTIVO' ELSE m.estado END) = ? ");
-            params.add(estado.trim());
-        }
+        filtrarMedicos(sql,params,query,especialidad,sede,estado);
 
         sql.append("ORDER BY m.id_medico ASC");
 
@@ -481,42 +363,16 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put(ID_MEDICO, rs.getInt("id_medico"));
-                    String rawCmp = rs.getString("cmp");
-                    m.put("cmp", (rawCmp != null && !rawCmp.trim().isEmpty()) ? rawCmp : "045821");
-                    m.put("dni", rs.getString("dni") != null ? rs.getString("dni") : "09452178");
-                    
-                    String rawN = rs.getString("nombres") != null ? rs.getString("nombres") : "";
-                    String rawA = rs.getString("apellidos") != null ? rs.getString("apellidos") : "";
-                    String cleanN = rawN.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "").replaceAll("\\s+", " ").trim();
-                    String cleanA = rawA.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "").replaceAll("\\s+", " ").trim();
-                    m.put("nombre", "Dr. " + (cleanN + " " + cleanA).trim());
-                    
-                    String esp = rs.getString("especialidad_nombre");
-                    m.put("especialidad", esp != null ? esp : "Medicina general");
-                    m.put("especialidades", Arrays.asList(esp != null ? esp : "Medicina general"));
-                    
-                    String sNombre = rs.getString("sede_nombre");
-                    m.put("sede", sNombre != null ? sNombre : "Sede San Borja");
-                    
-                    String est = rs.getString("estado");
-                    m.put("estado", est != null ? est : "ACTIVO");
-                    m.put("horas", "ACTIVO".equalsIgnoreCase(est) ? "30 h" : "—");
-                    list.add(m);
+                    list.add(mapearMedicoPadron(rs));
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (list.isEmpty() && (query == null || query.isEmpty()) && (especialidad == null || especialidad.isEmpty())) {
-            return obtenerMedicosPadrónFallback();
+        } catch (java.sql.SQLException e) {
+            throw new AgendaException(503,"PADRON_NO_DISPONIBLE","No se pudo consultar el padrón de la sede.");
         }
         return list;
     }
 
-    private List<Map<String, Object>> obtenerPacientesPadrónBD(String query, String cobertura, String sede,int ambito) {
+    private List<Map<String, Object>> obtenerPacientesPadronBD(String query, String cobertura, String sede,int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
             "SELECT p.id_paciente, p.dni, p.fecha_nacimiento, p.telefono, p.direccion, " +
@@ -533,24 +389,8 @@ public class AdminDashboardServlet extends HttpServlet {
 
         List<Object> params = new ArrayList<>();
         params.add(ambito);params.add(ambito);
-        if (query != null && !query.trim().isEmpty()) {
-            String qLike = "%" + query.trim().toLowerCase() + "%";
-            sql.append("AND (LOWER(p.dni) LIKE ? OR LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(p.telefono) LIKE ?) ");
-            params.add(qLike);
-            params.add(qLike);
-            params.add(qLike);
-            params.add(qLike);
-        }
-        if (cobertura != null && !cobertura.trim().isEmpty() && !cobertura.toLowerCase().contains("todas")) {
-            sql.append("AND LOWER(p.tipo_cobertura) LIKE ? ");
-            params.add("%" + cobertura.trim().toLowerCase() + "%");
-        }
-        if (sede != null && !sede.trim().isEmpty() && !sede.toLowerCase().contains("todas")) {
-            sql.append("AND LOWER(p.sede_preferida) LIKE ? ");
-            params.add("%" + sede.trim().toLowerCase() + "%");
-        }
+        filtrarPacientes(sql,params,query,cobertura,sede);
 
-        sql.append("GROUP BY p.id_paciente, p.dni, p.fecha_nacimiento, p.telefono, p.direccion, p.canal_aviso, p.sede_preferida, p.tipo_cobertura, u.nombres, u.apellidos, u.email ");
         sql.append("ORDER BY p.id_paciente DESC");
 
         try (Connection conn = DatabaseConfig.getConnection();
@@ -560,73 +400,11 @@ public class AdminDashboardServlet extends HttpServlet {
             }
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
-                    Map<String, Object> map = new HashMap<>();
-                    int idPaciente = rs.getInt("id_paciente");
-                    map.put("idPaciente", idPaciente);
-                    map.put("dni", rs.getString("dni"));
-                    String nom = rs.getString("nombres");
-                    String ape = rs.getString("apellidos");
-                    map.put("nombres", nom != null ? nom : "");
-                    map.put("apellidos", ape != null ? ape : "");
-                    map.put("nombreCompleto", ((nom != null ? nom : "") + " " + (ape != null ? ape : "")).trim());
-
-                    java.sql.Date fnac = rs.getDate("fecha_nacimiento");
-                    int edad = 35;
-                    String fnacStr = "15/04/1989";
-                    String fnacInput = "1989-04-15";
-                    if (fnac != null) {
-                        java.time.LocalDate fnacLocal = fnac.toLocalDate();
-                        edad = java.time.Period.between(fnacLocal, java.time.LocalDate.now()).getYears();
-                        fnacStr = String.format("%02d/%02d/%d", fnacLocal.getDayOfMonth(), fnacLocal.getMonthValue(), fnacLocal.getYear());
-                        fnacInput = fnacLocal.toString();
-                    }
-                    map.put("edad", edad + " años");
-                    map.put("fechaNac", fnacStr);
-                    map.put("fechaNacInput", fnacInput);
-
-                    String dir = rs.getString("direccion");
-                    map.put("direccion", dir != null ? dir : "San Borja");
-                    map.put("zona", dir != null ? dir : "San Borja");
-
-                    String tel = rs.getString("telefono");
-                    String telRaw = tel != null ? tel : "987654482";
-                    if (tel != null && !tel.startsWith("+51") && tel.trim().length() == 9) {
-                        tel = "+51 " + tel.substring(0, 3) + " " + tel.substring(3, 6) + " " + tel.substring(6);
-                    }
-                    map.put("telefono", tel != null ? tel : "+51 987 654 482");
-                    map.put("telefonoRaw", telRaw);
-                    map.put("email", rs.getString("email"));
-
-                    String canal = rs.getString("canal_aviso");
-                    if (canal == null || canal.trim().isEmpty()) canal = "WhatsApp";
-                    map.put("canalAviso", canal);
-
-                    String confirma = "Confirma: Web";
-                    if ("45120378".equals(rs.getString("dni"))) {
-                        confirma = "Confirma: WhatsApp";
-                    } else if ("41785236".equals(rs.getString("dni"))) {
-                        confirma = "Confirma: Llamada";
-                    } else if ("70214589".equals(rs.getString("dni"))) {
-                        confirma = "Confirma: SMS";
-                    } else if ("SMS".equalsIgnoreCase(canal)) {
-                        confirma = "Confirma: SMS";
-                    } else if ("WhatsApp".equalsIgnoreCase(canal)) {
-                        confirma = "Confirma: Web";
-                    }
-                    map.put("confirmaCanal", confirma);
-
-                    map.put("sedePreferida", rs.getString("sede_preferida"));
-                    map.put("tipoCobertura", rs.getString("tipo_cobertura"));
-                    map.put("citasActivas", rs.getInt("citas_activas"));
-                    list.add(map);
+                    list.add(mapearPacientePadron(rs));
                 }
             }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (list.isEmpty()) {
-            return obtenerPacientesPadrónFallback();
+        } catch (java.sql.SQLException e) {
+            throw new AgendaException(503,"PADRON_NO_DISPONIBLE","No se pudo consultar el padrón de la sede.");
         }
         return list;
     }
@@ -637,21 +415,21 @@ public class AdminDashboardServlet extends HttpServlet {
                 + "FROM cita c JOIN paciente p ON c.id_paciente=p.id_paciente JOIN usuario up ON p.id_usuario=up.id_usuario JOIN medico m ON c.id_medico=m.id_medico JOIN usuario um ON m.id_usuario=um.id_usuario JOIN sede s ON m.id_sede=s.id_sede "
                 + "JOIN personal_administrativo pa ON pa.id_sede=m.id_sede JOIN usuario ua ON pa.id_usuario=ua.id_usuario LEFT JOIN admision_cita a ON a.id_cita=c.id_cita "
                 + "WHERE pa.id_usuario=? AND ua.activo=TRUE AND ua.rol='PERSONAL_ADMINISTRATIVO' AND s.estado='ACTIVO' AND c.fecha_hora>=? AND c.fecha_hora<? ORDER BY c.fecha_hora,c.id_cita";
-        java.time.LocalDate hoy = java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        java.time.LocalDate hoy = java.time.LocalDate.now(java.time.ZoneId.of(ZONA_CLINICA));
         try (Connection conn = DatabaseConfig.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, usuario); ps.setObject(2, hoy.atStartOfDay()); ps.setObject(3, hoy.plusDays(1).atStartOfDay());
             try (ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> map = new HashMap<>();
-                    map.put("idCita", rs.getInt("id_cita"));
-                    map.put("hora", rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).toLocalTime().toString());
+                    map.put(ID_CITA, rs.getInt("id_cita"));
+                    map.put(HORA, rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).toLocalTime().toString());
                     map.put("pacienteNombre", rs.getString("pac_nom") + " " + rs.getString("pac_ape"));
-                    map.put("pacienteDni", rs.getString("dni"));
-                    map.put("pacienteTelefono", Objects.toString(rs.getString("telefono"), "Sin registrar"));
-                    map.put("sedeNombre", rs.getString("sede_nombre"));
+                    map.put("pacienteDni", rs.getString(DNI));
+                    map.put("pacienteTelefono", Objects.toString(rs.getString(TELEFONO), SIN_REGISTRAR));
+                    map.put("sedeNombre", rs.getString(SEDE_NOMBRE));
                     map.put("consultorio", "");
                     map.put("medicoNombre", rs.getString("med_nom") + " " + rs.getString("med_ape"));
-                    String estado = rs.getString("estado");
+                    String estado = rs.getString(ESTADO);
                     java.time.LocalDateTime llegada = rs.getObject("fecha_llegada", java.time.LocalDateTime.class);
                     String etiqueta = switch (estado) {
                         case "EN_SALA" -> rs.getBoolean("llego_tarde") ? "Llegó tarde" : "En sala";
@@ -664,9 +442,9 @@ public class AdminDashboardServlet extends HttpServlet {
                         case "SOLICITADA" -> "Sin confirmar";
                         default -> "Confirmada";
                     };
-                    map.put("estado", etiqueta);
+                    map.put(ESTADO, etiqueta);
                     map.put("puedeAdmitir", ESTADO_CONFIRMADA.equals(estado));
-                    java.time.LocalDateTime ahora = java.time.LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
+                    java.time.LocalDateTime ahora = java.time.LocalDateTime.now(java.time.ZoneId.of(ZONA_CLINICA));
                     map.put("puedeMarcarAusencia", ESTADO_CONFIRMADA.equals(estado) && llegada == null && ahora.isAfter(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).plusMinutes(admisionDAO.toleranciaMinutos())));
                     map.put("puedeAnular", Set.of("SOLICITADA", ESTADO_CONFIRMADA).contains(estado));
                     String accionTexto=etiqueta;
@@ -696,7 +474,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 if (ts != null) {
                     hora = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
                 }
-                o.put("hora", hora);
+                o.put(HORA, hora);
                 String msg = rs.getString("mensaje");
                 o.put("texto", msg != null ? msg : "Operación registrada en sistema");
                 list.add(o);
@@ -707,7 +485,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
         if (list.isEmpty()) {
             Map<String, String> o1 = new HashMap<>();
-            o1.put("hora", "09:00");
+            o1.put(HORA, "09:00");
             o1.put("texto", "Sistema de control operativo y sala de espera iniciado");
             list.add(o1);
         }
@@ -715,61 +493,9 @@ public class AdminDashboardServlet extends HttpServlet {
         return list;
     }
 
-    private List<Map<String, Object>> obtenerMedicosPadrónFallback() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> m1 = new HashMap<>();
-        m1.put(ID_MEDICO, 1);
-        m1.put("cmp", "CMP 45211"); m1.put("dni", "09482711"); m1.put("rne", "24109");
-        m1.put("nombre", "Dr. Eduardo Ayala"); m1.put("especialidades", Arrays.asList("Cardiología"));
-        m1.put("sede", "Sede San Borja"); m1.put("horas", "36 hrs"); m1.put("estado", "ACTIVO");
-        list.add(m1);
-        return list;
-    }
 
-    private List<Map<String, Object>> obtenerPacientesPadrónFallback() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> p1 = new HashMap<>();
-        p1.put("idPaciente", 74); p1.put("dni", "72345678"); p1.put("nombres", "Eduardo"); p1.put("apellidos", "Ayala");
-        p1.put("nombreCompleto", "Eduardo Ayala"); p1.put("edad", "32 años"); p1.put("fechaNac", "15/06/1994"); p1.put("fechaNacInput", "1994-06-15");
-        p1.put("zona", "San Borja"); p1.put("direccion", "Av. San Borja Sur 420"); p1.put("telefono", "+51 987 112 334"); p1.put("telefonoRaw", "987112334");
-        p1.put("email", "eduardo@paciente.com"); p1.put("canalAviso", "WhatsApp"); p1.put("confirmaCanal", "Confirma: WhatsApp");
-        p1.put("sedePreferida", "Sede San Borja"); p1.put("tipoCobertura", "EPS"); p1.put("citasActivas", 3);
-        list.add(p1);
 
-        Map<String, Object> p2 = new HashMap<>();
-        p2.put("idPaciente", 75); p2.put("dni", "45120378"); p2.put("nombres", "Luis"); p2.put("apellidos", "Torres Vega");
-        p2.put("nombreCompleto", "Luis Torres Vega"); p2.put("edad", "52 años"); p2.put("fechaNac", "05/08/1974"); p2.put("fechaNacInput", "1974-08-05");
-        p2.put("zona", "San Borja"); p2.put("direccion", "Av. Guardia Civil 450"); p2.put("telefono", "+51 986 112 340"); p2.put("telefonoRaw", "986112340");
-        p2.put("email", "ltorres@correo.pe"); p2.put("canalAviso", "WhatsApp"); p2.put("confirmaCanal", "Confirma: WhatsApp");
-        p2.put("sedePreferida", "Sede San Borja"); p2.put("tipoCobertura", "Particular"); p2.put("citasActivas", 1);
-        list.add(p2);
 
-        Map<String, Object> p3 = new HashMap<>();
-        p3.put("idPaciente", 76); p3.put("dni", "41785236"); p3.put("nombres", "Rosa"); p3.put("apellidos", "Díaz Paredes");
-        p3.put("nombreCompleto", "Rosa Díaz Paredes"); p3.put("edad", "61 años"); p3.put("fechaNac", "22/01/1965"); p3.put("fechaNacInput", "1965-01-22");
-        p3.put("zona", "San Isidro"); p3.put("direccion", "San Isidro"); p3.put("telefono", "+51 954 220 871"); p3.put("telefonoRaw", "954220871");
-        p3.put("email", "rdiaz@correo.pe"); p3.put("canalAviso", "SMS"); p3.put("confirmaCanal", "Confirma: Llamada");
-        p3.put("sedePreferida", "Sede San Borja"); p3.put("tipoCobertura", "Seguro"); p3.put("citasActivas", 1);
-        list.add(p3);
-
-        Map<String, Object> p4 = new HashMap<>();
-        p4.put("idPaciente", 77); p4.put("dni", "70214589"); p4.put("nombres", "Ana"); p4.put("apellidos", "Quispe Huamán");
-        p4.put("nombreCompleto", "Ana Quispe Huamán"); p4.put("edad", "28 años"); p4.put("fechaNac", "17/11/1997"); p4.put("fechaNacInput", "1997-11-17");
-        p4.put("zona", "San Borja"); p4.put("direccion", "Calle Las Artes 230"); p4.put("telefono", "+51 912 337 905"); p4.put("telefonoRaw", "912337905");
-        p4.put("email", "aquispe@correo.pe"); p4.put("canalAviso", "WhatsApp"); p4.put("confirmaCanal", "Confirma: SMS");
-        p4.put("sedePreferida", "Sede San Borja"); p4.put("tipoCobertura", "EPS"); p4.put("citasActivas", 2);
-        list.add(p4);
-
-        Map<String, Object> p5 = new HashMap<>();
-        p5.put("idPaciente", 78); p5.put("dni", "46932017"); p5.put("nombres", "Jorge"); p5.put("apellidos", "Salas Ramos");
-        p5.put("nombreCompleto", "Jorge Salas Ramos"); p5.put("edad", "45 años"); p5.put("fechaNac", "30/06/1981"); p5.put("fechaNacInput", "1981-06-30");
-        p5.put("zona", "San Borja"); p5.put("direccion", "Av. San Luis 1420"); p5.put("telefono", "+51 965 781 044"); p5.put("telefonoRaw", "965781044");
-        p5.put("email", "jsalas@correo.pe"); p5.put("canalAviso", "Correo"); p5.put("confirmaCanal", "Confirma: Web");
-        p5.put("sedePreferida", "Sede San Borja"); p5.put("tipoCobertura", "Particular"); p5.put("citasActivas", 1);
-        list.add(p5);
-
-        return list;
-    }
 
     private List<Map<String, Object>> obtenerHistorialReasignaciones() {
         List<Map<String, Object>> list = new ArrayList<>();
@@ -786,9 +512,9 @@ public class AdminDashboardServlet extends HttpServlet {
     private List<Map<String, Object>> obtenerCitasContactoPreventivo() {
         List<Map<String, Object>> list = new ArrayList<>();
         Map<String, Object> cr1 = new HashMap<>();
-        cr1.put("hora", "11:30"); cr1.put("paciente", "Beatriz Sandoval Ramos"); cr1.put("hc", "HC-76120");
+        cr1.put(HORA, "11:30"); cr1.put("paciente", "Beatriz Sandoval Ramos"); cr1.put("hc", "HC-76120");
         cr1.put("contacto", "+51 955 889 001"); cr1.put("sedeCons", "Sede Central / C-008");
-        cr1.put("medico", "Dr. Carlos Mendoza"); cr1.put("riesgo", "ALTO"); cr1.put("riesgoClass", "badge-high");
+        cr1.put(MEDICO, "Dr. Carlos Mendoza"); cr1.put("riesgo", "ALTO"); cr1.put("riesgoClass", "badge-high");
         cr1.put("confirmacion", "SIN RESPUESTA"); cr1.put("confirmClass", "confirm-no");
         list.add(cr1);
         return list;
@@ -809,20 +535,20 @@ public class AdminDashboardServlet extends HttpServlet {
             java.time.format.DateTimeFormatter timeFmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
             while (rs.next()) {
                 Map<String, Object> d = new HashMap<>();
-                d.put("idDisponibilidad", rs.getInt("id_disponibilidad"));
+                d.put(ID_DISPONIBILIDAD, rs.getInt("id_disponibilidad"));
                 d.put(ID_MEDICO, rs.getInt("id_medico"));
                 d.put(ID_SEDE, rs.getInt("id_sede"));
-                d.put("sedeNombre", rs.getString("sede_nombre"));
-                
-                java.sql.Date sqlFecha = rs.getDate("fecha");
-                d.put("fecha", sqlFecha != null ? sqlFecha.toString() : "");
-                
+                d.put("sedeNombre", rs.getString(SEDE_NOMBRE));
+
+                java.sql.Date sqlFecha = rs.getDate(FECHA);
+                d.put(FECHA, sqlFecha != null ? sqlFecha.toString() : "");
+
                 java.sql.Time hi = rs.getTime("hora_inicio");
                 java.sql.Time hf = rs.getTime("hora_fin");
                 d.put("horaInicio", hi != null ? hi.toLocalTime().format(timeFmt) : "");
                 d.put("horaFin", hf != null ? hf.toLocalTime().format(timeFmt) : "");
                 d.put("duracionMinutos", rs.getInt("duracion_minutos"));
-                d.put("estado", rs.getString("estado"));
+                d.put(ESTADO, rs.getString(ESTADO));
                 d.put("citasAgendadas", rs.getInt("citas_agendadas"));
                 list.add(d);
             }
@@ -840,11 +566,11 @@ public class AdminDashboardServlet extends HttpServlet {
         var ambito=new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO();
         var recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.CITA;
         String campo=null;
-        if(java.util.Set.of("cancelar_cita","reasignar","cambiar_estado").contains(accion==null?"":accion))campo="idCita";
-        else if("editar_paciente".equals(accion)){campo="idPaciente";recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.PACIENTE;}
-        else if("registrar_cita_ventanilla".equals(accion)){campo="medico";recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.MEDICO;}
+        if(java.util.Set.of("cancelar_cita","reasignar","cambiar_estado").contains(accion==null?"":accion))campo=ID_CITA;
+        else if("editar_paciente".equals(accion)){campo=ID_PACIENTE;recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.PACIENTE;}
+        else if("registrar_cita_ventanilla".equals(accion)){campo=MEDICO;recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.MEDICO;}
         else if("publicar_horario_medico".equals(accion)){campo=ID_MEDICO;recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.MEDICO;}
-        else if("cambiar_estado_horario".equals(accion)){campo="idDisponibilidad";recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.HORARIO;}
+        else if("cambiar_estado_horario".equals(accion)){campo=ID_DISPONIBILIDAD;recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.HORARIO;}
         if(campo!=null)ambito.exigir(usuario.getIdUsuario(),recurso,Integer.parseInt(request.getParameter(campo)));
     }
 
@@ -854,4 +580,300 @@ public class AdminDashboardServlet extends HttpServlet {
         catch(IOException e) { response.setStatus(500); }
     }
 
+
+    private Map<String,Object> mapearMedicoPadron(ResultSet rs) throws java.sql.SQLException {
+        Map<String,Object> datos=new HashMap<>();
+        datos.put(ID_MEDICO,rs.getInt("id_medico"));
+        datos.put("cmp",valor(rs,"cmp",SIN_REGISTRAR));
+        datos.put(DNI,valor(rs,DNI,SIN_REGISTRAR));
+        datos.put("nombre","Dr. "+(valor(rs,NOMBRES,"")+" "+valor(rs,APELLIDOS,"")).trim());
+        String especialidad=valor(rs,"especialidad_nombre",SIN_REGISTRAR);
+        datos.put(ESPECIALIDAD,especialidad);
+        datos.put("especialidades",List.of(especialidad));
+        datos.put(SEDE,valor(rs,SEDE_NOMBRE,SIN_REGISTRAR));
+        String estado=valor(rs,ESTADO,"INACTIVO");
+        datos.put(ESTADO,estado);
+        datos.put("horas","Sin datos");
+        return datos;
+    }
+
+    private Map<String,Object> mapearPacientePadron(ResultSet rs) throws java.sql.SQLException {
+        Map<String,Object> datos=new HashMap<>();
+        datos.put(ID_PACIENTE,rs.getInt("id_paciente"));
+        datos.put(DNI,rs.getString(DNI));
+        String nombres=valor(rs,NOMBRES,"");
+        String apellidos=valor(rs,APELLIDOS,"");
+        datos.put(NOMBRES,nombres);
+        datos.put(APELLIDOS,apellidos);
+        datos.put("nombreCompleto",(nombres+" "+apellidos).trim());
+        mapearNacimiento(rs,datos);
+        String direccion=valor(rs,DIRECCION,"");
+        datos.put(DIRECCION,direccion);
+        datos.put("zona",direccion);
+        String telefono=valor(rs,TELEFONO,"");
+        datos.put(TELEFONO,telefono);
+        datos.put("telefonoRaw",telefono);
+        datos.put(EMAIL,rs.getString(EMAIL));
+        datos.put("canalAviso",valor(rs,"canal_aviso","Correo"));
+        datos.put("confirmaCanal","Consultar seguimiento de asistencia");
+        datos.put("sedePreferida",rs.getString("sede_preferida"));
+        datos.put("tipoCobertura",rs.getString("tipo_cobertura"));
+        datos.put("citasActivas",rs.getInt("citas_activas"));
+        return datos;
+    }
+
+    private void filtrarMedicos(StringBuilder sql,List<Object> params,String query,String especialidad,String sede,String estado) {
+        if (query != null && !query.trim().isEmpty()) {
+            sql.append("AND (LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(m.cmp) LIKE ?) ");
+            String qLike = "%" + query.trim().toLowerCase() + "%";
+            params.add(qLike);
+            params.add(qLike);
+            params.add(qLike);
+        }
+        if (especialidad != null && !especialidad.trim().isEmpty() && !"Todas".equalsIgnoreCase(especialidad)) {
+            sql.append("AND e.nombre = ? ");
+            params.add(especialidad.trim());
+        }
+        if (sede != null && !sede.trim().isEmpty() && !"Todas las sedes".equalsIgnoreCase(sede)) {
+            sql.append("AND s.nombre = ? ");
+            params.add(sede.trim());
+        }
+        if (estado != null && !estado.trim().isEmpty() && !"Todos".equalsIgnoreCase(estado)) {
+            sql.append("AND (CASE WHEN u.activo=FALSE THEN 'INACTIVO' ELSE m.estado END) = ? ");
+            params.add(estado.trim());
+        }
+
+    }
+
+    private void filtrarPacientes(StringBuilder sql,List<Object> params,String query,String cobertura,String sede) {
+        if (query != null && !query.trim().isEmpty()) {
+            String qLike = "%" + query.trim().toLowerCase() + "%";
+            sql.append("AND (LOWER(p.dni) LIKE ? OR LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(p.telefono) LIKE ?) ");
+            params.add(qLike);
+            params.add(qLike);
+            params.add(qLike);
+            params.add(qLike);
+        }
+        if (cobertura != null && !cobertura.trim().isEmpty() && !cobertura.toLowerCase().contains("todas")) {
+            sql.append("AND LOWER(p.tipo_cobertura) LIKE ? ");
+            params.add("%" + cobertura.trim().toLowerCase() + "%");
+        }
+        if (sede != null && !sede.trim().isEmpty() && !sede.toLowerCase().contains("todas")) {
+            sql.append("AND LOWER(p.sede_preferida) LIKE ? ");
+            params.add("%" + sede.trim().toLowerCase() + "%");
+        }
+
+        sql.append("GROUP BY p.id_paciente, p.dni, p.fecha_nacimiento, p.telefono, p.direccion, p.canal_aviso, p.sede_preferida, p.tipo_cobertura, u.nombres, u.apellidos, u.email ");
+    }
+
+    private void mapearNacimiento(ResultSet rs,Map<String,Object> datos) throws java.sql.SQLException {
+        java.sql.Date fecha=rs.getDate("fecha_nacimiento");
+        if(fecha==null){
+            datos.put("edad",SIN_REGISTRAR);
+            datos.put("fechaNac",SIN_REGISTRAR);
+            datos.put("fechaNacInput","");
+            return;
+        }
+        var nacimiento=fecha.toLocalDate();
+        var hoy=java.time.LocalDate.now(java.time.ZoneId.of(ZONA_CLINICA));
+        datos.put("edad",java.time.Period.between(nacimiento,hoy).getYears()+" años");
+        datos.put("fechaNac",nacimiento.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+        datos.put("fechaNacInput",nacimiento.toString());
+    }
+    private static String valor(ResultSet rs,String columna,String defecto) throws java.sql.SQLException {
+        String valor=rs.getString(columna);
+        return valor==null||valor.isBlank()?defecto:valor;
+    }
+
+    private void admitirCita(HttpServletRequest request,HttpServletResponse response) throws ServletException,IOException {
+            try {
+                request.getRequestDispatcher("/admin/admision").forward(request,response);
+            } catch (ServletException | IOException e) {
+                responderError(response,500,"No se pudo completar la operación de admisión.");
+            }
+            return;
+
+    }
+
+    private void cancelarCita(HttpServletRequest request,HttpServletResponse response,HttpSession session,Usuario usuario) throws IOException {
+            try {
+                int idCita=Integer.parseInt(request.getParameter(ID_CITA));
+                admisionDAO.cancelar(usuario.getIdUsuario(),idCita);
+                ofertarCancelacion(request,idCita);
+                session.setAttribute(FLASH_MESSAGE,"Cita cancelada correctamente.");
+            } catch(NumberFormatException e){session.setAttribute(FLASH_ERROR,"Selecciona una cita válida.");}
+            catch(AgendaException e){session.setAttribute(FLASH_ERROR,e.getMessage());}
+            response.sendRedirect(request.getContextPath()+RUTA_DASHBOARD);return;
+
+    }
+
+    private void registrarPaciente(HttpServletRequest request,HttpServletResponse response,Usuario usuario) throws IOException {
+            String redirect = request.getParameter("redirect");
+            if (redirect == null || redirect.trim().isEmpty()) {
+                redirect = RUTA_PACIENTES;
+            }
+            Usuario u=usuarioPaciente(request);
+            var p=perfilPaciente(request,usuario);
+            String nombres=u.getNombres();
+            String apellidos=u.getApellidos();
+            String dni=p.getDni();
+            boolean ok = usuarioDAO.crearCuentaPaciente(u, p);
+            if (ok) {
+                String opMsg = "Registro: nuevo paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado en padrón";
+                try (Connection conn = DatabaseConfig.getConnection();
+                     PreparedStatement ps = conn.prepareStatement("INSERT INTO notificacion (id_usuario, tipo, canal, mensaje, fecha_envio, estado_envio) VALUES (1, 'Registro', 'PLATAFORMA', ?, CURRENT_TIMESTAMP, 'ENVIADA')")) {
+                    ps.setString(1, opMsg);
+                    ps.executeUpdate();
+                } catch (Exception ignored) {}
+
+                request.getSession().setAttribute(FLASH_MESSAGE, "Paciente registrado. Para establecer su contraseña debe utilizar Recuperar contraseña con su DNI y correo.");
+            } else {
+                request.getSession().setAttribute(FLASH_ERROR, "No se pudo registrar: verifique que el DNI o correo no estén duplicados.");
+            }
+            response.sendRedirect(request.getContextPath() + redirect);
+            return;
+
+    }
+
+    private void editarPaciente(HttpServletRequest request,HttpServletResponse response,HttpSession session,Usuario usuario) throws IOException {
+            try {
+                new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().editarPaciente(usuario.getIdUsuario(),Integer.parseInt(request.getParameter(ID_PACIENTE)),
+                    new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.EdicionPaciente(request.getParameter(NOMBRES),request.getParameter(APELLIDOS),request.getParameter(TELEFONO),request.getParameter(DIRECCION),request.getParameter(COBERTURA)));
+                session.setAttribute(FLASH_MESSAGE,"Datos del paciente actualizados.");
+            } catch(NumberFormatException e){session.setAttribute(FLASH_ERROR,"Selecciona un paciente válido.");}
+            catch(AgendaException e){session.setAttribute(FLASH_ERROR,e.getMessage());}
+            response.sendRedirect(request.getContextPath()+RUTA_PACIENTES);return;
+
+    }
+
+    private void reasignarCita(HttpServletRequest request,HttpServletResponse response) throws IOException {
+            try {
+                int idCita = Integer.parseInt(request.getParameter(ID_CITA));
+                String mensaje = citaDAO.ejecutarReasignacionInteligente(idCita);
+                request.getSession().setAttribute(FLASH_MESSAGE, mensaje);
+            } catch (Exception e) {
+                request.getSession().setAttribute(FLASH_MESSAGE, "Error al procesar reasignación: " + e.getMessage());
+            }
+            response.sendRedirect(request.getContextPath() + RUTA_DASHBOARD);
+            return;
+
+    }
+
+    private void rechazarCambioGenerico(HttpServletResponse response) {
+            responderError(response,403,"Utiliza los flujos de admisión, confirmación y atención para cambiar el estado de una cita.");
+            return;
+
+    }
+
+    private void reservarEnVentanilla(HttpServletRequest request,HttpServletResponse response) throws IOException {
+            String dni = request.getParameter(DNI);
+            String medicoStr = request.getParameter(MEDICO);
+            String fecha = request.getParameter(FECHA);
+            String hora = request.getParameter(HORA);
+            int idMed = -1;
+            try { idMed = Integer.parseInt(medicoStr); } catch (Exception ignored) {}
+
+            int idPac = -1;
+            try (Connection conn = DatabaseConfig.getConnection();
+                 PreparedStatement psPac = conn.prepareStatement("SELECT id_paciente FROM paciente WHERE dni = ?")) {
+                psPac.setString(1, dni != null ? dni.trim() : "");
+                try (ResultSet rs = psPac.executeQuery()) {
+                    if (rs.next()) idPac = rs.getInt(1);
+                }
+            } catch (Exception ignored) {}
+
+            int idCitaNueva = citaDAO.reservarCitaConId(idPac, idMed, fecha, hora, "MEDIA");
+            if (idCitaNueva > 0) {
+                request.getSession().setAttribute(FLASH_MESSAGE, "¡Cita agendada exitosamente (ID #" + idCitaNueva + ") para el " + fecha + " a las " + hora + "!");
+            } else {
+                request.getSession().setAttribute(FLASH_ERROR, "No se pudo agendar la cita: el horario " + (fecha != null ? fecha : "") + " " + (hora != null ? hora : "") + " ya se encuentra ocupado por otro paciente.");
+            }
+            response.sendRedirect(request.getContextPath() + RUTA_DASHBOARD);
+            return;
+
+    }
+
+    private void publicarHorario(HttpServletRequest request,HttpServletResponse response) throws IOException {
+            try {
+                int medico = Integer.parseInt(request.getParameter(ID_MEDICO));
+                int sede = Integer.parseInt(request.getParameter(ID_SEDE));
+                String duracion = request.getParameter("duracion");
+                int minutos = duracion == null || duracion.isBlank() ? 30 : Integer.parseInt(duracion);
+                new AgendaCitaDAO().publicar(medico, sede, request.getParameter(FECHA),
+                        request.getParameter("horaInicio"), request.getParameter("horaFin"), minutos);
+                request.getSession().setAttribute(FLASH_MESSAGE, "Turno de atención publicado correctamente.");
+            } catch (NumberFormatException e) {
+                request.getSession().setAttribute(FLASH_ERROR, "Los identificadores y la duración deben ser números válidos.");
+            } catch (AgendaException e) {
+                request.getSession().setAttribute(FLASH_ERROR, e.getMessage());
+            }
+            response.sendRedirect(request.getContextPath() + RUTA_MEDICOS);
+            return;
+
+    }
+
+    private void cambiarEstadoHorario(HttpServletRequest request,HttpServletResponse response) throws IOException {
+            try {
+                new AgendaCitaDAO().cambiarEstado(Integer.parseInt(request.getParameter(ID_DISPONIBILIDAD)),
+                        request.getParameter("nuevoEstado"));
+                request.getSession().setAttribute(FLASH_MESSAGE, "Estado del turno actualizado correctamente.");
+            } catch (NumberFormatException e) {
+                request.getSession().setAttribute(FLASH_ERROR, "El identificador del turno no es válido.");
+            } catch (AgendaException e) {
+                request.getSession().setAttribute(FLASH_ERROR, e.getMessage());
+            }
+            response.sendRedirect(request.getContextPath() + RUTA_MEDICOS);
+            return;
+
+    }
+
+    private void rechazarAltaMedico(HttpServletResponse response) {
+            responderError(response,403,"Las cuentas de personal se crean mediante invitación del administrador del sistema.");
+            return;
+
+    }
+
+    private Usuario usuarioPaciente(HttpServletRequest request) {
+            String nombres = request.getParameter(NOMBRES);
+            String apellidos = request.getParameter(APELLIDOS);
+            String dni = request.getParameter(DNI);
+            String email = request.getParameter(EMAIL);
+            Usuario u = new Usuario();
+            u.setNombres(nombres != null ? nombres.trim() : "Paciente");
+            u.setApellidos(apellidos != null ? apellidos.trim() : "Registrado");
+            u.setEmail(email != null && !email.trim().isEmpty() ? email.trim() : ("paciente_" + dni + "@clinica.pe"));
+            u.setRol("PACIENTE");
+            u.setActivo(true);
+            u.setPasswordHash(pe.edu.utp.clinica.util.SecurityUtil.hashPassword(pe.edu.utp.clinica.auth.SecretosSesion.nuevo()));
+
+        return u;
+    }
+    private pe.edu.utp.clinica.model.Paciente perfilPaciente(HttpServletRequest request,Usuario usuario) {
+            String dni = request.getParameter(DNI);
+            String telefono = request.getParameter(TELEFONO);
+            String direccion = request.getParameter(DIRECCION);
+            String sedePreferida = new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().nombreSede(usuario.getIdUsuario());
+            String cobertura = request.getParameter(COBERTURA);
+            String fechaNacStr = request.getParameter("fecha_nacimiento");
+            pe.edu.utp.clinica.model.Paciente p = new pe.edu.utp.clinica.model.Paciente();
+            p.setDni(dni != null ? dni.trim() : "00000000");
+            p.setTelefono(telefono != null ? telefono.trim() : "999999999");
+            p.setDireccion(direccion != null && !direccion.trim().isEmpty() ? direccion.trim() : "San Borja, Lima");
+
+            p.setFechaNacimiento(fechaPaciente(fechaNacStr));
+            p.setCanalAviso("Correo");
+            p.setSedePreferida(sedePreferida != null && !sedePreferida.trim().isEmpty() ? sedePreferida.trim() : "Sede San Borja");
+            p.setTipoCobertura(cobertura != null && !cobertura.trim().isEmpty() ? cobertura.trim() : "EPS");
+
+        return p;
+    }
+    private java.time.LocalDate fechaPaciente(String fechaNacStr) {
+            java.time.LocalDate fnac = java.time.LocalDate.of(1990, 1, 1);
+            if (fechaNacStr != null && !fechaNacStr.trim().isEmpty()) {
+                try {
+                    fnac = java.time.LocalDate.parse(fechaNacStr.trim());
+                } catch (Exception ignored) {}
+            }
+        return fnac;
+    }
 }

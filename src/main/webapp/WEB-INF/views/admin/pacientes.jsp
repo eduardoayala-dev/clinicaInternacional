@@ -371,50 +371,50 @@
                 <div class="adm-modal-body">
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">DNI *</label>
-                            <input type="text" name="dni" class="adm-modal-input" required maxlength="8" placeholder="Ej: 45879632">
+                            <label class="adm-modal-label" for="campoPaciente1">DNI *</label>
+                            <input id="campoPaciente1" type="text" name="dni" class="adm-modal-input" required maxlength="8" placeholder="Ej: 45879632">
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Fecha de nacimiento</label>
-                            <input type="date" name="fecha_nacimiento" class="adm-modal-input" value="1990-01-01">
-                        </div>
-                    </div>
-
-                    <div class="adm-modal-grid-2">
-                        <div class="adm-modal-field">
-                            <label class="adm-modal-label">Nombres *</label>
-                            <input type="text" name="nombres" class="adm-modal-input" required placeholder="Ej: María">
-                        </div>
-                        <div class="adm-modal-field">
-                            <label class="adm-modal-label">Apellidos *</label>
-                            <input type="text" name="apellidos" class="adm-modal-input" required placeholder="Ej: Pérez">
+                            <label class="adm-modal-label" for="campoPaciente2">Fecha de nacimiento</label>
+                            <input id="campoPaciente2" type="date" name="fecha_nacimiento" class="adm-modal-input" value="1990-01-01">
                         </div>
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Teléfono *</label>
-                            <input type="text" name="telefono" class="adm-modal-input" required placeholder="Ej: 987654482">
+                            <label class="adm-modal-label" for="campoPaciente3">Nombres *</label>
+                            <input id="campoPaciente3" type="text" name="nombres" class="adm-modal-input" required placeholder="Ej: María">
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Correo electrónico</label>
-                            <input type="email" name="email" class="adm-modal-input" placeholder="Ej: maria.perez@correo.com">
+                            <label class="adm-modal-label" for="campoPaciente4">Apellidos *</label>
+                            <input id="campoPaciente4" type="text" name="apellidos" class="adm-modal-input" required placeholder="Ej: Pérez">
+                        </div>
+                    </div>
+
+                    <div class="adm-modal-grid-2">
+                        <div class="adm-modal-field">
+                            <label class="adm-modal-label" for="campoPaciente5">Teléfono *</label>
+                            <input id="campoPaciente5" type="text" name="telefono" class="adm-modal-input" required placeholder="Ej: 987654482">
+                        </div>
+                        <div class="adm-modal-field">
+                            <label class="adm-modal-label" for="campoPaciente6">Correo electrónico</label>
+                            <input id="campoPaciente6" type="email" name="email" class="adm-modal-input" placeholder="Ej: maria.perez@correo.com">
                         </div>
                     </div>
 
                     <div class="adm-modal-field">
-                        <label class="adm-modal-label">Zona / Dirección de residencia</label>
-                        <input type="text" name="direccion" class="adm-modal-input" placeholder="Ej: San Borja, Av. Las Begonias 123">
+                        <label class="adm-modal-label" for="campoPaciente7">Zona / Dirección de residencia</label>
+                            <input id="campoPaciente7" type="text" name="direccion" class="adm-modal-input" placeholder="Ej: San Borja, Av. Las Begonias 123">
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Sede preferida</label>
-                            <input name="sede_preferida" class="adm-modal-input" value="<%= Html.texto(request.getAttribute("sedeAdmision")) %>" readonly>
+                            <label class="adm-modal-label" for="campoPaciente8">Sede preferida</label>
+                            <input id="campoPaciente8" name="sede_preferida" class="adm-modal-input" value="<%= Html.texto(request.getAttribute("sedeAdmision")) %>" readonly>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Cobertura</label>
-                            <select name="cobertura" class="adm-modal-select">
+                            <label class="adm-modal-label" for="campoPaciente9">Cobertura</label>
+                            <select id="campoPaciente9" name="cobertura" class="adm-modal-select">
                                 <option value="EPS">EPS Rimac / Pacífico</option>
                                 <option value="Particular">Particular</option>
                                 <option value="Seguro">Seguro Privado</option>
@@ -423,8 +423,8 @@
                     </div>
 
                     <div class="adm-modal-field">
-                        <label class="adm-modal-label">Canal preferido de confirmación</label>
-                        <select name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
+                        <label class="adm-modal-label" for="campoPaciente10">Canal preferido de confirmación</label>
+                            <select id="campoPaciente10" name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
                     </div>
                 </div>
 
@@ -456,11 +456,11 @@
                 <div class="adm-modal-body">
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">DNI</label>
+                            <label class="adm-modal-label" for="editDni">DNI</label>
                             <input type="text" id="editDni" name="dni" class="adm-modal-input" readonly style="background-color: #f8fafc; color: #64748b;">
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Cobertura</label>
+                            <label class="adm-modal-label" for="editCobertura">Cobertura</label>
                             <select id="editCobertura" name="cobertura" class="adm-modal-select">
                                 <option value="EPS">EPS</option>
                                 <option value="Particular">Particular</option>
@@ -471,39 +471,39 @@
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Nombres *</label>
+                            <label class="adm-modal-label" for="editNombres">Nombres *</label>
                             <input type="text" id="editNombres" name="nombres" class="adm-modal-input" required>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Apellidos *</label>
+                            <label class="adm-modal-label" for="editApellidos">Apellidos *</label>
                             <input type="text" id="editApellidos" name="apellidos" class="adm-modal-input" required>
                         </div>
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Teléfono *</label>
+                            <label class="adm-modal-label" for="editTelefono">Teléfono *</label>
                             <input type="text" id="editTelefono" name="telefono" class="adm-modal-input" required>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Correo electrónico</label>
+                            <label class="adm-modal-label" for="editEmail">Correo electrónico</label>
                             <input type="email" id="editEmail" name="email" class="adm-modal-input" readonly aria-describedby="avisoCambioCorreoPaciente">
                             <small id="avisoCambioCorreoPaciente">El paciente cambia su correo desde Seguridad de cuenta, con verificación.</small>
                         </div>
                     </div>
 
                     <div class="adm-modal-field">
-                        <label class="adm-modal-label">Zona / Dirección de residencia</label>
-                        <input type="text" id="editDireccion" name="direccion" class="adm-modal-input">
+                        <label class="adm-modal-label" for="editDireccion">Zona / Dirección de residencia</label>
+                            <input type="text" id="editDireccion" name="direccion" class="adm-modal-input">
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Sede preferida</label>
+                            <label class="adm-modal-label" for="editSede">Sede preferida</label>
                             <input id="editSede" name="sede_preferida" class="adm-modal-input" readonly>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Canal preferido</label>
+                            <label class="adm-modal-label" for="editCanal">Canal preferido</label>
                             <select id="editCanal" name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
                         </div>
                     </div>

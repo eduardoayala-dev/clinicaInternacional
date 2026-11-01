@@ -27,8 +27,10 @@ class InvitacionPersonalServicioTest {
         assertEquals("http://localhost:8080",InvitacionPersonalServicio.basePublica(Map.of()));
         assertEquals("https://clinica.up.railway.app",InvitacionPersonalServicio.basePublica(Map.of("RAILWAY_PROJECT_ID","prueba","RAILWAY_PUBLIC_DOMAIN","clinica.up.railway.app")));
         for(String url:List.of("http://externo.test","https://usuario@externo.test","https://externo.test?token=x","https://externo.test#fragmento")) {
-            assertThrows(IllegalArgumentException.class,()->InvitacionPersonalServicio.basePublica(Map.of("APP_PUBLIC_URL",url)));
+            var entorno=Map.of("APP_PUBLIC_URL",url);
+            assertThrows(IllegalArgumentException.class,()->InvitacionPersonalServicio.basePublica(entorno));
         }
-        assertThrows(IllegalArgumentException.class,()->InvitacionPersonalServicio.basePublica(Map.of("APP_ENV","production")));
+        var produccion=Map.of("APP_ENV","production");
+        assertThrows(IllegalArgumentException.class,()->InvitacionPersonalServicio.basePublica(produccion));
     }
 }
