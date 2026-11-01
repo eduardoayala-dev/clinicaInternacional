@@ -81,10 +81,9 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->{
-            try {procesarGet(request,response);}
-            catch(AgendaException e){responderError(response,e.status(),e.getMessage());}
-        });
+        try {procesarGet(request,response);}
+        catch(AgendaException e){responderError(response,e.status(),e.getMessage());}
+        catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarGet(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         HttpSession session = request.getSession(false);
@@ -301,7 +300,8 @@ public class AdminDashboardServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesarPost(request,response));
+        try {procesarPost(request,response);}
+        catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarPost(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         String action = request.getParameter("action");
@@ -691,7 +691,6 @@ public class AdminDashboardServlet extends HttpServlet {
             } catch (ServletException | IOException e) {
                 responderError(response,500,"No se pudo completar la operación de admisión.");
             }
-            return;
 
     }
 
@@ -703,8 +702,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 session.setAttribute(FLASH_MESSAGE,"Cita cancelada correctamente.");
             } catch(NumberFormatException e){session.setAttribute(FLASH_ERROR,"Selecciona una cita válida.");}
             catch(AgendaException e){session.setAttribute(FLASH_ERROR,e.getMessage());}
-            response.sendRedirect(request.getContextPath()+RUTA_DASHBOARD);return;
-
+            response.sendRedirect(request.getContextPath()+RUTA_DASHBOARD);
     }
 
     private void registrarPaciente(HttpServletRequest request,HttpServletResponse response,Usuario usuario) throws IOException {
@@ -731,7 +729,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 request.getSession().setAttribute(FLASH_ERROR, "No se pudo registrar: verifique que el DNI o correo no estén duplicados.");
             }
             response.sendRedirect(request.getContextPath() + redirect);
-            return;
 
     }
 
@@ -742,8 +739,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 session.setAttribute(FLASH_MESSAGE,"Datos del paciente actualizados.");
             } catch(NumberFormatException e){session.setAttribute(FLASH_ERROR,"Selecciona un paciente válido.");}
             catch(AgendaException e){session.setAttribute(FLASH_ERROR,e.getMessage());}
-            response.sendRedirect(request.getContextPath()+RUTA_PACIENTES);return;
-
+            response.sendRedirect(request.getContextPath()+RUTA_PACIENTES);
     }
 
     private void reasignarCita(HttpServletRequest request,HttpServletResponse response) throws IOException {
@@ -755,13 +751,11 @@ public class AdminDashboardServlet extends HttpServlet {
                 request.getSession().setAttribute(FLASH_MESSAGE, "Error al procesar reasignación: " + e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + RUTA_DASHBOARD);
-            return;
 
     }
 
     private void rechazarCambioGenerico(HttpServletResponse response) {
             responderError(response,403,"Utiliza los flujos de admisión, confirmación y atención para cambiar el estado de una cita.");
-            return;
 
     }
 
@@ -789,7 +783,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 request.getSession().setAttribute(FLASH_ERROR, "No se pudo agendar la cita: el horario " + (fecha != null ? fecha : "") + " " + (hora != null ? hora : "") + " ya se encuentra ocupado por otro paciente.");
             }
             response.sendRedirect(request.getContextPath() + RUTA_DASHBOARD);
-            return;
 
     }
 
@@ -808,7 +801,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 request.getSession().setAttribute(FLASH_ERROR, e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + RUTA_MEDICOS);
-            return;
 
     }
 
@@ -823,13 +815,11 @@ public class AdminDashboardServlet extends HttpServlet {
                 request.getSession().setAttribute(FLASH_ERROR, e.getMessage());
             }
             response.sendRedirect(request.getContextPath() + RUTA_MEDICOS);
-            return;
 
     }
 
     private void rechazarAltaMedico(HttpServletResponse response) {
             responderError(response,403,"Las cuentas de personal se crean mediante invitación del administrador del sistema.");
-            return;
 
     }
 

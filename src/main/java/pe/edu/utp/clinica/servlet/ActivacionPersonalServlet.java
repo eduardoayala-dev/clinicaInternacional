@@ -13,7 +13,8 @@ public class ActivacionPersonalServlet extends HttpServlet {
     private static final String VINCULO="invitacionPersonalHash";
     protected InvitacionPersonalDAO almacen(){return new InvitacionPersonalDAO();}
     @Override protected void doGet(HttpServletRequest request,HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->mostrarActivacion(request,response));
+        try {mostrarActivacion(request,response);}
+        catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void mostrarActivacion(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         response.setHeader("Cache-Control","no-store");response.setHeader("Referrer-Policy","no-referrer");
@@ -28,7 +29,8 @@ public class ActivacionPersonalServlet extends HttpServlet {
         request.getRequestDispatcher("/WEB-INF/views/activar-personal.jsp").forward(request,response);
     }
     @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesarActivacion(request,response));
+        try {procesarActivacion(request,response);}
+        catch(IOException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarActivacion(HttpServletRequest request,HttpServletResponse response) throws IOException {
         response.setHeader("Cache-Control","no-store");response.setHeader("Referrer-Policy","no-referrer");

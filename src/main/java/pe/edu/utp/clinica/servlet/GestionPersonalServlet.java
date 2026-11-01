@@ -17,7 +17,8 @@ public class GestionPersonalServlet extends HttpServlet {
     protected InvitacionPersonalServicio servicio(){return invitaciones.get();}
     protected InvitacionPersonalDAO almacen(){return new InvitacionPersonalDAO();}
     @Override protected void doPost(HttpServletRequest request,HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesar(request,response));
+        try {procesar(request,response);}
+        catch(IOException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesar(HttpServletRequest request,HttpServletResponse response)throws IOException {
         var sesion=request.getSession(false);

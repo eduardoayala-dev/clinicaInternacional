@@ -29,6 +29,7 @@ import java.util.Map;
     "/sysadmin/analitica"
 })
 public class SysAdminServlet extends HttpServlet {
+    private static final String NOMBRE="nombre";
     private static final String FLASH_MESSAGE="flashMessage";
     private static final String FLASH_ERROR="flashError";
     private static final String ESTADO="estado";
@@ -47,7 +48,8 @@ public class SysAdminServlet extends HttpServlet {
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesarGet(request,response));
+        try {procesarGet(request,response);}
+        catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarGet(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         HttpSession session = request.getSession(false);
@@ -176,7 +178,8 @@ public class SysAdminServlet extends HttpServlet {
 
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
-        pe.edu.utp.clinica.util.TransporteServlet.entregar(response,()->procesarPost(request,response));
+        try {procesarPost(request,response);}
+        catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarPost(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
         HttpSession session = request.getSession(false);
@@ -212,7 +215,7 @@ public class SysAdminServlet extends HttpServlet {
                 while (rs.next()) {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", rs.getInt("id_sede"));
-                    m.put("nombre", rs.getString("nombre"));
+                    m.put(NOMBRE, rs.getString(NOMBRE));
                     sedes.add(m);
                 }
             }
@@ -221,7 +224,7 @@ public class SysAdminServlet extends HttpServlet {
                 while (rs.next()) {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", rs.getInt("id_especialidad"));
-                    m.put("nombre", rs.getString("nombre"));
+                    m.put(NOMBRE, rs.getString(NOMBRE));
                     especialidades.add(m);
                 }
             }
@@ -235,13 +238,12 @@ public class SysAdminServlet extends HttpServlet {
     private void guardarPriorizacion(HttpServletRequest request,HttpServletResponse response,HttpSession session) throws IOException {
             session.setAttribute(FLASH_MESSAGE, "Parámetros de priorización y tiempo límite de respuesta actualizados correctamente.");
             response.sendRedirect(request.getContextPath() + "/sysadmin/priorizacion");
-            return;
 
     }
 
     private void crearSede(HttpServletRequest request,HttpServletResponse response,HttpSession session) throws IOException {
             String codigo = request.getParameter("codigo");
-            String nombre = request.getParameter("nombre");
+            String nombre = request.getParameter(NOMBRE);
             String direccion = request.getParameter("direccion");
             String telefono = request.getParameter("telefono");
             String estado = request.getParameter(ESTADO);
@@ -263,7 +265,6 @@ public class SysAdminServlet extends HttpServlet {
                 session.setAttribute(FLASH_ERROR, "Error al crear la sede. Verifica que el código no esté duplicado.");
             }
             response.sendRedirect(request.getContextPath() + "/sysadmin/sedes");
-            return;
 
     }
 
@@ -271,7 +272,7 @@ public class SysAdminServlet extends HttpServlet {
             try {
                 int idSede = Integer.parseInt(request.getParameter("idSede"));
                 String codigo = request.getParameter("codigo");
-                String nombre = request.getParameter("nombre");
+                String nombre = request.getParameter(NOMBRE);
                 String direccion = request.getParameter("direccion");
                 String telefono = request.getParameter("telefono");
                 String estado = request.getParameter(ESTADO);
@@ -296,7 +297,6 @@ public class SysAdminServlet extends HttpServlet {
                 session.setAttribute(FLASH_ERROR, "Datos inválidos para actualizar la sede.");
             }
             response.sendRedirect(request.getContextPath() + "/sysadmin/sedes");
-            return;
 
     }
 
