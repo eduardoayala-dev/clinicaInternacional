@@ -24,6 +24,7 @@ class MedicoCatalogoDaoTest {
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR)");
         sql("CREATE TABLE medico(id_medico INT PRIMARY KEY,id_usuario INT,id_especialidad INT,id_sede INT,cmp VARCHAR,estado VARCHAR)");
         sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT DEFAULT 1,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR)");
+        sql("CREATE TABLE retencion_cupo(id_paciente INT PRIMARY KEY,id_medico INT,inicio DATETIME,duracion_minutos INT,identificador VARCHAR(36),vence DATETIME)");
         sql("CREATE TABLE cita(id_cita INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,fecha_hora TIMESTAMP,estado VARCHAR,id_disponibilidad INT DEFAULT 1)");
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE lista_espera(id_lista_espera INT PRIMARY KEY,id_paciente INT,estado VARCHAR)");

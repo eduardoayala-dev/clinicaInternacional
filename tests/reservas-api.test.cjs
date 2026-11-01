@@ -45,3 +45,19 @@ test('ante fallos de red o HTML pide revisar citas sin inventar un éxito', asyn
     assert.ok(!jsp.includes('Math.random'));
     assert.ok(!jsp.includes('codFallback'));
 });
+
+test('retención usa la sesión, CSRF y el plazo devuelto por el servidor', async () => {
+    const params=new URLSearchParams({idMedico:'1'});
+    const reservas=api(async (url,options)=>{
+        assert.equal(options.credentials,'same-origin');assert.equal(options.headers['X-CSRF-Token'],'csrf');
+        return reply(200,{code:'CUPO_RETENIDO',data:{identificador:'12345678-1234-1234-1234-123456789012',segundosRestantes:240}});
+    });
+    assert.equal((await reservas.retencion('/paciente/retencion',params,'csrf')).segundosRestantes,240);
+});
+test('retención rechaza vencimientos inválidos y conflictos', async () => {
+    for(const segundos of [0,-1,301,'300']) {
+        const reservas=api(async()=>reply(200,{code:'CUPO_RETENIDO',data:{identificador:'12345678-1234-1234-1234-123456789012',segundosRestantes:segundos}}));
+        await assert.rejects(reservas.retencion('',new URLSearchParams(),''),/verificar/);
+    }
+    await assert.rejects(api(async()=>reply(409,{message:'Cupo ocupado'})).retencion('',new URLSearchParams(),''),/ocupado/);
+});

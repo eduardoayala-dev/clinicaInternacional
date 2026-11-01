@@ -11,6 +11,7 @@ USE clinica_db;
 -- Desactivar temporalmente llaves foráneas para recreación limpia
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS retencion_cupo;
 DROP TABLE IF EXISTS reporte;
 DROP TABLE IF EXISTS indicador;
 DROP TABLE IF EXISTS reasignacion_inteligente;
@@ -820,3 +821,15 @@ SELECT 1,15,0,0 WHERE NOT EXISTS(SELECT 1 FROM configuracion_ofertas WHERE id_co
 
 ALTER TABLE atencion_cita ADD COLUMN id_especialidad_prioridad INT NULL;
 ALTER TABLE atencion_cita ADD CONSTRAINT fk_atencion_especialidad_prioridad FOREIGN KEY(id_especialidad_prioridad) REFERENCES especialidad(id_especialidad);
+CREATE TABLE retencion_cupo (
+ id_paciente INT PRIMARY KEY,
+ id_medico INT NOT NULL,
+ inicio DATETIME NOT NULL,
+ duracion_minutos INT NOT NULL,
+ identificador VARCHAR(36) NOT NULL UNIQUE,
+ vence DATETIME NOT NULL,
+ UNIQUE KEY uq_retencion_horario(id_medico,inicio),
+ FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente),
+ FOREIGN KEY(id_medico) REFERENCES medico(id_medico),
+ CHECK(duracion_minutos>0 AND duracion_minutos<=1440)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

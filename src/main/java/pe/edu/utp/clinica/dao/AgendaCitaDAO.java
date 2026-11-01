@@ -57,6 +57,58 @@ public final class AgendaCitaDAO {
         return transaccion(conn -> reservarEnConexion(conn,new Reserva(paciente,medico,fecha,hora,urgencia,motivo),0));
     }
 
+    public record Retencion(String identificador, long segundosRestantes) {}
+
+    public Retencion retener(int paciente, int medico, String fecha, String hora) {
+        LocalDateTime inicio=futura(fecha,hora);
+        return transaccion(conn -> {
+            paciente(conn,paciente);
+            Medico perfil=medico(conn,medico);
+            Bloque bloque=bloqueReservable(conn,medico,perfil.sede(),inicio);
+            validarFutura(inicio);
+            LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
+            try(var ps=conn.prepareStatement("SELECT identificador,vence FROM retencion_cupo WHERE id_paciente=? AND id_medico=? AND inicio=? AND vence>?")) {
+                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setObject(4,ahora);
+                try(var rs=ps.executeQuery()) {
+                    if(rs.next())return new Retencion(rs.getString(1),java.time.Duration.between(ahora.atZone(ZoneId.of("America/Lima")),rs.getObject(2,LocalDateTime.class).atZone(ZoneId.of("America/Lima"))).getSeconds());
+                }
+            }
+            try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? OR (id_medico=? AND vence<=?)")) {
+                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,ahora);ps.executeUpdate();
+            }
+            libre(conn,medico,inicio,bloque.minutos(),0);
+            String id=java.util.UUID.randomUUID().toString();
+            LocalDateTime vence=ahora.plusMinutes(5);
+            if(vence.isAfter(inicio))vence=inicio;
+            try(var ps=conn.prepareStatement("INSERT INTO retencion_cupo(id_paciente,id_medico,inicio,duracion_minutos,identificador,vence) VALUES(?,?,?,?,?,?)")) {
+                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setInt(4,bloque.minutos());ps.setString(5,id);ps.setObject(6,vence);ps.executeUpdate();
+            }
+            return new Retencion(id,java.time.Duration.between(ahora.atZone(ZoneId.of("America/Lima")),vence.atZone(ZoneId.of("America/Lima"))).getSeconds());
+        });
+    }
+
+    public boolean liberarRetencion(int paciente,String identificador) {
+        return transaccion(conn -> {
+            paciente(conn,paciente);
+            try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? AND identificador=?")) {
+                ps.setInt(1,paciente);ps.setString(2,identificador);ps.executeUpdate();
+            }
+            return true;
+        });
+    }
+
+    public int reservarRetenida(int paciente,int medico,String fecha,String hora,Integer motivo,String identificador) {
+        LocalDateTime inicio=futura(fecha,hora);
+        return transaccion(conn -> {
+            paciente(conn,paciente);medico(conn,medico);
+            try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? AND id_medico=? AND inicio=? AND identificador=? AND vence>?")) {
+                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setString(4,identificador);ps.setObject(5,LocalDateTime.now(clock));
+                if(ps.executeUpdate()!=1)throw new AgendaException(409,"RETENCION_VENCIDA","El cupo ya no está retenido para este formulario. Selecciona el horario nuevamente.");
+            }
+            return reservarEnConexion(conn,new Reserva(paciente,medico,fecha,hora,"MEDIA",motivo),0);
+        });
+    }
+
     int reservarEnConexion(Connection conn, int paciente, int medico, String fecha, String hora, String urgencia, int oferta) throws SQLException {
         return reservarEnConexion(conn,new Reserva(paciente,medico,fecha,hora,urgencia,null),oferta);
     }
@@ -259,6 +311,7 @@ public final class AgendaCitaDAO {
     }
 
     private void libre(Connection conn, int medico, LocalDateTime inicio, int minutos, int oferta) throws SQLException {
+        RetencionesJdbc.comprobarLibre(conn,medico,inicio,minutos,LocalDateTime.now(clock));
         String sql = "SELECT c.fecha_hora,d.duracion_minutos FROM cita c JOIN disponibilidad d ON c.id_disponibilidad=d.id_disponibilidad WHERE c.id_medico=? AND c.fecha_hora>=? AND c.fecha_hora<? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA') "
                 + "UNION ALL SELECT c.fecha_hora,d.duracion_minutos FROM reasignacion_inteligente r JOIN cita c ON r.id_cita_original=c.id_cita JOIN disponibilidad d ON r.id_disponibilidad=d.id_disponibilidad JOIN medico m ON c.id_medico=m.id_medico "
                 + "WHERE c.id_medico=? AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>? AND c.fecha_hora>? AND c.estado='CANCELADA' AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND r.id_reasignacion<>? "
