@@ -424,7 +424,7 @@
 <div class="resumen-row-item"><span class="resumen-row-label">Médico / CMP</span><span class="resumen-row-val" id="resumenMedicoCMP">—</span></div>
 <div class="resumen-row-item"><span class="resumen-row-label">Sede y consultorio</span><span class="resumen-row-val" id="resumenSedeConsultorio">—</span></div>
 <div class="resumen-row-item"><span class="resumen-row-label">Fecha y hora</span><span class="resumen-row-val" id="resumenFechaHoraFormateada">—</span></div>
-<div class="resumen-row-item"><label class="resumen-row-label" for="selectMotivoPaso3">Motivo de consulta</label><select id="selectMotivoPaso3" name="motivo" class="finalizar-select-control booking-reason" required><option value="" disabled selected>Selecciona un motivo</option></select></div>
+<div class="resumen-row-item"><label class="resumen-row-label" for="selectMotivoPaso3">Motivo de consulta</label><select id="selectMotivoPaso3" name="idMotivo" class="finalizar-select-control booking-reason" required><option value="" disabled selected>Selecciona un motivo</option></select></div>
 <div class="resumen-row-item"><span class="resumen-row-label">Recordatorios y confirmación por</span><span class="resumen-row-val booking-email">Correo electrónico · <%= Html.texto(usuario != null ? usuario.getEmail() : "") %></span></div>
 </div></div>
                             <!-- ACCIONES INFERIORES: VOLVER A RESULTADOS / FINALIZAR RESERVA -->
@@ -517,7 +517,11 @@
     <!-- SCRIPTS Y LÓGICA DE CONTROL -->
     <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
     <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js"></script>
+    <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
+    <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
+    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js"></script>
     <script>
+        const catalogoMotivos=JSON.parse(document.getElementById("catalogoMotivos").textContent)||[];
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
 
@@ -890,60 +894,8 @@
                 return;
             }
 
-            const espNombre = selEsp.options[selEsp.selectedIndex] ? selEsp.options[selEsp.selectedIndex].text.toLowerCase() : '';
-
-            let motivos = [];
-            if (espNombre.includes('cardio')) {
-                motivos = [
-                    'Dolor o presión en el pecho',
-                    'Control de hipertensión arterial',
-                    'Palpitaciones o arritmias',
-                    'Evaluación de riesgo quirúrgico',
-                    'Chequeo preventivo cardiológico'
-                ];
-            } else if (espNombre.includes('neuro')) {
-                motivos = [
-                    'Dolores de cabeza o migraña recurrente',
-                    'Episodios de mareo o vértigo',
-                    'Trastornos del sueño o insomnio',
-                    'Control de neuralgia o ciática'
-                ];
-            } else if (espNombre.includes('trauma')) {
-                motivos = [
-                    'Dolor lumbar o en la columna',
-                    'Lesión en rodilla o meniscos',
-                    'Dolor en hombro o articulaciones',
-                    'Evaluación de fractura o esguince'
-                ];
-            } else if (espNombre.includes('derma')) {
-                motivos = [
-                    'Alergia, urticaria o picazón en la piel',
-                    'Revisión de lunares o manchas',
-                    'Acné o rosácea',
-                    'Caída de cabello o alopecia'
-                ];
-            } else if (espNombre.includes('gastro')) {
-                motivos = [
-                    'Dolor abdominal o cólicos',
-                    'Gastritis, acidez o reflujo',
-                    'Digestión pesada o náuseas',
-                    'Evaluación para endoscopía'
-                ];
-            } else {
-                motivos = [
-                    'Consulta médica general',
-                    'Chequeo médico preventivo anual',
-                    'Revisión de análisis de laboratorio',
-                    'Evaluación de fiebre o malestar general'
-                ];
-            }
-
-            motivos.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m;
-                selMotivo.appendChild(opt);
-            });
+            ClinicaMotivos.poblar(selMotivo,catalogoMotivos,espVal,state.motivo);
+            state.motivo=selMotivo.value;
 
             actualizarMedicosPorEspecialidad();
         }
@@ -1305,72 +1257,8 @@
 
             selPaso3.innerHTML = '<option value="" disabled selected>Selecciona un motivo</option>';
 
-            const selMotivoPaso1 = document.getElementById('selectMotivo');
-            if (selMotivoPaso1 && selMotivoPaso1.options.length > 1) {
-                for (let i = 1; i < selMotivoPaso1.options.length; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = selMotivoPaso1.options[i].value;
-                    opt.textContent = selMotivoPaso1.options[i].text;
-                    selPaso3.appendChild(opt);
-                }
-            } else {
-                const esp = (state.especialidadNombre || '').toLowerCase();
-                let motivos = [];
-                if (esp.includes('cardio')) {
-                    motivos = [
-                        'Dolor o presión en el pecho',
-                        'Control de hipertensión arterial',
-                        'Palpitaciones o arritmias',
-                        'Evaluación de riesgo quirúrgico',
-                        'Chequeo preventivo cardiológico'
-                    ];
-                } else if (esp.includes('neuro')) {
-                    motivos = [
-                        'Dolores de cabeza o migraña recurrente',
-                        'Episodios de mareo o vértigo',
-                        'Trastornos del sueño o insomnio',
-                        'Control de neuralgia o ciática'
-                    ];
-                } else if (esp.includes('trauma')) {
-                    motivos = [
-                        'Dolor lumbar o en la columna',
-                        'Lesión en rodilla o meniscos',
-                        'Dolor en hombro o articulaciones',
-                        'Evaluación de fractura o esguince'
-                    ];
-                } else if (esp.includes('derma')) {
-                    motivos = [
-                        'Alergia, urticaria o picazón en la piel',
-                        'Revisión de lunares o manchas',
-                        'Acné o rosácea',
-                        'Caída de cabello o alopecia'
-                    ];
-                } else if (esp.includes('gastro')) {
-                    motivos = [
-                        'Dolor abdominal o cólicos',
-                        'Gastritis, acidez o reflujo',
-                        'Digestión pesada o náuseas',
-                        'Evaluación para endoscopía'
-                    ];
-                } else {
-                    motivos = [
-                        'Consulta médica general',
-                        'Chequeo médico preventivo anual',
-                        'Revisión de análisis de laboratorio',
-                        'Evaluación de fiebre o malestar general'
-                    ];
-                }
-                motivos.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = m;
-                    selPaso3.appendChild(opt);
-                });
-            }
-
-            if (state.motivo) {
-                selPaso3.value = state.motivo;
-            }
+            ClinicaMotivos.poblar(selPaso3,catalogoMotivos,state.especialidadId,state.motivo);
+            state.motivo=selPaso3.value;
         }
 
         let countdownInterval = null;

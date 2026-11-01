@@ -44,9 +44,11 @@ public class ReservarCitaServlet extends HttpServlet {
         }
         try {
             int medico = Integer.parseInt(request.getParameter("idMedico"));
+            int motivo=Integer.parseInt(request.getParameter("idMotivo"));
+            if(motivo<=0)throw new NumberFormatException();
             int paciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
             int id = citaDAO.reservarCitaValidada(paciente, medico, request.getParameter("fecha"),
-                    request.getParameter("hora"), request.getParameter("urgencia"));
+                    request.getParameter("hora"), request.getParameter("urgencia"),motivo);
             String codigo = "CI-" + Year.now(ZoneId.of("America/Lima")) + "-" + String.format("%06d", id);
             if (json(request)) {
                 ApiJson.write(response, 201, new ApiResponse<>("CITA_RESERVADA", "Cita reservada correctamente.", new ReservaCreada(id, codigo)));
@@ -54,7 +56,7 @@ public class ReservarCitaServlet extends HttpServlet {
                 response.sendRedirect(request.getContextPath() + "/paciente/historial?reserva=ok");
             }
         } catch (NumberFormatException e) {
-            fallo(request, response, 400, "DATOS_INVALIDOS", "El médico no es válido.");
+            fallo(request, response, 400, "DATOS_INVALIDOS", "Selecciona un médico y un motivo de consulta válidos.");
         } catch (AgendaException e) {
             fallo(request, response, e.status(), e.code(), e.getMessage());
         } catch (RuntimeException e) {

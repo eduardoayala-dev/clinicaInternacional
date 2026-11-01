@@ -109,6 +109,9 @@ public class CitaDAO {
     public int reservarCitaValidada(int idPaciente, int idMedico, String fecha, String hora, String urgencia) {
         return new AgendaCitaDAO(this::abrirConexion).reservar(idPaciente, idMedico, fecha, hora, urgencia);
     }
+    public int reservarCitaValidada(int paciente,int medico,String fecha,String hora,String urgencia,Integer motivo) {
+        return new AgendaCitaDAO(this::abrirConexion).reservar(paciente,medico,fecha,hora,urgencia,motivo);
+    }
 
 
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {

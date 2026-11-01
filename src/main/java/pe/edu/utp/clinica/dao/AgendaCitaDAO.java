@@ -28,6 +28,7 @@ public final class AgendaCitaDAO {
     @FunctionalInterface
     interface ConnectionSource { Connection open() throws SQLException; }
     record Medico(int sede, int especialidad) {}
+    private record Reserva(int paciente,int medico,String fecha,String hora,String urgencia,Integer motivo) {}
     private record Bloque(int id, LocalTime inicio, LocalTime fin, int minutos) {}
 
     public AgendaCitaDAO() { this(DatabaseConfig::getConnection); }
@@ -50,18 +51,25 @@ public final class AgendaCitaDAO {
     }
 
     public int reservar(int paciente, int medico, String fecha, String hora, String urgencia) {
-        return transaccion(conn -> reservarEnConexion(conn, paciente, medico, fecha, hora, urgencia, 0));
+        return reservar(paciente,medico,fecha,hora,urgencia,null);
+    }
+    public int reservar(int paciente,int medico,String fecha,String hora,String urgencia,Integer motivo) {
+        return transaccion(conn -> reservarEnConexion(conn,new Reserva(paciente,medico,fecha,hora,urgencia,motivo),0));
     }
 
     int reservarEnConexion(Connection conn, int paciente, int medico, String fecha, String hora, String urgencia, int oferta) throws SQLException {
-        LocalDateTime inicio = futura(fecha, hora);
-        String prioridad = prioridad(urgencia);
-        int usuario = paciente(conn, paciente);
-        Medico perfil = medico(conn, medico);
-        Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
-        libre(conn, medico, inicio, bloque.minutos(), oferta);
+        return reservarEnConexion(conn,new Reserva(paciente,medico,fecha,hora,urgencia,null),oferta);
+    }
+    private int reservarEnConexion(Connection conn,Reserva reserva,int oferta) throws SQLException {
+        LocalDateTime inicio = futura(reserva.fecha(), reserva.hora());
+        String prioridad = prioridad(reserva.urgencia());
+        int usuario = paciente(conn, reserva.paciente());
+        Medico perfil = medico(conn, reserva.medico());
+        verificarMotivo(conn,reserva.motivo(),perfil.especialidad());
+        Bloque bloque = bloqueReservable(conn, reserva.medico(), perfil.sede(), inicio);
+        libre(conn, reserva.medico(), inicio, bloque.minutos(), oferta);
         validarFutura(inicio);
-        int id = insertarCita(conn, paciente, medico, bloque.id(), inicio, null, prioridad);
+        int id = insertarCita(conn, reserva.paciente(), reserva.medico(), bloque.id(), inicio, reserva.motivo(), prioridad);
         TransaccionJdbc.avisarSede(perfil.sede());
         notificar(conn, usuario, id, "Cita confirmada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
         return id;
