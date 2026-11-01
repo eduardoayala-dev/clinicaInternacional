@@ -155,32 +155,16 @@ public class AdminDashboardServlet extends HttpServlet {
         String sede = request.getParameter("sede");
         String estado = request.getParameter("estado");
 
-        List<Map<String, Object>> medicos = obtenerMedicosPadrónBD(query, especialidad, sede, estado);
+        List<Map<String, Object>> medicos = obtenerMedicosPadrónBD(query, especialidad, sede, estado,ambitoSede(request));
         int totalMedicosBD = medicos.size();
         int totalActivosBD = 0;
         int totalLicenciaBD = 0;
         int totalEspecialidadesBD = 0;
 
-        try (Connection conn = DatabaseConfig.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM medico");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) totalMedicosBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM medico WHERE estado = 'ACTIVO'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) totalActivosBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM medico WHERE estado = 'LICENCIA'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) totalLicenciaBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM especialidad WHERE estado = 'ACTIVO'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) totalEspecialidadesBD = rs.getInt(1);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        totalMedicosBD=medicos.size();
+        totalActivosBD=(int)medicos.stream().filter(m->"ACTIVO".equals(m.get("estado"))).count();
+        totalLicenciaBD=(int)medicos.stream().filter(m->"LICENCIA".equals(m.get("estado"))).count();
+        totalEspecialidadesBD=(int)medicos.stream().map(m->m.get("especialidad")).distinct().count();
 
         // Obtener sedes y especialidades para los filtros y modal
         MedicoDAO medicoDAO = new MedicoDAO();
@@ -190,7 +174,7 @@ public class AdminDashboardServlet extends HttpServlet {
         request.setAttribute("listaMedicos", medicos);
         request.setAttribute("sedes", sedes);
         request.setAttribute("especialidades", especialidades);
-        request.setAttribute("listaDisponibilidades", obtenerTodasDisponibilidades());
+        request.setAttribute("listaDisponibilidades", obtenerTodasDisponibilidades(ambitoSede(request)));
         request.setAttribute("totalMedicos", totalMedicosBD);
         request.setAttribute("totalActivos", totalActivosBD);
         request.setAttribute("totalLicencia", totalLicenciaBD);
@@ -206,27 +190,18 @@ public class AdminDashboardServlet extends HttpServlet {
         String cobertura = request.getParameter("cobertura");
         String sede = request.getParameter("sede");
 
-        List<Map<String, Object>> pacientes = obtenerPacientesPadrónBD(query, cobertura, sede);
+        List<Map<String, Object>> pacientes = obtenerPacientesPadrónBD(query, cobertura, sede,ambitoSede(request));
         int totalPacientesBD = pacientes.size();
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM paciente");
-             ResultSet rs = ps.executeQuery()) {
-            if (rs.next()) {
-                totalPacientesBD = rs.getInt(1);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
         // Sedes para el selector
         MedicoDAO medicoDAO = new MedicoDAO();
         request.setAttribute("sedes", medicoDAO.obtenerSedes());
 
         request.setAttribute("listaPacientes", pacientes);
+        request.setAttribute("sedeAdmision",new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().nombreSede(((Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO)).getIdUsuario()));
         request.setAttribute("totalPacientes", totalPacientesBD);
-        request.setAttribute("totalRegistradosFormat", String.format(Locale.US, "%,d", Math.max(12480, totalPacientesBD)).replace(",", " "));
-        int verificados = (int) Math.round(Math.max(12480, totalPacientesBD) * 0.9539);
-        request.setAttribute("totalVerificadosFormat", String.format(Locale.US, "%,d", verificados).replace(",", " "));
+        request.setAttribute("totalRegistradosFormat", String.format(Locale.US, "%,d", totalPacientesBD).replace(",", " "));
+        int verificados = 0;
+        request.setAttribute("totalVerificadosFormat", "Sin datos");
 
         request.setAttribute("filtroQuery", query != null ? query : "");
         request.setAttribute("filtroCobertura", cobertura != null ? cobertura : "");
@@ -303,6 +278,9 @@ public class AdminDashboardServlet extends HttpServlet {
             responderError(response,403,"Ingresa con una cuenta de admisión.");
             return;
         }
+        try { comprobarAmbito(request,usuario,action); }
+        catch(IllegalArgumentException e){responderError(response,400,"Revisa los identificadores.");return;}
+        catch(AgendaException e){responderError(response,e.status(),e.getMessage());return;}
         if ("admitir_cita".equals(action)) {
             try {
                 request.getRequestDispatcher("/admin/admision").forward(request,response);
@@ -312,57 +290,14 @@ public class AdminDashboardServlet extends HttpServlet {
             return;
         } else if ("cancelar_cita".equals(action)) {
             try {
-                int idCita = Integer.parseInt(request.getParameter("idCita"));
-                citaDAO.actualizarEstadoCita(idCita, "CANCELADA");
-
-                String pacNom = "Paciente";
-                String espNom = "Consulta Médica";
-                String horaCita = "09:00";
-                int idUsuarioPac = 1;
-
-                String qInfo = "SELECT u_pac.nombres AS pac_nom, u_pac.apellidos AS pac_ape, p.id_usuario, " +
-                               "esp.nombre AS esp_nom, c.fecha_hora " +
-                               "FROM cita c " +
-                               "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                               "JOIN usuario u_pac ON p.id_usuario = u_pac.id_usuario " +
-                               "JOIN medico m ON c.id_medico = m.id_medico " +
-                               "LEFT JOIN especialidad esp ON m.id_especialidad = esp.id_especialidad " +
-                               "WHERE c.id_cita = ?";
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement(qInfo)) {
-                    ps.setInt(1, idCita);
-                    try (ResultSet rs = ps.executeQuery()) {
-                        if (rs.next()) {
-                            pacNom = rs.getString("pac_nom") + " " + rs.getString("pac_ape");
-                            espNom = rs.getString("esp_nom") != null ? rs.getString("esp_nom") : "Medicina General";
-                            idUsuarioPac = rs.getInt("id_usuario");
-                            Timestamp ts = Timestamp.valueOf(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class));
-                            if (ts != null) {
-                                horaCita = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
-                            }
-                        }
-                    }
-                }
-
-                try {
-                    citaDAO.ejecutarReasignacionInteligente(idCita);
-                } catch (Exception ignored) {}
-
-                String opMsg = "Cancelación: cita de " + espNom + " de las " + horaCita + " (" + pacNom + ") - cupo ofertado a la lista de espera";
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement("INSERT INTO notificacion (id_usuario, id_cita, tipo, canal, mensaje, fecha_envio, estado_envio) VALUES (?, ?, 'Cancelación', 'PLATAFORMA', ?, CURRENT_TIMESTAMP, 'ENVIADA')")) {
-                    ps.setInt(1, idUsuarioPac);
-                    ps.setInt(2, idCita);
-                    ps.setString(3, opMsg);
-                    ps.executeUpdate();
-                } catch (Exception ignored) {}
-
-                request.getSession().setAttribute(FLASH_MESSAGE, "Cita #" + idCita + " (" + pacNom + ") cancelada. El cupo ha sido ofertado a la lista de espera de inmediato.");
-            } catch (Exception e) {
-                request.getSession().setAttribute(FLASH_MESSAGE, "Cita cancelada correctamente.");
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
-            return;
+                int idCita=Integer.parseInt(request.getParameter("idCita"));
+                admisionDAO.cancelar(usuario.getIdUsuario(),idCita);
+                try { citaDAO.ejecutarReasignacionInteligente(idCita); }
+                catch(AgendaException e) { request.getSession().setAttribute("flashError","La cita se canceló; el mantenimiento revisará la oferta del cupo."); }
+                session.setAttribute(FLASH_MESSAGE,"Cita cancelada correctamente.");
+            } catch(NumberFormatException e){session.setAttribute("flashError","Selecciona una cita válida.");}
+            catch(AgendaException e){session.setAttribute("flashError",e.getMessage());}
+            response.sendRedirect(request.getContextPath()+"/admin/dashboard");return;
         } else if ("registrar_paciente".equals(action)) {
             String redirect = request.getParameter("redirect");
             if (redirect == null || redirect.trim().isEmpty()) {
@@ -374,7 +309,7 @@ public class AdminDashboardServlet extends HttpServlet {
             String telefono = request.getParameter("telefono");
             String email = request.getParameter("email");
             String direccion = request.getParameter("direccion");
-            String sedePreferida = request.getParameter("sede_preferida");
+            String sedePreferida = new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().nombreSede(usuario.getIdUsuario());
             String cobertura = request.getParameter("cobertura");
             String canalAviso = request.getParameter("canal_aviso");
             String fechaNacStr = request.getParameter("fecha_nacimiento");
@@ -385,7 +320,7 @@ public class AdminDashboardServlet extends HttpServlet {
             u.setEmail(email != null && !email.trim().isEmpty() ? email.trim() : ("paciente_" + dni + "@clinica.pe"));
             u.setRol("PACIENTE");
             u.setActivo(true);
-            u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw("Password123!", org.mindrot.jbcrypt.BCrypt.gensalt()));
+            u.setPasswordHash(pe.edu.utp.clinica.util.SecurityUtil.hashPassword(pe.edu.utp.clinica.auth.SecretosSesion.nuevo()));
 
             pe.edu.utp.clinica.model.Paciente p = new pe.edu.utp.clinica.model.Paciente();
             p.setDni(dni != null ? dni.trim() : "00000000");
@@ -399,7 +334,7 @@ public class AdminDashboardServlet extends HttpServlet {
                 } catch (Exception ignored) {}
             }
             p.setFechaNacimiento(fnac);
-            p.setCanalAviso(canalAviso != null && !canalAviso.trim().isEmpty() ? canalAviso.trim() : "WhatsApp");
+            p.setCanalAviso("Correo");
             p.setSedePreferida(sedePreferida != null && !sedePreferida.trim().isEmpty() ? sedePreferida.trim() : "Sede San Borja");
             p.setTipoCobertura(cobertura != null && !cobertura.trim().isEmpty() ? cobertura.trim() : "EPS");
 
@@ -412,61 +347,20 @@ public class AdminDashboardServlet extends HttpServlet {
                     ps.executeUpdate();
                 } catch (Exception ignored) {}
 
-                request.getSession().setAttribute(FLASH_MESSAGE, "¡Paciente " + nombres + " " + apellidos + " (DNI " + dni + ") registrado con éxito en el padrón!");
+                request.getSession().setAttribute(FLASH_MESSAGE, "Paciente registrado. Para establecer su contraseña debe utilizar Recuperar contraseña con su DNI y correo.");
             } else {
                 request.getSession().setAttribute("flashError", "No se pudo registrar: verifique que el DNI o correo no estén duplicados.");
             }
             response.sendRedirect(request.getContextPath() + redirect);
             return;
         } else if ("editar_paciente".equals(action)) {
-            String redirect = request.getParameter("redirect");
-            if (redirect == null || redirect.trim().isEmpty()) {
-                redirect = "/admin/pacientes";
-            }
             try {
-                int idPaciente = Integer.parseInt(request.getParameter("idPaciente"));
-                String nombres = request.getParameter("nombres");
-                String apellidos = request.getParameter("apellidos");
-                String dni = request.getParameter("dni");
-                String telefono = request.getParameter("telefono");
-                String direccion = request.getParameter("direccion");
-                String sedePreferida = request.getParameter("sede_preferida");
-                String cobertura = request.getParameter("cobertura");
-                String canalAviso = request.getParameter("canal_aviso");
-
-                try (Connection conn = DatabaseConfig.getConnection()) {
-                    String sqlP = "UPDATE paciente SET telefono = ?, direccion = ?, sede_preferida = ?, tipo_cobertura = ?, canal_aviso = ? WHERE id_paciente = ?";
-                    try (PreparedStatement psP = conn.prepareStatement(sqlP)) {
-                        psP.setString(1, telefono);
-                        psP.setString(2, direccion);
-                        psP.setString(3, sedePreferida);
-                        psP.setString(4, cobertura);
-                        psP.setString(5, canalAviso);
-                        psP.setInt(6, idPaciente);
-                        psP.executeUpdate();
-                    }
-                    String sqlU = "UPDATE usuario u JOIN paciente p ON u.id_usuario = p.id_usuario SET u.nombres = ?, u.apellidos = ? WHERE p.id_paciente = ?";
-                    try (PreparedStatement psU = conn.prepareStatement(sqlU)) {
-                        psU.setString(1, nombres);
-                        psU.setString(2, apellidos);
-                        psU.setInt(3, idPaciente);
-                        psU.executeUpdate();
-                    }
-                }
-
-                String opMsg = "Actualización: datos del paciente " + nombres + " " + apellidos + " (DNI " + dni + ") actualizados";
-                try (Connection conn = DatabaseConfig.getConnection();
-                     PreparedStatement ps = conn.prepareStatement("INSERT INTO notificacion (id_usuario, tipo, canal, mensaje, fecha_envio, estado_envio) VALUES (1, 'Actualización', 'PLATAFORMA', ?, CURRENT_TIMESTAMP, 'ENVIADA')")) {
-                    ps.setString(1, opMsg);
-                    ps.executeUpdate();
-                } catch (Exception ignored) {}
-
-                request.getSession().setAttribute(FLASH_MESSAGE, "¡Datos del paciente " + nombres + " " + apellidos + " (DNI " + dni + ") actualizados correctamente en la Base de Datos!");
-            } catch (Exception e) {
-                request.getSession().setAttribute("flashError", "Error al actualizar datos del paciente: " + e.getMessage());
-            }
-            response.sendRedirect(request.getContextPath() + redirect);
-            return;
+                new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().editarPaciente(usuario.getIdUsuario(),Integer.parseInt(request.getParameter("idPaciente")),
+                    new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.EdicionPaciente(request.getParameter("nombres"),request.getParameter("apellidos"),request.getParameter("telefono"),request.getParameter("direccion"),request.getParameter("cobertura")));
+                session.setAttribute(FLASH_MESSAGE,"Datos del paciente actualizados.");
+            } catch(NumberFormatException e){session.setAttribute("flashError","Selecciona un paciente válido.");}
+            catch(AgendaException e){session.setAttribute("flashError",e.getMessage());}
+            response.sendRedirect(request.getContextPath()+"/admin/pacientes");return;
         } else if ("reasignar".equals(action)) {
             try {
                 int idCita = Integer.parseInt(request.getParameter("idCita"));
@@ -478,19 +372,7 @@ public class AdminDashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/dashboard");
             return;
         } else if ("cambiar_estado".equals(action)) {
-            try {
-                int idCita = Integer.parseInt(request.getParameter("idCita"));
-                String nuevoEstado = request.getParameter("nuevoEstado");
-                boolean ok = citaDAO.actualizarEstadoCita(idCita, nuevoEstado);
-                if (ok) {
-                    request.getSession().setAttribute(FLASH_MESSAGE, "Estado de cita #" + idCita + " actualizado a " + nuevoEstado + " en la Base de Datos.");
-                } else {
-                    request.getSession().setAttribute(FLASH_MESSAGE, "Cita #" + idCita + " en atención.");
-                }
-            } catch (Exception e) {
-                request.getSession().setAttribute(FLASH_MESSAGE, "Acción realizada correctamente.");
-            }
-            response.sendRedirect(request.getContextPath() + "/admin/dashboard");
+            responderError(response,403,"Utiliza los flujos de admisión, confirmación y atención para cambiar el estado de una cita.");
             return;
         } else if ("registrar_cita_ventanilla".equals(action)) {
             String dni = request.getParameter("dni");
@@ -546,68 +428,30 @@ public class AdminDashboardServlet extends HttpServlet {
             response.sendRedirect(request.getContextPath() + "/admin/medicos");
             return;
         } else if ("nuevo_medico".equals(action) || "registrarMedico".equals(action)) {
-            String cmp = request.getParameter("cmp");
-            String nombres = request.getParameter("nombres");
-            String apellidos = request.getParameter("apellidos");
-            if (nombres == null || nombres.trim().isEmpty()) {
-                String nombre = request.getParameter("nombre");
-                nombres = (nombre != null) ? nombre : "Médico";
-                apellidos = "Facultativo";
-            }
-            if (apellidos == null || apellidos.trim().isEmpty()) {
-                apellidos = "Facultativo";
-            }
-            String email = request.getParameter("email");
-            if (email == null || email.trim().isEmpty()) {
-                email = "medico_" + System.currentTimeMillis() + "@clinicainternacional.pe";
-            }
-            String especialidadStr = request.getParameter("idEspecialidad");
-            if (especialidadStr == null || especialidadStr.trim().isEmpty()) {
-                especialidadStr = request.getParameter("especialidad");
-            }
-            int idEsp = 1;
-            if (especialidadStr != null && !especialidadStr.trim().isEmpty()) {
-                try { idEsp = Integer.parseInt(especialidadStr); } catch (Exception ignored) {}
-            }
-            int idSede = 1;
-            try {
-                String sedeStr = request.getParameter(ID_SEDE);
-                if (sedeStr != null) idSede = Integer.parseInt(sedeStr);
-            } catch (Exception ignored) {}
-
-            Usuario u = new Usuario();
-            u.setNombres(nombres);
-            u.setApellidos(apellidos);
-            u.setEmail(email);
-            u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw("Password123!", org.mindrot.jbcrypt.BCrypt.gensalt()));
-            u.setRol("MEDICO");
-            u.setActivo(true);
-
-            usuarioDAO.registrarPersonal(u, cmp, idEsp, idSede, "Médico Facultativo");
-            request.getSession().setAttribute(FLASH_MESSAGE, "¡Médico " + nombres + " " + apellidos + " (" + cmp + ") guardado exitosamente en la Base de Datos!");
-            response.sendRedirect(request.getContextPath() + "/admin/medicos");
+            responderError(response,403,"Las cuentas de personal se crean mediante invitación del administrador del sistema.");
             return;
         }
 
         response.sendRedirect(request.getContextPath() + "/admin/dashboard");
     }
 
-    private List<Map<String, Object>> obtenerMedicosPadrónBD(String query, String especialidad, String sede, String estado) {
+    private List<Map<String, Object>> obtenerMedicosPadrónBD(String query, String especialidad, String sede, String estado,int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
-            "SELECT m.id_medico, m.cmp, u.nombres, u.apellidos, COALESCE(p_dni.dni, '45120378') AS dni, " +
+            "SELECT m.id_medico, m.cmp, u.nombres, u.apellidos, COALESCE(p_dni.dni, 'Sin registrar') AS dni, " +
             "COALESCE(e.nombre, 'Medicina general') AS especialidad_nombre, " +
             "COALESCE(s.nombre, 'Sede San Borja') AS sede_nombre, " +
-            "COALESCE(m.estado, 'ACTIVO') AS estado " +
+            "CASE WHEN u.activo=FALSE THEN 'INACTIVO' ELSE COALESCE(m.estado, 'ACTIVO') END AS estado " +
             "FROM medico m " +
             "JOIN usuario u ON m.id_usuario = u.id_usuario " +
             "LEFT JOIN paciente p_dni ON u.id_usuario = p_dni.id_usuario " +
             "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
             "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-            "WHERE 1=1 "
+            "WHERE m.id_sede=? "
         );
 
         List<Object> params = new ArrayList<>();
+        params.add(ambito);
         if (query != null && !query.trim().isEmpty()) {
             sql.append("AND (LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(m.cmp) LIKE ?) ");
             String qLike = "%" + query.trim().toLowerCase() + "%";
@@ -624,7 +468,7 @@ public class AdminDashboardServlet extends HttpServlet {
             params.add(sede.trim());
         }
         if (estado != null && !estado.trim().isEmpty() && !"Todos".equalsIgnoreCase(estado)) {
-            sql.append("AND m.estado = ? ");
+            sql.append("AND (CASE WHEN u.activo=FALSE THEN 'INACTIVO' ELSE m.estado END) = ? ");
             params.add(estado.trim());
         }
 
@@ -672,7 +516,7 @@ public class AdminDashboardServlet extends HttpServlet {
         return list;
     }
 
-    private List<Map<String, Object>> obtenerPacientesPadrónBD(String query, String cobertura, String sede) {
+    private List<Map<String, Object>> obtenerPacientesPadrónBD(String query, String cobertura, String sede,int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
         StringBuilder sql = new StringBuilder(
             "SELECT p.id_paciente, p.dni, p.fecha_nacimiento, p.telefono, p.direccion, " +
@@ -684,10 +528,11 @@ public class AdminDashboardServlet extends HttpServlet {
             "FROM paciente p " +
             "JOIN usuario u ON p.id_usuario = u.id_usuario " +
             "LEFT JOIN cita c ON p.id_paciente = c.id_paciente AND c.estado IN ('PROGRAMADA', 'CONFIRMADA', 'REPROGRAMADA', 'EN_SALA') " +
-            "WHERE 1=1 "
+            "WHERE (EXISTS(SELECT 1 FROM sede sc WHERE sc.id_sede=? AND sc.nombre=p.sede_preferida) OR EXISTS(SELECT 1 FROM cita ca JOIN medico ma ON ma.id_medico=ca.id_medico WHERE ca.id_paciente=p.id_paciente AND ma.id_sede=?)) "
         );
 
         List<Object> params = new ArrayList<>();
+        params.add(ambito);params.add(ambito);
         if (query != null && !query.trim().isEmpty()) {
             String qLike = "%" + query.trim().toLowerCase() + "%";
             sql.append("AND (LOWER(p.dni) LIKE ? OR LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(p.telefono) LIKE ?) ");
@@ -706,13 +551,7 @@ public class AdminDashboardServlet extends HttpServlet {
         }
 
         sql.append("GROUP BY p.id_paciente, p.dni, p.fecha_nacimiento, p.telefono, p.direccion, p.canal_aviso, p.sede_preferida, p.tipo_cobertura, u.nombres, u.apellidos, u.email ");
-        sql.append("ORDER BY CASE " +
-                   "WHEN p.dni = '45879632' THEN 1 " +
-                   "WHEN p.dni = '45120378' THEN 2 " +
-                   "WHEN p.dni = '41785236' THEN 3 " +
-                   "WHEN p.dni = '70214589' THEN 4 " +
-                   "WHEN p.dni = '46932017' THEN 5 " +
-                   "ELSE 6 END, p.id_paciente ASC");
+        sql.append("ORDER BY p.id_paciente DESC");
 
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql.toString())) {
@@ -955,7 +794,7 @@ public class AdminDashboardServlet extends HttpServlet {
         return list;
     }
 
-    private List<Map<String, Object>> obtenerTodasDisponibilidades() {
+    private List<Map<String, Object>> obtenerTodasDisponibilidades(int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT d.id_disponibilidad, d.id_medico, d.id_sede, COALESCE(s.nombre, 'Sede Central') AS sede_nombre, " +
                      "d.fecha, d.hora_inicio, d.hora_fin, COALESCE(d.duracion_minutos, 30) AS duracion_minutos, " +
@@ -963,10 +802,10 @@ public class AdminDashboardServlet extends HttpServlet {
                      "(SELECT COUNT(*) FROM cita c WHERE c.id_disponibilidad = d.id_disponibilidad AND c.estado NOT IN ('CANCELADA', 'REPROGRAMADA')) AS citas_agendadas " +
                      "FROM disponibilidad d " +
                      "LEFT JOIN sede s ON d.id_sede = s.id_sede " +
-                     "ORDER BY d.fecha DESC, d.hora_inicio ASC";
+                     "WHERE d.id_sede=? ORDER BY d.fecha DESC, d.hora_inicio ASC";
         try (Connection conn = DatabaseConfig.getConnection();
              PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
+             ResultSet rs = consultaDisponibilidades(ps,ambito)) {
             java.time.format.DateTimeFormatter timeFmt = java.time.format.DateTimeFormatter.ofPattern("HH:mm");
             while (rs.next()) {
                 Map<String, Object> d = new HashMap<>();
@@ -992,6 +831,23 @@ public class AdminDashboardServlet extends HttpServlet {
         }
         return list;
     }
+    private static ResultSet consultaDisponibilidades(PreparedStatement ps,int sede)throws java.sql.SQLException {ps.setInt(1,sede);return ps.executeQuery();}
+    private static int ambitoSede(HttpServletRequest request) {
+        Usuario usuario=(Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO);
+        return new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO().sede(usuario.getIdUsuario());
+    }
+    private static void comprobarAmbito(HttpServletRequest request,Usuario usuario,String accion) {
+        var ambito=new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO();
+        var recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.CITA;
+        String campo=null;
+        if(java.util.Set.of("cancelar_cita","reasignar","cambiar_estado").contains(accion==null?"":accion))campo="idCita";
+        else if("editar_paciente".equals(accion)){campo="idPaciente";recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.PACIENTE;}
+        else if("registrar_cita_ventanilla".equals(accion)){campo="medico";recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.MEDICO;}
+        else if("publicar_horario_medico".equals(accion)){campo=ID_MEDICO;recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.MEDICO;}
+        else if("cambiar_estado_horario".equals(accion)){campo="idDisponibilidad";recurso=pe.edu.utp.clinica.dao.AmbitoAdmisionDAO.Recurso.HORARIO;}
+        if(campo!=null)ambito.exigir(usuario.getIdUsuario(),recurso,Integer.parseInt(request.getParameter(campo)));
+    }
+
     private static void responderError(HttpServletResponse response,int estado,String mensaje){
         if(response.isCommitted()) return;
         try { response.sendError(estado,mensaje); }

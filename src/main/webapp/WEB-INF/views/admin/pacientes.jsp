@@ -1,3 +1,4 @@
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
@@ -98,9 +99,9 @@
 
         <div class="adm-user-footer">
             <div class="adm-user-info-link">
-                <div class="adm-avatar"><%= inicialesPersonal %></div>
+                <div class="adm-avatar"><%= Html.texto(inicialesPersonal) %></div>
                 <div class="adm-user-text">
-                    <div class="adm-user-name" title="<%= nombrePersonal %>"><%= nombrePersonal %></div>
+                    <div class="adm-user-name" title="<%= Html.texto(nombrePersonal) %>"><%= Html.texto(nombrePersonal) %></div>
                     <div class="adm-user-role">Personal administrativo</div>
                 </div>
             </div>
@@ -131,14 +132,14 @@
             <% if (flashMessage != null) { %>
                 <div style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
-                    <span><%= flashMessage %></span>
+                    <span><%= Html.texto(flashMessage) %></span>
                 </div>
             <% } %>
 
             <% if (flashError != null) { %>
                 <div style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: #dc2626;"></i>
-                    <span><%= flashError %></span>
+                    <span><%= Html.texto(flashError) %></span>
                 </div>
             <% } %>
 
@@ -190,7 +191,7 @@
                                 for (Map<String, Object> s : sedes) { 
                                     String nomSede = (String) s.get("nombre");
                             %>
-                                <option value="<%= nomSede %>"><%= nomSede %></option>
+                                <option value="<%= Html.texto(nomSede) %>"><%= Html.texto(nomSede) %></option>
                             <%  }
                                } else { %>
                                 <option value="Sede Lima Norte">Sede Lima Norte</option>
@@ -252,47 +253,47 @@
                                     int citasActivas = citasActivasObj != null ? Integer.parseInt(citasActivasObj.toString()) : 0;
                             %>
                             <tr class="paciente-fila"
-                                data-id="<%= idPaciente %>"
-                                data-dni="<%= dni != null ? dni : "" %>"
-                                data-nombres="<%= nombres != null ? nombres : "" %>"
-                                data-apellidos="<%= apellidos != null ? apellidos : "" %>"
-                                data-nombre="<%= nombreCompleto != null ? nombreCompleto.toLowerCase() : "" %>"
-                                data-telefono="<%= telefonoRaw != null ? telefonoRaw : "" %>"
-                                data-email="<%= email != null ? email : "" %>"
-                                data-fnac="<%= fechaNacInput != null ? fechaNacInput : "" %>"
-                                data-direccion="<%= direccion != null ? direccion : "" %>"
-                                data-cobertura="<%= tipoCobertura != null ? tipoCobertura : "EPS" %>"
-                                data-sede="<%= sedePreferida != null ? sedePreferida : "" %>"
-                                data-canal="<%= canalAviso != null ? canalAviso : "WhatsApp" %>">
+                                data-id="<%= Html.texto(idPaciente) %>"
+                                data-dni="<%= Html.texto(dni != null ? dni : "") %>"
+                                data-nombres="<%= Html.texto(nombres != null ? nombres : "") %>"
+                                data-apellidos="<%= Html.texto(apellidos != null ? apellidos : "") %>"
+                                data-nombre="<%= Html.texto(nombreCompleto != null ? nombreCompleto.toLowerCase() : "") %>"
+                                data-telefono="<%= Html.texto(telefonoRaw != null ? telefonoRaw : "") %>"
+                                data-email="<%= Html.texto(email != null ? email : "") %>"
+                                data-fnac="<%= Html.texto(fechaNacInput != null ? fechaNacInput : "") %>"
+                                data-direccion="<%= Html.texto(direccion != null ? direccion : "") %>"
+                                data-cobertura="<%= Html.texto(tipoCobertura != null ? tipoCobertura : "EPS") %>"
+                                data-sede="<%= Html.texto(sedePreferida != null ? sedePreferida : "") %>"
+                                data-canal="<%= Html.texto(canalAviso != null ? canalAviso : "WhatsApp") %>">
                                 <td>
-                                    <span class="td-dni"><%= dni %></span>
+                                    <span class="td-dni"><%= Html.texto(dni) %></span>
                                 </td>
                                 <td>
-                                    <span class="td-nombre"><%= nombreCompleto %></span>
+                                    <span class="td-nombre"><%= Html.texto(nombreCompleto) %></span>
                                 </td>
                                 <td>
                                     <div class="td-edad-box">
-                                        <span class="td-edad-val"><%= edad %></span>
-                                        <span class="td-fnac-val"><%= fechaNac %></span>
+                                        <span class="td-edad-val"><%= Html.texto(edad) %></span>
+                                        <span class="td-fnac-val"><%= Html.texto(fechaNac) %></span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="td-zona"><%= zona %></span>
+                                    <span class="td-zona"><%= Html.texto(zona) %></span>
                                 </td>
                                 <td>
                                     <div class="td-contacto-box">
-                                        <span class="td-tel-val"><%= telefono %></span>
-                                        <span class="td-correo-val"><%= email %></span>
+                                        <span class="td-tel-val"><%= Html.texto(telefono) %></span>
+                                        <span class="td-correo-val"><%= Html.texto(email) %></span>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="td-canal-box">
-                                        <span class="td-canal-val"><%= canalAviso %></span>
-                                        <span class="td-confirma-val"><%= confirmaCanal %></span>
+                                        <span class="td-canal-val"><%= Html.texto(canalAviso) %></span>
+                                        <span class="td-confirma-val"><%= Html.texto(confirmaCanal) %></span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="td-citas-activas"><%= citasActivas %></span>
+                                    <span class="td-citas-activas"><%= Html.texto(citasActivas) %></span>
                                 </td>
                                 <td>
                                     <button type="button" class="btn-action-editar" onclick="abrirModalEditar(this)">Editar</button>
@@ -331,7 +332,7 @@
                             <i data-lucide="users"></i>
                         </div>
                     </div>
-                    <div class="pacientes-kpi-number"><%= totalRegistradosFormat %></div>
+                    <div class="pacientes-kpi-number"><%= Html.texto(totalRegistradosFormat) %></div>
                     <div class="pacientes-kpi-sub">En el padrón de la red</div>
                 </div>
 
@@ -343,8 +344,8 @@
                             <i data-lucide="check"></i>
                         </div>
                     </div>
-                    <div class="pacientes-kpi-number"><%= totalVerificadosFormat %></div>
-                    <div class="pacientes-kpi-sub">95 % del padrón</div>
+                    <div class="pacientes-kpi-number"><%= Html.texto(totalVerificadosFormat) %></div>
+                    <div class="pacientes-kpi-sub">Sin métricas de verificación disponibles</div>
                 </div>
             </div>
 
@@ -409,12 +410,7 @@
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
                             <label class="adm-modal-label">Sede preferida</label>
-                            <select name="sede_preferida" class="adm-modal-select">
-                                <option value="Sede San Borja">Sede San Borja</option>
-                                <option value="Sede Lima Norte">Sede Lima Norte</option>
-                                <option value="Sede Surco">Sede Surco</option>
-                                <option value="Sede La Molina">Sede La Molina</option>
-                            </select>
+                            <input name="sede_preferida" class="adm-modal-input" value="<%= Html.texto(request.getAttribute("sedeAdmision")) %>" readonly>
                         </div>
                         <div class="adm-modal-field">
                             <label class="adm-modal-label">Cobertura</label>
@@ -428,11 +424,7 @@
 
                     <div class="adm-modal-field">
                         <label class="adm-modal-label">Canal preferido de confirmación</label>
-                        <select name="canal_aviso" class="adm-modal-select">
-                            <option value="WhatsApp">WhatsApp</option>
-                            <option value="SMS">SMS</option>
-                            <option value="Correo">Correo electrónico</option>
-                        </select>
+                        <select name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
                     </div>
                 </div>
 
@@ -508,20 +500,11 @@
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
                             <label class="adm-modal-label">Sede preferida</label>
-                            <select id="editSede" name="sede_preferida" class="adm-modal-select">
-                                <option value="Sede San Borja">Sede San Borja</option>
-                                <option value="Sede Lima Norte">Sede Lima Norte</option>
-                                <option value="Sede Surco">Sede Surco</option>
-                                <option value="Sede La Molina">Sede La Molina</option>
-                            </select>
+                            <input id="editSede" name="sede_preferida" class="adm-modal-input" readonly>
                         </div>
                         <div class="adm-modal-field">
                             <label class="adm-modal-label">Canal preferido</label>
-                            <select id="editCanal" name="canal_aviso" class="adm-modal-select">
-                                <option value="WhatsApp">WhatsApp</option>
-                                <option value="SMS">SMS</option>
-                                <option value="Correo">Correo</option>
-                            </select>
+                            <select id="editCanal" name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
                         </div>
                     </div>
                 </div>
@@ -649,7 +632,7 @@
 
             const canal = fila.getAttribute("data-canal") || "WhatsApp";
             const selectCanal = document.getElementById("editCanal");
-            if (selectCanal) selectCanal.value = canal;
+            if (selectCanal) selectCanal.value = "Correo";
 
             document.getElementById("modalEditarPaciente").style.display = "flex";
             if (window.lucide) lucide.createIcons();
