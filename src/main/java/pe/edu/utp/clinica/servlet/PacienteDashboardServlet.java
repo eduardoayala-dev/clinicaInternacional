@@ -53,6 +53,7 @@ public class PacienteDashboardServlet extends HttpServlet {
         if ("nueva".equals(action) || "/paciente/citas".equals(path)) {
             request.setAttribute("listaEspecialidades", citaDAO.obtenerEspecialidades());
             request.setAttribute("listaSedes", citaDAO.obtenerSedes());
+            try {request.setAttribute("catalogoMotivos",new pe.edu.utp.clinica.dao.MotivoCitaDAO().listarActivos());} catch(pe.edu.utp.clinica.dao.AgendaException e){response.setStatus(e.status());request.setAttribute("catalogoMotivos",java.util.List.of());request.setAttribute("errorCatalogoMotivos",e.getMessage());}
             request.setAttribute("nombrePaciente", nombrePaciente);
             String preMedId = request.getParameter("medicoId");
             String preEspId = request.getParameter("especialidadId");

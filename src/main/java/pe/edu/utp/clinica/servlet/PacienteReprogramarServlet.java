@@ -78,7 +78,10 @@ public class PacienteReprogramarServlet extends HttpServlet {
             List<Map<String, Object>> listaSedes = citaDAO.obtenerSedes();
             List<Map<String, Object>> listaEspecialidades = citaDAO.obtenerEspecialidades();
             List<Map<String, Object>> listaMedicos = citaDAO.obtenerMedicosDisponibles(idEspecialidad, idSede);
-            List<Map<String, Object>> listaMotivos = citaDAO.obtenerMotivosPorEspecialidad(idEspecialidad);
+            List<Map<String,Object>> catalogoMotivos;
+            try {catalogoMotivos=new pe.edu.utp.clinica.dao.MotivoCitaDAO().listarActivos();}
+            catch(AgendaException e){response.setStatus(e.status());catalogoMotivos=java.util.List.of();request.setAttribute("errorCatalogoMotivos",e.getMessage());}
+            List<Map<String,Object>> listaMotivos=catalogoMotivos.stream().filter(m->Integer.valueOf(idEspecialidad).equals(m.get("idEspecialidad"))).toList();
             int numNotifSinLeer = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
 
             String nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
@@ -89,6 +92,7 @@ public class PacienteReprogramarServlet extends HttpServlet {
             request.setAttribute("listaEspecialidades", listaEspecialidades);
             request.setAttribute("listaMedicos", listaMedicos);
             request.setAttribute("listaMotivos", listaMotivos);
+            request.setAttribute("catalogoMotivos",catalogoMotivos);
             request.setAttribute("numNotifSinLeer", numNotifSinLeer);
 
             request.getRequestDispatcher("/WEB-INF/views/paciente/reprogramar_cita.jsp").forward(request, response);

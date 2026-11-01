@@ -361,41 +361,7 @@ public class MedicoDAO {
         return list;
     }
 
-    public List<Map<String, Object>> obtenerMotivosPorEspecialidad(int idEspecialidad) {
-        List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT id_motivo, descripcion FROM motivo_consulta WHERE id_especialidad = ? AND estado = 'ACTIVO' ORDER BY id_motivo ASC";
-        try (Connection conn = connections.open();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idEspecialidad);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Map<String, Object> m = new HashMap<>();
-                    m.put("idMotivo", rs.getInt("id_motivo"));
-                    m.put("descripcion", rs.getString("descripcion"));
-                    lista.add(m);
-                }
-            }
-        } catch (Exception e) {
-            // Fallback sintético clínico
-        }
-
-        if (lista.isEmpty()) {
-            String[] seleccion = switch (idEspecialidad) {
-                case 1 -> new String[]{"Chequeo cardiológico preventivo", "Evaluación de hipertensión arterial", "Palpitaciones o arritmias", "Dolor torácico / Opresión", "Riesgo quirúrgico cardiovascular"};
-                case 2 -> new String[]{"Acné juvenil y del adulto", "Control de lunares y manchas", "Dermatitis o alergias cutáneas", "Caída de cabello / Alopecia", "Revisión preventiva de la piel"};
-                case 3 -> new String[]{"Control de niño sano / Crecimiento", "Vacunación preventiva", "Cuadros respiratorios o tos", "Fiebre persistente", "Problemas digestivos infantiles"};
-                case 4 -> new String[]{"Control de diabetes / Glucosa", "Evaluación integral de salud", "Fatiga crónica o malestar", "Hipertensión y perfil lipídico", "Revisión de chequeo anual"};
-                case 5 -> new String[]{"Medición de la vista / Refracción", "Ojo rojo o irritación ocular", "Sospecha de glaucoma / Presión", "Control de cataratas", "Fatiga visual por pantallas"};
-                default -> new String[]{"Consulta médica general", "Evaluación de síntomas agudos", "Control y seguimiento preventivo", "Lectura de exámenes de laboratorio", "Renovación o ajuste de medicación"};
-            };
-
-            for (int i = 0; i < seleccion.length; i++) {
-                Map<String, Object> m = new HashMap<>();
-                m.put("idMotivo", (i + 1));
-                m.put("descripcion", seleccion[i]);
-                lista.add(m);
-            }
-        }
-        return lista;
+    public List<Map<String, Object>> obtenerMotivosPorEspecialidad(int especialidad) {
+        return new MotivoCitaDAO(connections::open).listarEspecialidad(especialidad);
     }
 }

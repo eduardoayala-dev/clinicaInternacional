@@ -214,7 +214,7 @@
                                             int mId = (Integer) m.get("idMotivo");
                                             boolean sel = (cita != null && cita.get("idMotivo") != null && ((Integer)cita.get("idMotivo")) == mId);
                                     %>
-                                        <option value="<%= mId %>" <%= sel ? "selected" : "" %>><%= m.get("descripcion") %></option>
+                                        <option value="<%= mId %>" <%= sel ? "selected" : "" %>><%= pe.edu.utp.clinica.util.Html.texto(m.get("descripcion")) %></option>
                                     <%  }
                                     } %>
                                 </select>
@@ -435,7 +435,11 @@
     </main>
 
     <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
+    <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
+    <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
+    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js"></script>
     <script>
+        const catalogoMotivos=JSON.parse(document.getElementById("catalogoMotivos").textContent)||[];
         // Inicializar iconos lucide
         lucide.createIcons();
 
@@ -480,6 +484,8 @@
             const version = ++medicosRequest;
             horariosRequest++;
             const espId = document.getElementById('selectEspecialidad').value;
+            const motivo=document.getElementById("selectMotivo");
+            ClinicaMotivos.poblar(motivo,catalogoMotivos,espId,motivo.value);
             const sedeId = document.getElementById('selectSede').value;
             const select = document.getElementById('selectMedico');
             const info = document.getElementById('medicosEstado');

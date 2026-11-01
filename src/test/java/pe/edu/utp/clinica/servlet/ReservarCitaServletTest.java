@@ -14,11 +14,12 @@ import static org.junit.jupiter.api.Assertions.*;
 class ReservarCitaServletTest {
     private static class Dao extends CitaDAO {
         int propietario;
+        Integer motivo;
         int llamadas;
         AgendaException error;
         @Override public int obtenerIdPacientePorUsuarioId(int id) { return 5; }
-        @Override public int reservarCitaValidada(int paciente,int medico,String fecha,String hora,String urgencia) {
-            llamadas++; propietario=paciente;
+        @Override public int reservarCitaValidada(int paciente,int medico,String fecha,String hora,String urgencia,Integer motivo) {
+            llamadas++; propietario=paciente;this.motivo=motivo;
             if(error!=null) throw error;
             return 72;
         }
@@ -29,6 +30,7 @@ class ReservarCitaServletTest {
         x.parameters.put("idMedico","1");
         x.parameters.put("fecha","2026-12-01");
         x.parameters.put("hora","09:00");
+        x.parameters.put("idMotivo","17");
         x.parameters.put("idPaciente","999");
         x.headers.put("Accept","application/json");
         return x;
@@ -39,7 +41,7 @@ class ReservarCitaServletTest {
     }
     @Test void createdContractUsesAuthenticatedPatientAndActualAppointmentId() throws Exception {
         var x=request(); var dao=new Dao(); enviar(dao,x);
-        assertEquals(201,x.status); assertEquals(5,dao.propietario);
+        assertEquals(201,x.status); assertEquals(5,dao.propietario);assertEquals(17,dao.motivo);
         var body=new ObjectMapper().readTree(x.body.toString());
         assertEquals("CITA_RESERVADA",body.get("code").asText());
         assertEquals(72,body.get("data").get("idCita").asInt());
@@ -50,6 +52,14 @@ class ReservarCitaServletTest {
         enviar(dao,x); assertEquals(409,x.status);
         var body=new ObjectMapper().readTree(x.body.toString());
         assertTrue(body.get("data").isNull()); assertEquals("HORARIO_NO_DISPONIBLE",body.get("code").asText());
+    }
+    @Test void unMotivoAusenteOTextoLibreNoLlegaAlDao() throws Exception {
+        for(String motivo:new String[]{"","Dolor de cabeza","0","-1"}) {
+            var x=request();var dao=new Dao();x.parameters.put("idMotivo",motivo);
+            enviar(dao,x);assertEquals(400,x.status);assertEquals(0,dao.llamadas);
+        }
+        var x=request();var dao=new Dao();x.parameters.remove("idMotivo");
+        enviar(dao,x);assertEquals(400,x.status);assertEquals(0,dao.llamadas);
     }
     @Test void invalidDoctorAndUnauthenticatedRequestsNeverReachReservation() throws Exception {
         var x=request(); var dao=new Dao(); x.parameters.put("idMedico","otro");

@@ -36,6 +36,12 @@
     {
       "key": "idEspecialidad",
       "value": "1"
+    },
+    {
+      "key": "motivoId",
+      "value": "1",
+      "type": "string",
+      "description": "ID de un motivo ACTIVO de la especialidad del médico. El valor 1 corresponde a Cardiología en el esquema inicial."
     }
   ],
   "item": [
@@ -393,6 +399,11 @@
             {
               "key": "urgencia",
               "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "idMotivo",
+              "value": "{{motivoId}}",
               "type": "text"
             }
           ]
@@ -1204,6 +1215,11 @@
             {
               "key": "urgencia",
               "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "idMotivo",
+              "value": "{{motivoId}}",
               "type": "text"
             }
           ]

@@ -60,6 +60,20 @@ abstract class AgendaCitaContrato {
     private int publicar() { return dao.publicar(1, 1, "2026-12-01", "09:00", "11:00", 30); }
     private int reservar(int paciente, String hora) { return dao.reservar(paciente, 1, "2026-12-01", hora, "MEDIA"); }
 
+    @Test void reservaConservaElMotivoDelCatalogo() throws Exception {
+        publicar();
+        int cita=dao.reservar(1,1,"2026-12-01","09:00","MEDIA",1);
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita="+cita+" AND id_motivo=1"));
+    }
+    @Test void motivoAjenoInactivoOInexistenteNoGeneraCitaNiNotificacion() throws Exception {
+        publicar();
+        for(int motivo:new int[]{2,3,999}) {
+            assertEquals(400,assertThrows(AgendaException.class,()->dao.reservar(1,1,"2026-12-01","09:00","MEDIA",motivo)).status());
+        }
+        assertEquals(0,count("SELECT COUNT(*) FROM cita"));
+        assertEquals(0,count("SELECT COUNT(*) FROM notificacion"));
+    }
+
     @Test void publicationAndReservationUseActualBlockAndCreateNotification() throws Exception {
         int bloque = publicar(); int cita = reservar(1,"09:00");
         assertTrue(cita > 0);
