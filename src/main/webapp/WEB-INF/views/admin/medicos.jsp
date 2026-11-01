@@ -92,7 +92,7 @@
             <% if (flashMessage != null) { %>
                 <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
-                    <%= flashMessage %>
+                    <%= Html.texto(flashMessage) %>
                 </div>
             <% } %>
 
@@ -122,7 +122,7 @@
                 <div class="adm-search-input-wrap">
                     <label class="adm-filter-label" for="inputBuscar">Buscar</label>
                     <div style="position: relative;">
-                        <input type="text" id="inputBuscar" name="query" class="adm-search-input" placeholder="Nombre o colegiatura (CMP)" value="<%= filtroQuery %>">
+                        <input type="text" id="inputBuscar" name="query" class="adm-search-input" placeholder="Nombre o colegiatura (CMP)" value="<%= Html.texto(filtroQuery) %>">
                         <i data-lucide="search" class="adm-search-icon"></i>
                     </div>
                 </div>
@@ -132,13 +132,13 @@
                     <label class="adm-filter-label" for="selectEspecialidad">Especialidad</label>
                     <select id="selectEspecialidad" name="especialidad" class="adm-select" onchange="document.getElementById('formFiltros').submit()">
                         <option value="">Todas</option>
-                        <% if (especialidades != null) { 
+                        <% if (especialidades != null) {
                             for (Map<String, Object> esp : especialidades) {
                                 String nEsp = (String) esp.get("nombre");
                                 boolean sel = nEsp != null && nEsp.equalsIgnoreCase(filtroEspecialidad);
                         %>
-                            <option value="<%= nEsp %>" <%= sel ? "selected" : "" %>><%= nEsp %></option>
-                        <%  } 
+                            <option value="<%= Html.texto(nEsp) %>" <%= Html.texto(sel ? "selected" : "") %>><%= Html.texto(nEsp) %></option>
+                        <%  }
                            } %>
                     </select>
                 </div>
@@ -148,13 +148,13 @@
                     <label class="adm-filter-label" for="selectSede">Sede</label>
                     <select id="selectSede" name="sede" class="adm-select" onchange="document.getElementById('formFiltros').submit()">
                         <option value="">Todas las sedes</option>
-                        <% if (sedes != null) { 
+                        <% if (sedes != null) {
                             for (Map<String, Object> s : sedes) {
                                 String nSede = (String) s.get("nombre");
                                 boolean sel = nSede != null && nSede.equalsIgnoreCase(filtroSede);
                         %>
-                            <option value="<%= nSede %>" <%= sel ? "selected" : "" %>><%= nSede %></option>
-                        <%  } 
+                            <option value="<%= Html.texto(nSede) %>" <%= Html.texto(sel ? "selected" : "") %>><%= Html.texto(nSede) %></option>
+                        <%  }
                            } %>
                     </select>
                 </div>
@@ -163,9 +163,9 @@
                 <div class="adm-select-wrap">
                     <label class="adm-filter-label" for="selectEstado">Estado</label>
                     <select id="selectEstado" name="estado" class="adm-select" onchange="document.getElementById('formFiltros').submit()">
-                        <option value="ACTIVO" <%= "ACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "" %>>Activo</option>
-                        <option value="INACTIVO" <%= "INACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "" %>>Inactivo</option>
-                        <option value="Todos" <%= "Todos".equalsIgnoreCase(filtroEstado) ? "selected" : "" %>>Todos</option>
+                        <option value="ACTIVO" <%= Html.texto("ACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Activo</option>
+                        <option value="INACTIVO" <%= Html.texto("INACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Inactivo</option>
+                        <option value="Todos" <%= Html.texto("Todos".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Todos</option>
                     </select>
                 </div>
             </form>
@@ -173,9 +173,7 @@
             <!-- BARRA DE ACCIONES (NUEVO MÉDICO / EXPORTAR EXCEL / REINICIAR) -->
             <div class="adm-actions-bar">
                 <div class="adm-actions-left">
-                    <button type="button" class="adm-btn-primary" onclick="abrirModalNuevoMedico()">
-                        <i data-lucide="plus" style="width: 16px; height: 16px;"></i> Nuevo médico
-                    </button>
+                    <span>El administrador del sistema gestiona las altas mediante invitación. Este padrón muestra los médicos de tu sede.</span>
                     <button type="button" class="adm-btn-outline" onclick="exportarExcel()">
                         <i data-lucide="download" style="width: 16px; height: 16px;"></i> Exportar Excel
                     </button>
@@ -202,7 +200,7 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <% if (listaMedicos != null && !listaMedicos.isEmpty()) { 
+                        <% if (listaMedicos != null && !listaMedicos.isEmpty()) {
                             for (Map<String, Object> m : listaMedicos) {
                                 Object idMedObj = m.get("idMedico");
                                 int idMedico = idMedObj != null ? ((Number) idMedObj).intValue() : 1;
@@ -216,14 +214,14 @@
                                 boolean esActivo = est == null || "ACTIVO".equalsIgnoreCase(est);
                         %>
                             <tr>
-                                <td class="adm-td-cmp"><%= cmp %></td>
+                                <td class="adm-td-cmp"><%= Html.texto(cmp) %></td>
                                 <td>
-                                    <div class="adm-td-name"><%= nombre %></div>
-                                    <div class="adm-td-sub">DNI <%= dni %></div>
+                                    <div class="adm-td-name"><%= Html.texto(nombre) %></div>
+                                    <div class="adm-td-sub">DNI <%= Html.texto(dni) %></div>
                                 </td>
-                                <td><%= especialidad %></td>
-                                <td><%= sede %></td>
-                                <td><%= horas != null ? horas : "30 h" %></td>
+                                <td><%= Html.texto(especialidad) %></td>
+                                <td><%= Html.texto(sede) %></td>
+                                <td><%= Html.texto(horas != null ? horas : "30 h") %></td>
                                 <td>
                                     <% if (esActivo) { %>
                                         <span class="adm-badge-status activo">Activo</span>
@@ -232,15 +230,15 @@
                                     <% } %>
                                 </td>
                                 <td style="text-align: right; white-space: nowrap;">
-                                    <button type="button" class="adm-btn-action-turnos" onclick="abrirModalTurnos('<%= idMedico %>', '<%= nombre != null ? nombre.replace("'", "\\'") : "" %>', '<%= cmp %>', '<%= especialidad != null ? especialidad.replace("'", "\\'") : "" %>', '<%= sede != null ? sede.replace("'", "\\'") : "" %>')">
+                                    <button type="button" class="adm-btn-action-turnos" data-turnos-medico="<%= Html.texto(idMedico) %>" data-nombre="<%= Html.texto(nombre) %>" data-cmp="<%= Html.texto(cmp) %>" data-especialidad="<%= Html.texto(especialidad) %>" data-sede="<%= Html.texto(sede) %>">
                                         <i data-lucide="calendar" style="width: 13px; height: 13px;"></i> Turnos
                                     </button>
-                                    <a href="javascript:void(0)" class="adm-btn-action-edit" onclick="editarMedico('<%= cmp %>', '<%= nombre != null ? nombre.replace("'", "\\'") : "" %>')">
+                                    <a href="javascript:void(0)" class="adm-btn-action-edit" data-editar-medico data-nombre="<%= Html.texto(nombre) %>" data-cmp="<%= Html.texto(cmp) %>">
                                         Editar
                                     </a>
                                 </td>
                             </tr>
-                        <%  } 
+                        <%  }
                            } else { %>
                             <tr>
                                 <td colspan="7" style="text-align: center; padding: 40px; color: #64748b;">
@@ -254,11 +252,11 @@
                 <!-- PIE DE TABLA / PAGINACIÓN -->
                 <div class="adm-table-footer">
                     <div>
-                        Mostrando <%= medicosCount %> de <%= totalMedicos %> médicos
+                        Mostrando <%= Html.texto(medicosCount) %> de <%= Html.texto(totalMedicos) %> médicos
                     </div>
                     <div class="adm-pagination-controls">
                         <button type="button" class="adm-btn-page" disabled>‹ Anterior</button>
-                        <span>Página 1 de <%= Math.max(1, (int) Math.ceil((double) totalMedicos / 5)) %></span>
+                        <span>Página 1 de <%= Html.texto(Math.max(1, (int) Math.ceil((double) totalMedicos / 5))) %></span>
                         <button type="button" class="adm-btn-page">Siguiente ›</button>
                     </div>
                 </div>
@@ -270,7 +268,7 @@
                 <div class="adm-kpi-card">
                     <div>
                         <div class="adm-kpi-label">Total en padrón</div>
-                        <div class="adm-kpi-num"><%= totalMedicos %></div>
+                        <div class="adm-kpi-num"><%= Html.texto(totalMedicos) %></div>
                         <div class="adm-kpi-sub">Médicos registrados</div>
                     </div>
                     <div class="adm-kpi-icon-wrap">
@@ -282,9 +280,9 @@
                 <div class="adm-kpi-card">
                     <div>
                         <div class="adm-kpi-label">Total activos</div>
-                        <div class="adm-kpi-num"><%= totalActivos %></div>
+                        <div class="adm-kpi-num"><%= Html.texto(totalActivos) %></div>
                         <div class="adm-kpi-sub">
-                            <%= totalMedicos > 0 ? Math.round(((double) totalActivos / totalMedicos) * 100) : 94 %> % del padrón
+                            <%= Html.texto(totalMedicos > 0 ? Math.round(((double) totalActivos / totalMedicos) * 100) : 94) %> % del padrón
                         </div>
                     </div>
                     <div class="adm-kpi-icon-wrap" style="color: #16a34a; background: #dcfce7;">
@@ -296,7 +294,7 @@
                 <div class="adm-kpi-card">
                     <div>
                         <div class="adm-kpi-label">Especialidades homologadas</div>
-                        <div class="adm-kpi-num"><%= totalEspecialidades %></div>
+                        <div class="adm-kpi-num"><%= Html.texto(totalEspecialidades) %></div>
                         <div class="adm-kpi-sub">En 4 sedes de la red</div>
                     </div>
                     <div class="adm-kpi-icon-wrap">
@@ -309,73 +307,7 @@
     </div>
 
     <!-- MODAL DE REGISTRO: NUEVO MÉDICO -->
-    <div class="adm-modal-overlay" id="modalNuevoMedico">
-        <div class="adm-modal-box">
-            <div class="adm-modal-head">
-                <div class="adm-modal-title">Registrar Nuevo Médico en el Padrón</div>
-                <button type="button" class="adm-modal-close" onclick="cerrarModalNuevoMedico()">&times;</button>
-            </div>
 
-            <form action="${pageContext.request.contextPath}/admin/medicos" method="POST">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                <input type="hidden" name="action" value="registrarMedico">
-
-                <div class="adm-form-group">
-                    <label>Nombres Completos</label>
-                    <input type="text" name="nombres" class="adm-form-input" required placeholder="Ej. Carlos Eduardo">
-                </div>
-
-                <div class="adm-form-group">
-                    <label>Apellidos Completos</label>
-                    <input type="text" name="apellidos" class="adm-form-input" required placeholder="Ej. Mendoza Morales">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="adm-form-group">
-                        <label>Colegiatura (CMP)</label>
-                        <input type="text" name="cmp" class="adm-form-input" required placeholder="045821">
-                    </div>
-                    <div class="adm-form-group">
-                        <label>DNI</label>
-                        <input type="text" name="dni" class="adm-form-input" required placeholder="09452178">
-                    </div>
-                </div>
-
-                <div class="adm-form-group">
-                    <label>Correo Electrónico Institucional</label>
-                    <input type="email" name="email" class="adm-form-input" required placeholder="cmendoza@clinicainternacional.com.pe">
-                </div>
-
-                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
-                    <div class="adm-form-group">
-                        <label>Especialidad</label>
-                        <select name="idEspecialidad" class="adm-form-select" required>
-                            <% if (especialidades != null) { 
-                                for (Map<String, Object> esp : especialidades) { %>
-                                    <option value="<%= esp.get("id") %>"><%= esp.get("nombre") %></option>
-                            <%  } 
-                               } %>
-                        </select>
-                    </div>
-                    <div class="adm-form-group">
-                        <label>Sede Principal</label>
-                        <select name="idSede" class="adm-form-select" required>
-                            <% if (sedes != null) { 
-                                for (Map<String, Object> s : sedes) { %>
-                                    <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
-                            <%  } 
-                               } %>
-                        </select>
-                    </div>
-                </div>
-
-                <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 24px;">
-                    <button type="button" class="adm-btn-outline" onclick="cerrarModalNuevoMedico()">Cancelar</button>
-                    <button type="submit" class="adm-btn-primary">Guardar en Padrón</button>
-                </div>
-            </form>
-        </div>
-    </div>
 
     <!-- MODAL DE GESTIÓN: TURNOS Y DISPONIBILIDAD -->
     <div class="adm-modal-overlay" id="modalGestionarTurnos" style="display: none;">
@@ -469,10 +401,10 @@
                         <div class="adm-form-group" style="margin-bottom: 0;">
                             <label style="font-size: 12px; font-weight: 600; color: #334155; margin-bottom: 4px; display: block;">Sede Hospitalaria</label>
                             <select id="formTurnoSede" name="idSede" class="adm-form-select" required style="font-size: 13px; padding: 8px 10px;">
-                                <% if (sedes != null) { 
+                                <% if (sedes != null) {
                                     for (Map<String, Object> s : sedes) { %>
-                                        <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
-                                <%  } 
+                                        <option value="<%= Html.texto(s.get("id")) %>"><%= Html.texto(s.get("nombre")) %></option>
+                                <%  }
                                    } %>
                             </select>
                         </div>
@@ -501,44 +433,20 @@
     <!-- SCRIPTS -->
     <script>
         lucide.createIcons();
+        document.querySelectorAll('[data-turnos-medico]').forEach(boton=>boton.addEventListener('click',()=>abrirModalTurnos(boton.dataset.turnosMedico,boton.dataset.nombre,boton.dataset.cmp,boton.dataset.especialidad,boton.dataset.sede)));
+        document.querySelectorAll('[data-editar-medico]').forEach(boton=>boton.addEventListener('click',()=>editarMedico(boton.dataset.cmp,boton.dataset.nombre)));
 
         // Datos de disponibilidades pasados desde el backend
-        const turnosData = [
-            <% if (listaDisponibilidades != null) {
-                for (int i = 0; i < listaDisponibilidades.size(); i++) {
-                    Map<String, Object> d = listaDisponibilidades.get(i);
-                    if (i > 0) out.print(",");
-            %>
-            {
-                idDisponibilidad: <%= d.get("idDisponibilidad") %>,
-                idMedico: <%= d.get("idMedico") %>,
-                idSede: <%= d.get("idSede") %>,
-                sedeNombre: "<%= d.get("sedeNombre") %>",
-                fecha: "<%= d.get("fecha") %>",
-                horaInicio: "<%= d.get("horaInicio") %>",
-                horaFin: "<%= d.get("horaFin") %>",
-                duracionMinutos: <%= d.get("duracionMinutos") %>,
-                estado: "<%= d.get("estado") %>",
-                citasAgendadas: <%= d.get("citasAgendadas") %>
-            }
-            <%  }
-               } %>
-        ];
+        const turnosData = <%= Html.json(listaDisponibilidades == null ? java.util.List.of() : listaDisponibilidades) %>;
 
-        function abrirModalNuevoMedico() {
-            document.getElementById('modalNuevoMedico').style.display = 'flex';
-        }
 
-        function cerrarModalNuevoMedico() {
-            document.getElementById('modalNuevoMedico').style.display = 'none';
-        }
 
         function abrirModalTurnos(idMedico, nombre, cmp, especialidad, sede) {
             document.getElementById('formTurnoIdMedico').value = idMedico;
             document.getElementById('turnoDocNombre').textContent = nombre;
             document.getElementById('turnoDocCmp').textContent = cmp;
             document.getElementById('turnoDocEsp').textContent = especialidad + (sede ? ' · ' + sede : '');
-            
+
             const hoyStr = new Date().toISOString().split('T')[0];
             const fechaInput = document.getElementById('formTurnoFecha');
             if (fechaInput && !fechaInput.value) {
@@ -561,12 +469,13 @@
             if (window.lucide) lucide.createIcons();
         }
 
+        function textoTurno(valor) { const nodo=document.createElement('span'); nodo.textContent=String(valor ?? ''); return nodo.innerHTML; }
         function renderizarTurnosMedico(idMedico) {
             const list = turnosData.filter(t => t.idMedico == idMedico);
             const tbody = document.getElementById('tbodyTurnosMedico');
             const emptyDiv = document.getElementById('emptyTurnosMensaje');
             const tableDiv = document.getElementById('tableWrapTurnos');
-            
+
             if (list.length === 0) {
                 tbody.innerHTML = '';
                 tableDiv.style.display = 'none';
@@ -574,7 +483,7 @@
             } else {
                 tableDiv.style.display = 'block';
                 emptyDiv.style.display = 'none';
-                
+
                 let html = '';
                 list.forEach(t => {
                     const esPub = (t.estado === 'PUBLICADO');
@@ -585,12 +494,12 @@
                     const btnBorder = esPub ? '#fca5a5' : '#86efac';
                     const btnBg = esPub ? '#fef2f2' : '#f0fdf4';
                     const btnText = esPub ? 'Bloquear' : 'Habilitar';
-                    
+
                     html += '<tr style="border-bottom: 1px solid #f1f5f9;">' +
-                        '<td style="padding: 10px; font-weight: 600; color: #1e293b;">' + t.fecha + '</td>' +
-                        '<td style="padding: 10px; color: #334155;">' + t.horaInicio + ' - ' + t.horaFin + ' <span style="font-size: 11px; color:#64748b;">(' + t.duracionMinutos + ' min)</span></td>' +
-                        '<td style="padding: 10px; color: #475569;">' + t.sedeNombre + '</td>' +
-                        '<td style="padding: 10px; text-align: center;"><span style="font-weight: 700; color:' + (t.citasAgendadas > 0 ? '#0284c7' : '#94a3b8') + ';">' + t.citasAgendadas + '</span></td>' +
+                        '<td style="padding: 10px; font-weight: 600; color: #1e293b;">' + textoTurno(t.fecha) + '</td>' +
+                        '<td style="padding: 10px; color: #334155;">' + textoTurno(t.horaInicio) + ' - ' + textoTurno(t.horaFin) + ' <span style="font-size: 11px; color:#64748b;">(' + textoTurno(t.duracionMinutos) + ' min)</span></td>' +
+                        '<td style="padding: 10px; color: #475569;">' + textoTurno(t.sedeNombre) + '</td>' +
+                        '<td style="padding: 10px; text-align: center;"><span style="font-weight: 700; color:' + (t.citasAgendadas > 0 ? '#0284c7' : '#94a3b8') + ';">' + textoTurno(t.citasAgendadas) + '</span></td>' +
                         '<td style="padding: 10px; text-align: center;"><span class="' + badgeClass + '">' + badgeText + '</span></td>' +
                         '<td style="padding: 10px; text-align: right;">' +
                             '<form method="POST" action="${pageContext.request.contextPath}/admin/medicos" style="margin: 0; display: inline;">' +

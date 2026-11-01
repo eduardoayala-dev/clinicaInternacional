@@ -14,6 +14,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS reporte;
 DROP TABLE IF EXISTS indicador;
 DROP TABLE IF EXISTS reasignacion_inteligente;
+DROP TABLE IF EXISTS invitacion_personal;
 DROP TABLE IF EXISTS correo_oferta;
 DROP TABLE IF EXISTS correo_cita;
 DROP TABLE IF EXISTS notificacion;
@@ -784,4 +785,18 @@ CREATE TABLE IF NOT EXISTS correo_oferta (
     CONSTRAINT chk_correo_oferta_estado CHECK (estado IN ('PENDIENTE','ENVIANDO','ENVIADO','NO_CONFIRMADO','OMITIDO')),
     CONSTRAINT chk_correo_oferta_intentos CHECK (intentos BETWEEN 0 AND 3),
     INDEX idx_correo_oferta_pendiente (estado,disponible_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS invitacion_personal (
+    id_usuario INT PRIMARY KEY,
+    token_hash BINARY(32) NOT NULL UNIQUE,
+    creada_por INT NOT NULL,
+    creada_en DATETIME(6) NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    utilizada_en DATETIME(6) NULL,
+    revocada_en DATETIME(6) NULL,
+    estado_envio VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    CONSTRAINT fk_invitacion_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
+    CONSTRAINT fk_invitacion_actor FOREIGN KEY (creada_por) REFERENCES usuario(id_usuario),
+    CONSTRAINT chk_invitacion_envio CHECK (estado_envio IN ('PENDIENTE','ENVIADO','NO_CONFIRMADO'))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

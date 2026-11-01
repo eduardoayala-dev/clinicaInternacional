@@ -40,6 +40,17 @@ public final class PlantillasCorreo {
         return new Correo(destinatario,"Tu correo de acceso se actualizó — Sistema de citas",texto,marco(contenido));
     }
 
+    public static Correo invitacionPersonal(String destinatario,String url) {
+        String texto="Te invitaron al portal de personal de Clínica Internacional.\n\nCrea tu contraseña desde este enlace de un solo uso, válido durante 30 minutos:\n"+url
+                +"\n\nLa cuenta no permite iniciar sesión hasta completar este paso. Si no reconoces la invitación, ignórala y contacta al administrador. No compartas el enlace.";
+        String html="<h1 style=\"color:#0d2b4e;font-family:Georgia,serif\">Activa tu cuenta de personal</h1>"
+                +"<p style=\"color:#406c96;line-height:1.6\">Te invitaron al portal de personal. Elige tu propia contraseña para habilitar el acceso.</p>"
+                +"<p><a style=\"display:inline-block;padding:14px 22px;background:#0f172a;color:white;border-radius:8px;text-decoration:none\" href=\""+Html.texto(url)+"\">Crear mi contraseña</a></p>"
+                +"<p style=\"color:#406c96;line-height:1.6\">El enlace vence en 30 minutos y solo puede utilizarse una vez. Si ya venció, solicita otro al administrador.</p>"
+                +"<p>No compartas este enlace. Si no reconoces la invitación, no completes la activación.</p>";
+        return new Correo(destinatario,"Invitación al portal de personal — Clínica Internacional",texto,marco(html,"Invitación de personal"));
+    }
+
     private static String marco(String contenido) {
         return marco(contenido,"Seguridad de cuenta");
     }
