@@ -187,6 +187,7 @@ public class MedicoDAO {
         try (Connection conn = connections.open()) {
             Map<LocalTime, Integer> publicados = publishedSlots(conn, idMedico, date);
             List<Ocupacion> ocupados = occupiedSlots(conn, idMedico, date);
+            agregarRetenciones(conn,idMedico,date,ocupados);
             boolean today = date.equals(LocalDate.now(clock));
             LocalTime cutoff = LocalTime.now(clock);
             return publicados.entrySet().stream().filter(slot -> !today || slot.getKey().isAfter(cutoff))
@@ -195,6 +196,18 @@ public class MedicoDAO {
                     .toList();
         } catch (SQLException e) {
             throw new CatalogoDatosException(e);
+        }
+    }
+
+    private void agregarRetenciones(Connection conn,int medico,LocalDate fecha,List<Ocupacion> ocupados) throws SQLException {
+        try(var ps=conn.prepareStatement("SELECT inicio,duracion_minutos FROM retencion_cupo WHERE id_medico=? AND inicio>=? AND inicio<? AND vence>?")) {
+            ps.setInt(1,medico);ps.setObject(2,fecha.atStartOfDay());ps.setObject(3,fecha.plusDays(1).atStartOfDay());ps.setObject(4,java.time.LocalDateTime.now(clock));
+            try(var rs=ps.executeQuery()) {
+                while(rs.next()) {
+                    int inicio=rs.getObject(1,java.time.LocalDateTime.class).toLocalTime().toSecondOfDay();
+                    ocupados.add(new Ocupacion(inicio,inicio+rs.getInt(2)*60));
+                }
+            }
         }
     }
 

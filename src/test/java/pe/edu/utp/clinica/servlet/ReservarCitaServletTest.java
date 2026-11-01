@@ -18,8 +18,7 @@ class ReservarCitaServletTest {
         int llamadas;
         AgendaException error;
         @Override public int obtenerIdPacientePorUsuarioId(int id) { return 5; }
-        @Override public int reservarCitaValidada(int paciente,int medico,String fecha,String hora,String urgencia,Integer motivo) {
-            assertEquals("MEDIA",urgencia);
+        @Override public int reservarCitaRetenida(int paciente,int medico,String fecha,String hora,Integer motivo,String identificador) {
             llamadas++; propietario=paciente;this.motivo=motivo;
             if(error!=null) throw error;
             return 72;

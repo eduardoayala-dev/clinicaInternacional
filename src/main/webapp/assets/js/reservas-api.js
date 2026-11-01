@@ -20,5 +20,17 @@
         }
         return result.data;
     }
-    globalThis.ClinicaReservas = Object.freeze({reservar});
+    async function retencion(url, params, csrf) {
+        const response = await fetch(url, {method:'POST',credentials:'same-origin',body:params,
+            headers:{'X-CSRF-Token':csrf,Accept:'application/json'}});
+        const result=await response.json();
+        if(!response.ok)throw new Error(result?.message || 'No se pudo retener el cupo.');
+        if(params.get('accion')==='liberar')return null;
+        if(result?.code!=='CUPO_RETENIDO' || typeof result.data?.identificador!=='string'
+            || !/^[a-f0-9-]{36}$/.test(result.data.identificador)
+            || !Number.isInteger(result.data.segundosRestantes) || result.data.segundosRestantes<=0 || result.data.segundosRestantes>300)
+            throw new Error('No se pudo verificar la retención. Vuelve a seleccionar el horario.');
+        return result.data;
+    }
+    globalThis.ClinicaReservas = Object.freeze({reservar,retencion});
 })();

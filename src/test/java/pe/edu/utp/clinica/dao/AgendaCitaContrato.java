@@ -52,6 +52,7 @@ abstract class AgendaCitaContrato {
         sql("INSERT INTO sede VALUES(1,'ACTIVO'),(2,'ACTIVO')");
         sql("INSERT INTO medico VALUES(1,3,1,1,'ACTIVO'),(2,4,1,1,'ACTIVO')");
         sql("INSERT INTO motivo_cita VALUES(1,1,'ACTIVO'),(2,2,'ACTIVO'),(3,1,'INACTIVO')");
+        sql("CREATE TABLE retencion_cupo(id_paciente INT PRIMARY KEY,id_medico INT,inicio DATETIME,duracion_minutos INT,identificador VARCHAR(36) UNIQUE,vence DATETIME,UNIQUE(id_medico,inicio))");
         dao = new AgendaCitaDAO(this::abrir, clock);
     }
 
@@ -123,6 +124,45 @@ abstract class AgendaCitaContrato {
             assertEquals("ALTA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
             assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,2,java.time.LocalDate.of(2026,10,28)));
         }
+    }
+    @Test void retencionExclusivaNoCreaCitaYSeConsumeAlConfirmar() throws Exception {
+        publicar();var retenida=dao.retener(1,1,"2026-12-01","09:00");
+        assertEquals(300,retenida.segundosRestantes());assertEquals(0,count("SELECT COUNT(*) FROM cita"));
+        assertEquals(0,count("SELECT COUNT(*) FROM notificacion"));
+        assertEquals(409,assertThrows(AgendaException.class,()->dao.retener(2,1,"2026-12-01","09:00")).status());
+        assertEquals(409,assertThrows(AgendaException.class,()->reservar(2,"09:00")).status());
+        int cita=dao.reservarRetenida(1,1,"2026-12-01","09:00",1,retenida.identificador());
+        assertTrue(cita>0);assertEquals(0,count("SELECT COUNT(*) FROM retencion_cupo"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita"));
+        assertEquals(409,assertThrows(AgendaException.class,()->dao.reservarRetenida(1,1,"2026-12-01","09:00",1,retenida.identificador())).status());
+    }
+    @Test void repetirRetencionNoReiniciaElPlazoYVenceEnElLimite() throws Exception {
+        publicar();var original=dao.retener(1,1,"2026-12-01","09:00");
+        var despues=new AgendaCitaDAO(this::abrir,Clock.offset(clock,java.time.Duration.ofSeconds(60)));
+        var repetida=despues.retener(1,1,"2026-12-01","09:00");
+        assertEquals(original.identificador(),repetida.identificador());assertEquals(240,repetida.segundosRestantes());
+        var vencida=new AgendaCitaDAO(this::abrir,Clock.offset(clock,java.time.Duration.ofSeconds(300)));
+        assertEquals(409,assertThrows(AgendaException.class,()->vencida.reservarRetenida(1,1,"2026-12-01","09:00",1,original.identificador())).status());
+        assertTrue(vencida.retener(2,1,"2026-12-01","09:00").segundosRestantes()>0);
+    }
+    @Test void retencionCompruebaPropiedadHorarioYRollback() throws Exception {
+        publicar();var r=dao.retener(1,1,"2026-12-01","09:00");
+        dao.liberarRetencion(2,r.identificador());assertEquals(1,count("SELECT COUNT(*) FROM retencion_cupo"));
+        assertEquals(409,assertThrows(AgendaException.class,()->dao.reservarRetenida(2,1,"2026-12-01","09:00",1,r.identificador())).status());
+        assertEquals(409,assertThrows(AgendaException.class,()->dao.reservarRetenida(1,1,"2026-12-01","09:30",1,r.identificador())).status());
+        assertEquals(400,assertThrows(AgendaException.class,()->dao.reservarRetenida(1,1,"2026-12-01","09:00",2,r.identificador())).status());
+        assertEquals(1,count("SELECT COUNT(*) FROM retencion_cupo"));assertEquals(0,count("SELECT COUNT(*) FROM cita"));
+        dao.liberarRetencion(1,r.identificador());assertEquals(0,count("SELECT COUNT(*) FROM retencion_cupo"));
+        assertTrue(dao.retener(2,1,"2026-12-01","09:00").segundosRestantes()>0);
+    }
+    @Test void dosPacientesNoPuedenRetenerElMismoCupoSimultaneamente() throws Exception {
+        publicar();var inicio=new CountDownLatch(1);var pool=Executors.newFixedThreadPool(2);
+        try {
+            var tareas=new java.util.ArrayList<java.util.concurrent.Future<Boolean>>();
+            for(int paciente:new int[]{1,2})tareas.add(pool.submit(()->{inicio.await();try{dao.retener(paciente,1,"2026-12-01","09:00");return true;}catch(AgendaException e){assertEquals(409,e.status());return false;}}));
+            inicio.countDown();int ganadores=0;for(var t:tareas)if(t.get(15,TimeUnit.SECONDS))ganadores++;
+            assertEquals(1,ganadores);assertEquals(1,count("SELECT COUNT(*) FROM retencion_cupo"));
+        } finally {pool.shutdownNow();}
     }
 
     @Test void reservaConservaElMotivoDelCatalogo() throws Exception {

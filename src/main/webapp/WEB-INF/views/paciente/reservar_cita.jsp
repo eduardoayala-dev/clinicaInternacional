@@ -413,6 +413,7 @@
                         </div>
 
                         <!-- FORMULARIO DE ENVÍO POST -->
+                        <input type="hidden" name="retencion" id="finalRetencion" form="formReservaFinal">
                         <form id="formReservaFinal" action="${pageContext.request.contextPath}/paciente/reservar" method="POST">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                             <input type="hidden" name="idMedico" id="finalIdMedico" value="">
@@ -844,6 +845,7 @@
         }
 
         function volverAPaso2() {
+            liberarRetencionActual();
             mostrarPaso(2);
         }
 
@@ -1209,7 +1211,10 @@
             }
         }
 
-        function reservarConDoctor(idMed, nombreMed) {
+        let reteniendoCupo = false;
+        let retencionActual = null;
+        async function reservarConDoctor(idMed, nombreMed) {
+            if(reteniendoCupo)return;
             const card = document.getElementById('docScheduleCard_' + idMed);
             let slotSeleccionado = card ? card.querySelector('.slot-pill-btn.selected') : null;
 
@@ -1236,7 +1241,18 @@
                 state.consultorio = card.getAttribute('data-consultorio') || '';
             }
 
-            avanzarAPaso3();
+            reteniendoCupo=true;
+            const boton=card?.querySelector('.btn-reservar-slot');
+            if(boton){boton.disabled=true;boton.textContent='Reservando cupo…';}
+            try {
+                const params=new URLSearchParams({idMedico:state.medicoId,fecha:state.fecha,hora:state.hora});
+                retencionActual=await ClinicaReservas.retencion('${pageContext.request.contextPath}/paciente/retencion',params,
+                    document.querySelector('meta[name="csrf-token"]').content);
+                retencionActual.limite=Date.now()+retencionActual.segundosRestantes*1000;
+                document.getElementById('finalRetencion').value=retencionActual.identificador;
+                avanzarAPaso3();
+            } catch(error) {alert(error.message || 'No se pudo retener el cupo. Inténtalo nuevamente.');}
+            finally {reteniendoCupo=false;if(boton){boton.disabled=false;boton.textContent='Reservar cita';}}
         }
 
         function formatearFechaHoraResumen(fechaIso, hora) {
@@ -1266,10 +1282,10 @@
 
         function iniciarCountdownReserva() {
             detenerCountdownReserva();
-            countdownRemainingSeconds = 300;
+            countdownRemainingSeconds = retencionActual ? Math.max(0,Math.ceil((retencionActual.limite-Date.now())/1000)) : 0;
             actualizarTextoCountdown();
             countdownInterval = setInterval(() => {
-                countdownRemainingSeconds--;
+                countdownRemainingSeconds = retencionActual ? Math.max(0,Math.ceil((retencionActual.limite-Date.now())/1000)) : 0;
                 if (countdownRemainingSeconds <= 0) {
                     detenerCountdownReserva();
                     alert('El tiempo límite para completar la reserva (5 minutos) ha expirado. El cupo ha sido liberado.');
@@ -1278,6 +1294,16 @@
                     actualizarTextoCountdown();
                 }
             }, 1000);
+        }
+
+        function liberarRetencionActual() {
+            if(!retencionActual)return;
+            const id=retencionActual.identificador;
+            retencionActual=null;
+            document.getElementById('finalRetencion').value='';
+            ClinicaReservas.retencion('${pageContext.request.contextPath}/paciente/retencion',
+                new URLSearchParams({accion:'liberar',retencion:id}),document.querySelector('meta[name="csrf-token"]').content)
+                .catch(() => {});
         }
 
         function detenerCountdownReserva() {
@@ -1338,6 +1364,7 @@
         }
 
         function mostrarPantallaExito(codigoCita) {
+            retencionActual=null;
             detenerCountdownReserva();
 
             // Ocultar cabeceras y stepper para dejar ÚNICAMENTE la tarjeta centrada
