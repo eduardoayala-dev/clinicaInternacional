@@ -68,6 +68,8 @@ public class SysAdminServlet extends HttpServlet {
                     }
                 }
                 request.setAttribute("listaUsuarios", personal);
+                try {request.setAttribute("estadosInvitacion",new pe.edu.utp.clinica.dao.InvitacionPersonalDAO().estados(usuario.getIdUsuario()));}
+                catch(pe.edu.utp.clinica.dao.AgendaException e){response.sendError(e.status(),e.getMessage());return;}
                 Map<String, Object> metricasUsuarios = usuarioDAO.obtenerMetricasPersonal();
                 request.setAttribute("metricasUsuarios", metricasUsuarios);
                 cargarSedesYEspecialidades(request);
@@ -175,94 +177,10 @@ public class SysAdminServlet extends HttpServlet {
 
         String action = request.getParameter("action");
 
-        if ("cambiarEstado".equals(action)) {
-            try {
-                int idUsuario = Integer.parseInt(request.getParameter("idUsuario"));
-                boolean nuevoEstado = Boolean.parseBoolean(request.getParameter("estado"));
-                boolean exito = usuarioDAO.cambiarEstadoUsuario(idUsuario, nuevoEstado);
-                if (exito) {
-                    session.setAttribute("flashMessage", "Estado del usuario #" + idUsuario + " actualizado a " + (nuevoEstado ? "ACTIVO" : "INACTIVO") + " en la Base de Datos.");
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-            response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");
-            return;
-        }
-
-        if ("registrar".equals(action) || "editar".equals(action)) {
-            String nombres = request.getParameter("nombres");
-            String apellidos = request.getParameter("apellidos");
-            String email = request.getParameter("email");
-            String rol = request.getParameter("rol");
-
-            Usuario u = new Usuario();
-            u.setNombres(nombres);
-            u.setApellidos(apellidos);
-            u.setEmail(email);
-            u.setRol(rol);
-
-            String cmp = null;
-            Integer idEspecialidad = null;
-            Integer idSede = null;
-            String cargo = null;
-
-            String estado = request.getParameter("estado");
-            boolean activo = !"INACTIVO".equalsIgnoreCase(estado) && !"SUSPENDIDO".equalsIgnoreCase(estado);
-            u.setActivo(activo);
-
-            String idSedeGeneral = request.getParameter("id_sede");
-            if (idSedeGeneral != null && !idSedeGeneral.trim().isEmpty()) {
-                try { idSede = Integer.parseInt(idSedeGeneral); } catch (Exception ignored) {}
-            }
-
-            if ("MEDICO".equals(rol)) {
-                cmp = request.getParameter("cmp");
-                String espStr = request.getParameter("id_especialidad");
-                if (espStr != null && !espStr.trim().isEmpty()) {
-                    try { idEspecialidad = Integer.parseInt(espStr.trim()); } catch (Exception ignored) {}
-                }
-                String sedeStr = request.getParameter("id_sede_medico");
-                if (sedeStr != null && !sedeStr.trim().isEmpty()) {
-                    try { idSede = Integer.parseInt(sedeStr.trim()); } catch (Exception ignored) {}
-                }
-            } else if ("PERSONAL_ADMINISTRATIVO".equals(rol)) {
-                cargo = request.getParameter("cargo");
-                String sedeStr = request.getParameter("id_sede_personal");
-                if (sedeStr != null && !sedeStr.trim().isEmpty()) {
-                    try { idSede = Integer.parseInt(sedeStr.trim()); } catch (Exception ignored) {}
-                }
-            }
-
-            if ("editar".equals(action)) {
-                int idUsuario = Integer.parseInt(request.getParameter("idUsuario"));
-                u.setIdUsuario(idUsuario);
-                boolean ok = usuarioDAO.actualizarPersonal(u, cmp, idEspecialidad, idSede, cargo);
-                usuarioDAO.cambiarEstadoUsuario(idUsuario, activo);
-                if (ok) {
-                    session.setAttribute("flashMessage", "Usuario #" + idUsuario + " (" + u.getNombreCompleto() + ") actualizado correctamente en la Base de Datos.");
-                } else {
-                    session.setAttribute("flashError", "No se pudo actualizar el usuario. Verifica los datos ingresados.");
-                }
-            } else {
-                if (usuarioDAO.existeEmail(email)) {
-                    session.setAttribute("flashError", "No se pudo registrar: el correo '" + email + "' ya se encuentra registrado en el sistema. Utiliza otro correo.");
-                    response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");
-                    return;
-                }
-
-                String passwordRaw = request.getParameter("password");
-                if (passwordRaw == null || passwordRaw.trim().isEmpty()) passwordRaw = "Password123!";
-                u.setPasswordHash(org.mindrot.jbcrypt.BCrypt.hashpw(passwordRaw, org.mindrot.jbcrypt.BCrypt.gensalt()));
-                boolean ok = usuarioDAO.registrarPersonal(u, cmp, idEspecialidad, idSede, cargo);
-                if (ok) {
-                    session.setAttribute("flashMessage", "Nuevo usuario (" + nombres + " " + apellidos + ") guardado exitosamente en la Base de Datos.");
-                } else {
-                    session.setAttribute("flashError", "Error al registrar el personal. Verifica que el correo o código de colegiatura (CMP) no estén duplicados.");
-                }
-            }
-
-            response.sendRedirect(request.getContextPath() + "/sysadmin/usuarios");
+        Usuario actor=(Usuario)session.getAttribute("usuarioLogueado");
+        if(!"ADMINISTRADOR".equals(actor.getRol())){response.sendError(403);return;}
+        if(java.util.Set.of("registrar","editar","cambiarEstado","reinvitar").contains(action==null?"":action)) {
+            request.getRequestDispatcher("/sysadmin/personal").forward(request,response);
             return;
         }
 

@@ -2,7 +2,10 @@
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%
+    Map<Integer,String> estadosInvitacion=(Map<Integer,String>)request.getAttribute("estadosInvitacion");
+    if(estadosInvitacion==null)estadosInvitacion=Map.of();
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreAdmin = (String) request.getAttribute("nombreAdmin");
     if (nombreAdmin == null && usuario != null) {
@@ -45,11 +48,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-    
+
     <!-- CSS del Layout Institucional y Estilos de Usuarios -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-usuarios.css">
-    
+
     <script src="https://unpkg.com/lucide@latest"></script>
 </head>
 <body>
@@ -59,7 +62,7 @@
          ========================================================================== -->
     <aside class="sidebar">
         <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
+            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png"
                  alt="Logo Clínica Internacional" class="brand-logo-img"
                  onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
             <div class="brand-text">
@@ -92,9 +95,9 @@
         </nav>
 
         <div class="user-profile">
-            <div class="avatar"><%= nombreAdmin != null && !nombreAdmin.trim().isEmpty() ? ("" + nombreAdmin.charAt(0) + (nombreAdmin.contains(" ") ? ("" + nombreAdmin.charAt(nombreAdmin.indexOf(" ") + 1)) : "")).toUpperCase() : "JV" %></div>
+            <div class="avatar"><%= Html.texto(nombreAdmin != null && !nombreAdmin.trim().isEmpty() ? ("" + nombreAdmin.charAt(0) + (nombreAdmin.contains(" ") ? ("" + nombreAdmin.charAt(nombreAdmin.indexOf(" ") + 1)) : "")).toUpperCase() : "JV") %></div>
             <div class="user-info">
-                <span class="user-name"><%= nombreAdmin %></span>
+                <span class="user-name"><%= Html.texto(nombreAdmin) %></span>
                 <span class="user-role">Administrador</span>
             </div>
             <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
@@ -130,14 +133,14 @@
             <% if (flashMessage != null) { %>
                 <div class="flash-alert">
                     <i data-lucide="check-circle" style="width: 18px; color: #166534;"></i>
-                    <span><%= flashMessage %></span>
+                    <span><%= Html.texto(flashMessage) %></span>
                 </div>
             <% } %>
 
             <% if (flashError != null) { %>
                 <div class="flash-alert" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
                     <i data-lucide="alert-circle" style="width: 18px; color: #dc2626;"></i>
-                    <span><%= flashError %></span>
+                    <span><%= Html.texto(flashError) %></span>
                 </div>
             <% } %>
 
@@ -150,8 +153,8 @@
                             <i data-lucide="stethoscope"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= medicosTotal %></div>
-                    <div class="stat-subtext">Activos: <%= medicosActivos %></div>
+                    <div class="stat-number"><%= Html.texto(medicosTotal) %></div>
+                    <div class="stat-subtext">Activos: <%= Html.texto(medicosActivos) %></div>
                 </div>
 
                 <div class="stat-card">
@@ -161,8 +164,8 @@
                             <i data-lucide="users"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= personalTotal %></div>
-                    <div class="stat-subtext">Activos: <%= personalActivos %></div>
+                    <div class="stat-number"><%= Html.texto(personalTotal) %></div>
+                    <div class="stat-subtext">Activos: <%= Html.texto(personalActivos) %></div>
                 </div>
 
                 <div class="stat-card">
@@ -172,8 +175,8 @@
                             <i data-lucide="shield"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= adminsTotal %></div>
-                    <div class="stat-subtext">Activos: <%= adminsActivos %></div>
+                    <div class="stat-number"><%= Html.texto(adminsTotal) %></div>
+                    <div class="stat-subtext">Activos: <%= Html.texto(adminsActivos) %></div>
                 </div>
             </div>
 
@@ -238,44 +241,56 @@
                         </tr>
                     </thead>
                     <tbody id="tbodyUsuarios">
-                        <% if (listaUsuarios != null && !listaUsuarios.isEmpty()) { 
-                            for (Usuario u : listaUsuarios) { 
+                        <% if (listaUsuarios != null && !listaUsuarios.isEmpty()) {
+                            for (Usuario u : listaUsuarios) {
                                 String estadoClass = u.getEstadoDetallado().toLowerCase();
                         %>
-                        <tr class="user-row" 
-                            data-nombre="<%= u.getNombreMostrar().toLowerCase() %>" 
-                            data-correo="<%= u.getEmail() != null ? u.getEmail().toLowerCase() : "" %>"
-                            data-rol="<%= u.getRolEtiqueta() %>"
-                            data-estado="<%= u.getEstadoDetallado() %>"
-                            data-id="<%= u.getIdUsuario() %>"
-                            data-nombres="<%= u.getNombres() != null ? u.getNombres().replace("\"", "&quot;") : "" %>"
-                            data-apellidos="<%= u.getApellidos() != null ? u.getApellidos().replace("\"", "&quot;") : "" %>"
-                            data-email="<%= u.getEmail() != null ? u.getEmail() : "" %>"
-                            data-rol-code="<%= u.getRol() %>"
-                            data-sede-id="<%= u.getIdSede() != null ? u.getIdSede() : "" %>"
-                            data-cmp="<%= u.getCmp() != null ? u.getCmp() : "" %>"
-                            data-esp-id="<%= u.getIdEspecialidad() != null ? u.getIdEspecialidad() : "" %>"
-                            data-cargo="<%= u.getCargo() != null ? u.getCargo() : "" %>">
+                        <tr class="user-row"
+                            data-nombre="<%= Html.texto(u.getNombreMostrar().toLowerCase()) %>"
+                            data-correo="<%= Html.texto(u.getEmail() != null ? u.getEmail().toLowerCase() : "") %>"
+                            data-rol="<%= Html.texto(u.getRolEtiqueta()) %>"
+                            data-estado="<%= Html.texto(u.isActivo() ? "ACTIVO" : "INACTIVO") %>"
+                            data-id="<%= Html.texto(u.getIdUsuario()) %>"
+                            data-nombres="<%= Html.texto(u.getNombres() != null ? u.getNombres() : "") %>"
+                            data-apellidos="<%= Html.texto(u.getApellidos() != null ? u.getApellidos() : "") %>"
+                            data-email="<%= Html.texto(u.getEmail() != null ? u.getEmail() : "") %>"
+                            data-rol-code="<%= Html.texto(u.getRol()) %>"
+                            data-sede-id="<%= Html.texto(u.getIdSede() != null ? u.getIdSede() : "") %>"
+                            data-cmp="<%= Html.texto(u.getCmp() != null ? u.getCmp() : "") %>"
+                            data-esp-id="<%= Html.texto(u.getIdEspecialidad() != null ? u.getIdEspecialidad() : "") %>"
+                            data-cargo="<%= Html.texto(u.getCargo() != null ? u.getCargo() : "") %>">
                             <td>
                                 <div class="user-cell-name">
-                                    <span class="user-name-title"><%= u.getNombreMostrar() %></span>
+                                    <span class="user-name-title"><%= Html.texto(u.getNombreMostrar()) %></span>
                                     <% if (u.getMotivoEstado() != null && !u.getMotivoEstado().isEmpty()) { %>
-                                        <span class="user-name-note"><%= u.getMotivoEstado() %></span>
+                                        <span class="user-name-note"><%= Html.texto(u.getMotivoEstado()) %></span>
                                     <% } %>
                                 </div>
                             </td>
-                            <td><%= u.getEmail() %></td>
-                            <td><%= u.getRolEtiqueta() %></td>
-                            <td><%= u.getNombreSede() %></td>
+                            <td><%= Html.texto(u.getEmail()) %></td>
+                            <td><%= Html.texto(u.getRolEtiqueta()) %></td>
+                            <td><%= Html.texto(u.getNombreSede()) %></td>
                             <td>
-                                <span class="status-pill <%= estadoClass %>"><%= u.getEstadoDetallado() %></span>
+                                <span class="status-pill <%= Html.texto(estadoClass) %>"><%= Html.texto(estadosInvitacion.getOrDefault(u.getIdUsuario(),u.getEstadoDetallado())) %></span>
                             </td>
-                            <td><%= u.getFechaRegistroFormateada() %></td>
+                            <td><%= Html.texto(u.getFechaRegistroFormateada()) %></td>
                             <td>
                                 <button type="button" class="btn-table-edit" onclick="abrirModalEditarDesdeFila(this)">Editar</button>
+                                <% if(estadosInvitacion.containsKey(u.getIdUsuario())) { %>
+                                <form method="post" action="<%= Html.texto(request.getContextPath()) %>/sysadmin/personal">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><input type="hidden" name="action" value="reinvitar"><input type="hidden" name="idUsuario" value="<%= Html.texto(u.getIdUsuario()) %>">
+                                    <button class="btn-table-edit" type="submit">Reenviar invitación</button>
+                                </form>
+                                <% if(!"Invitación revocada".equals(estadosInvitacion.get(u.getIdUsuario()))) { %>
+                                <form method="post" action="<%= Html.texto(request.getContextPath()) %>/sysadmin/personal" onsubmit="return confirm('El enlace dejará de permitir la activación. ¿Revocar la invitación?')">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><input type="hidden" name="action" value="cambiarEstado"><input type="hidden" name="estado" value="false"><input type="hidden" name="idUsuario" value="<%= Html.texto(u.getIdUsuario()) %>">
+                                    <button class="btn-table-edit" type="submit">Revocar invitación</button>
+                                </form>
+                                <% } %>
+                                <% } %>
                             </td>
                         </tr>
-                        <%  } 
+                        <%  }
                            } %>
                     </tbody>
                 </table>
@@ -283,7 +298,7 @@
 
             <!-- 5. BARRA DE PAGINACIÓN -->
             <div class="pagination-bar">
-                <span class="pagination-info" id="paginationInfo">Mostrando 5 de <%= totalUsuariosGeneral %> usuarios</span>
+                <span class="pagination-info" id="paginationInfo">Mostrando 5 de <%= Html.texto(totalUsuariosGeneral) %> usuarios</span>
                 <div class="pagination-controls">
                     <button class="btn-pagination" id="btnPrevPage" onclick="cambiarPagina(-1)">&lt; Anterior</button>
                     <span class="pagination-page-label" id="paginationPage">Página 1 de 27</span>
@@ -306,7 +321,7 @@
             <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST" id="formUsuario">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" id="formAction" value="registrar">
-                <input type="hidden" name="idUsuario" id="formIdUsuario" value="">
+                <input type="hidden" name="idUsuario" id="formIdUsuario" value=""><input type="hidden" name="rol" id="formRolFijo" disabled>
 
                 <div class="form-grid-modal">
                     <div class="form-field">
@@ -346,10 +361,10 @@
                         <label for="formSede">Sede asignada</label>
                         <select id="formSede" name="id_sede" required>
                             <option value="" disabled selected>Seleccione la sede asignada...</option>
-                            <% if (sedes != null) { 
+                            <% if (sedes != null) {
                                 for (Map<String, Object> s : sedes) { %>
-                                    <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
-                            <%  } 
+                                    <option value="<%= Html.texto(s.get("id")) %>"><%= Html.texto(s.get("nombre")) %></option>
+                            <%  }
                                } %>
                         </select>
                     </div>
@@ -366,10 +381,10 @@
                                 <label for="formEspecialidad">Especialidad médica</label>
                                 <select id="formEspecialidad" name="id_especialidad">
                                     <option value="">Seleccione especialidad...</option>
-                                    <% if (especialidades != null) { 
+                                    <% if (especialidades != null) {
                                         for (Map<String, Object> esp : especialidades) { %>
-                                            <option value="<%= esp.get("id") %>"><%= esp.get("nombre") %></option>
-                                    <%  } 
+                                            <option value="<%= Html.texto(esp.get("id")) %>"><%= Html.texto(esp.get("nombre")) %></option>
+                                    <%  }
                                        } %>
                                 </select>
                             </div>
@@ -386,8 +401,7 @@
                     </div>
 
                     <div class="form-field full" id="groupPassword">
-                        <label for="formPassword">Contraseña de acceso</label>
-                        <input type="password" id="formPassword" name="password" placeholder="Por defecto: Password123!">
+                        <p>La cuenta permanecerá pendiente. Enviaremos un enlace de un solo uso al correo registrado para que la persona cree su contraseña.</p>
                     </div>
                 </div>
 
@@ -458,8 +472,8 @@
 
             // Actualizar etiquetas
             const mostrandoHasta = Math.min(fin, totalVisibles);
-            const infoTexto = totalVisibles === 0 
-                ? "Mostrando 0 de 0 usuarios" 
+            const infoTexto = totalVisibles === 0
+                ? "Mostrando 0 de 0 usuarios"
                 : "Mostrando " + (inicio + 1) + " - " + mostrandoHasta + " de " + totalVisibles + " usuarios";
             document.getElementById("paginationInfo").innerText = infoTexto;
             document.getElementById("paginationPage").innerText = "Página " + paginaActual + " de " + totalPaginas;
@@ -522,13 +536,16 @@
             document.getElementById("formEmail").value = "";
             document.getElementById("formEmail").readOnly = false;
             document.getElementById("formRol").value = "MEDICO";
-            document.getElementById("formEstado").value = "ACTIVO";
+            document.getElementById("formRol").disabled = false;
+            document.getElementById("formRolFijo").disabled = true;
+            document.getElementById("formEstado").value = "INACTIVO";
+            document.getElementById("formEstado").disabled = true;
             document.getElementById("formSede").value = "3"; // Sede San Borja por defecto
             document.getElementById("formCmp").value = "";
             document.getElementById("formEspecialidad").value = "";
             document.getElementById("formCargo").value = "";
             document.getElementById("groupPassword").style.display = "flex";
-            document.getElementById("btnSubmitModal").innerText = "Guardar usuario";
+            document.getElementById("btnSubmitModal").innerText = "Enviar invitación";
 
             actualizarCamposCondicionales();
             document.getElementById("modalUsuarioBackdrop").style.display = "flex";
@@ -546,12 +563,16 @@
             document.getElementById("formApellidos").value = fila.getAttribute("data-apellidos") || "";
             document.getElementById("formEmail").value = fila.getAttribute("data-email") || "";
             document.getElementById("formEmail").readOnly = true;
-            
+
             const rolCode = fila.getAttribute("data-rol-code") || "MEDICO";
             document.getElementById("formRol").value = rolCode;
+            document.getElementById("formRol").disabled = true;
+            document.getElementById("formRolFijo").value = rolCode;
+            document.getElementById("formRolFijo").disabled = false;
 
             const estado = fila.getAttribute("data-estado") || "Activo";
             document.getElementById("formEstado").value = estado.toUpperCase();
+            document.getElementById("formEstado").disabled = false;
 
             document.getElementById("formSede").value = fila.getAttribute("data-sede-id") || "";
             document.getElementById("formCmp").value = fila.getAttribute("data-cmp") || "";
