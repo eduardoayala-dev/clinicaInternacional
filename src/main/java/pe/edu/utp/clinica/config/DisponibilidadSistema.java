@@ -123,6 +123,14 @@ public final class DisponibilidadSistema implements AutoCloseable {
     }
 
     private static boolean comprobarEsquemaCorreos(java.sql.Statement statement) throws SQLException {
+        if(Boolean.parseBoolean(System.getenv().getOrDefault("RECORDATORIOS_EMAIL_ENABLED","false"))){
+            try(var schema=statement.executeQuery("SELECT id_cita,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_recordatorio WHERE 1=0")){
+                if(schema.getMetaData().getColumnCount()!=6)return false;
+            }
+        }
+        try(var schema=statement.executeQuery("SELECT id_aviso,id_cita,id_cita_anterior,tipo,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_cambio_cita WHERE 1=0")){
+            if(schema.getMetaData().getColumnCount()!=9)return false;
+        }
         try(var schema=statement.executeQuery("SELECT id_cita,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_cita WHERE 1=0")) {
             if(schema.getMetaData().getColumnCount()!=6)return false;
         }

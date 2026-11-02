@@ -23,6 +23,7 @@ abstract class CorreoCitaContrato extends AgendaCitaContrato {
         String ddl=Files.readString(Path.of("sql/migrations/V008__correo_confirmacion_cita.sql"));
         if(url.startsWith("jdbc:h2:"))ddl=ddl.replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");
         sql(ddl);
+        sql(Files.readString(Path.of("sql/migrations/V018__correo_cambios_cita.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",""));
         dao=new AgendaCitaDAO(this::abrir,clock,true);
         almacen=new CorreosCitaJdbc(this::abrir);
     }
@@ -62,7 +63,10 @@ abstract class CorreoCitaContrato extends AgendaCitaContrato {
         int anterior=reservar();assertTrue(dao.reprogramar(anterior,1,1,"2026-10-28","09:20",null,"BAJA"));
         var enviados=new ArrayList<Correo>();var servicio=servicio(c->{enviados.add(c);return "simulado";},clock);
         assertTrue(servicio.procesarUno());assertEquals("OMITIDO",estado(anterior));
-        assertTrue(servicio.procesarUno());assertEquals(1,enviados.size());assertTrue(enviados.get(0).texto().contains("09:20"));
+        assertFalse(servicio.procesarUno());
+        var cambios=new CorreosServicio(new CorreosCambiosJdbc(this::abrir),c->{enviados.add(c);return "simulado";},clock);
+        assertTrue(cambios.procesarUno());assertEquals(1,enviados.size());assertTrue(enviados.get(0).texto().contains("09:20"));
+        assertTrue(enviados.get(0).asunto().contains("reprogramada"));
     }
     @Test void usaElCorreoActualDeLaCuentaAlProcesar()throws Exception {
         reservar();sql("UPDATE usuario SET email='nuevo@example.test' WHERE id_usuario=1");

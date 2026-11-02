@@ -19,6 +19,22 @@ public abstract class CorreosPendientesJdbc {
         "UPDATE correo_cita SET estado='NO_CONFIRMADO',finalizada_en=? WHERE estado='ENVIANDO' AND iniciada_en<?",
         "UPDATE correo_cita SET estado=?,finalizada_en=? WHERE id_cita=? AND estado='ENVIANDO'",
         "UPDATE correo_cita SET estado='PENDIENTE',disponible_en=?,iniciada_en=NULL WHERE id_cita=? AND estado='ENVIANDO'");
+    protected static final Consultas CAMBIOS=new Consultas(
+        "SELECT MIN(iniciada_en) FROM correo_cambio_cita WHERE estado='ENVIANDO'",
+        "SELECT MIN(disponible_en) FROM correo_cambio_cita WHERE estado='PENDIENTE'",
+        "SELECT id_aviso,intentos FROM correo_cambio_cita WHERE estado='PENDIENTE' AND disponible_en<=? AND intentos<3 ORDER BY disponible_en,id_aviso LIMIT 1 FOR UPDATE SKIP LOCKED",
+        "UPDATE correo_cambio_cita SET estado='ENVIANDO',intentos=intentos+1,iniciada_en=? WHERE id_aviso=? AND estado='PENDIENTE'",
+        "UPDATE correo_cambio_cita SET estado='NO_CONFIRMADO',finalizada_en=? WHERE estado='ENVIANDO' AND iniciada_en<?",
+        "UPDATE correo_cambio_cita SET estado=?,finalizada_en=? WHERE id_aviso=? AND estado='ENVIANDO'",
+        "UPDATE correo_cambio_cita SET estado='PENDIENTE',disponible_en=?,iniciada_en=NULL WHERE id_aviso=? AND estado='ENVIANDO'");
+    protected static final Consultas RECORDATORIOS=new Consultas(
+        "SELECT MIN(iniciada_en) FROM correo_recordatorio WHERE estado='ENVIANDO'",
+        "SELECT MIN(disponible_en) FROM correo_recordatorio WHERE estado='PENDIENTE'",
+        "SELECT id_cita,intentos FROM correo_recordatorio WHERE estado='PENDIENTE' AND disponible_en<=? AND intentos<3 ORDER BY disponible_en,id_cita LIMIT 1 FOR UPDATE SKIP LOCKED",
+        "UPDATE correo_recordatorio SET estado='ENVIANDO',intentos=intentos+1,iniciada_en=? WHERE id_cita=? AND estado='PENDIENTE'",
+        "UPDATE correo_recordatorio SET estado='NO_CONFIRMADO',finalizada_en=? WHERE estado='ENVIANDO' AND iniciada_en<?",
+        "UPDATE correo_recordatorio SET estado=?,finalizada_en=? WHERE id_cita=? AND estado='ENVIANDO'",
+        "UPDATE correo_recordatorio SET estado='PENDIENTE',disponible_en=?,iniciada_en=NULL WHERE id_cita=? AND estado='ENVIANDO'");
     protected static final Consultas OFERTAS=new Consultas(
         "SELECT MIN(iniciada_en) FROM correo_oferta WHERE estado='ENVIANDO'",
         "SELECT MIN(disponible_en) FROM correo_oferta WHERE estado='PENDIENTE'",

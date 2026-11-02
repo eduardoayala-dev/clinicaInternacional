@@ -312,15 +312,21 @@ public class CitaDAO {
         if (anterior == null) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : anterior;
         String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND (estado=? OR estado=?)";
-        try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nuevoEstado);
-            ps.setInt(2, idCita);
-            ps.setString(3, anterior);
-            ps.setString(4, alternativo);
-            boolean actualizado = ps.executeUpdate() == 1;
-            if (actualizado) avisarCambioCita(conn, idCita);
-            return actualizado;
-        } catch (SQLException e) {
+        try {
+            return TransaccionJdbc.ejecutar(this::abrirConexion,conn->{
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nuevoEstado);
+                    ps.setInt(2, idCita);
+                    ps.setString(3, anterior);
+                    ps.setString(4, alternativo);
+                    boolean actualizado = ps.executeUpdate() == 1;
+                    if (actualizado) {
+                        registrarCambio(conn,idCita,nuevoEstado);
+                    }
+                    return actualizado;
+                }
+            });
+        } catch (AgendaException e) {
             LOGGER.warning("No se pudo actualizar el estado de la cita.");
             return false;
         }
@@ -332,22 +338,36 @@ public class CitaDAO {
         if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
         String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?) AND fecha_hora>=?";
-        try (Connection conn = abrirConexion(); PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setString(1, nuevoEstado);
-            ps.setInt(2, idCita);
-            ps.setInt(3, idPaciente);
-            ps.setString(4, ESTADO_SOLICITADA);
-            ps.setString(5, alternativo);
-            ps.setObject(6,inicioDiaClinico());
-            boolean actualizado = ps.executeUpdate() == 1;
-            if (actualizado) avisarCambioCita(conn, idCita);
-            return actualizado;
-        } catch (SQLException e) {
+        try {
+            return TransaccionJdbc.ejecutar(this::abrirConexion,conn->{
+                try (PreparedStatement ps = conn.prepareStatement(sql)) {
+                    ps.setString(1, nuevoEstado);
+                    ps.setInt(2, idCita);
+                    ps.setInt(3, idPaciente);
+                    ps.setString(4, ESTADO_SOLICITADA);
+                    ps.setString(5, alternativo);
+                    ps.setObject(6,inicioDiaClinico());
+                    boolean actualizado = ps.executeUpdate() == 1;
+                    if (actualizado) {
+                        registrarCambio(conn,idCita,nuevoEstado);
+                    }
+                    return actualizado;
+                }
+            });
+        } catch (AgendaException e) {
             LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
             return false;
         }
     }
 
+    private void registrarCambio(Connection conn,int cita,String estado)throws SQLException {
+        if(ESTADO_CANCELADA.equals(estado)&&correosActivos()){
+            pe.edu.utp.clinica.correo.CorreosCambiosJdbc.encolar(conn,cita,null,
+                    pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.CANCELADA,relojClinico().instant());
+        }
+        avisarCambioCita(conn,cita);
+    }
+    protected boolean correosActivos(){return Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false"));}
     protected java.time.Clock relojClinico() {
         return java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA));
     }
@@ -602,7 +622,7 @@ public class CitaDAO {
         try (PreparedStatement ps = conn.prepareStatement("SELECT m.id_sede FROM cita c JOIN medico m ON m.id_medico=c.id_medico WHERE c.id_cita=?")) {
             ps.setInt(1, cita);
             try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) pe.edu.utp.clinica.eventos.EventosAgenda.INSTANCIA.publicar(rs.getInt(1));
+                if (rs.next()) TransaccionJdbc.avisarSede(rs.getInt(1));
             }
         } catch (SQLException e) { LOGGER.warning("La cita se guardó; no se pudo avisar de su actualización."); }
     }
