@@ -123,7 +123,7 @@ public final class AgendaCitaDAO {
         validarFutura(inicio);
         int id = insertarCita(conn, reserva.paciente(), reserva.medico(), bloque.id(), inicio, reserva.motivo(), prioridad);
         TransaccionJdbc.avisarSede(perfil.sede());
-        notificar(conn, usuario, id, "Cita confirmada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
+        notificar(conn, usuario, id, "Cita confirmada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".",true);
         return id;
     }
 
@@ -155,7 +155,8 @@ public final class AgendaCitaDAO {
             }
             int nueva = insertarCita(conn, paciente, medico, bloque.id(), inicio, motivo, prioridad);
             TransaccionJdbc.avisarSede(perfil.sede());
-            notificar(conn, usuario, nueva, "Cita reprogramada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".");
+            if(correosActivos)pe.edu.utp.clinica.correo.CorreosCambiosJdbc.encolar(conn,nueva,anterior,pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.REPROGRAMADA,clock.instant());
+            notificar(conn, usuario, nueva, "Cita reprogramada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".",false);
             return true;
         });
     }
@@ -394,8 +395,8 @@ public final class AgendaCitaDAO {
         }
     }
 
-    private void notificar(Connection conn, int usuario, int cita, String mensaje) throws SQLException {
-        if(correosActivos)pe.edu.utp.clinica.correo.CorreosCitaJdbc.encolar(conn,cita,clock.instant());
+    private void notificar(Connection conn, int usuario, int cita, String mensaje,boolean reservaInicial) throws SQLException {
+        if(correosActivos && reservaInicial)pe.edu.utp.clinica.correo.CorreosCitaJdbc.encolar(conn,cita,clock.instant());
         String sql = "INSERT INTO notificacion (id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida,fecha_envio) VALUES (?,?,'Citas','PLATAFORMA',?,'ENVIADA',0,?)";
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, usuario);

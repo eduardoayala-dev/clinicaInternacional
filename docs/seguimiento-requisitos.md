@@ -1,6 +1,6 @@
 # Seguimiento de historias de usuario y requisitos
 
-Actualización: 01/11/2026. Fuente: requerimientos funcionales versión 2 y RNF suministrados por el equipo. HU001–HU018 se corresponden con RF01–RF18. El estado refleja funciones concretas; no se asigna un porcentaje ni se considera cerrado un requisito solo por tener su pantalla.
+Actualización: 02/11/2026. Fuente: requerimientos funcionales versión 2 y RNF suministrados por el equipo. HU001–HU018 se corresponden con RF01–RF18. El estado refleja funciones concretas; no se asigna un porcentaje ni se considera cerrado un requisito solo por tener su pantalla.
 
 ## Entregas comprobadas recientes
 
@@ -9,7 +9,9 @@ Actualización: 01/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 - PR54: plazo de oferta y anticipación mínima persistentes y auditados.
 - PR55: prioridad clínica autorizada para seguimientos vigentes, sin elevación desde el cliente.
 - PR56: retención real del cupo y confirmación transaccional; prueba con dos pacientes aprobada.
-- Rama feature/reportes-administrativos: datos reales por sede, filtros y exportaciones. La primera versión fue revisada por el usuario; la ampliación de indicadores y actualización automática requiere comprobación antes de sus commits.
+- PR57: reportes reales por sede, indicadores, exportaciones y actualización automática; prueba manual aprobada.
+- PR58: confirmación y tolerancia persistentes y auditadas; prueba manual aprobada.
+- Rama feature/notificaciones-citas: recordatorios y avisos de cancelación/reprogramación integrados; pruebas automatizadas y recepción real de los tres correos aprobadas.
 
 ## Matriz de cierre
 
@@ -28,11 +30,11 @@ Actualización: 01/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 | 011 / 11 | Compatibilidad, prioridad vigente, antigüedad y ofertas exclusivas | Criterios configurables, protección contra postergación y explicación del candidato elegido |
 | 012 / 12 | Llegada por admisión, tardanza y atención por médico | Regresión integral por sede y cierre de atenciones pendientes; no inferir inasistencia por cambio de día |
 | 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
-| 014 / 14 | Correo de reserva/oferta y avisos del portal | Programador de recordatorios, urgente tras vencer, modificación/cancelación por correo y acciones verificadas desde enlaces |
+| 014 / 14 | Correo de reserva/oferta y avisos del portal; recordatorios y avisos de cambios implementados en revisión | Aviso urgente tras vencer y acciones verificadas desde enlaces |
 | 015 / 15 | Seguimiento de admisión con SSE; tablero operativo real por sede | Refresco, actualización manual y descargas comprobados; revisar indicadores del inicio administrativo y SysAdmin |
 | 016 / 16 | Exportación médica; reportes de admisión con filtros en PDF/XLSX/CSV | Exportación de indicadores comprobada; completar analítica y exportaciones del administrador del sistema y padrones |
 | 017 / 17 | Confirmaciones e intentos de contacto registrados | Integrar modelo con datos históricos, factores y aumento de nivel al vencer; no presentar el simulador sintético como validación real |
-| 018 / 18 | Plazo de oferta y anticipación mínima configurables | Recordatorio, confirmación, intentos, tolerancia y criterios de priorización centralizados |
+| 018 / 18 | Plazos de oferta/confirmación y tolerancia configurables | Anticipación de recordatorio editable en el panel, intentos y criterios de priorización centralizados |
 
 ## Requisitos no funcionales
 
@@ -40,4 +42,5 @@ RNF10 tiene evidencia de retención y concurrencia en MySQL y prueba manual acep
 
 ## Siguiente entrega prioritaria
 
-RF14 y RF18: parámetros de recordatorio/confirmación e infraestructura de recordatorios y avisos de cambios, con pruebas de duplicados, vencimiento y envío fallido. Después RF17/RF13 para integrar IA y RF03/RF06 para catálogos e importaciones pendientes. Mantener las ramas, pruebas manuales y PR por entrega.
+RF14 y RF18: con la prueba real de correos aprobada, completar enlaces de acción seguros, urgencia tras vencer e intentos de contacto configurables. Después RF17/RF13 para integrar IA y RF03/RF06 para catálogos e importaciones pendientes. Mantener las ramas, pruebas manuales y PR por entrega.
+

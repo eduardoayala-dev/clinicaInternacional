@@ -10,6 +10,8 @@ public final class CorreosCitaContextListener implements ServletContextListener 
     public static final String DESPERTAR=CorreosCitaContextListener.class.getName()+".despertar";
     private CorreosDespachador despachador;
     private CorreosDespachador ofertas;
+    private CorreosDespachador cambios;
+    private RecordatoriosProgramador recordatorios;
 
     @Override public void contextInitialized(ServletContextEvent evento) {
         if(!Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false")))return;
@@ -17,16 +19,25 @@ public final class CorreosCitaContextListener implements ServletContextListener 
         var emisor=ConfiguracionCorreo.crear(System.getenv());
         var reloj=Clock.systemUTC();
         despachador=new CorreosDespachador(new CorreosCitaJdbc(),emisor,reloj);
+        cambios=new CorreosDespachador(new CorreosCambiosJdbc(),emisor,reloj);
         ofertas=new CorreosDespachador(new CorreosOfertaJdbc(),emisor,reloj);
+        if(Boolean.parseBoolean(System.getenv().getOrDefault("RECORDATORIOS_EMAIL_ENABLED","false"))){
+            var almacen=new CorreosRecordatorioJdbc(pe.edu.utp.clinica.service.InvitacionPersonalServicio.basePublica(System.getenv()));
+            int horas=Integer.parseInt(System.getenv().getOrDefault("RECORDATORIO_CITA_HORAS_ANTES","48"));
+            recordatorios=new RecordatoriosProgramador(almacen,new CorreosDespachador(almacen,emisor,reloj),reloj,horas);
+            recordatorios.iniciar();
+        }
         evento.getServletContext().setAttribute(DESPERTAR,(Runnable)this::despertar);
         despertar();
     }
 
-    private void despertar() { despachador.despertar(); ofertas.despertar(); }
+    private void despertar() { despachador.despertar(); ofertas.despertar(); cambios.despertar(); }
 
     @Override public void contextDestroyed(ServletContextEvent evento) {
         evento.getServletContext().removeAttribute(DESPERTAR);
         if(despachador!=null)despachador.close();
         if(ofertas!=null)ofertas.close();
+        if(cambios!=null)cambios.close();
+        if(recordatorios!=null)recordatorios.close();
     }
 }

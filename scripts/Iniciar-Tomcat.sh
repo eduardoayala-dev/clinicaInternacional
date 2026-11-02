@@ -1,6 +1,8 @@
 #!/bin/sh
 set -eu
 
+rm -rf -- /usr/local/tomcat/work/Catalina/localhost/ROOT/org/apache/jsp
+
 if [ -n "${DB_CA_PEM:-}" ]; then
     if [ -n "${DB_TRUSTSTORE_PATH:-}" ]; then
         printf '%s\n' 'Configura DB_CA_PEM o DB_TRUSTSTORE_PATH, no ambos.' >&2
