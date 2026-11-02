@@ -16,8 +16,8 @@ class AvisosCambiosJdbcTest extends CorreoCitaContrato {
     };}
     private ArrayList<Correo> enviar()throws Exception {
         var lista=new ArrayList<Correo>();var servicio=new CorreosServicio(new CorreosCambiosJdbc(this::abrir),c->{lista.add(c);return "prueba";},clock);
-        while(servicio.procesarUno()){}
-        return lista;
+        for(int i=0;i<10;i++){if(!servicio.procesarUno())return lista;}
+        throw new AssertionError("La cola de avisos no terminó de procesarse.");
     }
     @Test void cancelacionPropiaEncolaUnSoloAvisoConEstadoReal()throws Exception {
         int id=cita();assertTrue(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA"));
