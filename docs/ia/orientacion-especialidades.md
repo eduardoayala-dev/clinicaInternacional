@@ -15,15 +15,15 @@ Rama `feature/orientacion-especialidades-ia`. Solo casos ficticios para una demo
 
 Gemini queda **desactivado por defecto**. Tres ejemplos ficticios exactos permiten probar la interacción y se identifican como `EJEMPLO_LOCAL`, sin fingir una llamada de IA. Con el proveedor desactivado, otro texto libre informa que Gemini no está conectado y permite continuar manualmente. No se afirma que el problema de comprensión de texto libre esté resuelto por esos ejemplos.
 
-El adaptador HTTP está preparado y probado con respuestas simuladas. No se hicieron llamadas reales a Google ni se consumió cuota. No se entregó una clave en esta tarea.
+El adaptador HTTP tiene pruebas con respuestas simuladas y, desde el 2 de noviembre de 2026, una prueba real satisfactoria con gemini-3.5-flash-lite en el proyecto gratuito confirmado por el usuario. La configuración local se habilita mediante el archivo privado; la plantilla pública permanece desactivada. Ver [conexión local y compatibilidad de claves](conexion-gemini-local.md).
 
 `config/gemini.env.example` es una plantilla sin secretos. Se dejó la configuración privada `.env.gemini`, ignorada por Git y desactivada por defecto, con `GEMINI_API_KEY`, el identificador del modelo disponible en la cuenta en `GEMINI_MODEL` (sin prefijo `models/` ni URL) y `GEMINI_ORIENTATION_ENABLED=false`. `compose.gemini.yml` y `scripts/Iniciar-Local.ps1 -Jwt -Correo -Gemini` permiten cargarla explícitamente. No activar el proveedor automáticamente ni publicar claves en el navegador, commits o capturas.
 
-Antes de habilitar la conexión debe resolverse la compatibilidad de este caso de clasificación de síntomas con las condiciones del proveedor. Que sea académico o que el paciente marque «caso ficticio» no crea una excepción contractual. El código y esa casilla tampoco garantizan anonimización: no introducir datos personales ni síntomas reales. Las [condiciones de Gemini](https://ai.google.dev/gemini-api/terms) restringen asesoramiento médico/práctica clínica y el envío de información sensible a servicios gratuitos. La integración externa permanece pendiente de esa revisión y de la configuración privada.
+Antes de habilitar la conexión debe resolverse la compatibilidad de este caso de clasificación de síntomas con las condiciones del proveedor. Que sea académico o que el paciente marque «caso ficticio» no crea una excepción contractual. El código y esa casilla tampoco garantizan anonimización: no introducir datos personales ni síntomas reales. Las [condiciones de Gemini](https://ai.google.dev/gemini-api/terms) restringen asesoramiento médico/práctica clínica y el envío de información sensible a servicios gratuitos. La prueba externa realizada se limita al caso ficticio documentado y no acredita su uso con información real de salud.
 
 ## Transporte y privacidad
 
-HTTPS al host fijo de Google, clave solo en cabecera, identificador del modelo validado, sin redirecciones, conexión de 4 s y petición de 12 s. No hay reintentos automáticos. Se limita a una consulta externa por sesión cada 15 s; no sustituye una cuota persistente/global ni los límites del proveedor. El relato tiene máximo 1200 caracteres y no se guarda ni registra. No se envían usuario, DNI, correo, historia clínica ni otra información de la cuenta; el texto libre seguiría siendo responsabilidad del caso ficticio introducido.
+HTTPS al host fijo de Google, clave solo en cabecera, identificador del modelo validado, sin redirecciones, conexión de 4 s y presupuesto total de consulta de 20 s. Se permite un solo reintento, únicamente ante HTTP 503 explícito y dentro del mismo presupuesto. No se reintentan tiempos agotados, cuota, errores de conexión ni respuestas inválidas. Se limita a una consulta externa por sesión cada 15 s; no sustituye una cuota persistente/global ni los límites del proveedor. El relato tiene máximo 1200 caracteres y no se guarda ni registra. No se envían usuario, DNI, correo, historia clínica ni otra información de la cuenta; el texto libre seguiría siendo responsabilidad del caso ficticio introducido.
 
 El proveedor no tiene herramientas ni acceso a SQL. Se envían únicamente el relato ficticio y el catálogo. El sistema no confía en instrucciones incluidas en el relato ni en la salida del modelo para efectuar cambios. La validación local es obligatoria aunque se solicite JSON estructurado.
 
@@ -38,7 +38,7 @@ Referencias: [generateContent](https://ai.google.dev/api/generate-content), [sal
 5. Volver y escribir un texto distinto: debe informar que el proveedor no está conectado, sin inventar una respuesta.
 6. Editar un ejemplo después de consultarlo: la sugerencia anterior debe desaparecer.
 
-Las pruebas de transporte con doble HTTP cubren respuestas válidas, inválidas, cuota agotada, bloqueo y errores de red. La prueba de integración real con Gemini queda pendiente. Esta entrega no completa HU013/HU017 ni reemplaza el modelo de inasistencia.
+Las pruebas de transporte con doble HTTP cubren respuestas válidas, inválidas, cuota agotada, bloqueo y errores de red. La prueba real del adaptador Java está documentada en [conexión local](conexion-gemini-local.md); falta la revisión manual en el portal con el proveedor activo. Esta entrega no completa HU013/HU017 ni reemplaza el modelo de inasistencia.
 
 ## Evidencia de esta entrega
 
