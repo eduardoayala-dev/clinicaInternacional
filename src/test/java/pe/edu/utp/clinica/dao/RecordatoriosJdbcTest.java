@@ -22,8 +22,8 @@ class RecordatoriosJdbcTest extends CorreoCitaContrato {
     }
     private ArrayList<Correo> enviar()throws Exception {
         var enviados=new ArrayList<Correo>();var servicio=new CorreosServicio(recordatorios,c->{enviados.add(c);return "prueba";},clock);
-        while(servicio.procesarUno()){}
-        return enviados;
+        for(int i=0;i<10;i++){if(!servicio.procesarUno())return enviados;}
+        throw new AssertionError("La cola de recordatorios no terminó de procesarse.");
     }
     @Test void unSoloRecordatorioPorCitaAunqueSeProgramenVariosCiclos()throws Exception {
         cita();recordatorios.programar(clock.instant(),48);recordatorios.programar(clock.instant(),48);
@@ -79,3 +79,4 @@ class RecordatoriosJdbcTest extends CorreoCitaContrato {
         assertEquals(1,count("SELECT COUNT(*) FROM correo_recordatorio WHERE estado='OMITIDO'"));
     }
 }
+

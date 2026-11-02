@@ -64,3 +64,4 @@ class AvisosCambiosJdbcTest extends CorreoCitaContrato {
         admision.cancelar(40,id);assertEquals(1,enviar().size());admision.cancelar(40,id);assertTrue(enviar().isEmpty());
     }
 }
+

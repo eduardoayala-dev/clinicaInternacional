@@ -11,6 +11,7 @@ import java.util.function.LongSupplier;
 import java.util.logging.Logger;
 
 public final class DisponibilidadSistema implements AutoCloseable {
+    private static final String FALSE="false";
     public static final String CONTEXT_ATTRIBUTE = DisponibilidadSistema.class.getName();
     private static final Logger LOGGER = Logger.getLogger(DisponibilidadSistema.class.getName());
     private static final long INTERVALO_NANOS = TimeUnit.SECONDS.toNanos(5);
@@ -86,7 +87,7 @@ public final class DisponibilidadSistema implements AutoCloseable {
                     if (schema.getMetaData().getColumnCount()!=10) return false;
                 }
             }
-            if (Boolean.parseBoolean(System.getenv().getOrDefault("RECOVERY_ENABLED","false"))) {
+            if (Boolean.parseBoolean(System.getenv().getOrDefault("RECOVERY_ENABLED",FALSE))) {
                 try (var schema=statement.executeQuery("SELECT id_verificacion,id_usuario,proposito,vinculo_hash,codigo_hash,etapa,intentos,vence_en FROM verificacion_cuenta WHERE 1=0")) {
                     if (schema.getMetaData().getColumnCount()!=8) return false;
                 }
@@ -94,7 +95,7 @@ public final class DisponibilidadSistema implements AutoCloseable {
                     if (schema.getMetaData().getColumnCount()!=3) return false;
                 }
             }
-            if(Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false"))
+            if(Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED",FALSE))
                     && !comprobarEsquemaCorreos(statement)) {
                 return false;
             }
@@ -123,7 +124,7 @@ public final class DisponibilidadSistema implements AutoCloseable {
     }
 
     private static boolean comprobarEsquemaCorreos(java.sql.Statement statement) throws SQLException {
-        if(Boolean.parseBoolean(System.getenv().getOrDefault("RECORDATORIOS_EMAIL_ENABLED","false"))){
+        if(Boolean.parseBoolean(System.getenv().getOrDefault("RECORDATORIOS_EMAIL_ENABLED",FALSE))){
             try(var schema=statement.executeQuery("SELECT id_cita,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_recordatorio WHERE 1=0")){
                 if(schema.getMetaData().getColumnCount()!=6)return false;
             }
@@ -144,3 +145,4 @@ public final class DisponibilidadSistema implements AutoCloseable {
         executor.shutdownNow();
     }
 }
+
