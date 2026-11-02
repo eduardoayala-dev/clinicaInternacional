@@ -337,7 +337,7 @@ public class CitaDAO {
         if (idCita <= 0 || idPaciente <= 0) return false;
         if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
-        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?) AND fecha_hora>=?";
+        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?) AND fecha_hora>?";
         try {
             return TransaccionJdbc.ejecutar(this::abrirConexion,conn->{
                 try (PreparedStatement ps = conn.prepareStatement(sql)) {
@@ -346,7 +346,7 @@ public class CitaDAO {
                     ps.setInt(3, idPaciente);
                     ps.setString(4, ESTADO_SOLICITADA);
                     ps.setString(5, alternativo);
-                    ps.setObject(6,inicioDiaClinico());
+                    ps.setObject(6,LocalDateTime.now(relojClinico()));
                     boolean actualizado = ps.executeUpdate() == 1;
                     if (actualizado) {
                         registrarCambio(conn,idCita,nuevoEstado);

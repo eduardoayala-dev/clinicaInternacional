@@ -9,6 +9,17 @@ import pe.edu.utp.clinica.util.CsrfToken;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SesionSeguraTest {
+    @Test void loginDesdeCorreoConservaElDestinoTrasRotarLaSesion()throws Exception {
+        var servlet=new LoginServlet();var field=LoginServlet.class.getDeclaredField("authService");field.setAccessible(true);
+        field.set(servlet,new AuthService(){@Override public Usuario autenticar(String id,String password,String ip){return new Usuario(10,"P","Uno","p@test","","PACIENTE",null,true);}});
+        var x=new HttpExchange();x.path="/login/paciente";
+        String anterior=x.session.getId();
+        new pe.edu.utp.clinica.util.EnlaceCita(7,pe.edu.utp.clinica.util.EnlaceCita.Accion.CONFIRMAR).recordar(x.session,java.time.Clock.systemUTC());
+        x.parameters.put("identificador","12345678");x.parameters.put("password","prueba");x.parameters.put("csrfToken",CsrfToken.getOrCreate(x.session));
+        new CsrfFilter().doFilter(x.request,x.response,(r,s)->servlet.doPost(x.request,x.response));
+        assertNotEquals(anterior,x.session.getId());assertEquals("/cita?cita=7&accion=confirmar",x.redirect);
+        assertNull(pe.edu.utp.clinica.util.EnlaceCita.consumir(x.session,java.time.Clock.systemUTC()));
+    }
     @Test void recoveredLoginGetsFreshTokenAndFixedNoticeWithoutEchoingUserInput() throws Exception {
         for (String path : new String[]{"/login/paciente", "/login/personal"}) {
             var servlet = new LoginServlet();

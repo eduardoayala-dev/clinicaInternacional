@@ -88,7 +88,8 @@ class CitaAutorizacionTest {
         assertEquals(1, count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
     }
 
-    @Test void ownerCanCancelOnceAndCannotReactivateCancelledAppointment() {
+    @Test void ownerCanCancelOnceAndCannotReactivateCancelledAppointment() throws Exception {
+        try(var c=abrir();var s=c.createStatement()){s.execute("UPDATE cita SET fecha_hora='2026-10-28 11:00:00' WHERE id_cita=7");}
         assertTrue(dao.actualizarEstadoCitaPaciente(7, 1, "CANCELADA"));
         assertFalse(dao.actualizarEstadoCitaPaciente(7, 1, "CANCELADA"));
         assertFalse(dao.actualizarEstadoCitaPaciente(7, 1, "CONFIRMADA"));
@@ -97,6 +98,12 @@ class CitaAutorizacionTest {
     @Test void rejectsInvalidOwnerAndClinicalStateFromPatient() {
         assertFalse(dao.actualizarEstadoCitaPaciente(7, -1, "CANCELADA"));
         assertFalse(dao.actualizarEstadoCitaPaciente(7, 1, "ATENDIDA"));
+    }
+    @Test void patientCannotCancelAnAppointmentAlreadyStartedToday()throws Exception {
+        assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA"));
+        try(var c=abrir();var s=c.createStatement()){s.execute("UPDATE cita SET fecha_hora='2026-10-28 10:00:00' WHERE id_cita=7");}
+        assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA"));
+        assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE id_cita=7 AND estado='CONFIRMADA'"));
     }
 
     @Test void doctorCannotReadOtherDoctorsAppointment() {

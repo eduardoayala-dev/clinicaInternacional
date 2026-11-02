@@ -27,7 +27,7 @@ class RecordatoriosJdbcTest extends CorreoCitaContrato {
     }
     @Test void unSoloRecordatorioPorCitaAunqueSeProgramenVariosCiclos()throws Exception {
         cita();recordatorios.programar(clock.instant(),48);recordatorios.programar(clock.instant(),48);
-        var mensajes=enviar();assertEquals(1,mensajes.size());assertTrue(mensajes.get(0).html().contains("https://clinica.example.test/paciente/citas"));
+        var mensajes=enviar();assertEquals(1,mensajes.size());assertTrue(mensajes.get(0).html().contains("https://clinica.example.test/paciente/historial"));
         assertTrue(mensajes.get(0).texto().contains("asistencia está pendiente"));
         recordatorios.programar(clock.instant(),48);assertTrue(enviar().isEmpty());
     }
@@ -79,4 +79,3 @@ class RecordatoriosJdbcTest extends CorreoCitaContrato {
         assertEquals(1,count("SELECT COUNT(*) FROM correo_recordatorio WHERE estado='OMITIDO'"));
     }
 }
-

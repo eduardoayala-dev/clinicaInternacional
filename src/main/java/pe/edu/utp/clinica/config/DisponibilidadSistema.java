@@ -136,8 +136,21 @@ public final class DisponibilidadSistema implements AutoCloseable {
             if(schema.getMetaData().getColumnCount()!=6)return false;
         }
         try(var schema=statement.executeQuery("SELECT id_oferta,estado,intentos,disponible_en,iniciada_en,finalizada_en FROM correo_oferta WHERE 1=0")) {
-            return schema.getMetaData().getColumnCount()==6;
+            if(schema.getMetaData().getColumnCount()!=6)return false;
         }
+        return esquemaAvisoVencido(statement);
+    }
+
+    static boolean esquemaAvisoVencido(java.sql.Statement statement)throws SQLException {
+        boolean anterior=false;
+        boolean vigente=false;
+        try(var filas=statement.executeQuery("SELECT CONSTRAINT_NAME FROM information_schema.TABLE_CONSTRAINTS WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME='correo_cambio_cita' AND CONSTRAINT_TYPE='CHECK' AND CONSTRAINT_NAME IN ('ck_aviso_cambio_tipo','ck_aviso_cambio_tipo_v2')")){
+            while(filas.next()){
+                anterior|="ck_aviso_cambio_tipo".equals(filas.getString(1));
+                vigente|="ck_aviso_cambio_tipo_v2".equals(filas.getString(1));
+            }
+        }
+        return vigente&&!anterior;
     }
 
     @Override public synchronized void close() {

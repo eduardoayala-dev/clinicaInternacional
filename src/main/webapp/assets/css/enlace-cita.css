@@ -1,0 +1,6 @@
+.cita-enlace{max-width:800px;margin:0 auto;padding:32px 24px;color:var(--text-primary,#0d2b4e)}
+.cita-enlace h1{font:700 30px Georgia,serif;margin:0 0 12px}.cita-enlace>p{color:var(--text-secondary,#406c96);line-height:1.6}
+.cita-enlace-card{padding:28px;margin:24px 0;background:#fff;border:1px solid #dbe7f5;border-radius:14px}.cita-enlace-card h2{font-size:18px;margin:0 0 20px}.cita-enlace-card p{line-height:1.6}
+.cita-enlace dl{margin:0}.cita-enlace dl>div{display:flex;justify-content:space-between;gap:20px;padding:12px 0;border-bottom:1px solid #edf3fa}.cita-enlace dt{color:#406c96}.cita-enlace dd{margin:0;text-align:right;overflow-wrap:anywhere}
+.cita-enlace form{margin-top:24px}.cita-enlace-cancelar{background:#dc2626}.cita-enlace-cancelar:hover:not(:disabled){background:#b91c1c}
+@media(max-width:600px){.cita-enlace{padding:24px 16px}.cita-enlace-card{padding:20px}.cita-enlace dl>div{flex-direction:column;gap:6px}.cita-enlace dd{text-align:left}}

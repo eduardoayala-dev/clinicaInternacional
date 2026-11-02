@@ -24,6 +24,7 @@ abstract class CorreoCitaContrato extends AgendaCitaContrato {
         if(url.startsWith("jdbc:h2:"))ddl=ddl.replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");
         sql(ddl);
         sql(Files.readString(Path.of("sql/migrations/V018__correo_cambios_cita.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4",""));
+        for(String sentencia:Files.readString(Path.of("sql/migrations/V020__aviso_confirmacion_vencida.sql")).split(";")){if(!sentencia.isBlank())sql(sentencia);}
         dao=new AgendaCitaDAO(this::abrir,clock,true);
         almacen=new CorreosCitaJdbc(this::abrir);
     }
