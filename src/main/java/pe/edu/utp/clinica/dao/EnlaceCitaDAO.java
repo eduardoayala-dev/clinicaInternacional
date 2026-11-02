@@ -25,7 +25,9 @@ public class EnlaceCitaDAO {
             s.setInt(1,cita);s.setInt(2,usuario);
             try(var r=s.executeQuery()){
                 if(!r.next())throw new AgendaException(404,"CITA_NO_ENCONTRADA","No se encontró una cita propia para este enlace.");
-                var ahora=LocalDateTime.now(reloj);var fecha=r.getObject(2,LocalDateTime.class);var vence=r.getObject(8,LocalDateTime.class);
+                var ahora=LocalDateTime.now(reloj);
+                var fecha=r.getObject(2,LocalDateTime.class);
+                var vence=r.getObject(8,LocalDateTime.class);
                 return new Resumen(r.getInt(1),fecha,r.getString(3),r.getString(4),r.getString(5),r.getString(6),r.getObject(7)!=null,vence==null||!ahora.isBefore(vence),fecha.isAfter(ahora));
             }
         }catch(SQLException e){throw new AgendaException(503,"CITA_NO_DISPONIBLE","No se pudo consultar tu cita. Inténtalo nuevamente.");}

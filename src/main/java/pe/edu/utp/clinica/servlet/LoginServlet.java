@@ -124,7 +124,7 @@ public class LoginServlet extends HttpServlet {
 
             switch (usuario.getRol()) {
                 case "PACIENTE":
-                    response.sendRedirect(request.getContextPath() + (retornoCita==null?"/paciente/dashboard":retornoCita));
+                    pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + (retornoCita==null?"/paciente/dashboard":retornoCita));
                     break;
                 case "MEDICO":
                     response.sendRedirect(request.getContextPath() + "/medico/agenda");

@@ -10,6 +10,7 @@ import java.util.Optional;
 
 public final class CorreosCambiosJdbc extends CorreosPendientesJdbc {
     public enum Tipo { CANCELADA, REPROGRAMADA, CONFIRMACION_VENCIDA }
+    private static final String ESTADO="estado";
     private static final ZoneId LIMA=ZoneId.of("America/Lima");
     private static final DateTimeFormatter FECHA=DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     public CorreosCambiosJdbc(){this(DatabaseConfig::getConnection);}
@@ -41,14 +42,14 @@ public final class CorreosCambiosJdbc extends CorreosPendientesJdbc {
                 if(!r.next())return Optional.empty();
                 Tipo tipo=Tipo.valueOf(r.getString("tipo"));
                 var fecha=r.getObject("fecha_hora",LocalDateTime.class);
-                if(tipo==Tipo.CANCELADA&&!"CANCELADA".equals(r.getString("estado")))return Optional.empty();
-                if(tipo==Tipo.REPROGRAMADA&&(!"CONFIRMADA".equals(r.getString("estado"))
+                if(tipo==Tipo.CANCELADA&&!"CANCELADA".equals(r.getString(ESTADO)))return Optional.empty();
+                if(tipo==Tipo.REPROGRAMADA&&(!"CONFIRMADA".equals(r.getString(ESTADO))
                         || !fecha.isAfter(LocalDateTime.ofInstant(ahora,LIMA))
                         || r.getObject("origen")==null||!"REPROGRAMADA".equals(r.getString("estado_anterior"))))return Optional.empty();
                 if(tipo==Tipo.CONFIRMACION_VENCIDA){
                     var limite=r.getObject("vence_en",LocalDateTime.class);
                     var local=LocalDateTime.ofInstant(ahora,LIMA);
-                    if(!("CONFIRMADA".equals(r.getString("estado"))||"SOLICITADA".equals(r.getString("estado")))
+                    if(!("CONFIRMADA".equals(r.getString(ESTADO))||"SOLICITADA".equals(r.getString(ESTADO)))
                             ||!fecha.isAfter(local)||r.getObject("confirmada_en")!=null||limite==null||limite.isAfter(local))return Optional.empty();
                 }
                 String titulo=switch(tipo){

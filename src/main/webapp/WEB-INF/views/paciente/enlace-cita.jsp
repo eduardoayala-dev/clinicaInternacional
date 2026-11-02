@@ -44,7 +44,7 @@
                     <button type="submit" class="btn-primary <%= confirmar?"":"cita-enlace-cancelar" %>"><%= confirmar?"Confirmar mi asistencia":"Sí, cancelar cita" %></button>
                 </form>
                 <% } else { %>
-                <p role="status"><%= !activa?"Esta cita ya no está disponible para esta acción.":resumen.asistenciaConfirmada()?"Tu asistencia ya está confirmada.":"El plazo para confirmar terminó. Contacta con admisión para coordinar tu cita." %></p>
+                <output><%= !activa?"Esta cita ya no está disponible para esta acción.":resumen.asistenciaConfirmada()?"Tu asistencia ya está confirmada.":"El plazo para confirmar terminó. Contacta con admisión para coordinar tu cita." %></output>
                 <% } %>
             </div>
             <a class="btn-secondary" href="${pageContext.request.contextPath}/paciente/historial">Volver a Mis citas</a>
