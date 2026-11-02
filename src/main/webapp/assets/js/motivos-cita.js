@@ -14,7 +14,11 @@
         select.value = motivos.some(m => String(m.idMotivo) === String(seleccionado)) ? String(seleccionado) : '';
         select.disabled = motivos.length === 0;
     }
-    const api = Object.freeze({disponibles, poblar});
+    function sugerido(catalogo, especialidad, idMotivo) {
+        if (!idMotivo) return null;
+        return disponibles(catalogo, especialidad).find(m => String(m.idMotivo) === String(idMotivo)) || null;
+    }
+    const api = Object.freeze({disponibles, poblar, sugerido});
     if (typeof module !== 'undefined' && module.exports) module.exports = api;
     globalThis.ClinicaMotivos = api;
 })();

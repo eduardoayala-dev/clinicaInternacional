@@ -86,4 +86,14 @@ class GeminiCatalogoTest {
         var error=assertThrows(AgendaException.class,()->cliente.elegir("Caso ficticio de prueba",catalogo));
         assertEquals("ORIENTACION_RESPUESTA_INVALIDA",error.code());assertFalse(error.getMessage().contains("dato privado"));
     }
+    @Test void recibeMotivoDelCatalogoSinAceptarTextoOIdentificadoresFraccionarios() throws Exception {
+        String valido=respuesta("{\"idEspecialidad\":13,\"idMotivo\":56,\"motivo\":\"CATALOGO\"}");
+        var cliente=new GeminiCatalogo("clave_de_prueba_123456","modelo-de-prueba",request->new GeminiCatalogo.Respuesta(200,valido));
+        assertEquals(56,cliente.elegir("Caso ficticio de molestias generales.",catalogo).idMotivo());
+        for(String id:List.of("\"56\"","56.5","-1","null")) {
+            String cuerpo=respuesta("{\"idEspecialidad\":13,\"idMotivo\":"+id+",\"motivo\":\"CATALOGO\"}");
+            var invalido=new GeminiCatalogo("clave_de_prueba_123456","modelo-de-prueba",request->new GeminiCatalogo.Respuesta(200,cuerpo));
+            assertThrows(AgendaException.class,()->invalido.elegir("Caso ficticio de molestias generales.",catalogo));
+        }
+    }
 }

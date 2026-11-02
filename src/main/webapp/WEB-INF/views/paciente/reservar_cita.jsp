@@ -46,7 +46,7 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261030-3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261102-3">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261102-2">
 </head>
@@ -68,6 +68,7 @@
         <header class="dash-top-header">
             <nav class="breadcrumb-trail">
                 <span>Paciente</span> <span class="bc-sep">/</span> <strong>Programar cita</strong>
+                <span id="aiRutaOrientacion" hidden> / Orientación por síntomas</span>
             </nav>
 
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
@@ -82,6 +83,7 @@
         <!-- CONTENEDOR CON SCROLL -->
         <div class="citas-scroll-container">
             <div class="buscar-wrapper">
+                <button type="button" id="aiVolverOpciones" class="orientation-back-link" onclick="volverASeleccionModos()" hidden><i data-lucide="arrow-left" aria-hidden="true"></i>Volver a opciones</button>
 
                 <!-- CABECERA DE PÁGINA (TÍTULO, SUBTÍTULO Y BOTÓN VOLVER) -->
                 <div class="page-title-row-with-back" id="pageTitleRow">
@@ -179,27 +181,22 @@
                     <div id="aiResultadoBox" class="ai-response-result">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px;">
                             <div>
-                                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
-                                    <span class="mode-badge-pill badge-pill-mint" style="margin-bottom: 0;">
-                                        <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-                                        Te sugerimos <strong id="aiEspecialidadNombre" style="margin-left: 4px;"></strong>
-                                    </span>
-
-                                </div>
-                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Orientación completada</h4>
-                                <p id="aiExplicacionTexto" style="font-size: 13.5px; color: #334155; line-height: 1.5;">
-
-                                </p>
+                                <span class="orientation-success-icon" aria-hidden="true"><i data-lucide="check"></i></span>
+                                <p class="orientation-success-label">Orientación completada</p>
+                                <h2 class="orientation-result-title">Te sugerimos <span id="aiEspecialidadNombre"></span></h2>
+                                <p id="aiExplicacionTexto" class="orientation-result-description"></p>
+                                <p id="aiMotivoResultado" class="orientation-result-description" hidden></p>
                             </div>
                         </div>
 
                         <p class="orientation-result-note">Esta sugerencia orientativa no es un diagnóstico ni asigna prioridad clínica.</p><div class="ai-demo-actions ai-demo-actions-result">
                             <button type="button" id="aiAplicarSugerencia" class="btn-card-action btn-card-royal" onclick="aplicarRecomendacionIA()">
-                                <span>Continuar con esta especialidad</span>
+                                <span id="aiBuscarHorariosTexto">Buscar horarios</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button type="button" class="btn-back-pill" onclick="editarSintomas()">Editar síntomas</button><button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir otra especialidad</button>
+                            <button type="button" class="btn-back-pill" onclick="editarSintomas()">Editar síntomas</button>
                         </div>
+                        <button type="button" class="orientation-other-specialty" onclick="iniciarModoDirecto()">Prefiero elegir otra especialidad →</button>
                     </div>
                 </div>
 
@@ -273,13 +270,12 @@
                             <div class="filter-row-full">
                                 <div class="filter-field">
                                     <div class="motivo-label-row">
-                                        <label for="selectMotivo">Motivo de consulta (opcional)</label>
-                                        <span class="motivo-hint-tag">Opcional · orientativo</span>
+                                        <label for="selectMotivo">Motivo de consulta *</label>
                                     </div>
-                                    <select id="selectMotivo" class="filter-control">
+                                    <select id="selectMotivo" class="filter-control" required onchange="actualizarMotivoElegido()">
                                         <option value="">Selecciona un motivo</option>
                                     </select>
-                                    <div class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
+                                    <div id="motivoOrientacionAyuda" class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
                                 </div>
                             </div>
 
@@ -520,7 +516,7 @@
     <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js?v=20261102-1"></script>
     <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
     <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
-    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js?v=20261102-3"></script>
     <script>
         const catalogoMotivos=JSON.parse(document.getElementById("catalogoMotivos").textContent)||[];
         document.addEventListener('DOMContentLoaded', function() {
@@ -616,6 +612,8 @@
 
         // --- NAVEGACIÓN DE MODOS ---
         function iniciarModoIA() {
+            document.getElementById('aiVolverOpciones').hidden = false;
+            document.getElementById('aiRutaOrientacion').hidden = false;
             document.getElementById('aiFormulario').hidden = false;
             state.modo = 'IA';
             state.pasoActual = 1;
@@ -626,7 +624,7 @@
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiResultadoBox').style.display = 'none';
             const btnVolver = document.getElementById('btnVolverModos');
-            if (btnVolver) btnVolver.style.display = 'inline-flex';
+            if (btnVolver) btnVolver.style.display = 'none';
             document.getElementById('aiSintomasInput').focus();
             lucide.createIcons();
         }
@@ -638,6 +636,8 @@
         }
 
         function iniciarModoDirecto(origen = 'DIRECTO') {
+            document.getElementById('aiVolverOpciones').hidden = true;
+            document.getElementById('aiRutaOrientacion').hidden = true;
             if (origen !== 'IA') invalidarOrientacion();
             document.getElementById('aiSugerenciaBuscador').hidden = origen !== 'IA';
             if (origen === 'IA' && sugerenciaOrientacion) {
@@ -657,6 +657,8 @@
         }
 
         function volverASeleccionModos() {
+            document.getElementById('aiVolverOpciones').hidden = true;
+            document.getElementById('aiRutaOrientacion').hidden = true;
             invalidarOrientacion();
             if (state.pasoActual === 2) {
                 volverAPaso1();
@@ -748,6 +750,10 @@
                 sugerenciaOrientacion = resultado;
                 document.getElementById('aiEspecialidadNombre').textContent = resultado.especialidad;
                 document.getElementById('aiExplicacionTexto').textContent = resultado.explicacion;
+                document.getElementById('aiBuscarHorariosTexto').textContent = 'Buscar horarios de ' + resultado.especialidad;
+                const motivoResultado = document.getElementById('aiMotivoResultado');
+                motivoResultado.hidden = !resultado.motivoConsulta;
+                motivoResultado.textContent = resultado.motivoConsulta ? 'Motivo sugerido: ' + resultado.motivoConsulta : '';
                 estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Especialidad sugerida con IA.';
                 document.getElementById('aiResultadoBox').style.display = 'block';
                 document.getElementById('aiFormulario').hidden = true;
@@ -777,6 +783,8 @@
             select.value = opcion.value;
             state.especialidadId = opcion.value;
             state.especialidadNombre = opcion.textContent;
+            const motivo = ClinicaMotivos.sugerido(catalogoMotivos, opcion.value, sugerenciaOrientacion.idMotivo);
+            state.motivo = motivo ? String(motivo.idMotivo) : '';
             iniciarModoDirecto('IA');
         }
 
@@ -904,15 +912,32 @@
             selMotivo.innerHTML = '<option value="">Selecciona un motivo</option>';
 
             const espVal = selEsp.value;
+            if (state.modo === 'IA' && sugerenciaOrientacion && String(sugerenciaOrientacion.idEspecialidad) !== espVal) {
+                state.modo = 'DIRECTO';
+                document.getElementById('aiSugerenciaBuscador').hidden = true;
+            }
+            state.especialidadId = espVal;
             if (!espVal) {
+                state.motivo = '';
+                actualizarMotivoElegido();
                 if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
                 return;
             }
 
             ClinicaMotivos.poblar(selMotivo,catalogoMotivos,espVal,state.motivo);
             state.motivo=selMotivo.value;
+            actualizarMotivoElegido();
 
             actualizarMedicosPorEspecialidad();
+        }
+
+        function actualizarMotivoElegido() {
+            const seleccionado = document.getElementById('selectMotivo');
+            state.motivo = seleccionado?.value || '';
+            const sugerido = state.modo === 'IA' && sugerenciaOrientacion && String(sugerenciaOrientacion.idMotivo) === state.motivo;
+            document.getElementById('motivoOrientacionAyuda').textContent = sugerido
+                ? 'Sugerido por la orientación. Puedes cambiarlo.'
+                : 'Elige el motivo de la especialidad que mejor describa la consulta.';
         }
 
         let medicosRequest = 0;
@@ -983,6 +1008,10 @@
             state.fecha = (fechaInput && fechaInput.value) ? fechaInput.value : new Date().toISOString().split('T')[0];
             const selMotivo = document.getElementById('selectMotivo');
             state.motivo = selMotivo ? selMotivo.value : '';
+            if (!state.motivo) {
+                selMotivo?.reportValidity();
+                return;
+            }
 
             mostrarPaso(2);
         }
