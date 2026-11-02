@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const source = fs.readFileSync('src/main/webapp/assets/js/reservas-api.js', 'utf8');
 function api(fetch) {
-    const context = {fetch};
+    const context = {fetch, URLSearchParams};
     vm.runInNewContext(source, context);
     return context.ClinicaReservas;
 }
@@ -60,4 +60,25 @@ test('retención rechaza vencimientos inválidos y conflictos', async () => {
         await assert.rejects(reservas.retencion('',new URLSearchParams(),''),/verificar/);
     }
     await assert.rejects(api(async()=>reply(409,{message:'Cupo ocupado'})).retencion('',new URLSearchParams(),''),/ocupado/);
+});
+
+test('el asistente envía los identificadores seleccionados con el contrato del servlet', async () => {
+    let recibidos;
+    const reservas=api(async (url,options)=>{
+        recibidos=new URLSearchParams(options.body.toString());
+        return reply(201,{code:'CITA_RESERVADA',data:{idCita:72,codigoCita:'CI-2026-000072'}});
+    });
+    const params=reservas.preparar({medico:1,motivo:'17',fecha:'2026-11-03',hora:'09:20',retencion:'12345678-1234-1234-1234-123456789012'});
+    await reservas.reservar('/paciente/reservar',params,'csrf');
+    assert.equal(recibidos.get('idMedico'),'1');assert.equal(recibidos.get('idMotivo'),'17');
+    assert.equal(recibidos.get('fecha'),'2026-11-03');assert.equal(recibidos.get('hora'),'09:20');
+    assert.equal(recibidos.get('retencion'),'12345678-1234-1234-1234-123456789012');
+});
+
+test('la reserva no se envía con selección incompleta ni con descripciones en lugar de identificadores',()=>{
+    const reservas=api(()=>{throw new Error('No debe enviar');});
+    const base={medico:1,motivo:'17',fecha:'2026-11-03',hora:'09:20',retencion:'12345678-1234-1234-1234-123456789012'};
+    for(const medico of [undefined,'','Dr. Prueba',0])assert.throws(()=>reservas.preparar({...base,medico}),/médico/);
+    for(const motivo of [undefined,'','Control general',0])assert.throws(()=>reservas.preparar({...base,motivo}),/motivo/);
+    assert.throws(()=>reservas.preparar({...base,retencion:''}),/cupo/);
 });

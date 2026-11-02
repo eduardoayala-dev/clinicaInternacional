@@ -1,5 +1,13 @@
 (() => {
     'use strict';
+    function preparar({medico, motivo, fecha, hora, retencion}) {
+        if (!/^[1-9]\d*$/.test(String(medico ?? ''))) throw new Error('Vuelve a seleccionar el médico y el horario.');
+        if (!/^[1-9]\d*$/.test(String(motivo ?? ''))) throw new Error('Selecciona un motivo de consulta del catálogo.');
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha ?? '') || !/^([01]\d|2[0-3]):[0-5]\d$/.test(hora ?? ''))
+            throw new Error('Vuelve a seleccionar la fecha y el horario.');
+        if (!/^[a-f0-9-]{36}$/.test(retencion ?? '')) throw new Error('Selecciona el horario nuevamente para retener el cupo.');
+        return new URLSearchParams({idMedico:String(medico), idMotivo:String(motivo), fecha, hora, retencion});
+    }
     async function reservar(url, params, csrf) {
         let response;
         let result;
@@ -32,5 +40,5 @@
             throw new Error('No se pudo verificar la retención. Vuelve a seleccionar el horario.');
         return result.data;
     }
-    globalThis.ClinicaReservas = Object.freeze({reservar,retencion});
+    globalThis.ClinicaReservas = Object.freeze({preparar,reservar,retencion});
 })();

@@ -517,7 +517,7 @@
 
     <!-- SCRIPTS Y LÓGICA DE CONTROL -->
     <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
-    <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js?v=20261102-1"></script>
     <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
     <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
     <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js"></script>
@@ -569,13 +569,19 @@
                     }
 
                     const btnSubmit = document.getElementById('btnConfirmarReserva');
+                    if (btnSubmit?.disabled) return false;
+                    let params;
+                    try {
+                        params = ClinicaReservas.preparar({medico:state.medicoId, motivo:selMotP3?.value,
+                            fecha:state.fecha, hora:state.hora, retencion:retencionActual?.identificador});
+                    } catch (error) {
+                        alert(error.message);
+                        return false;
+                    }
                     if (btnSubmit) {
                         btnSubmit.disabled = true;
                         btnSubmit.innerHTML = '<span>Procesando reserva...</span>';
                     }
-
-                    const formData = new FormData(formFinal);
-                    const params = new URLSearchParams(formData);
 
                     ClinicaReservas.reservar(formFinal.action, params,
                         document.querySelector('meta[name="csrf-token"]').content)
