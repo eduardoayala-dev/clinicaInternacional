@@ -36,20 +36,20 @@ public class AdmisionCitaDAO {
 
     protected boolean correosActivos(){return Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false"));}
     public void cancelar(int usuario,int cita) {
-        TransaccionJdbc.ejecutar(connections,conn->{
-            int sede=sedePersonal(conn,usuario);
-            CitaAdmision actual=bloquear(conn,sede,cita);
-            if("CANCELADA".equals(actual.estado()))return null;
-            if((!CONFIRMADA.equals(actual.estado())&&!"SOLICITADA".equals(actual.estado()))||actual.llegada()||!actual.programada().isAfter(LocalDateTime.now(clock))) {
-                throw new AgendaException(409,"CANCELACION_NO_DISPONIBLE","Solo se cancelan citas futuras pendientes de llegada.");
-            }
-            try(var st=conn.prepareStatement("UPDATE cita SET estado='CANCELADA' WHERE id_cita=?")){st.setInt(1,cita);st.executeUpdate();}
-            try(var st=conn.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) VALUES(?,'CITA_CANCELADA_ADMISION',?,FALSE)")){st.setInt(1,usuario);st.setString(2,"Cita #"+cita+"; sede #"+sede);st.executeUpdate();}
-            try(var st=conn.prepareStatement("INSERT INTO notificacion(id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida,fecha_envio) SELECT p.id_usuario,?,'Cita Cancelada','PLATAFORMA','Admisión canceló tu cita. Consulta el estado actualizado en Mis citas.','ENVIADA',0,? FROM paciente p WHERE p.id_paciente=?")){st.setInt(1,cita);st.setObject(2,LocalDateTime.now(clock));st.setInt(3,actual.paciente());st.executeUpdate();}
-            if(correosActivos())pe.edu.utp.clinica.correo.CorreosCambiosJdbc.encolar(conn,cita,null,pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.CANCELADA,clock.instant());
-            TransaccionJdbc.avisarSede(sede);
-            return null;
-        });
+        TransaccionJdbc.ejecutar(connections,conn->{cancelar(conn,usuario,cita);return null;});
+    }
+    void cancelar(Connection conn,int usuario,int cita)throws SQLException {
+        int sede=sedePersonal(conn,usuario);
+        CitaAdmision actual=bloquear(conn,sede,cita);
+        if("CANCELADA".equals(actual.estado()))return;
+        if((!CONFIRMADA.equals(actual.estado())&&!"SOLICITADA".equals(actual.estado()))||actual.llegada()||!actual.programada().isAfter(LocalDateTime.now(clock))) {
+            throw new AgendaException(409,"CANCELACION_NO_DISPONIBLE","Solo se cancelan citas futuras pendientes de llegada.");
+        }
+        try(var st=conn.prepareStatement("UPDATE cita SET estado='CANCELADA' WHERE id_cita=?")){st.setInt(1,cita);st.executeUpdate();}
+        try(var st=conn.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) VALUES(?,'CITA_CANCELADA_ADMISION',?,FALSE)")){st.setInt(1,usuario);st.setString(2,"Cita #"+cita+"; sede #"+sede);st.executeUpdate();}
+        try(var st=conn.prepareStatement("INSERT INTO notificacion(id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida,fecha_envio) SELECT p.id_usuario,?,'Cita Cancelada','PLATAFORMA','Admisión canceló tu cita. Consulta el estado actualizado en Mis citas.','ENVIADA',0,? FROM paciente p WHERE p.id_paciente=?")){st.setInt(1,cita);st.setObject(2,LocalDateTime.now(clock));st.setInt(3,actual.paciente());st.executeUpdate();}
+        if(correosActivos())pe.edu.utp.clinica.correo.CorreosCambiosJdbc.encolar(conn,cita,null,pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.CANCELADA,clock.instant());
+        TransaccionJdbc.avisarSede(sede);
     }
 
     public Llegada registrar(int usuario, int cita) {

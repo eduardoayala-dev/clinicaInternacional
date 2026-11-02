@@ -148,6 +148,42 @@ public final class ConfirmacionAsistenciaDAO {
 
     private record Cita(String estado, LocalDateTime fechaHora, LocalDateTime venceEn, boolean confirmada, int sede) {}
 
+    public int intentosMinimos(int usuario) {
+        try(var conn=connections.open()){
+            sedePersonal(conn,usuario);
+            return ConfiguracionOfertasDAO.leer(conn).intentosConfirmacion();
+        } catch(SQLException e){throw new AgendaException(503,"SEGUIMIENTO_NO_DISPONIBLE","No se pudo consultar la política de contacto.");}
+    }
+
+    public void cancelarSinConfirmacion(int usuario,int idCita) {
+        if(usuario<=0||idCita<=0)throw invalida();
+        TransaccionJdbc.ejecutar(connections,conn->{
+            int sede=sedePersonal(conn,usuario);
+            try(var s=conn.prepareStatement("SELECT c.id_paciente FROM cita c JOIN medico m ON m.id_medico=c.id_medico WHERE c.id_cita=? AND m.id_sede=?")){
+                s.setInt(1,idCita);s.setInt(2,sede);
+                try(var r=s.executeQuery()){
+                    if(!r.next()){throw noConfirmable();}
+                    bloquearPaciente(conn,r.getInt(1));
+                }
+            }
+            Cita cita=bloquearCitaAdmision(conn,idCita,sede);
+            var ahora=LocalDateTime.now(clock).withNano(0);
+            if(!ESTADOS_ACTIVOS.contains(cita.estado())||!cita.fechaHora().isAfter(ahora)||cita.confirmada())throw noConfirmable();
+            if(cita.venceEn()==null||ahora.isBefore(cita.venceEn()))throw new AgendaException(409,"PLAZO_CONFIRMACION_VIGENTE","Todavía no vence el plazo de confirmación.");
+            var parametros=ConfiguracionOfertasDAO.leer(conn);
+            int intentos;
+            try(var s=conn.prepareStatement("SELECT COUNT(*) FROM contacto_admision_cita WHERE id_cita=? AND resultado IN ('SIN_RESPUESTA','NO_CONFIRMA')")){
+                s.setInt(1,idCita);try(var r=s.executeQuery()){r.next();intentos=r.getInt(1);}
+            }
+            if(intentos<parametros.intentosConfirmacion())throw new AgendaException(409,"CONTACTOS_INSUFICIENTES","Registra al menos "+parametros.intentosConfirmacion()+" contactos realizados antes de cancelar por falta de confirmación.");
+            new AdmisionCitaDAO(connections,clock).cancelar(conn,usuario,idCita);
+            try(var s=conn.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) VALUES(?,'CITA_CANCELADA_SIN_CONFIRMAR',?,FALSE)")){
+                s.setInt(1,usuario);s.setString(2,"Cita #"+idCita+"; contactos "+intentos+"; mínimo "+parametros.intentosConfirmacion()+"; política versión "+parametros.version());s.executeUpdate();
+            }
+            return null;
+        });
+    }
+
     private int pacientePropio(Connection conn, int usuario) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("SELECT p.id_paciente FROM paciente p JOIN usuario u ON u.id_usuario=p.id_usuario WHERE u.id_usuario=? AND u.activo=TRUE AND u.rol='PACIENTE'")) {
             ps.setInt(1, usuario);

@@ -2,7 +2,7 @@
 
 Entrega incremental de RF14. V017 crea correo_recordatorio: una fila por cita, independiente de la confirmación inicial de reserva. No cambia citas ni confirma asistencia. El envío utiliza Gmail y las plantillas HTML existentes.
 
-Con APPOINTMENT_EMAIL_ENABLED=true, MAIL_MODE=gmail y RECORDATORIOS_EMAIL_ENABLED=true se inicia un ciclo cada 60 segundos mientras Java esté activo. RECORDATORIO_CITA_HORAS_ANTES acepta 1–168 horas (48 por defecto). APP_PUBLIC_URL determina el enlace del portal; nunca se deriva del encabezado Host de una petición. La configuración de esta anticipación aún es del despliegue; su edición desde el administrador queda pendiente de RF18.
+Con APPOINTMENT_EMAIL_ENABLED=true, MAIL_MODE=gmail y RECORDATORIOS_EMAIL_ENABLED=true se inicia un ciclo cada 60 segundos mientras Java esté activo. Desde V019, el administrador configura la anticipación en el panel (1–168 horas, inicial 48); se consulta en cada ciclo. APP_PUBLIC_URL determina el enlace del portal; nunca se deriva del encabezado Host de una petición. La activación global del envío sigue siendo del despliegue.
 
 Solo se encolan citas futuras CONFIRMADA cuya asistencia esté pendiente y con paciente activo. Se procesan lotes de 100. La clave primaria y el guardado sin sobrescritura impiden reiniciar una entrega por otro ciclo o proceso. Antes de enviar se vuelve a comprobar la cita y la asistencia. Una cancelación, reprogramación, asistencia confirmada o cuenta inactiva omite el mensaje pendiente. Una cita reprogramada recibe una fila propia.
 

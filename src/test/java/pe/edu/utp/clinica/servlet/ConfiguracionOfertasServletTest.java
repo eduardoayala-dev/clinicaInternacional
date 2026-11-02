@@ -10,9 +10,9 @@ class ConfiguracionOfertasServletTest {
     private static class Almacen extends ConfiguracionOfertasDAO {
         int llamadas;
         @Override public Parametros leer(){return new Parametros(7,90,2);}
-        @Override public Parametros guardar(int actor,int minutos,int anticipacion,int confirmacion,int tolerancia,long version) {
-            assertEquals(1,actor);assertEquals(7,minutos);assertEquals(90,anticipacion);assertEquals(2,version);assertEquals(24,confirmacion);assertEquals(10,tolerancia);
-            llamadas++;return new Parametros(minutos,anticipacion,version+1);
+        @Override public Parametros guardar(int actor,Cambios cambios) {
+            assertEquals(1,actor);assertEquals(new Cambios(7,90,24,10,48,2,2),cambios);
+            llamadas++;return new Parametros(7,90,3,24,10,48,2);
         }
     }
     private HttpExchange peticion(String rol){
@@ -29,7 +29,7 @@ class ConfiguracionOfertasServletTest {
     }
     @Test void elActorVieneDeLaSesionYSeRedirigeTrasGuardar() {
         var x=peticion("ADMINISTRADOR");var almacen=new Almacen();
-        x.parameters.put("tiempoLimite","7");x.parameters.put("anticipacionMinima","90");x.parameters.put("version","2");x.parameters.put("confirmacionHoras","24");x.parameters.put("toleranciaLlegada","10");x.parameters.put("idUsuario","999");
+        x.parameters.put("tiempoLimite","7");x.parameters.put("anticipacionMinima","90");x.parameters.put("version","2");x.parameters.put("confirmacionHoras","24");x.parameters.put("toleranciaLlegada","10");x.parameters.put("recordatorioHoras","48");x.parameters.put("intentosConfirmacion","2");x.parameters.put("idUsuario","999");
         servlet(almacen).doPost(x.request,x.response);assertEquals(303,x.status);assertEquals(1,almacen.llamadas);
         assertNotNull(x.session.getAttribute("flashMessage"));
     }

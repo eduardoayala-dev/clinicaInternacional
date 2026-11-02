@@ -15,6 +15,7 @@ import java.util.List;
 
 @WebServlet(name="SeguimientoConfirmacionesServlet", urlPatterns="/admin/seguimiento-confirmaciones")
 public final class SeguimientoConfirmacionesServlet extends HttpServlet {
+    private static final String RUTA="/admin/seguimiento-confirmaciones";
     private static final String FLASH_MESSAGE = "flashMessage";
     private static final java.util.logging.Logger LOGGER = java.util.logging.Logger.getLogger(SeguimientoConfirmacionesServlet.class.getName());
     private transient ConfirmacionAsistenciaDAO confirmaciones;
@@ -28,6 +29,7 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         try {
             List<ConfirmacionAsistenciaDAO.Seguimiento> pendientes=confirmaciones.listarPendientes(usuario.getIdUsuario());
             request.setAttribute("seguimientos",pendientes);
+            request.setAttribute("intentosMinimos",confirmaciones.intentosMinimos(usuario.getIdUsuario()));
             request.setAttribute("totalPendientes",pendientes.size());
             request.setAttribute("totalVencidas",pendientes.stream().filter(ConfirmacionAsistenciaDAO.Seguimiento::vencida).count());
             if (!"XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
@@ -43,16 +45,23 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         if(usuario==null) { error(response,403,"ACCESO_DENEGADO","Ingresa con una cuenta de admisión."); return; }
         try {
             int idCita=identificador(request.getParameter("idCita"));
+            if("cancelar_sin_confirmacion".equals(request.getParameter("accion"))){
+                confirmaciones.cancelarSinConfirmacion(usuario.getIdUsuario(),idCita);
+                String mensaje="Cita cancelada por falta de confirmación, con los contactos mínimos comprobados.";
+                if(json(request))ApiJson.write(response,200,new ApiResponse<>("CITA_CANCELADA",mensaje,null));
+                else{request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje);response.sendRedirect(request.getContextPath()+RUTA);}
+                return;
+            }
             var resultado=confirmaciones.registrarContacto(usuario.getIdUsuario(),idCita,
                     request.getParameter("canal"),request.getParameter("resultado"));
             String mensaje=resultado.asistenciaConfirmada()
                     ? "Contacto registrado. La asistencia quedó confirmada por admisión."
                     : "Intento de contacto registrado. La cita conserva su estado.";
             if(json(request)) ApiJson.write(response,200,new ApiResponse<>("CONTACTO_REGISTRADO",mensaje,resultado));
-            else { request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje); response.sendRedirect(request.getContextPath()+"/admin/seguimiento-confirmaciones"); }
+            else { request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje); response.sendRedirect(request.getContextPath()+RUTA); }
         } catch(AgendaException e) {
             if(json(request)) error(response,e.status(),e.code(),e.getMessage());
-            else { request.getSession(false).setAttribute(FLASH_MESSAGE,e.getMessage()); response.sendRedirect(request.getContextPath()+"/admin/seguimiento-confirmaciones"); }
+            else { request.getSession(false).setAttribute(FLASH_MESSAGE,e.getMessage()); response.sendRedirect(request.getContextPath()+RUTA); }
         }
     }
 
@@ -88,3 +97,4 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         if(!response.isCommitted()) ApiJson.write(response,estado,new ApiResponse<>(codigo,mensaje,null));
     }
 }
+

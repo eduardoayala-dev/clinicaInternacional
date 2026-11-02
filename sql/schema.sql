@@ -870,3 +870,8 @@ CREATE TABLE IF NOT EXISTS correo_recordatorio (
     CONSTRAINT chk_correo_recordatorio_intentos CHECK (intentos BETWEEN 0 AND 3),
     INDEX idx_correo_recordatorio_pendiente (estado,disponible_en)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE configuracion_ofertas ADD COLUMN recordatorio_horas INT NOT NULL DEFAULT 48;
+ALTER TABLE configuracion_ofertas ADD COLUMN intentos_confirmacion INT NOT NULL DEFAULT 2;
+ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_recordatorio CHECK(recordatorio_horas BETWEEN 1 AND 168);
+ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_intentos CHECK(intentos_confirmacion BETWEEN 1 AND 10);

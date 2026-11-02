@@ -63,3 +63,5 @@
 .seguimiento-error { padding: 12px 16px; color: #92400e; background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px; font-size: 13px; line-height: 1.5; }
 .seguimiento-error[hidden] { display: none; }
 .seguimiento-refresh[aria-disabled="true"] { opacity: .65; cursor: wait; }
+
+.seguimiento-cancelar{margin-top:10px;padding:9px 12px;border:1px solid #fca5a5;border-radius:8px;background:#fff1f2;color:#b91c1c;font:inherit;cursor:pointer;text-align:left}.seguimiento-cancelar:hover{background:#ffe4e6}.seguimiento-cancelar:focus-visible{outline:3px solid #1668b8;outline-offset:2px}
