@@ -290,6 +290,21 @@
                     </div>
                 </div>
 
+                <div class="panel">
+                    <div class="panel-title"><span>Confirmación y llegada</span><span class="panel-tag">PARÁMETROS DE ATENCIÓN</span></div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="confirmacionHoras">Límite para confirmar (horas antes de la cita): *</label>
+                            <input type="number" id="confirmacionHoras" name="confirmacionHoras" min="1" max="168" required value="<%= parametros.confirmacionHoras() %>">
+                            <span style="font-size:12px;color:var(--text-muted)">Solo cambia las nuevas reservas y reprogramaciones. Si se reserva dentro de este margen, se puede confirmar hasta la hora de la cita.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="toleranciaLlegada">Tolerancia de llegada (minutos): *</label>
+                            <input type="number" id="toleranciaLlegada" name="toleranciaLlegada" min="0" max="120" required value="<%= parametros.toleranciaLlegada() %>">
+                            <span style="font-size:12px;color:var(--text-muted)">Se aplica al registrar llegadas y comprobar ausencias. No modifica las llegadas ya registradas.</span>
+                        </div>
+                    </div>
+                </div>
                 <div class="actions-row">
                     <button type="reset" class="btn-reset">Descartar cambios</button>
                     <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar Configuración</button>

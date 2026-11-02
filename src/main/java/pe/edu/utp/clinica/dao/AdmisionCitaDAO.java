@@ -14,13 +14,13 @@ public class AdmisionCitaDAO {
 
     private final AgendaCitaDAO.ConnectionSource connections;
     private final Clock clock;
-    private final int tolerancia;
+    private final Integer tolerancia;
 
     public record Llegada(int idCita, String fechaLlegada, boolean llegoTarde, int toleranciaMinutos) {}
 
-    public AdmisionCitaDAO() {
-        this(DatabaseConfig::getConnection, Clock.system(ZoneId.of("America/Lima")),
-                Integer.parseInt(System.getenv().getOrDefault("ADMISION_TOLERANCIA_MINUTOS", "10")));
+    public AdmisionCitaDAO() {this(DatabaseConfig::getConnection,Clock.system(ZoneId.of("America/Lima")));}
+    AdmisionCitaDAO(AgendaCitaDAO.ConnectionSource connections,Clock clock) {
+        this.connections=connections;this.clock=clock.withZone(ZoneId.of("America/Lima"));this.tolerancia=null;
     }
 
     AdmisionCitaDAO(AgendaCitaDAO.ConnectionSource connections, Clock clock, int tolerancia) {
@@ -30,7 +30,8 @@ public class AdmisionCitaDAO {
         this.tolerancia = tolerancia;
     }
 
-    public int toleranciaMinutos() { return tolerancia; }
+    public int toleranciaMinutos() { return tolerancia==null?new ConfiguracionOfertasDAO(connections,Clock.systemUTC()).leer().toleranciaLlegada():tolerancia; }
+    private int tolerancia(Connection conn)throws SQLException{return tolerancia==null?ConfiguracionOfertasDAO.leer(conn).toleranciaLlegada():tolerancia;}
 
     public void cancelar(int usuario,int cita) {
         TransaccionJdbc.ejecutar(connections,conn->{
@@ -59,9 +60,10 @@ public class AdmisionCitaDAO {
                 throw new AgendaException(409,"LLEGADA_NO_DISPONIBLE","Solo puedes registrar la llegada de una cita confirmada para hoy.");
             }
             LocalDateTime programada = actual.programada();
-            boolean tarde = ahora.isAfter(programada.plusMinutes(tolerancia));
-            guardar(conn, usuario, cita, ahora, tarde);
-            return new Llegada(cita, ahora.toString(), tarde, tolerancia);
+            int toleranciaActual=tolerancia(conn);
+            boolean tarde = ahora.isAfter(programada.plusMinutes(toleranciaActual));
+            guardar(conn, usuario, cita, ahora, tarde,toleranciaActual);
+            return new Llegada(cita, ahora.toString(), tarde, toleranciaActual);
         });
     }
 
@@ -114,12 +116,13 @@ public class AdmisionCitaDAO {
             TransaccionJdbc.avisarSede(sede);
             CitaAdmision actual=bloquear(conn,sede,cita);
             LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
+            int toleranciaActual=tolerancia(conn);
             if(!CONFIRMADA.equals(actual.estado()) || actual.llegada() || !actual.programada().toLocalDate().equals(ahora.toLocalDate())
-                    || !ahora.isAfter(actual.programada().plusMinutes(tolerancia))) {
+                    || !ahora.isAfter(actual.programada().plusMinutes(toleranciaActual))) {
                 throw new AgendaException(409,"INASISTENCIA_NO_DISPONIBLE","Verifica la ausencia después de la hora de la cita y su tolerancia. Un paciente que llegó no puede registrarse como ausente.");
             }
             try(PreparedStatement ps=conn.prepareStatement("INSERT INTO inasistencia_cita(id_cita,id_usuario_personal,fecha_registro,motivo,tolerancia_minutos) VALUES(?,?,?,?,?)")) {
-                ps.setInt(1,cita);ps.setInt(2,usuario);ps.setObject(3,ahora);ps.setString(4,razon);ps.setInt(5,tolerancia);ps.executeUpdate();
+                ps.setInt(1,cita);ps.setInt(2,usuario);ps.setObject(3,ahora);ps.setString(4,razon);ps.setInt(5,toleranciaActual);ps.executeUpdate();
             }
             try(PreparedStatement ps=conn.prepareStatement("UPDATE cita SET estado='NO_ASISTIO' WHERE id_cita=? AND estado='CONFIRMADA'")) {
                 ps.setInt(1,cita);if(ps.executeUpdate()!=1) throw new AgendaException(409,"INASISTENCIA_NO_DISPONIBLE","La cita cambió de estado.");
@@ -131,10 +134,10 @@ public class AdmisionCitaDAO {
         });
     }
 
-    private void guardar(Connection conn, int usuario, int cita, LocalDateTime ahora, boolean tarde) throws SQLException {
+    private void guardar(Connection conn, int usuario, int cita, LocalDateTime ahora, boolean tarde,int toleranciaActual) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("INSERT INTO admision_cita(id_cita,id_usuario_personal,fecha_llegada,tolerancia_minutos,llego_tarde) VALUES(?,?,?,?,?)")) {
             ps.setInt(1, cita); ps.setInt(2, usuario); ps.setObject(3, ahora);
-            ps.setInt(4, tolerancia); ps.setBoolean(5, tarde);
+            ps.setInt(4, toleranciaActual); ps.setBoolean(5, tarde);
             if (ps.executeUpdate() != 1) throw new SQLException("No se registró la llegada.");
         }
         try (PreparedStatement ps = conn.prepareStatement("UPDATE cita SET estado='EN_SALA' WHERE id_cita=? AND estado='CONFIRMADA'")) {

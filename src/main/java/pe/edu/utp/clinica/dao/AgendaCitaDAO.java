@@ -23,7 +23,7 @@ public final class AgendaCitaDAO {
     private final ConnectionSource connections;
     private final Clock clock;
     private final boolean correosActivos;
-    private final int horasAnticipacionConfirmacion;
+    private final Integer horasAnticipacionConfirmacion;
 
     @FunctionalInterface
     interface ConnectionSource { Connection open() throws SQLException; }
@@ -39,8 +39,7 @@ public final class AgendaCitaDAO {
         this(connections,clock,Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false")));
     }
     AgendaCitaDAO(ConnectionSource connections, Clock clock,boolean correosActivos) {
-        this(connections, clock, correosActivos,
-                Integer.parseInt(System.getenv().getOrDefault("CONFIRMACION_CITA_HORAS_ANTES", "24")));
+        this.connections=connections;this.clock=clock;this.correosActivos=correosActivos;this.horasAnticipacionConfirmacion=null;
     }
     AgendaCitaDAO(ConnectionSource connections, Clock clock, boolean correosActivos, int horasAnticipacionConfirmacion) {
         if (horasAnticipacionConfirmacion < 1 || horasAnticipacionConfirmacion > 168) throw new IllegalArgumentException("El plazo debe estar entre 1 y 168 horas.");
@@ -373,7 +372,8 @@ public final class AgendaCitaDAO {
             ps.executeUpdate();
             int id = clave(ps);
             LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
-            LocalDateTime vence=inicio.minusHours(horasAnticipacionConfirmacion);
+            int horas=horasAnticipacionConfirmacion==null?ConfiguracionOfertasDAO.leer(conn).confirmacionHoras():horasAnticipacionConfirmacion;
+            LocalDateTime vence=inicio.minusHours(horas);
             if (!vence.isAfter(ahora)) vence=inicio;
             try (PreparedStatement confirmacion=conn.prepareStatement("INSERT INTO confirmacion_asistencia(id_cita,creada_en,vence_en) VALUES(?,?,?)")) {
                 confirmacion.setInt(1,id);confirmacion.setObject(2,ahora);confirmacion.setObject(3,vence);confirmacion.executeUpdate();

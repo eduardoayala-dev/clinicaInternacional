@@ -34,6 +34,7 @@ abstract class AgendaCitaContrato {
         String configuracion=java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V013__configuracion_ofertas.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4", "");
         for(String sentencia:configuracion.split(";")){if(!sentencia.isBlank())sql(sentencia);}
         sql("CREATE TABLE seguimiento_cita(id_cita_origen INT PRIMARY KEY,id_cita_control INT)");
+        for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V016__parametros_confirmacion_llegada.sql")).split(";")){if(!sentencia.isBlank())sql(sentencia);}
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR(20))");
@@ -165,6 +166,18 @@ abstract class AgendaCitaContrato {
         } finally {pool.shutdownNow();}
     }
 
+    @Test void laConfiguracionSoloCambiaLosPlazosDeReservasNuevas() throws Exception {
+        publicar();sql("UPDATE configuracion_ofertas SET confirmacion_horas=48");
+        int primera=reservar(1,"09:00");sql("UPDATE configuracion_ofertas SET confirmacion_horas=72");
+        int segunda=reservar(2,"09:30");
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE id_cita="+primera+" AND vence_en='2026-11-29 09:00:00'"));
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE id_cita="+segunda+" AND vence_en='2026-11-28 09:30:00'"));
+    }
+    @Test void unaReservaDentroDelMargenSeConfirmaHastaSuHora() throws Exception {
+        dao.publicar(1,1,"2026-10-27","11:00","12:00",30);sql("UPDATE configuracion_ofertas SET confirmacion_horas=48");
+        int cita=dao.reservar(1,1,"2026-10-27","11:00","MEDIA");
+        assertEquals(1,count("SELECT COUNT(*) FROM confirmacion_asistencia WHERE id_cita="+cita+" AND vence_en='2026-10-27 11:00:00'"));
+    }
     @Test void reservaConservaElMotivoDelCatalogo() throws Exception {
         publicar();
         int cita=dao.reservar(1,1,"2026-12-01","09:00","MEDIA",1);

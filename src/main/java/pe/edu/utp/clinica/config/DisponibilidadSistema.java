@@ -107,7 +107,7 @@ public final class DisponibilidadSistema implements AutoCloseable {
             try(var schema=statement.executeQuery("SELECT id_usuario,token_hash,vence_en,utilizada_en,revocada_en,estado_envio FROM invitacion_personal WHERE 1=0")) {
                 if(schema.getMetaData().getColumnCount()!=6)return false;
             }
-            try(var schema=statement.executeQuery("SELECT minutos_respuesta,anticipacion_minima,version FROM configuracion_ofertas WHERE id_configuracion=1")) {
+            try(var schema=statement.executeQuery("SELECT minutos_respuesta,anticipacion_minima,version,confirmacion_horas,tolerancia_llegada FROM configuracion_ofertas WHERE id_configuracion=1")) {
                 if(!schema.next())return false;
             }
 

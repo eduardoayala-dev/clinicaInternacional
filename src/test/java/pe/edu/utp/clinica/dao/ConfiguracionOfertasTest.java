@@ -21,7 +21,19 @@ class ConfiguracionOfertasTest {
         ejecutar("CREATE TABLE auditoria_seguridad(id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
         String migracion=Files.readString(Path.of("sql/migrations/V013__configuracion_ofertas.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");
         for(String sentencia:migracion.split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
+        for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V016__parametros_confirmacion_llegada.sql")).split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
         dao=new ConfiguracionOfertasDAO(this::abrir,Clock.fixed(Instant.parse("2026-11-01T18:00:00Z"),ZoneOffset.UTC));
+    }
+    @Test void guardaPlazoYToleranciaConAuditoriaYConservaLosParametrosDeOferta() throws Exception {
+        var guardado=dao.guardar(1,15,0,48,5,0);
+        assertEquals(48,guardado.confirmacionHoras());assertEquals(5,guardado.toleranciaLlegada());assertEquals(guardado,dao.leer());
+        var otra=dao.guardar(1,9,30,1);assertEquals(48,otra.confirmacionHoras());assertEquals(5,otra.toleranciaLlegada());
+        try(var c=abrir();var st=c.createStatement();var rs=st.executeQuery("SELECT descripcion FROM auditoria_seguridad")) {assertTrue(rs.next());assertTrue(rs.getString(1).contains("24→48 h"));}
+    }
+    @Test void rechazaConfirmacionOToleranciaFueraDeRango() {
+        for(int horas:new int[]{0,169})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,15,0,horas,10,0)).status());
+        for(int minutos:new int[]{-1,121})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,15,0,24,minutos,0)).status());
+        assertEquals(0,dao.leer().version());
     }
     @Test void persisteYUnaNuevaInstanciaLeeLaMismaVersion()throws Exception {
         var guardado=dao.guardar(1,7,90,0);

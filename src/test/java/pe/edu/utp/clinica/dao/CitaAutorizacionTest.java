@@ -28,6 +28,9 @@ class CitaAutorizacionTest {
         try (Connection conn = abrir(); Statement st = conn.createStatement()) {
             EsquemaPruebas.limpiar(conn);
             st.execute("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR(100),apellidos VARCHAR(100),email VARCHAR(150),activo BOOLEAN DEFAULT TRUE,rol VARCHAR(30) DEFAULT 'PACIENTE')");
+            String configuracion=java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V013__configuracion_ofertas.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");
+            for(String sentencia:configuracion.split(";")){if(!sentencia.isBlank())st.execute(sentencia);}
+            for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V016__parametros_confirmacion_llegada.sql")).split(";")){if(!sentencia.isBlank())st.execute(sentencia);}
             st.execute("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT,dni VARCHAR(15),telefono VARCHAR(20),fecha_nacimiento DATE,direccion VARCHAR(255),alergias VARCHAR(100),tipo_cobertura VARCHAR(50),canal_aviso VARCHAR(20),FOREIGN KEY(id_usuario) REFERENCES usuario(id_usuario))");
             st.execute("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,nombre VARCHAR(100),estado VARCHAR(20) DEFAULT 'ACTIVO')");
             st.execute("CREATE TABLE sede(id_sede INT PRIMARY KEY,nombre VARCHAR(100),estado VARCHAR(20) DEFAULT 'ACTIVO')");
