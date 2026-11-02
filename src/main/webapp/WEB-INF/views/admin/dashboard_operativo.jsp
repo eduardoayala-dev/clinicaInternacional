@@ -221,7 +221,7 @@
                 </form>
             </div>
             <p class="page-subtitle" style="margin-bottom:20px">Período: <%= filtro.desde() %> al <%= filtro.hasta() %>. Hasta 31 días por consulta. Las cifras corresponden a las citas y al estado seleccionados.</p>
-            <p id="estadoActualizacionOperativa" role="status" aria-live="polite" class="page-subtitle" style="margin-bottom:16px">Actualización automática cada 5 minutos mientras esta pestaña está visible.</p>
+            <output id="estadoActualizacionOperativa" aria-live="polite" class="page-subtitle" style="margin-bottom:16px">Actualización automática cada 5 minutos mientras esta pestaña está visible.</output>
             <div class="metrics-grid-5">
                 <div class="metric-card"><div class="metric-title">Citas del período</div><div class="metric-value"><%= resumen.total() %></div><div class="metric-sub"><%= resumen.atendidas() %> atendidas · <%= resumen.enAtencion() %> en atención<br><%= resumen.pendientes() %> activas pendientes de cierre</div></div>
                 <div class="metric-card"><div class="metric-title">Médicos habilitados</div><div class="metric-value"><%= resumen.medicos() %></div><div class="metric-sub">Personal activo de esta sede actualmente<br>No representa ocupación de consultorios</div></div>

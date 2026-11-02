@@ -246,7 +246,7 @@ public class AdminDashboardServlet extends HttpServlet {
 
     private void cargarDatosDashboardOperativo(HttpServletRequest request) {
         Usuario usuario=(Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO);
-        var filtro=pe.edu.utp.clinica.reporte.FiltroReporte.leer(request.getParameter("desde"),request.getParameter("hasta"),request.getParameter("estado"),"citas",java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
+        var filtro=pe.edu.utp.clinica.reporte.FiltroReporte.leer(request.getParameter("desde"),request.getParameter("hasta"),request.getParameter(ESTADO),"citas",java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
         int pagina=1;
         try {if(request.getParameter("pagina")!=null)pagina=Integer.parseInt(request.getParameter("pagina"));}
         catch(NumberFormatException e){throw new AgendaException(400,"PAGINA_INVALIDA","Selecciona una página válida.");}

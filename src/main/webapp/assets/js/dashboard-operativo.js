@@ -35,7 +35,7 @@
             clearTimeout(tiempo);cargando=false;controlador=null;panel.removeAttribute('aria-busy');
         }
     }
-    panel.addEventListener('click',event=>{if(event.target.closest('#actualizarOperativo'))actualizar(false);});
-    const temporizador=setInterval(()=>actualizar(true),intervalo);
+    panel.addEventListener('click',event=>{if(event.target.closest('#actualizarOperativo'))actualizar(false).catch(()=>aviso('No se pudo iniciar la actualización.'));});
+    const temporizador=setInterval(()=>actualizar(true).catch(()=>aviso('No se pudo iniciar la actualización.')),intervalo);
     window.addEventListener('pagehide',()=>{clearInterval(temporizador);if(controlador)controlador.abort();},{once:true});
 })();

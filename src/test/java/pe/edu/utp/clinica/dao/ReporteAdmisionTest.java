@@ -11,10 +11,11 @@ class ReporteAdmisionTest {
     private java.sql.Connection abrir() throws java.sql.SQLException{return esquema.abrir();}
     private Clock reloj(){return esquema.reloj();}
     private ReporteAdmisionDAO reportes;
+    private FiltroReporte criterios;
     private void ejecutar(String sql)throws Exception{try(var c=abrir();var s=c.createStatement()){s.execute(sql);}}
     private FiltroReporte filtro(){return new FiltroReporte(LocalDate.of(2026,10,28),LocalDate.of(2026,10,28),"","citas");}
     @BeforeEach void prepararReportes() throws Exception {
-        esquema=crearEsquema();esquema.setUp();
+        esquema=crearEsquema();esquema.setUp();criterios=filtro();
         reportes=new ReporteAdmisionDAO(this::abrir,reloj());
         ejecutar("INSERT INTO usuario(id_usuario,nombres,rol) VALUES(40,'Admisión','PERSONAL_ADMINISTRATIVO'),(41,'Otra sede','PERSONAL_ADMINISTRATIVO')");
         ejecutar("INSERT INTO sede(id_sede,nombre) VALUES(2,'Otra sede')");
@@ -38,11 +39,11 @@ class ReporteAdmisionTest {
         assertTrue(reportes.consultar(41,filtro(),1,true).citas().stream().anyMatch(c->c.id()==7));
     }
     @Test void usuarioDeshabilitadoPacienteYPersonalSinSedeNoObtienenDatos() throws Exception {
-        assertEquals(403,assertThrows(AgendaException.class,()->reportes.consultar(10,filtro(),1,true)).status());
+        assertEquals(403,assertThrows(AgendaException.class,()->reportes.consultar(10,criterios,1,true)).status());
         ejecutar("UPDATE usuario SET activo=FALSE WHERE id_usuario=40");
-        assertEquals(403,assertThrows(AgendaException.class,()->reportes.consultar(40,filtro(),1,true)).status());
+        assertEquals(403,assertThrows(AgendaException.class,()->reportes.consultar(40,criterios,1,true)).status());
         ejecutar("UPDATE sede SET estado='INACTIVO' WHERE id_sede=2");
-        assertEquals(403,assertThrows(AgendaException.class,()->reportes.consultar(41,filtro(),1,true)).status());
+        assertEquals(403,assertThrows(AgendaException.class,()->reportes.consultar(41,criterios,1,true)).status());
     }
     @Test void esperaYReasignacionesSeCalculanDesdeEventosReales() throws Exception {
         ejecutar("INSERT INTO admision_cita VALUES(7,40,'2026-10-28 08:55:00',10,FALSE)");
@@ -64,11 +65,11 @@ class ReporteAdmisionTest {
         try(var c=abrir();var ps=c.prepareStatement("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado) VALUES(?,1,1,'2026-10-28 12:00:00','CONFIRMADA')")) {
             for(int i=1000;i<3000;i++){ps.setInt(1,i);ps.addBatch();}ps.executeBatch();
         }
-        assertEquals(422,assertThrows(AgendaException.class,()->reportes.consultar(40,filtro(),1,true)).status());
+        assertEquals(422,assertThrows(AgendaException.class,()->reportes.consultar(40,criterios,1,true)).status());
         var f=new FiltroReporte(filtro().desde(),filtro().hasta(),"","indicadores");
         var indicadores=reportes.consultar(40,f,1,true);assertEquals(2023,indicadores.resumen().total());assertTrue(indicadores.citas().isEmpty());
     }
     @Test void falloDeBaseNoSePresentaComoUnReporteVacio() throws Exception {
-        ejecutar("DROP TABLE reasignacion_inteligente");assertEquals(503,assertThrows(AgendaException.class,()->reportes.consultar(40,filtro(),1,true)).status());
+        ejecutar("DROP TABLE reasignacion_inteligente");assertEquals(503,assertThrows(AgendaException.class,()->reportes.consultar(40,criterios,1,true)).status());
     }
 }
