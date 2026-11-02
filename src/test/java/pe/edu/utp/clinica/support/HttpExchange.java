@@ -20,6 +20,12 @@ public class HttpExchange {
     public final Map<String, String> headers = new HashMap<>();
     public final Map<String, String> responseHeaders = new HashMap<>();
     public final StringWriter body = new StringWriter();
+    public final java.io.ByteArrayOutputStream binary = new java.io.ByteArrayOutputStream();
+    private final jakarta.servlet.ServletOutputStream binaryStream = new jakarta.servlet.ServletOutputStream(){
+        @Override public boolean isReady(){return true;}
+        @Override public void setWriteListener(jakarta.servlet.WriteListener listener){throw new UnsupportedOperationException("El doble HTTP solo admite escritura síncrona.");}
+        @Override public void write(int value){binary.write(value);}
+    };
     public jakarta.servlet.http.Cookie[] cookies;
     public final java.util.List<jakarta.servlet.http.Cookie> responseCookies = new java.util.ArrayList<>();
     public final Map<String,Object> contextAttributes = new HashMap<>();
@@ -111,6 +117,7 @@ public class HttpExchange {
                     case "sendRedirect":
                         if(redirectFailure!=null) throw redirectFailure;
                         redirect = (String) args[0]; status = 302; return null;
+                    case "getOutputStream": return binaryStream;
                     case "getWriter":
                         if(writerFailure!=null) throw writerFailure;
                         return new PrintWriter(body);

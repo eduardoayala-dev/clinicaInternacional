@@ -33,7 +33,8 @@ public final class AutenticacionJwtFilter implements Filter {
         }
         chain.doFilter(request,response);
     }
-    private static boolean actividadHumana(HttpServletRequest request, String path) {
+    static boolean actividadHumana(HttpServletRequest request, String path) {
+        if ("/admin/dashboard-operativo".equals(path) && "true".equals(request.getHeader("X-Actualizacion-Automatica")))return false;
         if ("/auth/estado".equals(path) || "/admin/eventos-confirmaciones".equals(path)) return false;
         return !("/admin/seguimiento-confirmaciones".equals(path)
                 && "XMLHttpRequest".equals(request.getHeader("X-Requested-With")));

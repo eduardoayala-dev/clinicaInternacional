@@ -245,57 +245,12 @@ public class AdminDashboardServlet extends HttpServlet {
     }
 
     private void cargarDatosDashboardOperativo(HttpServletRequest request) {
-        int totalCitasBD = 0;
-        int cancelacionesBD = 0;
-        int reasignacionesExitosasBD = 0;
-        int riesgoBajoCount = 0;
-        int riesgoMedioCount = 0;
-        int riesgoAltoCount = 0;
-
-        try (Connection conn = DatabaseConfig.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) totalCitasBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita WHERE estado = 'CANCELADA'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) cancelacionesBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita WHERE estado = 'CONFIRMADA' AND riesgo_cancelacion = 'BAJO'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) riesgoBajoCount = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita WHERE riesgo_cancelacion = 'MEDIO'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) riesgoMedioCount = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita WHERE riesgo_cancelacion = 'ALTO'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) riesgoAltoCount = rs.getInt(1);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        double porcBajo = totalCitasBD > 0 ? ((double) riesgoBajoCount / totalCitasBD) * 100 : 0.0;
-        double porcMedio = totalCitasBD > 0 ? ((double) riesgoMedioCount / totalCitasBD) * 100 : 0.0;
-        double porcAlto = totalCitasBD > 0 ? ((double) riesgoAltoCount / totalCitasBD) * 100 : 0.0;
-
-        request.setAttribute("totalCitas", totalCitasBD);
-        request.setAttribute("ocupacionBoxes", "86.4%");
-        request.setAttribute("cancelaciones", cancelacionesBD);
-        request.setAttribute("reasignacionesExitosas", reasignacionesExitosasBD);
-        request.setAttribute("tiempoEspera", "18.5 min");
-
-        request.setAttribute("riesgoBajoCount", riesgoBajoCount);
-        request.setAttribute("riesgoBajoPorc", String.format(Locale.US, FORMATO_PORCENTAJE, porcBajo));
-        request.setAttribute("riesgoMedioCount", riesgoMedioCount);
-        request.setAttribute("riesgoMedioPorc", String.format(Locale.US, FORMATO_PORCENTAJE, porcMedio));
-        request.setAttribute("riesgoAltoCount", riesgoAltoCount);
-        request.setAttribute("riesgoAltoPorc", String.format(Locale.US, FORMATO_PORCENTAJE, porcAlto));
-
-        List<Map<String, Object>> citasRiesgo = obtenerCitasContactoPreventivo();
-        request.setAttribute("listaCitasRiesgo", citasRiesgo);
+        Usuario usuario=(Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO);
+        var filtro=pe.edu.utp.clinica.reporte.FiltroReporte.leer(request.getParameter("desde"),request.getParameter("hasta"),request.getParameter(ESTADO),"citas",java.time.Clock.system(java.time.ZoneId.of(ZONA_CLINICA)));
+        int pagina=1;
+        try {if(request.getParameter("pagina")!=null)pagina=Integer.parseInt(request.getParameter("pagina"));}
+        catch(NumberFormatException e){throw new AgendaException(400,"PAGINA_INVALIDA","Selecciona una página válida.");}
+        request.setAttribute("reporte",new pe.edu.utp.clinica.dao.ReporteAdmisionDAO().consultar(usuario.getIdUsuario(),filtro,pagina,false));
     }
 
     @Override
@@ -506,17 +461,6 @@ public class AdminDashboardServlet extends HttpServlet {
         r1.put("candidatosHtml", "1. <span style='color:#991b1b; text-decoration:line-through;'>Juan Pérez (Rechazó)</span><br>2. <span style='color:#166534; font-weight:600;'>✓ María Ramos (Aceptó)</span>");
         r1.put("tiempo", "14m 12s"); r1.put("tiempoClass", "time-ok");
         list.add(r1);
-        return list;
-    }
-
-    private List<Map<String, Object>> obtenerCitasContactoPreventivo() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> cr1 = new HashMap<>();
-        cr1.put(HORA, "11:30"); cr1.put("paciente", "Beatriz Sandoval Ramos"); cr1.put("hc", "HC-76120");
-        cr1.put("contacto", "+51 955 889 001"); cr1.put("sedeCons", "Sede Central / C-008");
-        cr1.put(MEDICO, "Dr. Carlos Mendoza"); cr1.put("riesgo", "ALTO"); cr1.put("riesgoClass", "badge-high");
-        cr1.put("confirmacion", "SIN RESPUESTA"); cr1.put("confirmClass", "confirm-no");
-        list.add(cr1);
         return list;
     }
 

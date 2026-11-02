@@ -1,28 +1,19 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
-<%@ page import="java.util.List" %>
-<%@ page import="java.util.Map" %>
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
+<%@ page import="pe.edu.utp.clinica.dao.ReporteAdmisionDAO" %>
+<%@ page import="java.util.Locale" %>
 <%
-    Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
-    String nombrePersonal = (String) request.getAttribute("nombrePersonal");
-    if (nombrePersonal == null && usuario != null) {
-        nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
-    }
-    if (nombrePersonal == null) nombrePersonal = "Lic. Marina Salvatierra";
-
-    List<Map<String, Object>> listaCitasRiesgo = (List<Map<String, Object>>) request.getAttribute("listaCitasRiesgo");
-    Integer totalCitas = (Integer) request.getAttribute("totalCitas"); if (totalCitas == null) totalCitas = 420;
-    String ocupacionBoxes = (String) request.getAttribute("ocupacionBoxes"); if (ocupacionBoxes == null) ocupacionBoxes = "86.4%";
-    Integer cancelaciones = (Integer) request.getAttribute("cancelaciones"); if (cancelaciones == null) cancelaciones = 38;
-    Integer reasignacionesExitosas = (Integer) request.getAttribute("reasignacionesExitosas"); if (reasignacionesExitosas == null) reasignacionesExitosas = 32;
-    String tiempoEspera = (String) request.getAttribute("tiempoEspera"); if (tiempoEspera == null) tiempoEspera = "31.4 min";
-
-    Integer riesgoBajoCount = (Integer) request.getAttribute("riesgoBajoCount"); if (riesgoBajoCount == null) riesgoBajoCount = 286;
-    String riesgoBajoPorc = (String) request.getAttribute("riesgoBajoPorc"); if (riesgoBajoPorc == null) riesgoBajoPorc = "68.1%";
-    Integer riesgoMedioCount = (Integer) request.getAttribute("riesgoMedioCount"); if (riesgoMedioCount == null) riesgoMedioCount = 92;
-    String riesgoMedioPorc = (String) request.getAttribute("riesgoMedioPorc"); if (riesgoMedioPorc == null) riesgoMedioPorc = "21.9%";
-    Integer riesgoAltoCount = (Integer) request.getAttribute("riesgoAltoCount"); if (riesgoAltoCount == null) riesgoAltoCount = 42;
-    String riesgoAltoPorc = (String) request.getAttribute("riesgoAltoPorc"); if (riesgoAltoPorc == null) riesgoAltoPorc = "10.0%";
+    Usuario usuario=(Usuario)session.getAttribute("usuarioLogueado");
+    String nombrePersonal=usuario==null?"Personal de admisión":usuario.getNombres()+" "+usuario.getApellidos();
+    ReporteAdmisionDAO.Reporte reporte=(ReporteAdmisionDAO.Reporte)request.getAttribute("reporte");
+    var resumen=reporte.resumen();var filtro=reporte.filtro();
+    String parametros="desde="+filtro.desde()+"&hasta="+filtro.hasta()+"&estado="+filtro.estado();
+    String ruta=request.getContextPath()+"/admin/dashboard-operativo?"+parametros;
+    String exportar=request.getContextPath()+"/admin/export?"+parametros;
+%>
+<%!
+    private static String porcentaje(long valor,long total){return total==0?"Sin datos":String.format(Locale.ROOT,"%.1f%%",valor*100.0/total);}
 %>
 <!DOCTYPE html>
 <html lang="es">
@@ -169,7 +160,8 @@
         .pagination-btns { display: flex; gap: 8px; }
         .btn-page { padding: 6px 12px; border-radius: var(--radius-md); border: 1px solid var(--border-light); background: #fff; font-size: 12px; cursor: pointer; }
         .btn-page:hover { background: var(--bg-body); }
-    </style>
+    @media(max-width:1200px){.metrics-grid-5{grid-template-columns:repeat(2,minmax(0,1fr))}.page-header{flex-wrap:wrap;gap:16px}.header-filters{flex-wrap:wrap}} @media(max-width:700px){.metrics-grid-5,.risk-grid{grid-template-columns:1fr}.main-content{padding:16px}.sidebar{width:180px}.header-filters label{display:flex;flex-direction:column;gap:4px}}
+</style>
 </head>
 <body>
 
@@ -179,7 +171,7 @@
         </div>
         <div class="topbar-right">
             <div class="user-info">
-                <span class="user-name"><%= nombrePersonal %></span>
+                <span class="user-name"><%= Html.texto(nombrePersonal) %></span>
                 <span class="user-role">PERSONAL ADMINISTRATIVO</span>
             </div>
             <div class="user-avatar"><i data-lucide="user" style="width: 18px; height: 18px;"></i></div>
@@ -213,176 +205,65 @@
             </a>
         </aside>
 
-        <main class="main-content">
+        <main class="main-content" id="panelOperativo">
             <div class="page-header">
-                <div>
-                    <h1 class="page-title">Dashboard Operativo de Admisión y Atención Ambulatoria</h1>
-                    <p class="page-subtitle">Consolidado diario de citas, disponibilidad médica en tiempo real y riesgo de inasistencia</p>
-                </div>
-                <div class="header-filters">
-                    <select class="select-filter">
-                        <option value="HOY">Período: HOY (07 de Octubre de 2026)</option>
-                    </select>
-                    <select class="select-filter">
-                        <option value="TODAS">Sede: TODAS LAS SEDES (04)</option>
-                    </select>
-                    <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="btn-refresh"><i data-lucide="refresh-cw" style="width: 14px;"></i> Actualizar Ahora</a>
-                </div>
+                <div><h1 class="page-title">Dashboard operativo</h1><p class="page-subtitle"><%= Html.texto(reporte.sede()) %> · Actualizado <%= Html.texto(reporte.actualizado().toString().replace('T',' ')) %> (Lima)</p></div>
+                <form id="filtrosOperativo" class="header-filters" method="get" action="${pageContext.request.contextPath}/admin/dashboard-operativo">
+                    <label for="desde">Desde <input class="select-filter" id="desde" name="desde" type="date" required value="<%= filtro.desde() %>"></label>
+                    <label for="hasta">Hasta <input class="select-filter" id="hasta" name="hasta" type="date" required value="<%= filtro.hasta() %>"></label>
+                    <label for="estado">Estado <select class="select-filter" id="estado" name="estado">
+                        <option value="">Todos</option>
+                        <% for(String estado:java.util.List.of("SOLICITADA","CONFIRMADA","EN_SALA","EN_ATENCION","ATENDIDA","NO_ASISTIO","NO_ATENDIDA","REPROGRAMADA","CANCELADA")){ %>
+                        <option value="<%= estado %>" <%= estado.equals(filtro.estado())?"selected":"" %>><%= estado.replace('_',' ') %></option><% } %>
+                    </select></label>
+                    <button type="submit" class="btn-refresh">Consultar</button>
+                    <button type="button" id="actualizarOperativo" class="btn-refresh">Actualizar ahora</button>
+                </form>
             </div>
-
-            <!-- SECCIÓN 1: MÉTRICAS OPERATIVAS -->
-            <div class="section-heading">
-                <span>Sección 1 // Métricas Operativas Diarias en Tiempo Real</span>
-                <span style="font-size:11px; color:var(--text-muted); font-weight:500;">Total Registros: <%= totalCitas %> Citas</span>
-            </div>
-
+            <p class="page-subtitle" style="margin-bottom:20px">Período: <%= filtro.desde() %> al <%= filtro.hasta() %>. Hasta 31 días por consulta. Las cifras corresponden a las citas y al estado seleccionados.</p>
+            <output id="estadoActualizacionOperativa" aria-live="polite" class="page-subtitle" style="margin-bottom:16px">Actualización automática cada 5 minutos mientras esta pestaña está visible.</output>
             <div class="metrics-grid-5">
-                <div class="metric-card">
-                    <div class="metric-title">Citas del Día</div>
-                    <div class="metric-value"><%= totalCitas %></div>
-                    <div class="metric-sub">310 atendidas / en curso<br>72 pendientes | <%= cancelaciones %> canceladas</div>
-                    <div><span class="metric-tag tag-green">Cumplimiento: 90.9%</span></div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">Disponibilidad Médica</div>
-                    <div class="metric-value"><%= ocupacionBoxes %></div>
-                    <div class="metric-sub">74 de 84 médicos activos<br>74 en consulta | 10 en descanso</div>
-                    <div><span class="metric-tag tag-blue">Capacidad: Alta</span></div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">Cancelaciones</div>
-                    <div class="metric-value"><%= cancelaciones %></div>
-                    <div class="metric-sub">Tasa del día: 9.0%<br>30 anticipadas | 08 tardías</div>
-                    <div><span class="metric-tag tag-amber">Límite Alerta: 12.0%</span></div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">Reasignaciones Exit.</div>
-                    <div class="metric-value"><%= reasignacionesExitosas %></div>
-                    <div class="metric-sub">Tasa éxito: 84.2%<br>32 reasignadas de 38 lib.</div>
-                    <div><span class="metric-tag tag-green">Rendimiento: Óptimo</span></div>
-                </div>
-
-                <div class="metric-card">
-                    <div class="metric-title">Tiempo Espera Sala</div>
-                    <div class="metric-value"><%= tiempoEspera %></div>
-                    <div class="metric-sub">Mediana actual: 21.8 min<br>Máx: 41 min | Meta: 25 min</div>
-                    <div><span class="metric-tag tag-blue">Dentro de Tolerancia</span></div>
-                </div>
+                <div class="metric-card"><div class="metric-title">Citas del período</div><div class="metric-value"><%= resumen.total() %></div><div class="metric-sub"><%= resumen.atendidas() %> atendidas · <%= resumen.enAtencion() %> en atención<br><%= resumen.pendientes() %> activas pendientes de cierre</div></div>
+                <div class="metric-card"><div class="metric-title">Médicos habilitados</div><div class="metric-value"><%= resumen.medicos() %></div><div class="metric-sub">Personal activo de esta sede actualmente<br>No representa ocupación de consultorios</div></div>
+                <div class="metric-card"><div class="metric-title">Citas canceladas</div><div class="metric-value"><%= resumen.canceladas() %></div><div class="metric-sub"><%= porcentaje(resumen.canceladas(),resumen.total()) %> de las citas filtradas<br>Según el estado actual de cada cita</div></div>
+                <div class="metric-card"><div class="metric-title">Ofertas aceptadas</div><div class="metric-value"><%= resumen.aceptadas() %></div><div class="metric-sub"><%= resumen.ofertas() %> ofertas sobre cupos del período<br>Tasa de aceptación: <%= porcentaje(resumen.aceptadas(),resumen.ofertas()) %></div></div>
+                <div class="metric-card"><div class="metric-title">Espera media registrada</div><div class="metric-value"><%= resumen.esperaMedia()==null?"Sin datos":String.format(Locale.ROOT,"%.1f min",resumen.esperaMedia()) %></div><div class="metric-sub">Desde la llegada hasta iniciar la atención<br>Solo registros con ambas horas válidas</div></div>
             </div>
-
-            <!-- SECCIÓN 2: RIESGO DE INASISTENCIA -->
-            <div class="section-heading">
-                <span>Sección 2 // Distribución de Riesgo de Inasistencia Calculado por el Sistema (Solo Lectura)</span>
-            </div>
-
+            <div class="section-heading"><span>Riesgo registrado en citas activas</span></div>
             <div class="risk-grid">
-                <div class="risk-card low">
-                    <div class="risk-header">
-                        <span class="risk-title">Riesgo Bajo</span>
-                        <span class="risk-badge badge-low"><%= riesgoBajoPorc %></span>
-                    </div>
-                    <div class="risk-count"><%= riesgoBajoCount %> Pacientes <span style="font-size:13px; font-weight:400; color:var(--text-muted);">/ <%= totalCitas %> citas</span></div>
-                    <p class="risk-desc">Criterio: Historial de asistencia puntual, confirmación activa vía SMS/WhatsApp, tiempo de reserva reciente (&lt; 7 días).</p>
-                    <span class="risk-action">Acción sugerida: Monitoreo Pasivo</span>
-                </div>
-
-                <div class="risk-card med">
-                    <div class="risk-header">
-                        <span class="risk-title">Riesgo Medio</span>
-                        <span class="risk-badge badge-med"><%= riesgoMedioPorc %></span>
-                    </div>
-                    <div class="risk-count"><%= riesgoMedioCount %> Pacientes <span style="font-size:13px; font-weight:400; color:var(--text-muted);">/ <%= totalCitas %> citas</span></div>
-                    <p class="risk-desc">Criterio: Cita agendada con más de 15 días de antelación, sin confirmación recibida o 1 reagendamiento previo.</p>
-                    <span class="risk-action" style="color:#d97706;">Acción sugerida: Mensaje Recordatorio</span>
-                </div>
-
-                <div class="risk-card high">
-                    <div class="risk-header">
-                        <span class="risk-title">Riesgo Alto</span>
-                        <span class="risk-badge badge-high"><%= riesgoAltoPorc %></span>
-                    </div>
-                    <div class="risk-count"><%= riesgoAltoCount %> Pacientes <span style="font-size:13px; font-weight:400; color:var(--text-muted);">/ <%= totalCitas %> citas</span></div>
-                    <p class="risk-desc">Criterio: Historial reincidente de cancelaciones tardías / inasistencias previas (&gt;2), o intento fallido de validación telefónica.</p>
-                    <span class="risk-action" style="color:#dc2626;">Acción sugerida: Llamada de Contacto Preventivo</span>
-                </div>
+                <div class="risk-card low"><div class="risk-header"><span class="risk-title">Bajo</span><span class="risk-badge badge-low"><%= porcentaje(resumen.bajo(),resumen.pendientes()) %></span></div><div class="risk-count"><%= resumen.bajo() %> citas</div></div>
+                <div class="risk-card med"><div class="risk-header"><span class="risk-title">Medio</span><span class="risk-badge badge-med"><%= porcentaje(resumen.medio(),resumen.pendientes()) %></span></div><div class="risk-count"><%= resumen.medio() %> citas</div></div>
+                <div class="risk-card high"><div class="risk-header"><span class="risk-title">Alto</span><span class="risk-badge badge-high"><%= porcentaje(resumen.alto(),resumen.pendientes()) %></span></div><div class="risk-count"><%= resumen.alto() %> citas</div></div>
             </div>
-
-            <!-- TABLA CONTACTO PREVENTIVO -->
+            <p class="page-subtitle" style="margin:12px 0 20px">Sin clasificación: <%= resumen.sinRiesgo() %> citas activas. Se muestra el nivel guardado por el sistema; este tablero no calcula una nueva predicción.</p>
             <div class="panel">
-                <div class="section-heading" style="margin-bottom:12px;">
-                    <span style="color:var(--text-main); font-size:14px;">Tabla de Seguimiento de Contacto Preventivo // Citas en Riesgo Prioritario (Hoy)</span>
-                    <span style="font-size:11px; color:var(--text-muted); font-weight:500;">Modo Inspección</span>
-                </div>
-
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Hora</th>
-                            <th>Paciente</th>
-                            <th>Contacto</th>
-                            <th>Sede / Cons.</th>
-                            <th>Médico Asignado</th>
-                            <th>Nivel de Riesgo</th>
-                            <th>Estado Confirmación</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <% if (listaCitasRiesgo != null && !listaCitasRiesgo.isEmpty()) {
-                            for (Map<String, Object> cr : listaCitasRiesgo) {
-                                String hora = (String) cr.get("hora");
-                                String paciente = (String) cr.get("paciente");
-                                String hc = (String) cr.get("hc");
-                                String contacto = (String) cr.get("contacto");
-                                String sedeCons = (String) cr.get("sedeCons");
-                                String medico = (String) cr.get("medico");
-                                String riesgo = (String) cr.get("riesgo");
-                                String riesgoClass = (String) cr.get("riesgoClass");
-                                String confirmacion = (String) cr.get("confirmacion");
-                                String confirmClass = (String) cr.get("confirmClass");
-                        %>
-                        <tr>
-                            <td><strong><%= hora %></strong></td>
-                            <td><%= paciente %><br><span style="font-size:11px; color:var(--text-muted);"><%= hc %></span></td>
-                            <td><%= contacto %></td>
-                            <td><%= sedeCons %></td>
-                            <td><%= medico %></td>
-                            <td><span class="badge-risk-pill <%= riesgoClass %>"><%= riesgo %></span></td>
-                            <td><span class="badge-confirm-pill <%= confirmClass %>"><%= confirmacion %></span></td>
-                        </tr>
-                        <%  }
-                           } %>
-                    </tbody>
-                </table>
-
-                <div class="table-footer">
-                    <span>Mostrando <%= listaCitasRiesgo != null ? listaCitasRiesgo.size() : 4 %> de <%= riesgoAltoCount %> casos prioritarios de contacto</span>
-                    <div class="pagination-btns">
-                        <button class="btn-page">&lt; Anterior</button>
-                        <button class="btn-page" style="background: var(--primary); color: #fff; border-color: var(--primary);">1</button>
-                        <button class="btn-page">2</button>
-                        <button class="btn-page">3</button>
-                        <button class="btn-page">Siguiente &gt;</button>
-                    </div>
+                <div class="section-heading"><span>Citas del período seleccionado</span></div>
+                <div style="overflow-x:auto"><table><thead><tr><th>Cita</th><th>Fecha y hora</th><th>Paciente</th><th>Documento</th><th>Médico</th><th>Especialidad</th><th>Estado</th><th>Asistencia</th></tr></thead><tbody>
+                <% if(reporte.citas().isEmpty()){ %><tr><td colspan="8">No hay citas para estos filtros.</td></tr><% } %>
+                <% for(var cita:reporte.citas()){ %><tr>
+                    <td>#<%= cita.id() %></td><td><%= Html.texto(cita.fecha().toString().replace('T',' ')) %></td><td><%= Html.texto(cita.paciente()) %></td><td><%= Html.texto(cita.documento()) %></td><td><%= Html.texto(cita.medico()) %></td><td><%= Html.texto(cita.especialidad()) %></td><td><%= Html.texto(cita.estado().replace('_',' ')) %></td><td><%= Html.texto(cita.confirmacion()) %></td>
+                </tr><% } %></tbody></table></div>
+                <div class="table-footer" style="justify-content:flex-end;gap:12px">
+                    <% if(reporte.pagina()>1){ %><a class="btn-page" href="<%= Html.texto(ruta+"&pagina="+(reporte.pagina()-1)) %>">Anterior</a><% } %>
+                    <span>Página <%= reporte.pagina() %> de <%= reporte.paginas() %> · <%= resumen.total() %> citas</span>
+                    <% if(reporte.pagina()<reporte.paginas()){ %><a class="btn-page" href="<%= Html.texto(ruta+"&pagina="+(reporte.pagina()+1)) %>">Siguiente</a><% } %>
                 </div>
             </div>
-
-            <!-- DISPONIBILIDAD DE INFORMES -->
-            <div class="reports-bar">
-                <div>
-                    <h4 style="font-size: 14px; font-weight: 700; color: var(--text-main);">Disponibilidad de Informes</h4>
-                    <p style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">Generación automática de auditoría diaria para archivo administrativo.</p>
-                </div>
-                <div style="display: flex; gap: 12px;">
-                    <a href="${pageContext.request.contextPath}/admin/export?format=pdf" target="_blank" class="btn-report"><i data-lucide="file-text" style="width: 16px; color: #ef4444;"></i> Exportar Reporte del Día (PDF)</a>
-                    <a href="${pageContext.request.contextPath}/admin/export?format=csv" class="btn-report"><i data-lucide="file-spreadsheet" style="width: 16px; color: #166534;"></i> Descargar CSV de Contacto Preventivo</a>
+            <div class="reports-bar" style="flex-wrap:wrap;gap:16px">
+                <div><h2 style="font-size:14px">Descargar reportes</h2><p class="page-subtitle">Hasta 2000 citas por archivo. Se aplican este período, estado y sede.</p></div>
+                <div style="display:flex;flex-wrap:wrap;gap:12px">
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=pdf") %>">Citas PDF</a>
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=xlsx") %>">Citas Excel</a>
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=csv") %>">Citas CSV</a>
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=pdf&type=indicadores") %>">Indicadores PDF</a>
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=xlsx&type=indicadores") %>">Indicadores Excel</a>
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=csv&type=indicadores") %>">Indicadores CSV</a>
+                    <a class="btn-report" href="<%= Html.texto(exportar+"&format=csv&type=contacto") %>">CSV de contacto preventivo</a>
                 </div>
             </div>
-        </main>
-    </div>
+        </main></div>
 
+    <script src="${pageContext.request.contextPath}/assets/js/dashboard-operativo.js"></script>
     <script>
         lucide.createIcons();
     </script>
