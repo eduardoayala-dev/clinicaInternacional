@@ -32,9 +32,9 @@ public class ConfiguracionOfertasServlet extends HttpServlet {
     private void guardar(HttpServletRequest request,HttpServletResponse response)throws IOException {
         Usuario usuario=actor(request);
         try {
-            almacen().guardar(usuario.getIdUsuario(),Integer.parseInt(request.getParameter("tiempoLimite")),
-                    Integer.parseInt(request.getParameter("anticipacionMinima")),Integer.parseInt(request.getParameter("confirmacionHoras")),Integer.parseInt(request.getParameter("toleranciaLlegada")),Long.parseLong(request.getParameter("version")));
-            request.getSession().setAttribute("flashMessage","Configuración guardada. Los plazos nuevos se aplican a futuras reservas y ofertas; los registros existentes conservan sus valores. La tolerancia se usa en las nuevas admisiones y comprobaciones de ausencia.");
+            almacen().guardar(usuario.getIdUsuario(),new ConfiguracionOfertasDAO.Cambios(Integer.parseInt(request.getParameter("tiempoLimite")),
+                    Integer.parseInt(request.getParameter("anticipacionMinima")),Integer.parseInt(request.getParameter("confirmacionHoras")),Integer.parseInt(request.getParameter("toleranciaLlegada")),Integer.parseInt(request.getParameter("recordatorioHoras")),Integer.parseInt(request.getParameter("intentosConfirmacion")),Long.parseLong(request.getParameter("version"))));
+            request.getSession().setAttribute("flashMessage","Configuración guardada. Las reservas y ofertas existentes conservan sus plazos. El recordatorio se consulta en el próximo ciclo habilitado; los contactos mínimos y la tolerancia se comprueban en las nuevas gestiones.");
         } catch(NumberFormatException e){request.getSession().setAttribute("flashError","Completa los parámetros con números válidos.");}
         catch(AgendaException e){request.getSession().setAttribute("flashError",e.getMessage());}
         response.setStatus(303);response.setHeader("Location",request.getContextPath()+RUTA);

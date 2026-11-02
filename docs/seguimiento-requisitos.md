@@ -26,7 +26,7 @@ Actualización: 02/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 | 007 / 07 | Registro, DNI, perfil, correo y contraseña verificados | Estado de contacto verificado y medio habitual de confirmación; uniformar edición por admisión |
 | 008 / 08 | Prioridad, fecha e indicación; vigencia y control vinculado | Regresión conjunta de seguimientos con los demás flujos y alcance por motivo de seguimiento |
 | 009 / 09 | Búsqueda de horarios publicados y retención real | Medición de búsqueda menor de 3 segundos |
-| 010 / 10 | Reserva, asistencia separada, reprogramación/cancelación y retención | Enlaces de correo para confirmar/cancelar e intentos configurados antes de cancelar por falta de confirmación |
+| 010 / 10 | Reserva, asistencia separada, reprogramación/cancelación y retención | Enlaces de correo para confirmar/cancelar; política de contactos implementada y comprobada |
 | 011 / 11 | Compatibilidad, prioridad vigente, antigüedad y ofertas exclusivas | Criterios configurables, protección contra postergación y explicación del candidato elegido |
 | 012 / 12 | Llegada por admisión, tardanza y atención por médico | Regresión integral por sede y cierre de atenciones pendientes; no inferir inasistencia por cambio de día |
 | 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
@@ -34,7 +34,7 @@ Actualización: 02/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 | 015 / 15 | Seguimiento de admisión con SSE; tablero operativo real por sede | Refresco, actualización manual y descargas comprobados; revisar indicadores del inicio administrativo y SysAdmin |
 | 016 / 16 | Exportación médica; reportes de admisión con filtros en PDF/XLSX/CSV | Exportación de indicadores comprobada; completar analítica y exportaciones del administrador del sistema y padrones |
 | 017 / 17 | Confirmaciones e intentos de contacto registrados | Integrar modelo con datos históricos, factores y aumento de nivel al vencer; no presentar el simulador sintético como validación real |
-| 018 / 18 | Plazos de oferta/confirmación y tolerancia configurables | Anticipación de recordatorio editable en el panel, intentos y criterios de priorización centralizados |
+| 018 / 18 | Plazos de oferta/confirmación y tolerancia configurables; recordatorio y contactos mínimos en revisión | Criterios de priorización centralizados |
 
 ## Requisitos no funcionales
 

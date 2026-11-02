@@ -28,6 +28,7 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         try {
             List<ConfirmacionAsistenciaDAO.Seguimiento> pendientes=confirmaciones.listarPendientes(usuario.getIdUsuario());
             request.setAttribute("seguimientos",pendientes);
+            request.setAttribute("intentosMinimos",confirmaciones.intentosMinimos(usuario.getIdUsuario()));
             request.setAttribute("totalPendientes",pendientes.size());
             request.setAttribute("totalVencidas",pendientes.stream().filter(ConfirmacionAsistenciaDAO.Seguimiento::vencida).count());
             if (!"XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
@@ -43,6 +44,13 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         if(usuario==null) { error(response,403,"ACCESO_DENEGADO","Ingresa con una cuenta de admisión."); return; }
         try {
             int idCita=identificador(request.getParameter("idCita"));
+            if("cancelar_sin_confirmacion".equals(request.getParameter("accion"))){
+                confirmaciones.cancelarSinConfirmacion(usuario.getIdUsuario(),idCita);
+                String mensaje="Cita cancelada por falta de confirmación, con los contactos mínimos comprobados.";
+                if(json(request))ApiJson.write(response,200,new ApiResponse<>("CITA_CANCELADA",mensaje,null));
+                else{request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje);response.sendRedirect(request.getContextPath()+"/admin/seguimiento-confirmaciones");}
+                return;
+            }
             var resultado=confirmaciones.registrarContacto(usuario.getIdUsuario(),idCita,
                     request.getParameter("canal"),request.getParameter("resultado"));
             String mensaje=resultado.asistenciaConfirmada()

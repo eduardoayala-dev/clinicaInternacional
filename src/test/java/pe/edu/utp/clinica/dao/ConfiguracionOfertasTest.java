@@ -22,6 +22,7 @@ class ConfiguracionOfertasTest {
         String migracion=Files.readString(Path.of("sql/migrations/V013__configuracion_ofertas.sql")).replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");
         for(String sentencia:migracion.split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
         for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V016__parametros_confirmacion_llegada.sql")).split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
+        for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V019__politica_contacto_recordatorio.sql")).split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
         dao=new ConfiguracionOfertasDAO(this::abrir,Clock.fixed(Instant.parse("2026-11-01T18:00:00Z"),ZoneOffset.UTC));
     }
     @Test void guardaPlazoYToleranciaConAuditoriaYConservaLosParametrosDeOferta() throws Exception {
@@ -33,6 +34,17 @@ class ConfiguracionOfertasTest {
     @Test void rechazaConfirmacionOToleranciaFueraDeRango() {
         for(int horas:new int[]{0,169})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,15,0,horas,10,0)).status());
         for(int minutos:new int[]{-1,121})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,15,0,24,minutos,0)).status());
+        assertEquals(0,dao.leer().version());
+    }
+    @Test void guardaRecordatorioEIntentosSinQueUnGuardadoAnteriorLosReinicie(){
+        var nuevo=dao.guardar(1,new ConfiguracionOfertasDAO.Cambios(15,0,24,10,36,3,0));
+        assertEquals(36,nuevo.recordatorioHoras());assertEquals(3,nuevo.intentosConfirmacion());assertEquals(nuevo,dao.leer());
+        var otro=dao.guardar(1,10,20,1);
+        assertEquals(36,otro.recordatorioHoras());assertEquals(3,otro.intentosConfirmacion());
+    }
+    @Test void rechazaLimitesDeRecordatorioEIntentos(){
+        for(int horas:new int[]{0,169})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,new ConfiguracionOfertasDAO.Cambios(15,0,24,10,horas,2,0))).status());
+        for(int intentos:new int[]{0,11})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,new ConfiguracionOfertasDAO.Cambios(15,0,24,10,48,intentos,0))).status());
         assertEquals(0,dao.leer().version());
     }
     @Test void persisteYUnaNuevaInstanciaLeeLaMismaVersion()throws Exception {

@@ -305,6 +305,21 @@
                         </div>
                     </div>
                 </div>
+                    <div class="panel">
+                        <div class="panel-title"><span>Recordatorios y contactos</span><span class="panel-tag">SEGUIMIENTO DE ASISTENCIA</span></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recordatorioHoras">Recordar la cita (horas antes): *</label>
+                                <input type="number" id="recordatorioHoras" name="recordatorioHoras" min="1" max="168" required value="<%= parametros.recordatorioHoras() %>">
+                                <span style="font-size:12px;color:var(--text-muted)">Se consulta en cada ciclo si el envío automático está habilitado. No repite recordatorios ya procesados.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="intentosConfirmacion">Contactos mínimos para cancelar por falta de confirmación: *</label>
+                                <input type="number" id="intentosConfirmacion" name="intentosConfirmacion" min="1" max="10" required value="<%= parametros.intentosConfirmacion() %>">
+                                <span style="font-size:12px;color:var(--text-muted)">Solo contactos realizados por admisión. Además debe vencer el plazo; la cancelación siempre es manual.</span>
+                            </div>
+                        </div>
+                    </div>
                 <div class="actions-row">
                     <button type="reset" class="btn-reset">Descartar cambios</button>
                     <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar Configuración</button>
