@@ -28,6 +28,12 @@
 .orientation-search-note { display: flex; align-items: center; justify-content: space-between; gap: 16px; background: #d1fae5; padding: 12px 16px; border-radius: 8px; margin-bottom: 20px; font-size: 13px; color: #065f46; }
 .orientation-search-note[hidden] { display: none; }
 .orientation-search-note button { background: none; border: 0; color: #15599d; cursor: pointer; flex-shrink: 0; }
+.orientation-success-icon{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border-radius:10px;background:#d1fae5;color:#047857;margin-bottom:12px}
+.orientation-success-label{font-size:12px;color:#047857;margin:0 0 10px}.orientation-result-title{font-size:21px;color:#12345b;font-weight:700;margin:0 0 16px}
+.orientation-result-description{font-size:14px;line-height:1.7;color:#557ca6;margin:0 0 10px;max-width:100ch}
+.patient-booking .ai-demo-actions-result{border-top:0;padding-top:0}.orientation-other-specialty{display:block;background:none;border:0;padding:12px 0 0;color:#1668b8;font:inherit;font-size:13px;cursor:pointer}
+.orientation-other-specialty:focus-visible{outline:3px solid #1668b8;outline-offset:4px}
+.orientation-back-link{display:inline-flex;align-items:center;gap:8px;background:none;border:0;color:#1668b8;font:inherit;font-size:13px;padding:0;margin:0 0 20px;cursor:pointer}.orientation-back-link[hidden]{display:none}.orientation-back-link svg{width:15px;height:15px}.orientation-back-link:hover{text-decoration:underline}.orientation-back-link:focus-visible{outline:3px solid #1668b8;outline-offset:4px}
 @media (max-width: 600px) {
     .booking-summary .resumen-row-item { align-items: flex-start; gap: 12px; flex-direction: column; }
     .booking-reason { width: 100%; max-width: none; }

@@ -46,9 +46,9 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261030-3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261102-3">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261030-4">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261102-2">
 </head>
 <body>
 
@@ -68,6 +68,7 @@
         <header class="dash-top-header">
             <nav class="breadcrumb-trail">
                 <span>Paciente</span> <span class="bc-sep">/</span> <strong>Programar cita</strong>
+                <span id="aiRutaOrientacion" hidden> / Orientación por síntomas</span>
             </nav>
 
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
@@ -82,6 +83,7 @@
         <!-- CONTENEDOR CON SCROLL -->
         <div class="citas-scroll-container">
             <div class="buscar-wrapper">
+                <button type="button" id="aiVolverOpciones" class="orientation-back-link" onclick="volverASeleccionModos()" hidden><i data-lucide="arrow-left" aria-hidden="true"></i>Volver a opciones</button>
 
                 <!-- CABECERA DE PÁGINA (TÍTULO, SUBTÍTULO Y BOTÓN VOLVER) -->
                 <div class="page-title-row-with-back" id="pageTitleRow">
@@ -109,12 +111,12 @@
                                         <span class="mode-ai-mark" aria-hidden="true">IA</span>
                                     </div>
                                     <span class="mode-badge-pill badge-pill-mint">
-                                        Prototipo · IA opcional
+                                        Asistido por IA
                                     </span>
                                 </div>
                                 <h2 class="mode-card-title">No sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
-                                    En esta demostración académica puedes probar casos ficticios para sugerir una especialidad del catálogo. La sugerencia no asigna prioridad clínica.
+                                    Selecciona las molestias del caso para encontrar una especialidad del catálogo. La orientación no es un diagnóstico.
                                 </p>
                             </div>
 
@@ -160,7 +162,7 @@
                 <!-- ======================================================= -->
                 <div id="aiTriagePanel" class="ai-triage-box">
 <div id="aiFormulario">
-<h2 class="orientation-question">¿Qué síntomas presenta el ejemplo?</h2><p class="orientation-help">Selecciona todos los que apliquen.</p>
+<h2 class="orientation-question">Selecciona los síntomas</h2><p class="orientation-help">Selecciona todos los que apliquen.</p>
 <div class="quick-chips-wrapper"><button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de cabeza')">Dolor de cabeza</button>
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Fiebre')">Fiebre</button>
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de pecho')">Dolor de pecho</button>
@@ -168,38 +170,33 @@
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor muscular')">Dolor muscular</button>
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Cansancio')">Cansancio</button></div>
 <p id="aiUrgenciaAviso" class="ai-demo-error" role="alert" hidden>Si se trata de una situación real con dolor de pecho intenso o dificultad para respirar, busca atención de emergencia; no esperes una cita.</p>
-<label for="aiSintomasInput" class="orientation-question">Describe cómo se siente (opcional)</label>
-<textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Por ejemplo: dolor de cabeza desde hace tres días…"></textarea>
-<p id="aiAvisoDemo" class="orientation-help">Demostración académica. Usa un caso de ejemplo sin nombres, DNI ni información personal. El texto libre requiere Gemini configurado; los ejemplos locales están predefinidos.</p>
-<label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Confirmo que el ejemplo no contiene datos personales ni información real de salud.</label>
+<label for="aiSintomasInput" class="orientation-question">Describe las molestias (opcional)</label>
+<textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" writingsuggestions="false" autocomplete="off" placeholder="Por ejemplo: dolor de cabeza desde hace tres días…"></textarea>
+<p id="aiAvisoDemo" class="orientation-help">Esta orientación solo sugiere una especialidad; no es un diagnóstico.</p>
+<label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Usaré un caso ficticio, sin datos personales.</label>
 <button type="button" id="btnAnalizarIA" class="btn-card-action" onclick="ejecutarAnalisisIA()" disabled><span>Analizar síntomas</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
 </div>
-<output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output><p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
+<output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output><div id="aiElegirManual" hidden><button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir una especialidad</button></div><p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
                     <!-- RESULTADO DEL ANÁLISIS DE IA -->
                     <div id="aiResultadoBox" class="ai-response-result">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px;">
                             <div>
-                                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
-                                    <span class="mode-badge-pill badge-pill-mint" style="margin-bottom: 0;">
-                                        <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-                                        Te sugerimos <strong id="aiEspecialidadNombre" style="margin-left: 4px;"></strong>
-                                    </span>
-
-                                </div>
-                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Orientación completada</h4>
-                                <p id="aiExplicacionTexto" style="font-size: 13.5px; color: #334155; line-height: 1.5;">
-
-                                </p>
+                                <span class="orientation-success-icon" aria-hidden="true"><i data-lucide="check"></i></span>
+                                <p class="orientation-success-label">Orientación completada</p>
+                                <h2 class="orientation-result-title">Te sugerimos <span id="aiEspecialidadNombre"></span></h2>
+                                <p id="aiExplicacionTexto" class="orientation-result-description"></p>
+                                <p id="aiMotivoResultado" class="orientation-result-description" hidden></p>
                             </div>
                         </div>
 
                         <p class="orientation-result-note">Esta sugerencia orientativa no es un diagnóstico ni asigna prioridad clínica.</p><div class="ai-demo-actions ai-demo-actions-result">
                             <button type="button" id="aiAplicarSugerencia" class="btn-card-action btn-card-royal" onclick="aplicarRecomendacionIA()">
-                                <span>Continuar con esta especialidad</span>
+                                <span id="aiBuscarHorariosTexto">Buscar horarios</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button type="button" class="btn-back-pill" onclick="editarSintomas()">Editar síntomas</button><button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir otra especialidad</button>
+                            <button type="button" class="btn-back-pill" onclick="editarSintomas()">Editar síntomas</button>
                         </div>
+                        <button type="button" class="orientation-other-specialty" onclick="iniciarModoDirecto()">Prefiero elegir otra especialidad →</button>
                     </div>
                 </div>
 
@@ -273,13 +270,12 @@
                             <div class="filter-row-full">
                                 <div class="filter-field">
                                     <div class="motivo-label-row">
-                                        <label for="selectMotivo">Motivo de consulta (opcional)</label>
-                                        <span class="motivo-hint-tag">Opcional · orientativo</span>
+                                        <label for="selectMotivo">Motivo de consulta *</label>
                                     </div>
-                                    <select id="selectMotivo" class="filter-control">
+                                    <select id="selectMotivo" class="filter-control" required onchange="actualizarMotivoElegido()">
                                         <option value="">Selecciona un motivo</option>
                                     </select>
-                                    <div class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
+                                    <div id="motivoOrientacionAyuda" class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
                                 </div>
                             </div>
 
@@ -520,7 +516,7 @@
     <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js?v=20261102-1"></script>
     <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
     <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
-    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js?v=20261102-3"></script>
     <script>
         const catalogoMotivos=JSON.parse(document.getElementById("catalogoMotivos").textContent)||[];
         document.addEventListener('DOMContentLoaded', function() {
@@ -616,17 +612,19 @@
 
         // --- NAVEGACIÓN DE MODOS ---
         function iniciarModoIA() {
+            document.getElementById('aiVolverOpciones').hidden = false;
+            document.getElementById('aiRutaOrientacion').hidden = false;
             document.getElementById('aiFormulario').hidden = false;
             state.modo = 'IA';
             state.pasoActual = 1;
             document.getElementById('pageMainTitle').textContent = 'Orientación por síntomas';
-            document.getElementById('pageMainSubtitle').textContent = 'Explora una especialidad del catálogo a partir de un caso de ejemplo.';
+            document.getElementById('pageMainSubtitle').textContent = 'Selecciona las molestias para encontrar una especialidad.';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'block';
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiResultadoBox').style.display = 'none';
             const btnVolver = document.getElementById('btnVolverModos');
-            if (btnVolver) btnVolver.style.display = 'inline-flex';
+            if (btnVolver) btnVolver.style.display = 'none';
             document.getElementById('aiSintomasInput').focus();
             lucide.createIcons();
         }
@@ -638,6 +636,8 @@
         }
 
         function iniciarModoDirecto(origen = 'DIRECTO') {
+            document.getElementById('aiVolverOpciones').hidden = true;
+            document.getElementById('aiRutaOrientacion').hidden = true;
             if (origen !== 'IA') invalidarOrientacion();
             document.getElementById('aiSugerenciaBuscador').hidden = origen !== 'IA';
             if (origen === 'IA' && sugerenciaOrientacion) {
@@ -657,6 +657,8 @@
         }
 
         function volverASeleccionModos() {
+            document.getElementById('aiVolverOpciones').hidden = true;
+            document.getElementById('aiRutaOrientacion').hidden = true;
             invalidarOrientacion();
             if (state.pasoActual === 2) {
                 volverAPaso1();
@@ -691,6 +693,8 @@
             document.getElementById('aiResultadoBox').style.display = 'none';
             document.getElementById('aiEstadoOrientacion').textContent = '';
             document.getElementById('aiErrorOrientacion').hidden = true;
+            document.getElementById('btnAnalizarIA').setAttribute('aria-busy', 'false');
+            document.getElementById('aiElegirManual').hidden = true;
             const boton = document.getElementById('btnAnalizarIA');
             boton.disabled = !document.getElementById('aiCasoFicticio').checked || textoOrientacion().length < 12;
             boton.querySelector('span').textContent = 'Analizar síntomas';
@@ -724,10 +728,12 @@
             }
             const controller = new AbortController();
             peticionOrientacion = controller;
-            const timeout = setTimeout(() => controller.abort(), 15000);
+            const timeout = setTimeout(() => controller.abort(), 25000);
             boton.disabled = true;
             boton.querySelector('span').textContent = 'Consultando…';
             estado.textContent = 'Consultando el catálogo de especialidades…';
+            boton.setAttribute('aria-busy', 'true');
+            let analisisFallido = false;
             try {
                 const respuesta = await fetch('${pageContext.request.contextPath}/paciente/orientacion', {
                     method: 'POST', credentials: 'same-origin', signal: controller.signal,
@@ -738,13 +744,17 @@
                 if (peticionOrientacion !== controller) return;
                 if (!respuesta.ok) throw new Error(contenido.message || 'No se pudo obtener la sugerencia.');
                 const resultado = contenido.data;
-                if (resultado.tipo === 'ACLARAR') { estado.textContent = resultado.explicacion; return; }
+                if (resultado.tipo === 'ACLARAR') { estado.textContent = resultado.explicacion; document.getElementById('aiElegirManual').hidden = false; return; }
                 const opciones = [...document.getElementById('selectEspecialidad').options];
                 if (resultado.tipo !== 'SUGERENCIA' || !opciones.some(o => o.value === String(resultado.idEspecialidad))) throw new Error('La especialidad no está disponible en este catálogo. Elige manualmente.');
                 sugerenciaOrientacion = resultado;
                 document.getElementById('aiEspecialidadNombre').textContent = resultado.especialidad;
                 document.getElementById('aiExplicacionTexto').textContent = resultado.explicacion;
-                estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Sugerencia demostrativa generada con Gemini y validada contra el catálogo.';
+                document.getElementById('aiBuscarHorariosTexto').textContent = 'Buscar horarios de ' + resultado.especialidad;
+                const motivoResultado = document.getElementById('aiMotivoResultado');
+                motivoResultado.hidden = !resultado.motivoConsulta;
+                motivoResultado.textContent = resultado.motivoConsulta ? 'Motivo sugerido: ' + resultado.motivoConsulta : '';
+                estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Especialidad sugerida con IA.';
                 document.getElementById('aiResultadoBox').style.display = 'block';
                 document.getElementById('aiFormulario').hidden = true;
             } catch (fallo) {
@@ -752,12 +762,15 @@
                 error.textContent = fallo instanceof Error && fallo.name === 'Error' ? fallo.message : 'No se pudo completar la consulta. Puedes elegir la especialidad manualmente.';
                 error.hidden = false;
                 estado.textContent = '';
+                analisisFallido = true;
+                document.getElementById('aiElegirManual').hidden = false;
             } finally {
                 clearTimeout(timeout);
                 if (peticionOrientacion === controller) {
                     peticionOrientacion = null;
                     boton.disabled = false;
-                    boton.querySelector('span').textContent = 'Analizar síntomas';
+                    boton.setAttribute('aria-busy', 'false');
+                    boton.querySelector('span').textContent = analisisFallido ? 'Reintentar análisis' : 'Analizar síntomas';
                 }
             }
         }
@@ -770,6 +783,8 @@
             select.value = opcion.value;
             state.especialidadId = opcion.value;
             state.especialidadNombre = opcion.textContent;
+            const motivo = ClinicaMotivos.sugerido(catalogoMotivos, opcion.value, sugerenciaOrientacion.idMotivo);
+            state.motivo = motivo ? String(motivo.idMotivo) : '';
             iniciarModoDirecto('IA');
         }
 
@@ -897,15 +912,32 @@
             selMotivo.innerHTML = '<option value="">Selecciona un motivo</option>';
 
             const espVal = selEsp.value;
+            if (state.modo === 'IA' && sugerenciaOrientacion && String(sugerenciaOrientacion.idEspecialidad) !== espVal) {
+                state.modo = 'DIRECTO';
+                document.getElementById('aiSugerenciaBuscador').hidden = true;
+            }
+            state.especialidadId = espVal;
             if (!espVal) {
+                state.motivo = '';
+                actualizarMotivoElegido();
                 if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
                 return;
             }
 
             ClinicaMotivos.poblar(selMotivo,catalogoMotivos,espVal,state.motivo);
             state.motivo=selMotivo.value;
+            actualizarMotivoElegido();
 
             actualizarMedicosPorEspecialidad();
+        }
+
+        function actualizarMotivoElegido() {
+            const seleccionado = document.getElementById('selectMotivo');
+            state.motivo = seleccionado?.value || '';
+            const sugerido = state.modo === 'IA' && sugerenciaOrientacion && String(sugerenciaOrientacion.idMotivo) === state.motivo;
+            document.getElementById('motivoOrientacionAyuda').textContent = sugerido
+                ? 'Sugerido por la orientación. Puedes cambiarlo.'
+                : 'Elige el motivo de la especialidad que mejor describa la consulta.';
         }
 
         let medicosRequest = 0;
@@ -976,6 +1008,10 @@
             state.fecha = (fechaInput && fechaInput.value) ? fechaInput.value : new Date().toISOString().split('T')[0];
             const selMotivo = document.getElementById('selectMotivo');
             state.motivo = selMotivo ? selMotivo.value : '';
+            if (!state.motivo) {
+                selMotivo?.reportValidity();
+                return;
+            }
 
             mostrarPaso(2);
         }

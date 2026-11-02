@@ -7,10 +7,16 @@ import java.util.Map;
 import java.util.Set;
 
 public final class OrientacionCatalogo {
-    public record Especialidad(int id, String nombre) {}
-    public record Eleccion(int idEspecialidad, String motivo) {}
+    public record Motivo(int id, String descripcion) {}
+    public record Especialidad(int id, String nombre, List<Motivo> motivos) {
+        public Especialidad { motivos=motivos==null?List.of():List.copyOf(motivos); }
+        public Especialidad(int id,String nombre){this(id,nombre,List.of());}
+    }
+    public record Eleccion(int idEspecialidad, String motivo, Integer idMotivo) {
+        public Eleccion(int idEspecialidad,String motivo){this(idEspecialidad,motivo,null);}
+    }
     public record Resultado(String tipo, Integer idEspecialidad, String especialidad, String explicacion,
-                            String proveedor, boolean demostracion) {}
+                            String proveedor, boolean demostracion, Integer idMotivo, String motivoConsulta) {}
     @FunctionalInterface public interface Clasificador { Eleccion elegir(String relato, List<Especialidad> catalogo); }
     private final Clasificador clasificador;
     private final boolean gemini;
@@ -28,19 +34,24 @@ public final class OrientacionCatalogo {
         Set<String> esperado=EJEMPLOS.get(normalizar(relato.strip()));
         if (!gemini && esperado!=null) {
             var coincidencias=catalogo.stream().filter(e->esperado.contains(normalizar(e.nombre().strip()))).toList();
-            if(coincidencias.size()==1) return sugerencia(coincidencias.get(0),"EJEMPLO_LOCAL");
+            if(coincidencias.size()==1) return sugerencia(coincidencias.get(0),"EJEMPLO_LOCAL",null);
             throw new AgendaException(409,"EJEMPLO_SIN_ESPECIALIDAD","Este ejemplo no tiene una especialidad activa inequívoca en el catálogo. Elige otra manualmente.");
         }
         if (!gemini) throw noDisponible("Gemini no está conectado. Prueba uno de los ejemplos ficticios o elige la especialidad manualmente.");
         Eleccion eleccion=clasificador.elegir(relato.strip(),List.copyOf(catalogo));
-        if (eleccion.idEspecialidad()==0 && "ACLARAR".equals(eleccion.motivo())) return new Resultado("ACLARAR",null,null,"Amplía el caso ficticio indicando qué molestia describe y desde cuándo. También puedes elegir la especialidad manualmente.","GEMINI",true);
+        if (eleccion.idEspecialidad()==0 && "ACLARAR".equals(eleccion.motivo())) {
+            if(eleccion.idMotivo()!=null&&eleccion.idMotivo()!=0)throw noDisponible("La orientación recibida no es válida. Puedes elegir una especialidad manualmente.");
+            return new Resultado("ACLARAR",null,null,"Describe un poco más las molestias o elige una especialidad manualmente.","GEMINI",true,null,null);
+        }
         if (!"CATALOGO".equals(eleccion.motivo())) throw noDisponible("No se obtuvo una sugerencia válida. Puedes elegir la especialidad manualmente.");
         var especialidad=catalogo.stream().filter(e->e.id()==eleccion.idEspecialidad()).findFirst().orElseThrow(()->noDisponible("La especialidad sugerida no está disponible. Vuelve a intentarlo o elige manualmente."));
-        return sugerencia(especialidad,"GEMINI");
+        Motivo seleccionado=null;
+        if(eleccion.idMotivo()!=null&&eleccion.idMotivo()!=0)seleccionado=especialidad.motivos().stream().filter(m->m.id()==eleccion.idMotivo()).findFirst().orElseThrow(()->noDisponible("El motivo sugerido no pertenece a la especialidad disponible. Elige el motivo manualmente."));
+        return sugerencia(especialidad,"GEMINI",seleccionado);
     }
 
-    private static Resultado sugerencia(Especialidad e,String proveedor) {
-        return new Resultado("SUGERENCIA",e.id(),e.nombre(),"Para este escenario demostrativo se sugiere revisar la especialidad de "+e.nombre()+". Puedes aplicar esta sugerencia o elegir otra; no establece diagnóstico ni prioridad clínica.",proveedor,true);
+    private static Resultado sugerencia(Especialidad e,String proveedor,Motivo motivo) {
+        return new Resultado("SUGERENCIA",e.id(),e.nombre(),"Esta especialidad permite una primera evaluación de las molestias descritas. Puedes continuar con esta opción o elegir otra.",proveedor,true,motivo==null?null:motivo.id(),motivo==null?null:motivo.descripcion());
     }
     private static String normalizar(String texto) {return Normalizer.normalize(texto,Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(java.util.Locale.ROOT);}
     static AgendaException noDisponible(String mensaje) {return new AgendaException(503,"ORIENTACION_NO_DISPONIBLE",mensaje);}
