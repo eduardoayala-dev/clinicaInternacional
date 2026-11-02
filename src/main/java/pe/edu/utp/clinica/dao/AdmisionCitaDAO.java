@@ -10,6 +10,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 
 public class AdmisionCitaDAO {
+    private static final ZoneId ZONA_LIMA=ZoneId.of("America/Lima");
     private static final String CONFIRMADA="CONFIRMADA";
 
     private final AgendaCitaDAO.ConnectionSource connections;
@@ -18,15 +19,15 @@ public class AdmisionCitaDAO {
 
     public record Llegada(int idCita, String fechaLlegada, boolean llegoTarde, int toleranciaMinutos) {}
 
-    public AdmisionCitaDAO() {this(DatabaseConfig::getConnection,Clock.system(ZoneId.of("America/Lima")));}
+    public AdmisionCitaDAO() {this(DatabaseConfig::getConnection,Clock.system(ZONA_LIMA));}
     AdmisionCitaDAO(AgendaCitaDAO.ConnectionSource connections,Clock clock) {
-        this.connections=connections;this.clock=clock.withZone(ZoneId.of("America/Lima"));this.tolerancia=null;
+        this.connections=connections;this.clock=clock.withZone(ZONA_LIMA);this.tolerancia=null;
     }
 
     AdmisionCitaDAO(AgendaCitaDAO.ConnectionSource connections, Clock clock, int tolerancia) {
         if (tolerancia < 0 || tolerancia > 120) throw new IllegalArgumentException("La tolerancia debe estar entre 0 y 120 minutos.");
         this.connections = connections;
-        this.clock = clock.withZone(ZoneId.of("America/Lima"));
+        this.clock = clock.withZone(ZONA_LIMA);
         this.tolerancia = tolerancia;
     }
 
@@ -150,3 +151,4 @@ public class AdmisionCitaDAO {
         return new AgendaException(404, "CITA_NO_ENCONTRADA", "No se encontró una cita en tu sede.");
     }
 }
+
