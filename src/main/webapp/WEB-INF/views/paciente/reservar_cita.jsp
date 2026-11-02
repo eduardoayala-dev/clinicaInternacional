@@ -48,7 +48,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261030-3">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261030-4">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261102-2">
 </head>
 <body>
 
@@ -109,12 +109,12 @@
                                         <span class="mode-ai-mark" aria-hidden="true">IA</span>
                                     </div>
                                     <span class="mode-badge-pill badge-pill-mint">
-                                        Prototipo · IA opcional
+                                        Asistido por IA
                                     </span>
                                 </div>
                                 <h2 class="mode-card-title">No sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
-                                    En esta demostración académica puedes probar casos ficticios para sugerir una especialidad del catálogo. La sugerencia no asigna prioridad clínica.
+                                    Selecciona las molestias del caso para encontrar una especialidad del catálogo. La orientación no es un diagnóstico.
                                 </p>
                             </div>
 
@@ -160,7 +160,7 @@
                 <!-- ======================================================= -->
                 <div id="aiTriagePanel" class="ai-triage-box">
 <div id="aiFormulario">
-<h2 class="orientation-question">¿Qué síntomas presenta el ejemplo?</h2><p class="orientation-help">Selecciona todos los que apliquen.</p>
+<h2 class="orientation-question">Selecciona los síntomas</h2><p class="orientation-help">Selecciona todos los que apliquen.</p>
 <div class="quick-chips-wrapper"><button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de cabeza')">Dolor de cabeza</button>
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Fiebre')">Fiebre</button>
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de pecho')">Dolor de pecho</button>
@@ -168,13 +168,13 @@
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor muscular')">Dolor muscular</button>
 <button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Cansancio')">Cansancio</button></div>
 <p id="aiUrgenciaAviso" class="ai-demo-error" role="alert" hidden>Si se trata de una situación real con dolor de pecho intenso o dificultad para respirar, busca atención de emergencia; no esperes una cita.</p>
-<label for="aiSintomasInput" class="orientation-question">Describe cómo se siente (opcional)</label>
-<textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Por ejemplo: dolor de cabeza desde hace tres días…"></textarea>
-<p id="aiAvisoDemo" class="orientation-help">Demostración académica. Usa un caso de ejemplo sin nombres, DNI ni información personal. El texto libre requiere Gemini configurado; los ejemplos locales están predefinidos.</p>
-<label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Confirmo que el ejemplo no contiene datos personales ni información real de salud.</label>
+<label for="aiSintomasInput" class="orientation-question">Describe las molestias (opcional)</label>
+<textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" writingsuggestions="false" autocomplete="off" placeholder="Por ejemplo: dolor de cabeza desde hace tres días…"></textarea>
+<p id="aiAvisoDemo" class="orientation-help">Esta orientación solo sugiere una especialidad; no es un diagnóstico.</p>
+<label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Usaré un caso ficticio, sin datos personales.</label>
 <button type="button" id="btnAnalizarIA" class="btn-card-action" onclick="ejecutarAnalisisIA()" disabled><span>Analizar síntomas</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
 </div>
-<output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output><p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
+<output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output><div id="aiElegirManual" hidden><button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir una especialidad</button></div><p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
                     <!-- RESULTADO DEL ANÁLISIS DE IA -->
                     <div id="aiResultadoBox" class="ai-response-result">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px;">
@@ -620,7 +620,7 @@
             state.modo = 'IA';
             state.pasoActual = 1;
             document.getElementById('pageMainTitle').textContent = 'Orientación por síntomas';
-            document.getElementById('pageMainSubtitle').textContent = 'Explora una especialidad del catálogo a partir de un caso de ejemplo.';
+            document.getElementById('pageMainSubtitle').textContent = 'Selecciona las molestias para encontrar una especialidad.';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'block';
             document.getElementById('wizardFlowSection').style.display = 'none';
@@ -691,6 +691,8 @@
             document.getElementById('aiResultadoBox').style.display = 'none';
             document.getElementById('aiEstadoOrientacion').textContent = '';
             document.getElementById('aiErrorOrientacion').hidden = true;
+            document.getElementById('btnAnalizarIA').setAttribute('aria-busy', 'false');
+            document.getElementById('aiElegirManual').hidden = true;
             const boton = document.getElementById('btnAnalizarIA');
             boton.disabled = !document.getElementById('aiCasoFicticio').checked || textoOrientacion().length < 12;
             boton.querySelector('span').textContent = 'Analizar síntomas';
@@ -724,10 +726,12 @@
             }
             const controller = new AbortController();
             peticionOrientacion = controller;
-            const timeout = setTimeout(() => controller.abort(), 15000);
+            const timeout = setTimeout(() => controller.abort(), 25000);
             boton.disabled = true;
             boton.querySelector('span').textContent = 'Consultando…';
             estado.textContent = 'Consultando el catálogo de especialidades…';
+            boton.setAttribute('aria-busy', 'true');
+            let analisisFallido = false;
             try {
                 const respuesta = await fetch('${pageContext.request.contextPath}/paciente/orientacion', {
                     method: 'POST', credentials: 'same-origin', signal: controller.signal,
@@ -738,13 +742,13 @@
                 if (peticionOrientacion !== controller) return;
                 if (!respuesta.ok) throw new Error(contenido.message || 'No se pudo obtener la sugerencia.');
                 const resultado = contenido.data;
-                if (resultado.tipo === 'ACLARAR') { estado.textContent = resultado.explicacion; return; }
+                if (resultado.tipo === 'ACLARAR') { estado.textContent = resultado.explicacion; document.getElementById('aiElegirManual').hidden = false; return; }
                 const opciones = [...document.getElementById('selectEspecialidad').options];
                 if (resultado.tipo !== 'SUGERENCIA' || !opciones.some(o => o.value === String(resultado.idEspecialidad))) throw new Error('La especialidad no está disponible en este catálogo. Elige manualmente.');
                 sugerenciaOrientacion = resultado;
                 document.getElementById('aiEspecialidadNombre').textContent = resultado.especialidad;
                 document.getElementById('aiExplicacionTexto').textContent = resultado.explicacion;
-                estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Sugerencia demostrativa generada con Gemini y validada contra el catálogo.';
+                estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Especialidad sugerida con IA.';
                 document.getElementById('aiResultadoBox').style.display = 'block';
                 document.getElementById('aiFormulario').hidden = true;
             } catch (fallo) {
@@ -752,12 +756,15 @@
                 error.textContent = fallo instanceof Error && fallo.name === 'Error' ? fallo.message : 'No se pudo completar la consulta. Puedes elegir la especialidad manualmente.';
                 error.hidden = false;
                 estado.textContent = '';
+                analisisFallido = true;
+                document.getElementById('aiElegirManual').hidden = false;
             } finally {
                 clearTimeout(timeout);
                 if (peticionOrientacion === controller) {
                     peticionOrientacion = null;
                     boton.disabled = false;
-                    boton.querySelector('span').textContent = 'Analizar síntomas';
+                    boton.setAttribute('aria-busy', 'false');
+                    boton.querySelector('span').textContent = analisisFallido ? 'Reintentar análisis' : 'Analizar síntomas';
                 }
             }
         }

@@ -33,14 +33,14 @@ public final class OrientacionCatalogo {
         }
         if (!gemini) throw noDisponible("Gemini no está conectado. Prueba uno de los ejemplos ficticios o elige la especialidad manualmente.");
         Eleccion eleccion=clasificador.elegir(relato.strip(),List.copyOf(catalogo));
-        if (eleccion.idEspecialidad()==0 && "ACLARAR".equals(eleccion.motivo())) return new Resultado("ACLARAR",null,null,"Amplía el caso ficticio indicando qué molestia describe y desde cuándo. También puedes elegir la especialidad manualmente.","GEMINI",true);
+        if (eleccion.idEspecialidad()==0 && "ACLARAR".equals(eleccion.motivo())) return new Resultado("ACLARAR",null,null,"Describe un poco más las molestias o elige una especialidad manualmente.","GEMINI",true);
         if (!"CATALOGO".equals(eleccion.motivo())) throw noDisponible("No se obtuvo una sugerencia válida. Puedes elegir la especialidad manualmente.");
         var especialidad=catalogo.stream().filter(e->e.id()==eleccion.idEspecialidad()).findFirst().orElseThrow(()->noDisponible("La especialidad sugerida no está disponible. Vuelve a intentarlo o elige manualmente."));
         return sugerencia(especialidad,"GEMINI");
     }
 
     private static Resultado sugerencia(Especialidad e,String proveedor) {
-        return new Resultado("SUGERENCIA",e.id(),e.nombre(),"Para este escenario demostrativo se sugiere revisar la especialidad de "+e.nombre()+". Puedes aplicar esta sugerencia o elegir otra; no establece diagnóstico ni prioridad clínica.",proveedor,true);
+        return new Resultado("SUGERENCIA",e.id(),e.nombre(),"Puedes continuar con "+e.nombre()+" o elegir otra especialidad. Esta orientación no es un diagnóstico.",proveedor,true);
     }
     private static String normalizar(String texto) {return Normalizer.normalize(texto,Normalizer.Form.NFD).replaceAll("\\p{M}","").toLowerCase(java.util.Locale.ROOT);}
     static AgendaException noDisponible(String mensaje) {return new AgendaException(503,"ORIENTACION_NO_DISPONIBLE",mensaje);}

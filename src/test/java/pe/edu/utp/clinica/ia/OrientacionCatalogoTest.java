@@ -35,6 +35,14 @@ class OrientacionCatalogoTest {
         var r=s.orientar("Caso ficticio sin detalles",true,catalogo);
         assertNull(r.idEspecialidad());assertEquals("ACLARAR",r.tipo());
     }
+    @Test void aceptaConsultaGeneralDisponibleSinInventarMedicinaGeneralAusente() {
+        var disponibles=List.of(new OrientacionCatalogo.Especialidad(4,"Medicina Interna"),new OrientacionCatalogo.Especialidad(9,"Neurología"));
+        var servicio=new OrientacionCatalogo((relato,lista)->new OrientacionCatalogo.Eleccion(4,"CATALOGO"),true);
+        var resultado=servicio.orientar("Caso ficticio: dolor de cabeza y fiebre desde hace unos días.",true,disponibles);
+        assertEquals(4,resultado.idEspecialidad());assertEquals("Medicina Interna",resultado.especialidad());assertEquals("GEMINI",resultado.proveedor());
+        var ausente=new OrientacionCatalogo((relato,lista)->new OrientacionCatalogo.Eleccion(83,"CATALOGO"),true);
+        assertThrows(AgendaException.class,()->ausente.orientar("Caso ficticio: molestias generales desde ayer.",true,disponibles));
+    }
     @Test void recomendacionSeResuelveEnCatalogoYNoExponeElRelato() {
         var s=new OrientacionCatalogo((r,c)->new OrientacionCatalogo.Eleccion(83,"CATALOGO"),true);
         var r=s.orientar("Caso ficticio de prueba irrepetible",true,catalogo);
