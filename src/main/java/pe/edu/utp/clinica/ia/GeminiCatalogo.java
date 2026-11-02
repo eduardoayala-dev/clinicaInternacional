@@ -50,7 +50,7 @@ public final class GeminiCatalogo implements OrientacionCatalogo.Clasificador {
             var request=HttpRequest.newBuilder(uri).timeout(ESPERA_MAXIMA).header("Content-Type","application/json").header("x-goog-api-key",clave).POST(HttpRequest.BodyPublishers.ofString(JSON.writeValueAsString(cuerpo))).build();
             Respuesta respuesta=enviar(request,inicio);
             if (respuesta.estado()!=200) {
-                LOGGER.warning("Gemini: respuesta HTTP="+respuesta.estado()+"; duracionMs="+transcurrido(inicio));
+                LOGGER.warning(() -> "Gemini: respuesta HTTP="+respuesta.estado()+"; duracionMs="+transcurrido(inicio));
                 if(respuesta.estado()==429)throw new AgendaException(429,"ORIENTACION_CUOTA_AGOTADA","Se alcanzó el límite de consultas de IA. Puedes elegir la especialidad manualmente.");
                 if(respuesta.estado()==503)throw new AgendaException(503,"ORIENTACION_OCUPADA","Gemini está temporalmente ocupado. Reintenta en unos segundos o elige una especialidad manualmente.");
                 throw OrientacionCatalogo.noDisponible("No se pudo obtener la orientación en este momento. Puedes reintentar o elegir una especialidad manualmente.");
@@ -82,7 +82,7 @@ public final class GeminiCatalogo implements OrientacionCatalogo.Clasificador {
     }
     private static long transcurrido(long inicio){return (System.nanoTime()-inicio)/1_000_000;}
     private static void registrarFallo(String fase,Exception error,long inicio) {
-        LOGGER.warning("Gemini: fase="+fase+"; tipo="+error.getClass().getSimpleName()+"; duracionMs="+transcurrido(inicio));
+        LOGGER.warning(() -> "Gemini: fase="+fase+"; tipo="+error.getClass().getSimpleName()+"; duracionMs="+transcurrido(inicio));
     }
 
     private static OrientacionCatalogo.Eleccion interpretar(String cuerpo) throws IOException {

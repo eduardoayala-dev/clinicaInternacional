@@ -45,9 +45,13 @@ public final class OrientacionCatalogo {
         }
         if (!"CATALOGO".equals(eleccion.motivo())) throw noDisponible("No se obtuvo una sugerencia válida. Puedes elegir la especialidad manualmente.");
         var especialidad=catalogo.stream().filter(e->e.id()==eleccion.idEspecialidad()).findFirst().orElseThrow(()->noDisponible("La especialidad sugerida no está disponible. Vuelve a intentarlo o elige manualmente."));
-        Motivo seleccionado=null;
-        if(eleccion.idMotivo()!=null&&eleccion.idMotivo()!=0)seleccionado=especialidad.motivos().stream().filter(m->m.id()==eleccion.idMotivo()).findFirst().orElseThrow(()->noDisponible("El motivo sugerido no pertenece a la especialidad disponible. Elige el motivo manualmente."));
-        return sugerencia(especialidad,"GEMINI",seleccionado);
+        return sugerencia(especialidad,"GEMINI",motivoCompatible(especialidad,eleccion.idMotivo()));
+    }
+
+    private static Motivo motivoCompatible(Especialidad especialidad,Integer idMotivo) {
+        if(idMotivo==null || idMotivo==0)return null;
+        return especialidad.motivos().stream().filter(m->m.id()==idMotivo).findFirst()
+                .orElseThrow(()->noDisponible("El motivo sugerido no pertenece a la especialidad disponible. Elige el motivo manualmente."));
     }
 
     private static Resultado sugerencia(Especialidad e,String proveedor,Motivo motivo) {
