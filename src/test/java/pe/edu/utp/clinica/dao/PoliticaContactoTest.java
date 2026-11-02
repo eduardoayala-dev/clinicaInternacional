@@ -39,7 +39,7 @@ class PoliticaContactoTest {
         contactos();ejecutar("UPDATE confirmacion_asistencia SET vence_en='2026-10-29 10:00:00' WHERE id_cita=7");
         assertEquals("PLAZO_CONFIRMACION_VIGENTE",assertThrows(AgendaException.class,()->seguimiento.cancelarSinConfirmacion(60,7)).code());
     }
-    @Test void asistenciaConfirmadaYCuentaAjenaNoSeCancelan()throws Exception {
+    @Test void asistenciaConfirmadaYCuentaAjenaNoSeCancelan() {
         contactos();seguimiento.registrarContacto(60,7,"LLAMADA","CONFIRMA");
         assertEquals(409,assertThrows(AgendaException.class,()->seguimiento.cancelarSinConfirmacion(60,7)).status());
         assertEquals(403,assertThrows(AgendaException.class,()->seguimiento.cancelarSinConfirmacion(10,7)).status());
@@ -66,4 +66,5 @@ class PoliticaContactoTest {
     }
     private int intentar(Runnable accion){try{accion.run();return 1;}catch(AgendaException e){assertEquals(409,e.status());return 0;}}
 }
+
 

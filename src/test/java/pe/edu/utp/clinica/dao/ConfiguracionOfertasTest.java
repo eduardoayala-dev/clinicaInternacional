@@ -43,8 +43,14 @@ class ConfiguracionOfertasTest {
         assertEquals(36,otro.recordatorioHoras());assertEquals(3,otro.intentosConfirmacion());
     }
     @Test void rechazaLimitesDeRecordatorioEIntentos(){
-        for(int horas:new int[]{0,169})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,new ConfiguracionOfertasDAO.Cambios(15,0,24,10,horas,2,0))).status());
-        for(int intentos:new int[]{0,11})assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,new ConfiguracionOfertasDAO.Cambios(15,0,24,10,48,intentos,0))).status());
+        for(int horas:new int[]{0,169}){
+            var cambios=new ConfiguracionOfertasDAO.Cambios(15,0,24,10,horas,2,0);
+            assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,cambios)).status());
+        }
+        for(int intentos:new int[]{0,11}){
+            var cambios=new ConfiguracionOfertasDAO.Cambios(15,0,24,10,48,intentos,0);
+            assertEquals(400,assertThrows(AgendaException.class,()->dao.guardar(1,cambios)).status());
+        }
         assertEquals(0,dao.leer().version());
     }
     @Test void persisteYUnaNuevaInstanciaLeeLaMismaVersion()throws Exception {

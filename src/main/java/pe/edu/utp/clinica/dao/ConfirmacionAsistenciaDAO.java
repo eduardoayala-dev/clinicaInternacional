@@ -161,7 +161,10 @@ public final class ConfirmacionAsistenciaDAO {
             int sede=sedePersonal(conn,usuario);
             try(var s=conn.prepareStatement("SELECT c.id_paciente FROM cita c JOIN medico m ON m.id_medico=c.id_medico WHERE c.id_cita=? AND m.id_sede=?")){
                 s.setInt(1,idCita);s.setInt(2,sede);
-                try(var r=s.executeQuery()){if(!r.next())throw noConfirmable();bloquearPaciente(conn,r.getInt(1));}
+                try(var r=s.executeQuery()){
+                    if(!r.next()){throw noConfirmable();}
+                    bloquearPaciente(conn,r.getInt(1));
+                }
             }
             Cita cita=bloquearCitaAdmision(conn,idCita,sede);
             var ahora=LocalDateTime.now(clock).withNano(0);
