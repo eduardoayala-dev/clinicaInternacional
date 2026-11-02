@@ -29,8 +29,8 @@ Actualización: 01/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 | 012 / 12 | Llegada por admisión, tardanza y atención por médico | Regresión integral por sede y cierre de atenciones pendientes; no inferir inasistencia por cambio de día |
 | 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
 | 014 / 14 | Correo de reserva/oferta y avisos del portal | Programador de recordatorios, urgente tras vencer, modificación/cancelación por correo y acciones verificadas desde enlaces |
-| 015 / 15 | Seguimiento de admisión con SSE; tablero operativo real por sede | Comprobar refresco de cinco minutos y errores en el nuevo tablero; revisar indicadores del inicio administrativo y SysAdmin |
-| 016 / 16 | Exportación médica; reportes de admisión con filtros en PDF/XLSX/CSV | Comprobar exportación de indicadores; completar analítica y exportaciones del administrador del sistema y padrones |
+| 015 / 15 | Seguimiento de admisión con SSE; tablero operativo real por sede | Refresco, actualización manual y descargas comprobados; revisar indicadores del inicio administrativo y SysAdmin |
+| 016 / 16 | Exportación médica; reportes de admisión con filtros en PDF/XLSX/CSV | Exportación de indicadores comprobada; completar analítica y exportaciones del administrador del sistema y padrones |
 | 017 / 17 | Confirmaciones e intentos de contacto registrados | Integrar modelo con datos históricos, factores y aumento de nivel al vencer; no presentar el simulador sintético como validación real |
 | 018 / 18 | Plazo de oferta y anticipación mínima configurables | Recordatorio, confirmación, intentos, tolerancia y criterios de priorización centralizados |
 

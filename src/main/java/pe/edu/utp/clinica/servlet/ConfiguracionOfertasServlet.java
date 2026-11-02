@@ -33,8 +33,8 @@ public class ConfiguracionOfertasServlet extends HttpServlet {
         Usuario usuario=actor(request);
         try {
             almacen().guardar(usuario.getIdUsuario(),Integer.parseInt(request.getParameter("tiempoLimite")),
-                    Integer.parseInt(request.getParameter("anticipacionMinima")),Long.parseLong(request.getParameter("version")));
-            request.getSession().setAttribute("flashMessage","Configuración guardada. Se aplicará a las nuevas ofertas; las ofertas vigentes conservan su vencimiento.");
+                    Integer.parseInt(request.getParameter("anticipacionMinima")),Integer.parseInt(request.getParameter("confirmacionHoras")),Integer.parseInt(request.getParameter("toleranciaLlegada")),Long.parseLong(request.getParameter("version")));
+            request.getSession().setAttribute("flashMessage","Configuración guardada. Los plazos nuevos se aplican a futuras reservas y ofertas; los registros existentes conservan sus valores. La tolerancia se usa en las nuevas admisiones y comprobaciones de ausencia.");
         } catch(NumberFormatException e){request.getSession().setAttribute("flashError","Completa los parámetros con números válidos.");}
         catch(AgendaException e){request.getSession().setAttribute("flashError",e.getMessage());}
         response.setStatus(303);response.setHeader("Location",request.getContextPath()+RUTA);

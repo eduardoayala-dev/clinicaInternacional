@@ -365,6 +365,7 @@ public class AdminDashboardServlet extends HttpServlet {
     }
 
     private List<Map<String, Object>> obtenerCitasSalaEsperaBD(int usuario) {
+        int toleranciaActual=admisionDAO.toleranciaMinutos();
         List<Map<String, Object>> list = new ArrayList<>();
         String sql = "SELECT c.id_cita,c.fecha_hora,c.estado,up.nombres AS pac_nom,up.apellidos AS pac_ape,p.dni,p.telefono,um.nombres AS med_nom,um.apellidos AS med_ape,s.nombre AS sede_nombre,a.fecha_llegada,a.llego_tarde "
                 + "FROM cita c JOIN paciente p ON c.id_paciente=p.id_paciente JOIN usuario up ON p.id_usuario=up.id_usuario JOIN medico m ON c.id_medico=m.id_medico JOIN usuario um ON m.id_usuario=um.id_usuario JOIN sede s ON m.id_sede=s.id_sede "
@@ -400,7 +401,7 @@ public class AdminDashboardServlet extends HttpServlet {
                     map.put(ESTADO, etiqueta);
                     map.put("puedeAdmitir", ESTADO_CONFIRMADA.equals(estado));
                     java.time.LocalDateTime ahora = java.time.LocalDateTime.now(java.time.ZoneId.of(ZONA_CLINICA));
-                    map.put("puedeMarcarAusencia", ESTADO_CONFIRMADA.equals(estado) && llegada == null && ahora.isAfter(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).plusMinutes(admisionDAO.toleranciaMinutos())));
+                    map.put("puedeMarcarAusencia", ESTADO_CONFIRMADA.equals(estado) && llegada == null && ahora.isAfter(rs.getObject(FECHA_HORA, java.time.LocalDateTime.class).plusMinutes(toleranciaActual)));
                     map.put("puedeAnular", Set.of("SOLICITADA", ESTADO_CONFIRMADA).contains(estado));
                     String accionTexto=etiqueta;
                     if(llegada!=null) accionTexto="Llegada " + llegada.toLocalTime();

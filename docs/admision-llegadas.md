@@ -4,7 +4,7 @@ La llegada corresponde al personal administrativo de la sede. El servidor toma l
 
 El perfil se vuelve a consultar en MySQL: usuario activo, rol administrativo y sede activa. La cita debe pertenecer a esa sede y al día clínico actual. Una llegada anticipada del mismo día es válida. Los pacientes, médicos y perfiles deshabilitados reciben `403`; una cita de otra sede o inexistente recibe `404`.
 
-La tolerancia propuesta es de 10 minutos y se configura con `ADMISION_TOLERANCIA_MINUTOS`, entre 0 y 120. Una llegada exactamente en el límite se considera dentro de la tolerancia. El valor utilizado queda guardado con cada llegada para conservar el criterio histórico. La marca de retraso informa al médico; la llegada tardía mantiene al paciente en sala.
+La tolerancia propuesta es de 10 minutos y se configura en Configuración de priorización, entre 0 y 120 minutos, después de aplicar V016. Una llegada exactamente en el límite se considera dentro de la tolerancia. El valor utilizado queda guardado con cada llegada para conservar el criterio histórico. La marca de retraso informa al médico; la llegada tardía mantiene al paciente en sala.
 
 ## Instalación
 
