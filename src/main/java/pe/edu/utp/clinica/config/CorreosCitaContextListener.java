@@ -24,7 +24,7 @@ public final class CorreosCitaContextListener implements ServletContextListener 
         if(Boolean.parseBoolean(System.getenv().getOrDefault("RECORDATORIOS_EMAIL_ENABLED","false"))){
             var almacen=new CorreosRecordatorioJdbc(pe.edu.utp.clinica.service.InvitacionPersonalServicio.basePublica(System.getenv()));
             java.util.function.IntSupplier horas=()->new pe.edu.utp.clinica.dao.ConfiguracionOfertasDAO().leer().recordatorioHoras();
-            recordatorios=new RecordatoriosProgramador(almacen,new CorreosDespachador(almacen,emisor,reloj),reloj,horas);
+            recordatorios=new RecordatoriosProgramador(almacen,new AvisosVencimientoJdbc(),new CorreosDespachador(almacen,emisor,reloj),reloj,horas,cambios::despertar);
             recordatorios.iniciar();
         }
         evento.getServletContext().setAttribute(DESPERTAR,(Runnable)this::despertar);

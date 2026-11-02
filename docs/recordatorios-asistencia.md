@@ -8,7 +8,7 @@ Solo se encolan citas futuras CONFIRMADA cuya asistencia esté pendiente y con p
 
 Se reutiliza CorreosServicio: toma exclusiva, tres intentos como máximo, esperas de 60 y 300 segundos para fallos recuperables; una entrega incierta queda NO_CONFIRMADO y no se reenvía automáticamente. No se promete entrega exactamente una vez a través de un proveedor externo. No se registran destinatarios, síntomas ni contenido en los logs.
 
-El correo distingue reserva de asistencia y lleva a Mis citas. Acceder al enlace no modifica datos y requiere iniciar sesión; confirmar o cancelar conserva las autorizaciones y comprobaciones del portal. Los enlaces de acción de un solo uso sin sesión, avisos específicos de modificación/cancelación y el mínimo de contactos antes de cancelar siguen pendientes. Este envío no cuenta como un contacto humano comprobado.
+El correo distingue reserva de asistencia y lleva a Mis citas. Acceder al enlace no modifica datos y requiere iniciar sesión; confirmar o cancelar conserva las autorizaciones y comprobaciones del portal. Los avisos de cambios y la política de contactos ya están implementados. Los enlaces autenticados de acción están en revisión; no se habilita acceso anónimo mediante tokens. Este envío no cuenta como un contacto humano comprobado.
 
 Railway puede suspender Java: durante ese tiempo no corre el programador. Al despertar recupera citas que todavía son futuras y están dentro del margen; no envía recordatorios de citas pasadas. Esto no instala un heartbeat ni evita la suspensión.
 

@@ -875,3 +875,6 @@ ALTER TABLE configuracion_ofertas ADD COLUMN recordatorio_horas INT NOT NULL DEF
 ALTER TABLE configuracion_ofertas ADD COLUMN intentos_confirmacion INT NOT NULL DEFAULT 2;
 ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_recordatorio CHECK(recordatorio_horas BETWEEN 1 AND 168);
 ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_intentos CHECK(intentos_confirmacion BETWEEN 1 AND 10);
+
+ALTER TABLE correo_cambio_cita ADD CONSTRAINT ck_aviso_cambio_tipo_v2 CHECK(tipo IN ('CANCELADA','REPROGRAMADA','CONFIRMACION_VENCIDA'));
+ALTER TABLE correo_cambio_cita DROP CONSTRAINT ck_aviso_cambio_tipo;

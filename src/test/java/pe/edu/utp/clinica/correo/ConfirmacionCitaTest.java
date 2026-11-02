@@ -11,6 +11,13 @@ class ConfirmacionCitaTest {
         assertTrue(correo.texto().contains("01/12/2026"));assertTrue(correo.texto().contains("09:20"));
         assertTrue(correo.html().contains("María &lt;script&gt;"));assertFalse(correo.html().contains("<script>"));
         assertTrue(correo.html().contains("Sede &amp; Central"));assertTrue(correo.html().contains("Confirmación de cita"));
-        assertFalse(correo.html().contains("href="));assertFalse(cita.toString().contains("@"));
+        assertTrue(correo.html().contains("/cita?cita=123&amp;accion=confirmar"));
+        assertTrue(correo.html().contains("/cita?cita=123&amp;accion=cancelar"));
+        assertTrue(correo.texto().contains("requieren iniciar sesión"));
+        assertFalse(cita.toString().contains("@"));
+    }
+    @Test void losEnlacesNoAceptanUnOrigenConCredencialesNiUnProtocoloEjecutable(){
+        assertThrows(IllegalArgumentException.class,()->EnlacesCorreoCita.html("https://usuario:clave@example.test",123));
+        assertThrows(IllegalArgumentException.class,()->EnlacesCorreoCita.html("javascript:alert(1)",123));
     }
 }

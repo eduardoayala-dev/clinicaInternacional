@@ -9,7 +9,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 
 public final class CorreosCambiosJdbc extends CorreosPendientesJdbc {
-    public enum Tipo { CANCELADA, REPROGRAMADA }
+    public enum Tipo { CANCELADA, REPROGRAMADA, CONFIRMACION_VENCIDA }
     private static final ZoneId LIMA=ZoneId.of("America/Lima");
     private static final DateTimeFormatter FECHA=DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm");
     public CorreosCambiosJdbc(){this(DatabaseConfig::getConnection);}
@@ -23,7 +23,8 @@ public final class CorreosCambiosJdbc extends CorreosPendientesJdbc {
         String sql="""
                 SELECT a.tipo,c.id_cita,c.estado,c.fecha_hora,u.email,u.nombres,
                 um.nombres AS medico,um.apellidos,e.nombre AS especialidad,s.nombre AS sede,
-                anterior.id_cita AS origen,anterior.fecha_hora AS fecha_anterior,anterior.estado AS estado_anterior
+                anterior.id_cita AS origen,anterior.fecha_hora AS fecha_anterior,anterior.estado AS estado_anterior,
+                asistencia.confirmada_en,asistencia.vence_en
                 FROM correo_cambio_cita a JOIN cita c ON c.id_cita=a.id_cita
                 JOIN paciente p ON p.id_paciente=c.id_paciente JOIN usuario u ON u.id_usuario=p.id_usuario
                 JOIN medico m ON m.id_medico=c.id_medico JOIN usuario um ON um.id_usuario=m.id_usuario
@@ -31,6 +32,7 @@ public final class CorreosCambiosJdbc extends CorreosPendientesJdbc {
                 LEFT JOIN disponibilidad d ON d.id_disponibilidad=c.id_disponibilidad
                 JOIN sede s ON s.id_sede=COALESCE(d.id_sede,m.id_sede)
                 LEFT JOIN cita anterior ON anterior.id_cita=a.id_cita_anterior AND anterior.id_paciente=c.id_paciente
+                LEFT JOIN confirmacion_asistencia asistencia ON asistencia.id_cita=c.id_cita
                 WHERE a.id_aviso=? AND u.activo=TRUE AND u.rol='PACIENTE'
                 """;
         try(var c=conexiones.abrir();var s=c.prepareStatement(sql)){
@@ -43,9 +45,22 @@ public final class CorreosCambiosJdbc extends CorreosPendientesJdbc {
                 if(tipo==Tipo.REPROGRAMADA&&(!"CONFIRMADA".equals(r.getString("estado"))
                         || !fecha.isAfter(LocalDateTime.ofInstant(ahora,LIMA))
                         || r.getObject("origen")==null||!"REPROGRAMADA".equals(r.getString("estado_anterior"))))return Optional.empty();
-                String titulo=tipo==Tipo.CANCELADA?"Tu cita fue cancelada":"Tu cita fue reprogramada";
-                String detalle=tipo==Tipo.CANCELADA?"Esta cita ya no está reservada. Puedes buscar un nuevo horario en tu portal.":
-                        "La cita CIT-"+r.getInt("origen")+" del "+r.getObject("fecha_anterior",LocalDateTime.class).format(FECHA)+" fue reemplazada por esta nueva reserva. La asistencia de la nueva cita está pendiente de confirmar.";
+                if(tipo==Tipo.CONFIRMACION_VENCIDA){
+                    var limite=r.getObject("vence_en",LocalDateTime.class);
+                    var local=LocalDateTime.ofInstant(ahora,LIMA);
+                    if(!("CONFIRMADA".equals(r.getString("estado"))||"SOLICITADA".equals(r.getString("estado")))
+                            ||!fecha.isAfter(local)||r.getObject("confirmada_en")!=null||limite==null||limite.isAfter(local))return Optional.empty();
+                }
+                String titulo=switch(tipo){
+                    case CANCELADA->"Tu cita fue cancelada";
+                    case REPROGRAMADA->"Tu cita fue reprogramada";
+                    case CONFIRMACION_VENCIDA->"Coordina tu asistencia con admisión";
+                };
+                String detalle=switch(tipo){
+                    case CANCELADA->"Esta cita ya no está reservada. Puedes buscar un nuevo horario en tu portal.";
+                    case REPROGRAMADA->"La cita CIT-"+r.getInt("origen")+" del "+r.getObject("fecha_anterior",LocalDateTime.class).format(FECHA)+" fue reemplazada por esta nueva reserva. La asistencia de la nueva cita está pendiente de confirmar.";
+                    case CONFIRMACION_VENCIDA->"El plazo para confirmar tu asistencia terminó. Tu cita sigue vigente: contacta con admisión para coordinarla. Este aviso no cancela tu reserva.";
+                };
                 String datos="CIT-"+r.getInt("id_cita")+" · "+fecha.format(FECHA)+" (hora de Perú)";
                 String medico=r.getString("medico")+" "+r.getString("apellidos");
                 String texto=titulo+"\nHola, "+r.getString("nombres")+".\n"+datos+"\n"+r.getString("especialidad")+" · "+medico+"\n"+r.getString("sede")+"\n\n"+detalle+"\nConsulta el estado actualizado en Mis citas, iniciando sesión en tu portal.";

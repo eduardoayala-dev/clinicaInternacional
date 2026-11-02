@@ -115,6 +115,7 @@ public class LoginServlet extends HttpServlet {
                 return;
             }
 
+            String retornoCita=pe.edu.utp.clinica.util.EnlaceCita.consumir(request.getSession(false),java.time.Clock.systemUTC());
             try {
                 pe.edu.utp.clinica.auth.InicioSesion.iniciar(request,response,usuario);
             } catch (java.sql.SQLException e) {
@@ -123,7 +124,7 @@ public class LoginServlet extends HttpServlet {
 
             switch (usuario.getRol()) {
                 case "PACIENTE":
-                    response.sendRedirect(request.getContextPath() + "/paciente/dashboard");
+                    response.sendRedirect(request.getContextPath() + (retornoCita==null?"/paciente/dashboard":retornoCita));
                     break;
                 case "MEDICO":
                     response.sendRedirect(request.getContextPath() + "/medico/agenda");
