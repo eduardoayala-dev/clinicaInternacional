@@ -135,7 +135,7 @@
         .btn-save:hover { background: #1d4ed8; }
 
         @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .grid-2col, .form-row { grid-template-columns: 1fr; } }
-    </style>
+    .catalogo-acceso{display:inline-flex;float:right;padding:10px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;color:#1668b8;text-decoration:none;font-size:13px;font-weight:600}.catalogo-acceso:hover{background:#eff6ff}.catalogo-acceso:focus-visible{outline:3px solid #1668b8;outline-offset:3px}@media(max-width:700px){.catalogo-acceso{float:none;margin-bottom:16px}}</style>
 </head>
 <body>
 
@@ -195,7 +195,7 @@
 
     <main class="main-content">
         <div class="breadcrumb-trail">Administrador / <span>Configuración de priorización</span></div>
-        <div class="page-header">
+        <div class="page-header"><a class="catalogo-acceso" href="${pageContext.request.contextPath}/sysadmin/motivos">Gestionar motivos de consulta →</a>
             <h1 class="page-title">Configuración de Priorización y Reasignación</h1>
             <p class="page-subtitle">Parámetros que rigen la cola algorítmica y los tiempos de oferta automática para cupos recuperados.</p>
         </div>

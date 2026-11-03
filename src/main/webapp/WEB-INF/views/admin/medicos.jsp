@@ -113,7 +113,7 @@
             <div class="adm-tabs-row">
                 <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-tab-item active">Médicos</a>
                 <a href="${pageContext.request.contextPath}/admin/horarios" class="adm-tab-item">Propuestas de horarios</a>
-                <a href="${pageContext.request.contextPath}/admin/medicos?tab=motivos" class="adm-tab-item">Motivos de consulta</a>
+                <a href="${pageContext.request.contextPath}/admin/motivos" class="adm-tab-item">Motivos de consulta</a>
             </div>
 
             <!-- FILTROS DE BÚSQUEDA OPERATIVA -->
