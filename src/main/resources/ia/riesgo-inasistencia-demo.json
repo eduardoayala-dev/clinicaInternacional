@@ -1,0 +1,36 @@
+{
+  "esquema": 1,
+  "version": "inasistencia-sintetico-v1",
+  "objetivo": "NO_ASISTIO",
+  "origen": "SINTETICO",
+  "experimental": true,
+  "intercepto": -0.9293388541497256,
+  "umbralMedio": 0.25,
+  "umbralAlto": 0.5,
+  "variables": [
+    {
+      "nombre": "inasistencias_previas",
+      "media": 1.3376984126984126,
+      "escala": 1.75623816166075,
+      "coeficiente": 0.968454902711268
+    },
+    {
+      "nombre": "atenciones_previas",
+      "media": 3.589484126984127,
+      "escala": 2.808986523540251,
+      "coeficiente": -0.3076306159971483
+    },
+    {
+      "nombre": "anticipacion_dias",
+      "media": 22.64107142857143,
+      "escala": 13.054036794410326,
+      "coeficiente": 0.4592857546657477
+    },
+    {
+      "nombre": "confirmada_por_paciente",
+      "media": 0.7019841269841269,
+      "escala": 0.4573865022565323,
+      "coeficiente": -0.5240592710297245
+    }
+  ]
+}

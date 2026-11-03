@@ -28,7 +28,6 @@ import java.util.*;
     "/admin/inicio",
     "/admin/medicos",
     "/admin/pacientes",
-    "/admin/reasignaciones",
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
@@ -116,10 +115,6 @@ public class AdminDashboardServlet extends HttpServlet {
                 cargarDatosPacientes(request);
                 request.getRequestDispatcher("/WEB-INF/views/admin/pacientes.jsp").forward(request, response);
                 break;
-            case "/admin/reasignaciones":
-                cargarDatosReasignaciones(request);
-                request.getRequestDispatcher("/WEB-INF/views/admin/reasignaciones.jsp").forward(request, response);
-                break;
             case "/admin/dashboard-operativo":
                 cargarDatosDashboardOperativo(request);
                 request.getRequestDispatcher("/WEB-INF/views/admin/dashboard_operativo.jsp").forward(request, response);
@@ -186,6 +181,7 @@ public class AdminDashboardServlet extends HttpServlet {
         String especialidad = request.getParameter(ESPECIALIDAD);
         String sede = request.getParameter(SEDE);
         String estado = request.getParameter(ESTADO);
+        if (estado == null || estado.isBlank()) estado = ACTIVO;
 
         List<Map<String, Object>> medicos = obtenerMedicosPadronBD(query, especialidad, sede, estado,ambitoSede(request));
         int totalMedicosBD = medicos.size();
@@ -239,10 +235,6 @@ public class AdminDashboardServlet extends HttpServlet {
         request.setAttribute("filtroSede", sede != null ? sede : "");
     }
 
-    private void cargarDatosReasignaciones(HttpServletRequest request) {
-        List<Map<String, Object>> reasignaciones = obtenerHistorialReasignaciones();
-        request.setAttribute("listaReasignaciones", reasignaciones);
-    }
 
     private void cargarDatosDashboardOperativo(HttpServletRequest request) {
         Usuario usuario=(Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO);
@@ -453,17 +445,6 @@ public class AdminDashboardServlet extends HttpServlet {
 
 
 
-    private List<Map<String, Object>> obtenerHistorialReasignaciones() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> r1 = new HashMap<>();
-        r1.put("codigo", "#CAN-1092"); r1.put("cupo", "25/10 10:15 AM");
-        r1.put("medicoInfo", "Dr. Mendoza (Cardio - Sede Norte)");
-        r1.put("motivo", "Paciente canceló por App Web");
-        r1.put("candidatosHtml", "1. <span style='color:#991b1b; text-decoration:line-through;'>Juan Pérez (Rechazó)</span><br>2. <span style='color:#166534; font-weight:600;'>✓ María Ramos (Aceptó)</span>");
-        r1.put("tiempo", "14m 12s"); r1.put("tiempoClass", "time-ok");
-        list.add(r1);
-        return list;
-    }
 
     private List<Map<String, Object>> obtenerTodasDisponibilidades(int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
@@ -569,9 +550,8 @@ public class AdminDashboardServlet extends HttpServlet {
 
     private void filtrarMedicos(StringBuilder sql,List<Object> params,String query,String especialidad,String sede,String estado) {
         if (query != null && !query.trim().isEmpty()) {
-            sql.append("AND (LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(m.cmp) LIKE ?) ");
-            String qLike = "%" + query.trim().toLowerCase() + "%";
-            params.add(qLike);
+            sql.append("AND (LOWER(CONCAT(u.nombres,' ',u.apellidos)) LIKE ? ESCAPE '!' OR LOWER(m.cmp) LIKE ? ESCAPE '!') ");
+            String qLike = "%" + query.trim().toLowerCase(Locale.ROOT).replace("!","!!").replace("%","!%").replace("_","!_") + "%";
             params.add(qLike);
             params.add(qLike);
         }

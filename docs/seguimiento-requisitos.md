@@ -22,18 +22,18 @@ Actualización: 02/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 | 003 / 03 | Catálogo de sedes | Importación Excel por código, consultorios/turnos y eliminación de respuestas de ejemplo ante fallos |
 | 004 / 04 | Médico, especialidad y sede; gestión de personal autorizada | Contrastar multiplicidad de asignaciones, cuenta buscada por DNI y cambios con citas vigentes |
 | 005 / 05 | Propuesta médica revisada/publicada por admisión, bloques reservables | Renovación/Por vencer, recurrencia y consultorios según prototipo; documentar la ampliación del médico proponente |
-| 006 / 06 | Motivos reales guardados y validados por especialidad | CRUD administrativo e importación por plantilla |
+| 006 / 06 | Motivos guardados por especialidad; gestión por PA y administrador e importación XLSX por fila en revisión local | Prueba manual, commits y PR de catálogo/importación |
 | 007 / 07 | Registro, DNI, perfil, correo y contraseña verificados | Estado de contacto verificado y medio habitual de confirmación; uniformar edición por admisión |
 | 008 / 08 | Prioridad, fecha e indicación; vigencia y control vinculado | Regresión conjunta de seguimientos con los demás flujos y alcance por motivo de seguimiento |
 | 009 / 09 | Búsqueda de horarios publicados y retención real | Medición de búsqueda menor de 3 segundos |
 | 010 / 10 | Reserva, asistencia separada, reprogramación/cancelación, retención y política de contactos comprobadas | Prueba manual de los enlaces autenticados y motivo obligatorio de cancelación |
 | 011 / 11 | Compatibilidad, prioridad vigente, antigüedad y ofertas exclusivas | Criterios configurables, protección contra postergación y explicación del candidato elegido |
 | 012 / 12 | Llegada por admisión, tardanza y atención por médico | Regresión integral por sede y cierre de atenciones pendientes; no inferir inasistencia por cambio de día |
-| 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
-| 014 / 14 | Correos de reserva, oferta, recordatorio y cambios comprobados; enlaces autenticados implementados en revisión | Prueba manual completa de enlaces y aviso de plazo vencido, ambos implementados en revisión |
+| 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional; seguimiento real por sede con filtros y páginas en revisión local | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
+| 014 / 14 | Correos de reserva, oferta, recordatorio y cambios; enlaces autenticados y aviso de plazo vencido aprobados localmente en PR #61 | Despliegue final controlado y revisión visual de plantillas diferida |
 | 015 / 15 | Seguimiento de admisión con SSE; tablero operativo real por sede | Refresco, actualización manual y descargas comprobados; revisar indicadores del inicio administrativo y SysAdmin |
 | 016 / 16 | Exportación médica; reportes de admisión con filtros en PDF/XLSX/CSV | Exportación de indicadores comprobada; completar analítica y exportaciones del administrador del sistema y padrones |
-| 017 / 17 | Confirmaciones e intentos de contacto registrados | Integrar modelo con datos históricos, factores y aumento de nivel al vencer; no presentar el simulador sintético como validación real |
+| 017 / 17 | Confirmaciones y contactos; integración local experimental del modelo con antecedentes documentados, factores y regla de plazo vencido | Prueba manual de IA, trazabilidad persistida y evaluación representativa; entrenamiento sintético no acredita precisión real |
 | 018 / 18 | Plazos de oferta/confirmación y tolerancia configurables; recordatorio y contactos mínimos comprobados | Criterios de priorización centralizados |
 
 ## Requisitos no funcionales

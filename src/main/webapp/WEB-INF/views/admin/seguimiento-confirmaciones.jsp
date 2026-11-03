@@ -20,28 +20,11 @@
     <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/confirmaciones-asistencia.css?v=20261102-1">
 </head>
 <body>
-<aside class="adm-sidebar" aria-label="Navegación administrativa">
-    <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-        <div class="adm-brand-logo-wrap"><img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="" class="adm-brand-logo-img"></div>
-        <div><div class="adm-brand-name">Clínica Internacional</div><div class="adm-brand-sub">Portal administrativo</div></div>
-    </a>
-    <nav class="adm-nav" aria-label="Navegación administrativa">
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item"><i data-lucide="home"></i><span>Inicio</span></a>
-        <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item"><i data-lucide="stethoscope"></i><span>Médicos y especialidades</span></a>
-        <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item"><i data-lucide="users"></i><span>Pacientes</span></a>
-        <a href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones" class="adm-nav-item active" aria-current="page"><i data-lucide="phone-call"></i><span>Confirmaciones y seguimiento</span></a>
-        <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item"><i data-lucide="refresh-cw"></i><span>Reasignaciones y excepciones</span></a>
-        <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item"><i data-lucide="trending-up"></i><span>Dashboard operativo</span></a>
-        <a href="${pageContext.request.contextPath}/cuenta/seguridad" class="adm-nav-item"><i data-lucide="shield-check"></i><span>Seguridad de cuenta</span></a>
-    </nav>
-    <div class="adm-user-footer"><div class="adm-user-info-link"><div class="adm-avatar"><%= Html.texto(iniciales.toUpperCase()) %></div><div class="adm-user-text"><div class="adm-user-name"><%= Html.texto(nombre) %></div><div class="adm-user-role">Personal administrativo</div></div></div>
-        <form method="POST" action="${pageContext.request.contextPath}/logout"><input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><button type="submit" class="adm-logout-btn" aria-label="Cerrar sesión"><i data-lucide="log-out"></i></button></form>
-    </div>
-</aside>
+<%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 <div class="adm-main-wrapper">
     <header class="adm-topbar"><div class="adm-breadcrumb">Admisión <span>/ Confirmaciones y seguimiento</span></div></header>
     <main class="adm-content-scroll seguimiento-page" data-seguimiento-panel>
@@ -64,7 +47,7 @@
                 <% for (ConfirmacionAsistenciaDAO.Seguimiento item : seguimientos) { %>
                     <tr>
                         <td><strong><%= Html.texto(item.paciente()) %></strong><small>DNI <%= Html.texto(item.documento()) %></small></td>
-                        <td><strong><%= Html.texto(FormatoClinico.fechaHora(LocalDateTime.parse(item.fechaHora()))) %></strong><small>Reserva <%= Html.texto(item.idCita()) %></small></td>
+                        <td><strong><%= Html.texto(FormatoClinico.fechaHora(LocalDateTime.parse(item.fechaHora()))) %></strong><small>Reserva <%= Html.texto(item.idCita()) %></small><a href="${pageContext.request.contextPath}/admin/seguimiento-ia?cita=<%= item.idCita() %>">Ver apoyo de IA</a></td>
                         <td><a href="mailto:<%= Html.texto(item.correo()) %>"><%= Html.texto(item.correo()) %></a><small><%= Html.texto(item.telefono()) %></small></td>
                         <td><span class="seguimiento-estado <%= item.vencida() ? "vencida" : "pendiente" %>"><%= item.vencida() ? "Plazo vencido" : "Pendiente" %></span><small><%= item.intentos() %> intentos registrados</small></td>
                         <td><% if (item.ultimoContacto() == null) { %><span class="seguimiento-sin-intento">Sin intentos</span><% } else { %><strong><%= Html.texto(FormatoClinico.fechaHora(LocalDateTime.parse(item.ultimoContacto()))) %></strong><small><%= Html.texto(item.ultimoResultado()) %></small><% } %></td>

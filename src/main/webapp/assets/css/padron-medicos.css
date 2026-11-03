@@ -1,0 +1,10 @@
+.padron-edicion{max-width:760px;padding:28px;margin-top:24px;background:#fff;border:1px solid #dbe5f1;border-radius:12px}
+.padron-edicion h2{margin:0 0 24px;font-size:20px}
+.padron-edicion dl{display:grid;grid-template-columns:150px 1fr;gap:12px;margin:0 0 20px}
+.padron-edicion dt,.padron-ayuda{color:#64748b}.padron-edicion dd{margin:0;overflow-wrap:anywhere}
+.padron-edicion label{display:block;font-weight:600;margin:22px 0 8px}
+.padron-edicion select{width:100%;min-height:44px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;color:#0f172a;padding:10px;font:inherit}
+.padron-edicion select:focus-visible{outline:3px solid #1688b8;outline-offset:2px}
+.padron-ayuda{font-size:14px;line-height:1.6}.padron-acciones{display:flex;justify-content:flex-end;gap:12px;margin-top:24px;flex-wrap:wrap}
+.padron-error{padding:16px;margin:24px 0;background:#fef2f2;color:#991b1b;border:1px solid #fecaca;border-radius:8px}
+@media(max-width:600px){.padron-edicion{padding:18px}.padron-edicion dl{grid-template-columns:1fr;gap:6px}.padron-edicion dd{margin-bottom:10px}}
