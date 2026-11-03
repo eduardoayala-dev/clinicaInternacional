@@ -1,0 +1,1 @@
+corrida,fecha,commit,escenario,perfil,usuarios_virtuales,duracion_segundos,peticiones,iteraciones,p95_ms,p99_ms,rps,errores_runtime_porcentaje,aserciones_fallidas,cpu_app_max,memoria_app_max,cpu_mysql_max,memoria_mysql_max,recuperacion_segundos,objetivos_cumplidos,observaciones

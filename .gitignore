@@ -42,3 +42,6 @@ certs/
 *.p12
 *.jks
 *.key
+
+__pycache__/
+*.py[cod]
