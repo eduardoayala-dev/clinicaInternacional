@@ -62,7 +62,7 @@ class GestionMotivosDAOTest {
         sql("DROP TABLE auditoria_seguridad");assertEquals(503,assertThrows(AgendaException.class,()->dao.guardar(1,0,1,"Control general","127.0.0.1")).status());
         assertEquals(0,cantidad("SELECT COUNT(*) FROM motivo_cita"));
     }
-    @Test void paginaYBuscaLiteralesSinConvertirComodines()throws Exception{
+    @Test void paginaYBuscaLiteralesSinConvertirComodines(){
         for(int i=0;i<23;i++)dao.guardar(1,0,1,"Control "+i,"127.0.0.1");
         dao.guardar(1,0,2,"Control 100%_local","127.0.0.1");
         var panel=dao.consultar(2,new GestionMotivosDAO.Filtro(1,"ACTIVO","",999));assertEquals(2,panel.filtro().pagina());assertEquals(3,panel.motivos().size());assertEquals(23,panel.total());

@@ -10,13 +10,17 @@ import java.util.List;
 import java.util.Set;
 
 public final class GestionMotivosDAO {
+    private static final String ACTIVO="ACTIVO";
+    private static final String FILTRO_SQL=" FROM motivo_cita m JOIN especialidad e ON e.id_especialidad=m.id_especialidad WHERE (?=0 OR m.id_especialidad=?) AND (?='' OR m.estado=?) AND LOWER(m.descripcion) LIKE LOWER(?) ESCAPE '!'";
+    private static final String CONTAR_SQL="SELECT COUNT(*)"+FILTRO_SQL;
+    private static final String LISTAR_SQL="SELECT m.id_motivo,m.id_especialidad,e.nombre,m.descripcion,m.estado,EXISTS(SELECT 1 FROM cita c WHERE c.id_motivo=m.id_motivo)"+FILTRO_SQL+" ORDER BY e.nombre,m.descripcion,m.id_motivo LIMIT 20 OFFSET ?";
     public record Especialidad(int id,String nombre) {}
     public record Motivo(int id,int especialidad,String nombreEspecialidad,String descripcion,String estado,boolean utilizado) {}
     public record Filtro(int especialidad,String estado,String busqueda,int pagina) {
         public Filtro {
             estado=estado==null?"":estado;
             busqueda=busqueda==null?"":busqueda.strip();
-            if(especialidad<0 || pagina<1 || !Set.of("","ACTIVO","INACTIVO").contains(estado) || busqueda.length()>80 || busqueda.chars().anyMatch(Character::isISOControl))
+            if(especialidad<0 || pagina<1 || !Set.of("",ACTIVO,"INACTIVO").contains(estado) || busqueda.length()>80 || busqueda.chars().anyMatch(Character::isISOControl))
                 throw new AgendaException(400,"FILTRO_INVALIDO","Revisa los filtros del catálogo.");
         }
     }
@@ -32,12 +36,12 @@ public final class GestionMotivosDAO {
             try(var s=c.prepareStatement("SELECT id_especialidad,nombre FROM especialidad WHERE estado='ACTIVO' ORDER BY nombre,id_especialidad");var r=s.executeQuery()){
                 while(r.next())especialidades.add(new Especialidad(r.getInt(1),r.getString(2)));
             }
-            String where=" FROM motivo_cita m JOIN especialidad e ON e.id_especialidad=m.id_especialidad WHERE (?=0 OR m.id_especialidad=?) AND (?='' OR m.estado=?) AND LOWER(m.descripcion) LIKE LOWER(?) ESCAPE '!'";
             long total;
-            try(var s=c.prepareStatement("SELECT COUNT(*)"+where)){filtros(s,filtro);try(var r=s.executeQuery()){r.next();total=r.getLong(1);}}
-            int paginas=(int)Math.max(1,(total+19)/20),pagina=Math.min(filtro.pagina(),paginas);
+            try(var s=c.prepareStatement(CONTAR_SQL)){filtros(s,filtro);try(var r=s.executeQuery()){r.next();total=r.getLong(1);}}
+            int paginas=(int)Math.max(1,(total+19)/20);
+            int pagina=Math.min(filtro.pagina(),paginas);
             List<Motivo> motivos=new ArrayList<>();
-            try(var s=c.prepareStatement("SELECT m.id_motivo,m.id_especialidad,e.nombre,m.descripcion,m.estado,EXISTS(SELECT 1 FROM cita c WHERE c.id_motivo=m.id_motivo)"+where+" ORDER BY e.nombre,m.descripcion,m.id_motivo LIMIT 20 OFFSET ?")){
+            try(var s=c.prepareStatement(LISTAR_SQL)){
                 filtros(s,filtro);s.setInt(6,(pagina-1)*20);
                 try(var r=s.executeQuery()){while(r.next())motivos.add(new Motivo(r.getInt(1),r.getInt(2),r.getString(3),r.getString(4),r.getString(5),r.getBoolean(6)));}
             }
@@ -77,7 +81,8 @@ public final class GestionMotivosDAO {
     private static int insertar(Connection c,int especialidad,String texto)throws SQLException {
         try(var s=c.prepareStatement("INSERT INTO motivo_cita(id_especialidad,descripcion,estado) VALUES(?,?,'ACTIVO')",Statement.RETURN_GENERATED_KEYS)){
             s.setInt(1,especialidad);s.setString(2,texto);s.executeUpdate();
-            try(var r=s.getGeneratedKeys()){if(!r.next())throw new SQLException("Identificador no disponible");return r.getInt(1);}
+            try(var r=s.getGeneratedKeys()){if(!r.next()){throw new SQLException("Identificador no disponible");}
+                return r.getInt(1);}
         }
     }
     private static int actualizar(Connection c,int id,String texto)throws SQLException {
@@ -85,22 +90,24 @@ public final class GestionMotivosDAO {
         return id;
     }
     public void estado(int actor,int id,String estado,String ip) {
-        if(id<=0 || !Set.of("ACTIVO","INACTIVO").contains(estado==null?"":estado))throw new AgendaException(400,"ESTADO_INVALIDO","Selecciona un estado válido.");
+        if(id<=0 || !Set.of(ACTIVO,"INACTIVO").contains(estado==null?"":estado))throw new AgendaException(400,"ESTADO_INVALIDO","Selecciona un estado válido.");
         TransaccionJdbc.ejecutar(conexiones,c->{
             autorizar(c,actor);
             int especialidad;
-            try(var s=c.prepareStatement("SELECT id_especialidad FROM motivo_cita WHERE id_motivo=?")){s.setInt(1,id);try(var r=s.executeQuery()){if(!r.next())throw noEncontrado();especialidad=r.getInt(1);}}
-            especialidad(c,especialidad,"ACTIVO".equals(estado));
+            try(var s=c.prepareStatement("SELECT id_especialidad FROM motivo_cita WHERE id_motivo=?")){s.setInt(1,id);try(var r=s.executeQuery()){if(!r.next()){throw noEncontrado();}
+                especialidad=r.getInt(1);}}
+            especialidad(c,especialidad,ACTIVO.equals(estado));
             var previo=motivo(c,id);
             if(estado.equals(previo.estado()))return null;
             try(var s=c.prepareStatement("UPDATE motivo_cita SET estado=? WHERE id_motivo=?")){s.setString(1,estado);s.setInt(2,id);s.executeUpdate();}
-            auditar(c,actor,ip,"ACTIVO".equals(estado)?"MOTIVO_ACTIVADO":"MOTIVO_DESACTIVADO",id,especialidad);
+            auditar(c,actor,ip,ACTIVO.equals(estado)?"MOTIVO_ACTIVADO":"MOTIVO_DESACTIVADO",id,especialidad);
             return null;
         });
     }
     private static boolean autorizar(Connection c,int actor)throws SQLException {
         try(var s=c.prepareStatement("SELECT rol FROM usuario WHERE id_usuario=? AND activo=TRUE FOR UPDATE")){s.setInt(1,actor);try(var r=s.executeQuery()){
-            if(!r.next())throw denegado();String rol=r.getString(1);
+            if(!r.next()){throw denegado();}
+            String rol=r.getString(1);
             if("ADMINISTRADOR".equals(rol))return true;
             if("PERSONAL_ADMINISTRATIVO".equals(rol)){AmbitoAdmisionDAO.sede(c,actor);return false;}
             throw denegado();
@@ -108,12 +115,13 @@ public final class GestionMotivosDAO {
     }
     private static void especialidad(Connection c,int id,boolean activa)throws SQLException {
         try(var s=c.prepareStatement("SELECT estado FROM especialidad WHERE id_especialidad=? FOR UPDATE")){s.setInt(1,id);try(var r=s.executeQuery()){
-            if(!r.next() || (activa&&!"ACTIVO".equals(r.getString(1))))throw new AgendaException(409,"ESPECIALIDAD_NO_DISPONIBLE","La especialidad no está activa.");
+            if(!r.next() || (activa&&!ACTIVO.equals(r.getString(1))))throw new AgendaException(409,"ESPECIALIDAD_NO_DISPONIBLE","La especialidad no está activa.");
         }}
     }
     private static Motivo motivo(Connection c,int id)throws SQLException {
         try(var s=c.prepareStatement("SELECT m.id_especialidad,m.descripcion,m.estado,EXISTS(SELECT 1 FROM cita c WHERE c.id_motivo=m.id_motivo) FROM motivo_cita m WHERE m.id_motivo=? FOR UPDATE")){s.setInt(1,id);try(var r=s.executeQuery()){
-            if(!r.next())throw noEncontrado();return new Motivo(id,r.getInt(1),"",r.getString(2),r.getString(3),r.getBoolean(4));
+            if(!r.next()){throw noEncontrado();}
+            return new Motivo(id,r.getInt(1),"",r.getString(2),r.getString(3),r.getBoolean(4));
         }}
     }
     private static void filtros(PreparedStatement s,Filtro f)throws SQLException {

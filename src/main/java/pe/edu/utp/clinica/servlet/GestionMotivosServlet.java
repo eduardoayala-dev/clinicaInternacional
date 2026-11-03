@@ -15,6 +15,7 @@ import java.io.IOException;
 
 @WebServlet({"/sysadmin/motivos","/admin/motivos"})
 public class GestionMotivosServlet extends HttpServlet {
+    private static final String ESTADO="estado";
     protected GestionMotivosDAO.Panel consultar(int actor,GestionMotivosDAO.Filtro filtro){return new GestionMotivosDAO().consultar(actor,filtro);}
     protected int guardar(int actor,int id,int especialidad,String descripcion,String ip){return new GestionMotivosDAO().guardar(actor,id,especialidad,descripcion,ip);}
     protected void cambiarEstado(int actor,int id,String estado,String ip){new GestionMotivosDAO().estado(actor,id,estado,ip);}
@@ -28,10 +29,11 @@ public class GestionMotivosServlet extends HttpServlet {
         res.setHeader("Cache-Control","no-store");
         try{
             var usuario=usuario(req);
-            String accion=parametro(req,"accion");int id=numero(parametro(req,"id"),0);
+            String accion=parametro(req,"accion");
+            int id=numero(parametro(req,"id"),0);
             switch(accion){
                 case "guardar" -> id=guardar(usuario.getIdUsuario(),id,numero(parametro(req,"especialidad"),0),parametro(req,"descripcion"),req.getRemoteAddr());
-                case "estado" -> cambiarEstado(usuario.getIdUsuario(),id,parametro(req,"estado"),req.getRemoteAddr());
+                case ESTADO -> cambiarEstado(usuario.getIdUsuario(),id,parametro(req,ESTADO),req.getRemoteAddr());
                 default -> throw new AgendaException(400,"ACCION_INVALIDA","Selecciona una acción válida.");
             }
             if(json(req))ApiJson.write(res,200,new ApiResponse<>("MOTIVO_GUARDADO","El catálogo fue actualizado.",java.util.Map.of("idMotivo",id)));
@@ -40,7 +42,7 @@ public class GestionMotivosServlet extends HttpServlet {
         catch(IOException e){TransporteServlet.fallo(res);}
     }
     private void mostrar(HttpServletRequest req,HttpServletResponse res,int actor)throws IOException,ServletException {
-        var filtro=new GestionMotivosDAO.Filtro(numero(parametro(req,"especialidad"),0),parametro(req,"estado"),parametro(req,"buscar"),numero(parametro(req,"pagina"),1));
+        var filtro=new GestionMotivosDAO.Filtro(numero(parametro(req,"especialidad"),0),parametro(req,ESTADO),parametro(req,"buscar"),numero(parametro(req,"pagina"),1));
         var panel=consultar(actor,filtro);
         if(json(req)){ApiJson.write(res,200,new ApiResponse<>("MOTIVOS_OBTENIDOS","Catálogo de motivos consultado.",panel));return;}
         req.setAttribute("panelMotivos",panel);
@@ -49,7 +51,8 @@ public class GestionMotivosServlet extends HttpServlet {
     private static Usuario usuario(HttpServletRequest req){
         var sesion=req.getSession(false);
         if(sesion==null||!(sesion.getAttribute("usuarioLogueado") instanceof Usuario u))throw new AgendaException(403,"SESION_REQUERIDA","Inicia sesión para continuar.");
-        String rol=u.getRol();boolean sistema="/sysadmin/motivos".equals(req.getServletPath());
+        String rol=u.getRol();
+        boolean sistema="/sysadmin/motivos".equals(req.getServletPath());
         if((sistema&&!"ADMINISTRADOR".equals(rol))||(!sistema&&!"PERSONAL_ADMINISTRATIVO".equals(rol)))
             throw new AgendaException(403,"CATALOGO_NO_AUTORIZADO","Ingresa con un perfil autorizado para gestionar el catálogo.");
         return u;
@@ -62,7 +65,7 @@ public class GestionMotivosServlet extends HttpServlet {
     }
     private static int numero(String valor,int alternativa){
         if(valor.isEmpty())return alternativa;
-        if(!valor.matches("[0-9]{1,8}"))throw new AgendaException(400,"PARAMETRO_INVALIDO","Selecciona identificadores y páginas válidos.");
+        if(!valor.matches("\\d{1,8}"))throw new AgendaException(400,"PARAMETRO_INVALIDO","Selecciona identificadores y páginas válidos.");
         return Integer.parseInt(valor);
     }
     private static boolean json(HttpServletRequest req){String accept=req.getHeader("Accept");return accept!=null&&accept.contains("application/json");}

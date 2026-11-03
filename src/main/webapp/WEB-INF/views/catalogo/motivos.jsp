@@ -33,7 +33,7 @@
 <div class="adm-brand-sub">Administrador del sistema</div>
 </div>
 </a>
-<nav class="adm-nav">
+<nav class="adm-nav" aria-label="Secciones del administrador">
 <a class="adm-nav-item" href="${pageContext.request.contextPath}/sysadmin/dashboard">
 <img class="adm-nav-icon" alt="" src="${pageContext.request.contextPath}/assets/images/medico/inicio.svg">
 <span>Inicio</span>
