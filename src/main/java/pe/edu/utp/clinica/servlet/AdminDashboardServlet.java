@@ -28,7 +28,6 @@ import java.util.*;
     "/admin/inicio",
     "/admin/medicos",
     "/admin/pacientes",
-    "/admin/reasignaciones",
     "/admin/dashboard-operativo"
 })
 public class AdminDashboardServlet extends HttpServlet {
@@ -115,10 +114,6 @@ public class AdminDashboardServlet extends HttpServlet {
             case RUTA_PACIENTES:
                 cargarDatosPacientes(request);
                 request.getRequestDispatcher("/WEB-INF/views/admin/pacientes.jsp").forward(request, response);
-                break;
-            case "/admin/reasignaciones":
-                cargarDatosReasignaciones(request);
-                request.getRequestDispatcher("/WEB-INF/views/admin/reasignaciones.jsp").forward(request, response);
                 break;
             case "/admin/dashboard-operativo":
                 cargarDatosDashboardOperativo(request);
@@ -239,10 +234,6 @@ public class AdminDashboardServlet extends HttpServlet {
         request.setAttribute("filtroSede", sede != null ? sede : "");
     }
 
-    private void cargarDatosReasignaciones(HttpServletRequest request) {
-        List<Map<String, Object>> reasignaciones = obtenerHistorialReasignaciones();
-        request.setAttribute("listaReasignaciones", reasignaciones);
-    }
 
     private void cargarDatosDashboardOperativo(HttpServletRequest request) {
         Usuario usuario=(Usuario)request.getSession(false).getAttribute(USUARIO_LOGUEADO);
@@ -453,17 +444,6 @@ public class AdminDashboardServlet extends HttpServlet {
 
 
 
-    private List<Map<String, Object>> obtenerHistorialReasignaciones() {
-        List<Map<String, Object>> list = new ArrayList<>();
-        Map<String, Object> r1 = new HashMap<>();
-        r1.put("codigo", "#CAN-1092"); r1.put("cupo", "25/10 10:15 AM");
-        r1.put("medicoInfo", "Dr. Mendoza (Cardio - Sede Norte)");
-        r1.put("motivo", "Paciente canceló por App Web");
-        r1.put("candidatosHtml", "1. <span style='color:#991b1b; text-decoration:line-through;'>Juan Pérez (Rechazó)</span><br>2. <span style='color:#166534; font-weight:600;'>✓ María Ramos (Aceptó)</span>");
-        r1.put("tiempo", "14m 12s"); r1.put("tiempoClass", "time-ok");
-        list.add(r1);
-        return list;
-    }
 
     private List<Map<String, Object>> obtenerTodasDisponibilidades(int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();
