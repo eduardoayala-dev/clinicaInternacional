@@ -1,6 +1,7 @@
 package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
+import pe.edu.utp.clinica.model.catalogo.FilaImportacionMotivo;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
@@ -59,6 +60,78 @@ public final class GestionMotivosDAO {
             auditar(c,actor,ip,id==0?"MOTIVO_CREADO":"MOTIVO_EDITADO",resultado,especialidad);
             return resultado;
         });
+    }
+    public List<Especialidad> especialidadesImportacion(int actor) {
+        return TransaccionJdbc.ejecutar(conexiones,c->{
+            autorizar(c,actor);List<Especialidad> lista=new ArrayList<>();
+            try(var st=c.prepareStatement("SELECT id_especialidad,nombre FROM especialidad WHERE estado='ACTIVO' ORDER BY nombre,id_especialidad");var r=st.executeQuery()){
+                while(r.next())lista.add(new Especialidad(r.getInt(1),r.getString(2)));
+            }
+            return List.copyOf(lista);
+        });
+    }
+    public List<FilaImportacionMotivo> revisarImportacion(int actor,List<FilaImportacionMotivo> filas) {
+        exigirFilas(filas);
+        return TransaccionJdbc.ejecutar(conexiones,c->{
+            autorizar(c,actor);
+            List<FilaImportacionMotivo> revisadas=new ArrayList<>();
+            java.util.Map<Integer,List<String>> vistos=new java.util.HashMap<>();
+            java.util.Set<Integer> activas=new java.util.HashSet<>();
+            try(var st=c.prepareStatement("SELECT id_especialidad FROM especialidad WHERE estado='ACTIVO'");var r=st.executeQuery()){while(r.next())activas.add(r.getInt(1));}
+            for(var fila:filas){revisadas.add(revisarFila(c,fila,vistos,activas));}
+            return List.copyOf(revisadas);
+        });
+    }
+    private static FilaImportacionMotivo revisarFila(Connection c,FilaImportacionMotivo fila,java.util.Map<Integer,List<String>> vistos,java.util.Set<Integer> activas)throws SQLException {
+        if(!fila.error().isEmpty())return fila;
+        try{
+            String texto=descripcionValida(0,fila.especialidad(),fila.descripcion());
+            if(!activas.contains(fila.especialidad()))throw new AgendaException(409,"ESPECIALIDAD_NO_DISPONIBLE","La especialidad no está activa.");
+            exigirUnico(c,0,fila.especialidad(),texto);
+            var anteriores=vistos.computeIfAbsent(fila.especialidad(),id->new ArrayList<>());
+            if(repetido(c,anteriores,texto))throw new AgendaException(409,"MOTIVO_DUPLICADO","El motivo se repite en el archivo para la misma especialidad.");
+            anteriores.add(texto);
+            return new FilaImportacionMotivo(fila.numero(),fila.especialidad(),texto,"");
+        }catch(AgendaException e){return new FilaImportacionMotivo(fila.numero(),fila.especialidad(),fila.descripcion(),e.getMessage());}
+    }
+    private static boolean repetido(Connection c,List<String> anteriores,String texto)throws SQLException {
+        if(anteriores.isEmpty())return false;
+        String expresion=String.join(" OR ",java.util.Collections.nCopies(anteriores.size(),"LOWER(?)=LOWER(?)"));
+        try(var st=c.prepareStatement("SELECT "+expresion)){int i=1;for(String anterior:anteriores){st.setString(i++,anterior);st.setString(i++,texto);}try(var r=st.executeQuery()){r.next();return r.getBoolean(1);}}
+    }
+    public record ResultadoImportacion(int importados,List<FilaImportacionMotivo> filas) {
+        public ResultadoImportacion {filas=List.copyOf(filas);}
+    }
+    public ResultadoImportacion importar(int actor,List<FilaImportacionMotivo> filas,String ip) {
+        exigirFilas(filas);
+        return TransaccionJdbc.ejecutar(conexiones,c->{
+            autorizar(c,actor);
+            java.util.Set<Integer> activas=new java.util.HashSet<>();
+            for(int id:filas.stream().filter(f->f.error().isEmpty()).mapToInt(FilaImportacionMotivo::especialidad).distinct().sorted().toArray()){
+                try{especialidad(c,id,true);activas.add(id);}catch(AgendaException e){if(e.status()!=409)throw e;}
+            }
+            List<FilaImportacionMotivo> resultado=new ArrayList<>();int importados=0;
+            for(var fila:filas){
+                var revisada=importarFila(c,actor,fila,ip,activas);resultado.add(revisada);
+                if(revisada.error().isEmpty())importados++;
+            }
+            return new ResultadoImportacion(importados,resultado);
+        });
+    }
+    private static FilaImportacionMotivo importarFila(Connection c,int actor,FilaImportacionMotivo fila,String ip,java.util.Set<Integer> activas)throws SQLException {
+        if(!fila.error().isEmpty())return fila;
+        var punto=c.setSavepoint();
+        try{
+            if(!activas.contains(fila.especialidad()))throw new AgendaException(409,"ESPECIALIDAD_NO_DISPONIBLE","La especialidad ya no está activa.");
+            String texto=descripcionValida(0,fila.especialidad(),fila.descripcion());
+            exigirUnico(c,0,fila.especialidad(),texto);int id=insertar(c,fila.especialidad(),texto);auditar(c,actor,ip,"MOTIVO_IMPORTADO",id,fila.especialidad());
+            return new FilaImportacionMotivo(fila.numero(),fila.especialidad(),texto,"");
+        }catch(AgendaException e){
+            c.rollback(punto);return new FilaImportacionMotivo(fila.numero(),fila.especialidad(),fila.descripcion(),e.getMessage());
+        }finally{c.releaseSavepoint(punto);}
+    }
+    private static void exigirFilas(List<FilaImportacionMotivo> filas) {
+        if(filas==null||filas.isEmpty()||filas.size()>200||filas.stream().anyMatch(java.util.Objects::isNull))throw new AgendaException(422,"IMPORTACION_INVALIDA","Selecciona entre 1 y 200 filas válidas.");
     }
     private static String descripcionValida(int id,int especialidad,String descripcion) {
         String texto=descripcion==null?"":descripcion.strip().replaceAll(" +"," ");
