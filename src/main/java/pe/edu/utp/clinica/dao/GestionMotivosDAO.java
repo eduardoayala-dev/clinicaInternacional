@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Set;
 
 public final class GestionMotivosDAO {
+    private static final int COMPARACIONES_MAXIMAS=200;
+    private static final String COMPARAR_SQL="SELECT LOWER(?) IN (LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?),LOWER(?))";
     private static final String ACTIVO="ACTIVO";
     private static final String FILTRO_SQL=" FROM motivo_cita m JOIN especialidad e ON e.id_especialidad=m.id_especialidad WHERE (?=0 OR m.id_especialidad=?) AND (?='' OR m.estado=?) AND LOWER(m.descripcion) LIKE LOWER(?) ESCAPE '!'";
     private static final String CONTAR_SQL="SELECT COUNT(*)"+FILTRO_SQL;
@@ -96,10 +98,16 @@ public final class GestionMotivosDAO {
     }
     private static boolean repetido(Connection c,List<String> anteriores,String texto)throws SQLException {
         if(anteriores.isEmpty())return false;
-        String expresion=String.join(" OR ",java.util.Collections.nCopies(anteriores.size(),"LOWER(?)=LOWER(?)"));
-        try(var st=c.prepareStatement("SELECT "+expresion)){int i=1;for(String anterior:anteriores){st.setString(i++,anterior);st.setString(i++,texto);}try(var r=st.executeQuery()){r.next();return r.getBoolean(1);}}
+        try(var st=c.prepareStatement(COMPARAR_SQL)) {
+            st.setString(1,texto);
+            for(int i=0;i<COMPARACIONES_MAXIMAS;i++) {
+                if(i<anteriores.size()) st.setString(i+2,anteriores.get(i));
+                else st.setNull(i+2,java.sql.Types.VARCHAR);
+            }
+            try(var r=st.executeQuery()){r.next();return r.getBoolean(1);}
+        }
     }
-    public record ResultadoImportacion(int importados,List<FilaImportacionMotivo> filas) {
+    public record ResultadoImportacion(int importados,List<FilaImportacionMotivo> filas) implements java.io.Serializable {
         public ResultadoImportacion {filas=List.copyOf(filas);}
     }
     public ResultadoImportacion importar(int actor,List<FilaImportacionMotivo> filas,String ip) {
