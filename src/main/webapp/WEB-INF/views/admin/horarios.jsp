@@ -11,13 +11,14 @@
 %>
 <!DOCTYPE html><html lang="es"><head><title>Propuestas de horarios — Admisión</title>
 <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/horarios-propuestas.css">
 <script defer src="${pageContext.request.contextPath}/assets/js/horarios-propuestas.js"></script>
 </head><body class="hor-adm">
-<%@ include file="/WEB-INF/jspf/admin-sidebar-medicos.jspf" %>
+<%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 
 <div class="adm-main-wrapper"><header class="adm-topbar"><div class="adm-breadcrumb">Admisión / Propuestas de horarios</div></header>
 <main class="adm-content-scroll">

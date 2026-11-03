@@ -22,7 +22,7 @@
     --adm-text-light: #94a3b8;
     --adm-border: #e2e8f0;
     --adm-focus-ring: #1668b8;
-    --adm-sidebar-w: 280px;
+    --adm-sidebar-w: 240px;
     --adm-radius-lg: 12px;
     --adm-radius-md: 8px;
 }
@@ -242,6 +242,9 @@ body {
 }
 
 .adm-logout-btn {
+    border: 0;
+    background: transparent;
+    cursor: pointer;
     color: #94a3b8;
     display: flex;
     align-items: center;
@@ -274,6 +277,8 @@ body {
    MAIN WRAPPER & TOPBAR
    ========================================================================== */
 .adm-main-wrapper {
+    min-width: 0;
+    min-height: 0;
     flex: 1;
     display: flex;
     flex-direction: column;
@@ -304,6 +309,10 @@ body {
 }
 
 .adm-content-scroll {
+    min-width: 0;
+    min-height: 0;
+    scrollbar-gutter: stable;
+    overscroll-behavior: contain;
     flex: 1;
     padding: 28px 40px 40px 40px;
     overflow-y: auto;
@@ -1229,3 +1238,26 @@ tr.fila-interactiva.is-selected {
 
 
 .adm-nav-icon{width:18px;height:18px;min-width:18px;flex-shrink:0}
+
+body {height:100dvh}
+.adm-main-wrapper,.adm-sidebar {height:100dvh;max-height:100dvh}
+.adm-content-scroll > * {flex-shrink:0}
+.adm-nav {gap:6px;padding-bottom:24px}
+.adm-nav-item {min-height:40px;line-height:1.35}
+.adm-nav-icon,.adm-logout-btn img {width:18px;height:18px;flex-shrink:0;filter:brightness(0) invert(1);opacity:.7}
+.adm-nav-item.active .adm-nav-icon,.adm-nav-item:hover .adm-nav-icon {opacity:1}
+.adm-user-footer form {margin:0;flex-shrink:0}
+.adm-table-card {overflow-x:auto;min-width:0}
+.adm-table {min-width:700px}
+.adm-filters-card {flex-wrap:wrap}
+.adm-filter-group {min-width:0}
+.adm-pagination-controls {margin-left:auto;flex-wrap:wrap;justify-content:flex-end}
+.adm-table-footer {gap:12px;flex-wrap:wrap}
+.adm-page-subtitle {line-height:1.6}
+.adm-content-scroll p {overflow-wrap:anywhere}
+@media(max-width:1100px){:root{--adm-sidebar-w:220px}.adm-topbar{padding:0 24px}.adm-content-scroll{padding:24px}.adm-brand{gap:8px}.adm-brand-name{white-space:normal}}
+@media(max-width:700px){:root{--adm-sidebar-w:72px}.adm-sidebar{padding:16px 8px}.adm-brand{padding:0;justify-content:center}.adm-brand>div:last-child,.adm-user-info-link{display:none}.adm-nav-item{padding:12px;justify-content:center;border-left-width:2px}.adm-nav-item span{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}.adm-user-footer{justify-content:center;padding:8px 0}.adm-content-scroll{padding:20px 16px}.adm-topbar{padding:0 16px}.adm-page-title{font-size:26px}.adm-brand-logo-wrap{width:36px;height:36px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+.adm-nav-item span{white-space:normal;overflow-wrap:anywhere;min-width:0}
+.ia-panel .ia-nota{margin-top:18px}

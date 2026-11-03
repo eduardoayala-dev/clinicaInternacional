@@ -28,13 +28,13 @@
     List<Map<String, Object>> sedes = (List<Map<String, Object>>) request.getAttribute("sedes");
 
     Integer totalPacientes = (Integer) request.getAttribute("totalPacientes");
-    if (totalPacientes == null) totalPacientes = 12480;
+    if (totalPacientes == null) totalPacientes = listaPacientes == null ? 0 : listaPacientes.size();
 
     String totalRegistradosFormat = (String) request.getAttribute("totalRegistradosFormat");
-    if (totalRegistradosFormat == null) totalRegistradosFormat = "12 480";
+    if (totalRegistradosFormat == null) totalRegistradosFormat = String.valueOf(totalPacientes);
 
     String totalVerificadosFormat = (String) request.getAttribute("totalVerificadosFormat");
-    if (totalVerificadosFormat == null) totalVerificadosFormat = "11 905";
+    if (totalVerificadosFormat == null) totalVerificadosFormat = "Sin datos";
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
@@ -53,82 +53,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Padrón maestro de pacientes — Clínica Internacional</title>
-    <!-- TIPOGRAFÍAS INSTITUCIONALES: Inter + Playfair Display -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <!-- ICONOS LUCIDE -->
+
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ESTILOS INSTITUCIONALES DEL PORTAL Y DE PACIENTES -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-pacientes.css">
 </head>
 <body>
 
-    <!-- ==========================================================================
-         PANEL LATERAL INSTITUCIONAL (PORTAL ADMINISTRATIVO)
-         ========================================================================== -->
-    <aside class="adm-sidebar">
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <div class="adm-brand-logo-wrap">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div>
-                <div class="adm-brand-name">Clínica Internacional</div>
-                <div class="adm-brand-sub">Portal administrativo</div>
-            </div>
-        </a>
 
-        <nav class="adm-nav">
-            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item">
-                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item active">
-                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
-            </a>
-        </nav>
+    <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 
-        <div class="adm-user-footer">
-            <div class="adm-user-info-link">
-                <div class="adm-avatar"><%= Html.texto(inicialesPersonal) %></div>
-                <div class="adm-user-text">
-                    <div class="adm-user-name" title="<%= Html.texto(nombrePersonal) %>"><%= Html.texto(nombrePersonal) %></div>
-                    <div class="adm-user-role">Personal administrativo</div>
-                </div>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="adm-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </button>
-</form>
-        </div>
-    </aside>
 
-    <!-- ==========================================================================
-         ÁREA DE CONTENIDO Y TOPBAR
-         ========================================================================== -->
     <div class="adm-main-wrapper">
-        <!-- TOPBAR CON BREADCRUMB -->
+
         <header class="adm-topbar">
             <div class="adm-breadcrumb">
                 Personal administrativo / <span>Pacientes</span>
             </div>
         </header>
 
-        <!-- CONTENEDOR CON SCROLL -->
+
         <main class="adm-content-scroll">
 
-            <!-- MENSAJES FLASH -->
+
             <% if (flashMessage != null) { %>
                 <div style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
@@ -143,7 +95,7 @@
                 </div>
             <% } %>
 
-            <!-- 1. CABECERA CON ACCIONES DE EXPORTACIÓN -->
+
             <div class="pacientes-header">
                 <div>
                     <h1 class="pacientes-title">Padrón maestro de pacientes</h1>
@@ -159,10 +111,10 @@
                 </div>
             </div>
 
-            <!-- 2. PANEL DE FILTROS -->
+
             <div class="pacientes-filter-card">
                 <div class="pacientes-filter-row-top">
-                    <!-- Buscar -->
+
                     <div class="pacientes-field-group">
                         <label class="pacientes-field-label" for="filtroTexto">Buscar</label>
                         <div class="pacientes-input-search-wrap">
@@ -171,7 +123,7 @@
                         </div>
                     </div>
 
-                    <!-- Cobertura -->
+
                     <div class="pacientes-field-group">
                         <label class="pacientes-field-label" for="filtroCobertura">Cobertura</label>
                         <select id="filtroCobertura" class="pacientes-select" onchange="filtrarPacientes()">
@@ -182,13 +134,13 @@
                         </select>
                     </div>
 
-                    <!-- Sede preferida -->
+
                     <div class="pacientes-field-group">
                         <label class="pacientes-field-label" for="filtroSede">Sede preferida</label>
                         <select id="filtroSede" class="pacientes-select" onchange="filtrarPacientes()">
                             <option value="">Todas las sedes</option>
-                            <% if (sedes != null && !sedes.isEmpty()) { 
-                                for (Map<String, Object> s : sedes) { 
+                            <% if (sedes != null && !sedes.isEmpty()) {
+                                for (Map<String, Object> s : sedes) {
                                     String nomSede = (String) s.get("nombre");
                             %>
                                 <option value="<%= Html.texto(nomSede) %>"><%= Html.texto(nomSede) %></option>
@@ -213,7 +165,7 @@
                 </div>
             </div>
 
-            <!-- 3. TABLA PADRÓN DE PACIENTES -->
+
             <div class="pacientes-table-card">
                 <div class="pacientes-table-wrap">
                     <table class="pacientes-table" id="tablaPacientes">
@@ -230,8 +182,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyPacientes">
-                            <% if (listaPacientes != null && !listaPacientes.isEmpty()) { 
-                                for (Map<String, Object> p : listaPacientes) { 
+                            <% if (listaPacientes != null && !listaPacientes.isEmpty()) {
+                                for (Map<String, Object> p : listaPacientes) {
                                     int idPaciente = (Integer) p.get("idPaciente");
                                     String dni = (String) p.get("dni");
                                     String nombres = (String) p.get("nombres");
@@ -311,7 +263,7 @@
                     </table>
                 </div>
 
-                <!-- Paginación -->
+
                 <div class="pacientes-table-footer">
                     <span id="pacientesPaginationInfo">Mostrando 5 de 12 480 pacientes</span>
                     <div class="pacientes-pagination-controls">
@@ -322,9 +274,9 @@
                 </div>
             </div>
 
-            <!-- 4. TARJETAS KPI INFERIORES -->
+
             <div class="pacientes-kpi-grid">
-                <!-- Total Pacientes Registrados -->
+
                 <div class="pacientes-kpi-card">
                     <div class="pacientes-kpi-head">
                         <span class="pacientes-kpi-title">Total de pacientes registrados</span>
@@ -336,7 +288,7 @@
                     <div class="pacientes-kpi-sub">En el padrón de la red</div>
                 </div>
 
-                <!-- Con Contacto Verificado -->
+
                 <div class="pacientes-kpi-card">
                     <div class="pacientes-kpi-head">
                         <span class="pacientes-kpi-title">Con contacto verificado</span>
@@ -352,9 +304,7 @@
         </main>
     </div>
 
-    <!-- ==========================================================================
-         MODAL: REGISTRAR NUEVO PACIENTE
-         ========================================================================== -->
+
     <div id="modalNuevoPaciente" class="adm-modal-backdrop" onclick="cerrarModalFondoNuevo(event)">
         <div class="adm-modal-box">
             <div class="adm-modal-header">
@@ -436,9 +386,7 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL: EDITAR PACIENTE
-         ========================================================================== -->
+
     <div id="modalEditarPaciente" class="adm-modal-backdrop" onclick="cerrarModalFondoEditar(event)">
         <div class="adm-modal-box">
             <div class="adm-modal-header">
@@ -621,7 +569,7 @@
             document.getElementById("editTelefono").value = fila.getAttribute("data-telefono") || "";
             document.getElementById("editEmail").value = fila.getAttribute("data-email") || "";
             document.getElementById("editDireccion").value = fila.getAttribute("data-direccion") || "";
-            
+
             const cob = fila.getAttribute("data-cobertura") || "EPS";
             const selectCob = document.getElementById("editCobertura");
             if (selectCob) selectCob.value = cob;
