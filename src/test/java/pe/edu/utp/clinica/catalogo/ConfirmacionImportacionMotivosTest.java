@@ -9,6 +9,15 @@ import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ConfirmacionImportacionMotivosTest {
+    @Test void vistaPreviaPuedePersistirseEnLaSesion()throws Exception {
+        var sesion=new HttpExchange().session;
+        var pendiente=ConfirmacionImportacionMotivos.preparar(sesion,17,filas,reloj);
+        var bytes=new java.io.ByteArrayOutputStream();
+        try(var salida=new java.io.ObjectOutputStream(bytes)){salida.writeObject(pendiente);}
+        try(var entrada=new java.io.ObjectInputStream(new java.io.ByteArrayInputStream(bytes.toByteArray()))) {
+            assertEquals(pendiente,entrada.readObject());
+        }
+    }
     private final Clock reloj=Clock.fixed(Instant.parse("2026-11-03T17:00:00Z"),ZoneOffset.UTC);
     private final List<FilaImportacionMotivo> filas=List.of(new FilaImportacionMotivo(2,13,"Control general",""));
     @Test void confirmacionEsDeUnSoloUsoYLigadaAlActor(){var s=new HttpExchange().session;var p=ConfirmacionImportacionMotivos.preparar(s,17,filas,reloj);assertThrows(AgendaException.class,()->ConfirmacionImportacionMotivos.consumir(s,18,p.token(),reloj));assertEquals(filas,ConfirmacionImportacionMotivos.consumir(s,17,p.token(),reloj).filas());assertThrows(AgendaException.class,()->ConfirmacionImportacionMotivos.consumir(s,17,p.token(),reloj));}

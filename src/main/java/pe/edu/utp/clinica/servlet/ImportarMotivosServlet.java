@@ -21,7 +21,7 @@ import java.util.List;
 @MultipartConfig(maxFileSize=1_048_576,maxRequestSize=1_200_000,fileSizeThreshold=0)
 public class ImportarMotivosServlet extends HttpServlet {
     private static final String RESULTADO="resultadoImportacionMotivos";
-    private record ResultadoVisible(int actor,GestionMotivosDAO.ResultadoImportacion datos,java.time.Instant vence) {}
+    private record ResultadoVisible(int actor,GestionMotivosDAO.ResultadoImportacion datos,java.time.Instant vence) implements java.io.Serializable {}
     protected Clock reloj(){return Clock.systemUTC();}
     protected List<GestionMotivosDAO.Especialidad> especialidades(int actor){return new GestionMotivosDAO().especialidadesImportacion(actor);}
     protected List<FilaImportacionMotivo> revisar(int actor,List<FilaImportacionMotivo> filas){return new GestionMotivosDAO().revisarImportacion(actor,filas);}
