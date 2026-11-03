@@ -33,6 +33,9 @@ public final class SeguimientoOfertasDAO {
             JOIN paciente p ON p.id_paciente=le.id_paciente JOIN usuario up ON up.id_usuario=p.id_usuario
             WHERE d.id_sede=?
             """;
+    private static final String CONDICIONES=" AND (?='' OR r.estado=?) AND (?=FALSE OR (r.fecha_oferta>=? AND r.fecha_oferta<?)) AND (?=0 OR m.id_especialidad=?)";
+    private static final String CONTAR_SQL="SELECT r.estado,COUNT(*) "+ORIGEN+CONDICIONES+" GROUP BY r.estado";
+    private static final String LISTAR_SQL="SELECT r.id_reasignacion,r.id_cita_original,r.id_lista_espera,CONCAT(up.nombres,' ',up.apellidos),CONCAT(um.nombres,' ',um.apellidos),e.nombre,c.fecha_hora,r.fecha_oferta,r.fecha_limite_respuesta,r.estado,r.id_cita_asignada "+ORIGEN+CONDICIONES+" ORDER BY r.fecha_oferta DESC,r.id_reasignacion DESC LIMIT ? OFFSET ?";
     private final SesionesJdbc.Conexion conexiones;
     private final Clock reloj;
     public SeguimientoOfertasDAO(){this(DatabaseConfig::getConnection,Clock.system(ZoneId.of("America/Lima")));}
@@ -43,15 +46,12 @@ public final class SeguimientoOfertasDAO {
             c.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
             c.setAutoCommit(false);
             Sede sede=sede(c,actor);
-            String condiciones=(filtro.estado().isEmpty()?"":" AND r.estado=?")
-                    +(filtro.fecha()==null?"":" AND r.fecha_oferta>=? AND r.fecha_oferta<?")
-                    +(filtro.especialidad()==0?"":" AND m.id_especialidad=?");
-            Map<String,Long> conteos=contar(c,sede.id(),filtro,condiciones);
+            Map<String,Long> conteos=contar(c,sede.id(),filtro);
             long total=conteos.values().stream().mapToLong(Long::longValue).sum();
             int paginas=(int)Math.max(1,(total+POR_PAGINA-1)/POR_PAGINA);
             int pagina=Math.min(filtro.pagina(),paginas);
             var ahora=LocalDateTime.now(reloj);
-            var ofertas=listar(c,sede.id(),filtro,condiciones,pagina,ahora);
+            var ofertas=listar(c,sede.id(),filtro,pagina,ahora);
             var especialidades=especialidades(c,sede.id());
             c.commit();
             return new Panel(sede.nombre(),filtro,pagina,paginas,total,conteos,ofertas,especialidades,ahora);
@@ -67,23 +67,23 @@ public final class SeguimientoOfertasDAO {
     }
     private static int parametros(PreparedStatement s,int sede,Filtro filtro)throws SQLException {
         int i=1;s.setInt(i++,sede);
-        if(!filtro.estado().isEmpty())s.setString(i++,filtro.estado());
-        if(filtro.fecha()!=null){s.setObject(i++,filtro.fecha().atStartOfDay());s.setObject(i++,filtro.fecha().plusDays(1).atStartOfDay());}
-        if(filtro.especialidad()!=0)s.setInt(i++,filtro.especialidad());
+        s.setString(i++,filtro.estado());s.setString(i++,filtro.estado());
+        s.setBoolean(i++,filtro.fecha()!=null);
+        var fecha=filtro.fecha()==null?LocalDate.of(2000,1,1):filtro.fecha();
+        s.setObject(i++,fecha.atStartOfDay());s.setObject(i++,fecha.plusDays(1).atStartOfDay());
+        s.setInt(i++,filtro.especialidad());s.setInt(i++,filtro.especialidad());
         return i;
     }
-    private static Map<String,Long> contar(Connection c,int sede,Filtro filtro,String condiciones)throws SQLException {
+    private static Map<String,Long> contar(Connection c,int sede,Filtro filtro)throws SQLException {
         Map<String,Long> conteos=new LinkedHashMap<>();ESTADOS.forEach(estado->conteos.put(estado,0L));
-        try(var s=c.prepareStatement("SELECT r.estado,COUNT(*) "+ORIGEN+condiciones+" GROUP BY r.estado")) {
+        try(var s=c.prepareStatement(CONTAR_SQL)) {
             parametros(s,sede,filtro);try(var r=s.executeQuery()){while(r.next())conteos.put(Objects.requireNonNullElse(r.getString(1),"SIN_ESTADO"),r.getLong(2));}
         }
         return conteos;
     }
-    private static List<Oferta> listar(Connection c,int sede,Filtro filtro,String condiciones,int pagina,LocalDateTime ahora)throws SQLException {
-        String sql="SELECT r.id_reasignacion,r.id_cita_original,r.id_lista_espera,CONCAT(up.nombres,' ',up.apellidos),CONCAT(um.nombres,' ',um.apellidos),e.nombre,c.fecha_hora,r.fecha_oferta,r.fecha_limite_respuesta,r.estado,r.id_cita_asignada "
-                +ORIGEN+condiciones+" ORDER BY r.fecha_oferta DESC,r.id_reasignacion DESC LIMIT ? OFFSET ?";
+    private static List<Oferta> listar(Connection c,int sede,Filtro filtro,int pagina,LocalDateTime ahora)throws SQLException {
         List<Oferta> ofertas=new ArrayList<>();
-        try(var s=c.prepareStatement(sql)) {
+        try(var s=c.prepareStatement(LISTAR_SQL)) {
             int i=parametros(s,sede,filtro);s.setInt(i++,POR_PAGINA);s.setInt(i,(pagina-1)*POR_PAGINA);
             try(var r=s.executeQuery()){while(r.next()) {
                 var limite=r.getObject(9,LocalDateTime.class);
