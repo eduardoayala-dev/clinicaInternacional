@@ -1,0 +1,156 @@
+{
+  "version": "inasistencia-sintetico-v1",
+  "datos": "Exclusivamente sintéticos; no demuestra eficacia clínica real",
+  "semilla": 20261030,
+  "sklearn": "1.7.2",
+  "numpy": "2.2.6",
+  "sha256_datos": "2f4e2a8bf13ed25f99a646861d403a57288a354e658cc895d9c52de3a2e4e852",
+  "sha256_entrenador": "ed8e1fadc11b423a624c9e2753a9922d67d7e0fdddb473aed281da1152a4fed7",
+  "particiones": {
+    "entrenamiento": {
+      "citas": 5040,
+      "pacientes": 420
+    },
+    "validacion": {
+      "citas": 1080,
+      "pacientes": 90
+    },
+    "prueba": {
+      "citas": 1080,
+      "pacientes": 90
+    }
+  },
+  "pacientes_disjuntos": true,
+  "orden_temporal_respetado": true,
+  "instantanea_en_reserva_validada": true,
+  "seleccion_por_validacion": {
+    "C": 10.0,
+    "brier": 0.15991222483385065
+  },
+  "prueba": {
+    "roc_auc": 0.7924807518845436,
+    "pr_auc": 0.6619268642593324,
+    "brier": 0.16026710834922128,
+    "precision_umbral_05": 0.6682464454976303,
+    "recall_umbral_05": 0.4246987951807229,
+    "f1_umbral_05": 0.5193370165745856,
+    "matriz_confusion_tn_fp_fn_tp": [
+      [
+        678,
+        70
+      ],
+      [
+        191,
+        141
+      ]
+    ],
+    "calibracion": [
+      {
+        "desde": 0.0,
+        "muestras": 138,
+        "probabilidad_media": 0.07188746650125535,
+        "frecuencia_observada": 0.050724637681159424
+      },
+      {
+        "desde": 0.1,
+        "muestras": 289,
+        "probabilidad_media": 0.14910682047808932,
+        "frecuencia_observada": 0.1314878892733564
+      },
+      {
+        "desde": 0.2,
+        "muestras": 214,
+        "probabilidad_media": 0.24646142291784517,
+        "frecuencia_observada": 0.22897196261682243
+      },
+      {
+        "desde": 0.3,
+        "muestras": 131,
+        "probabilidad_media": 0.34932993331150464,
+        "frecuencia_observada": 0.40458015267175573
+      },
+      {
+        "desde": 0.4,
+        "muestras": 97,
+        "probabilidad_media": 0.447545318379292,
+        "frecuencia_observada": 0.4536082474226804
+      },
+      {
+        "desde": 0.5,
+        "muestras": 80,
+        "probabilidad_media": 0.5467971536147648,
+        "frecuencia_observada": 0.4625
+      },
+      {
+        "desde": 0.6,
+        "muestras": 49,
+        "probabilidad_media": 0.6532484417297448,
+        "frecuencia_observada": 0.6530612244897959
+      },
+      {
+        "desde": 0.7,
+        "muestras": 28,
+        "probabilidad_media": 0.7479341597281159,
+        "frecuencia_observada": 0.7857142857142857
+      },
+      {
+        "desde": 0.8,
+        "muestras": 27,
+        "probabilidad_media": 0.8474236335312261,
+        "frecuencia_observada": 0.9259259259259259
+      },
+      {
+        "desde": 0.9,
+        "muestras": 27,
+        "probabilidad_media": 0.9334240105998454,
+        "frecuencia_observada": 0.9259259259259259
+      }
+    ]
+  },
+  "incertidumbre_prueba": {
+    "metodo": "bootstrap por paciente sobre prueba sintética",
+    "confianza": 0.95,
+    "repeticiones": 300,
+    "muestras_validas": 300,
+    "metricas": {
+      "roc_auc": {
+        "inferior": 0.7590881098594133,
+        "superior": 0.8233247197925115
+      },
+      "pr_auc": {
+        "inferior": 0.5840994711306036,
+        "superior": 0.7276530654450304
+      },
+      "brier": {
+        "inferior": 0.143969540450761,
+        "superior": 0.17491919923497293
+      }
+    }
+  },
+  "referencia_constante": {
+    "roc_auc": 0.5,
+    "pr_auc": 0.3074074074074074,
+    "brier": 0.2129475702317964,
+    "precision_umbral_05": 0.0,
+    "recall_umbral_05": 0.0,
+    "f1_umbral_05": 0.0,
+    "matriz_confusion_tn_fp_fn_tp": [
+      [
+        748,
+        0
+      ],
+      [
+        332,
+        0
+      ]
+    ],
+    "calibracion": [
+      {
+        "desde": 0.3,
+        "muestras": 1080,
+        "probabilidad_media": 0.31369047619047624,
+        "frecuencia_observada": 0.3074074074074074
+      }
+    ]
+  }
+}

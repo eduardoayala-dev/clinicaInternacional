@@ -67,86 +67,34 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero de Control Operativo Diario — Clínica Internacional</title>
-    <!-- TIPOGRAFÍAS INSTITUCIONALES: Inter + Playfair Display -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <!-- ICONOS LUCIDE -->
+
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ESTILOS INSTITUCIONALES DEL PORTAL Y DEL TABLERO -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
 </head>
 <body>
 
-    <!-- ==========================================================================
-         PANEL LATERAL INSTITUCIONAL (PORTAL ADMINISTRATIVO)
-         ========================================================================== -->
-    <aside class="adm-sidebar">
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <div class="adm-brand-logo-wrap">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div>
-                <div class="adm-brand-name">Clínica Internacional</div>
-                <div class="adm-brand-sub">Portal administrativo</div>
-            </div>
-        </a>
 
-        <nav class="adm-nav">
-            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item active">
-                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item">
-                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
-                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones" class="adm-nav-item">
-                <i data-lucide="phone-call" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Confirmaciones y seguimiento</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/cuenta/seguridad" class="adm-nav-item"><i data-lucide="shield-check" style="width:18px;height:18px;flex-shrink:0;"></i><span>Seguridad de cuenta</span></a>
-        </nav>
+    <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 
-        <div class="adm-user-footer">
-            <div class="adm-user-info-link">
-                <div class="adm-avatar"><%= Html.texto(inicialesPersonal) %></div>
-                <div class="adm-user-text">
-                    <div class="adm-user-name" title="<%= Html.texto(nombrePersonal) %>"><%= Html.texto(nombrePersonal) %></div>
-                    <div class="adm-user-role">Personal administrativo</div>
-                </div>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="adm-logout-btn" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </button>
-</form>
-        </div>
-    </aside>
 
-    <!-- ==========================================================================
-         ÁREA DE CONTENIDO Y TOPBAR
-         ========================================================================== -->
     <div class="adm-main-wrapper">
-        <!-- TOPBAR CON BREADCRUMB -->
+
         <header class="adm-topbar">
             <div class="adm-breadcrumb">
                 Personal administrativo / <span>Inicio</span>
             </div>
         </header>
 
-        <!-- CONTENEDOR CON SCROLL -->
+
         <main class="adm-content-scroll">
 
-            <!-- MENSAJES FLASH -->
+
             <% if (flashMessage != null) { %>
                 <div style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; color: #16a34a;"></i>
@@ -161,7 +109,7 @@
                 </div>
             <% } %>
 
-            <!-- 1. CABECERA DEL TABLERO Y BOTONES DE ACCIÓN -->
+
             <div id="contenedorBannerAlerta"></div>
 
             <div class="tablero-header-row">
@@ -195,9 +143,9 @@
                 </div>
             </div>
 
-            <!-- 2. TARJETAS DE MÉTRICAS (4 COLUMNAS) -->
+
             <div class="tablero-metrics-grid">
-                <!-- Citas del día -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Citas del día</span>
@@ -209,7 +157,7 @@
                     <div class="tablero-stat-subtext">En las sedes de la red</div>
                 </div>
 
-                <!-- Cancelaciones registradas -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Cancelaciones registradas</span>
@@ -221,7 +169,7 @@
                     <div class="tablero-stat-subtext">Hoy, en la red</div>
                 </div>
 
-                <!-- Cupos disponibles en red -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Cupos disponibles en red</span>
@@ -233,7 +181,7 @@
                     <div class="tablero-stat-subtext">Para los próximos 7 días</div>
                 </div>
 
-                <!-- Reasignaciones pendientes -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Reasignaciones pendientes</span>
@@ -246,19 +194,19 @@
                 </div>
             </div>
 
-            <!-- 3. SECCIÓN PRINCIPAL: CITAS DEL DÍA EN SALA DE ESPERA -->
+
             <div class="tablero-main-card">
                 <div class="tablero-card-head">
                     <h2 class="tablero-card-title">Citas del día en sala de espera</h2>
 
                     <div class="tablero-filters-bar">
-                        <!-- Buscador en tiempo real -->
+
                         <div class="tablero-search-wrap">
                             <input type="text" id="filtroTexto" class="tablero-search-input" placeholder="Buscar paciente, DNI o médico" oninput="filtrarCitas()">
                             <i data-lucide="search" class="tablero-search-icon"></i>
                         </div>
 
-                        <!-- Filtro Sedes -->
+
                         <select id="filtroSede" class="tablero-select" onchange="filtrarCitas()">
                             <option value="">Todas las sedes</option>
                             <% if (sedes != null) {
@@ -272,7 +220,7 @@
                             <% } %>
                         </select>
 
-                        <!-- Filtro Estado -->
+
                         <select id="filtroEstado" class="tablero-select" onchange="filtrarCitas()">
                             <option value="">Todos los estados</option>
                             <option value="En sala">En sala</option>
@@ -289,7 +237,7 @@
                     </div>
                 </div>
 
-                <!-- Tabla de Citas -->
+
                 <div class="tablero-table-wrap">
                     <table class="tablero-table" id="tablaCitas">
                         <thead>
@@ -303,8 +251,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyCitas">
-                            <% if (listaCitas != null && !listaCitas.isEmpty()) { 
-                                for (Map<String, Object> c : listaCitas) { 
+                            <% if (listaCitas != null && !listaCitas.isEmpty()) {
+                                for (Map<String, Object> c : listaCitas) {
                                     String hora = (String) c.get("hora");
                                     String pacienteNom = (String) c.get("pacienteNombre");
                                     String dni = (String) c.get("pacienteDni");
@@ -372,13 +320,13 @@
                                     <% } %>
                                 </td>
                             </tr>
-                            <%  } 
+                            <%  }
                                } %>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Paginación de la Tabla -->
+
                 <div class="tablero-footer-bar">
                     <span id="tableroPaginationInfo">Mostrando 4 de 18 citas en sala</span>
                     <div class="tablero-pagination-ctrls">
@@ -389,9 +337,9 @@
                 </div>
             </div>
 
-            <!-- 4. GRILLA INFERIOR: ÚLTIMAS OPERACIONES + ACCIONES RÁPIDAS -->
+
             <div class="tablero-bottom-grid">
-                <!-- Últimas Operaciones Registradas -->
+
                 <div class="tablero-feed-card">
                     <div class="tablero-feed-head">
                         <h3 class="tablero-feed-title">Últimas operaciones registradas</h3>
@@ -402,13 +350,13 @@
                     </div>
 
                     <div class="tablero-feed-list" id="feedOperaciones">
-                        <% if (ultimasOperaciones != null && !ultimasOperaciones.isEmpty()) { 
+                        <% if (ultimasOperaciones != null && !ultimasOperaciones.isEmpty()) {
                             for (Map<String, String> op : ultimasOperaciones) { %>
                             <div class="tablero-feed-item">
                                 <span class="tablero-feed-time"><%= Html.texto(op.get("hora")) %></span>
                                 <span><%= Html.texto(op.get("texto")) %></span>
                             </div>
-                        <%  } 
+                        <%  }
                            } else { %>
                             <div class="tablero-feed-item">
                                 <span class="tablero-feed-time">08:53</span>
@@ -426,7 +374,7 @@
                     </div>
                 </div>
 
-                <!-- Acciones Rápidas -->
+
                 <div class="tablero-quick-card">
                     <div class="tablero-quick-head">
                         <i data-lucide="zap"></i>
@@ -443,9 +391,7 @@
         </main>
     </div>
 
-    <!-- ==========================================================================
-         FORMULARIOS OCULTOS PARA ACCIONES OPERATIVAS DIRECTAS
-         ========================================================================== -->
+
     <form id="formAdmitir" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
         <input type="hidden" name="action" value="admitir_cita">
@@ -458,9 +404,7 @@
         <input type="hidden" name="idCita" id="formCancelarIdCita" value="">
     </form>
 
-    <!-- ==========================================================================
-         MODAL: REGISTRO RÁPIDO DE PACIENTE EN PADRÓN
-         ========================================================================== -->
+
     <div class="tablero-modal-overlay" id="modalRegistrarPaciente" onclick="cerrarModalFondo(event)">
         <div class="tablero-modal-card">
             <div class="tablero-modal-head">
@@ -522,7 +466,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMACIÓN: ACCIÓN CRÍTICA ANULAR CITA -->
+
     <div class="adm-modal-overlay" id="modalConfirmarAnularCita" style="display: none;">
         <div class="adm-modal-box" style="max-width: 480px; width: 90%; padding: 26px; text-align: left;">
             <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;">
@@ -558,9 +502,7 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-         LÓGICA JAVASCRIPT DEL TABLERO (FILTRADO EN VIVO, ACCIONES, EXPORTACIONES)
-         ========================================================================== -->
+
     <script>
         let paginaActual = 1;
         const filasPorPagina = 4;

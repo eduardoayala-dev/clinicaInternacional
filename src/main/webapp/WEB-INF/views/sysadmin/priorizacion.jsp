@@ -197,6 +197,7 @@
         <div class="breadcrumb-trail">Administrador / <span>Configuración de priorización</span></div>
         <div class="page-header"><a class="catalogo-acceso" href="${pageContext.request.contextPath}/sysadmin/motivos">Gestionar motivos de consulta →</a>
             <h1 class="page-title">Configuración de Priorización y Reasignación</h1>
+            <a href="${pageContext.request.contextPath}/sysadmin/ia/inasistencia">Abrir simulador de IA de inasistencias (experimental)</a>
             <p class="page-subtitle">Parámetros que rigen la cola algorítmica y los tiempos de oferta automática para cupos recuperados.</p>
         </div>
 
