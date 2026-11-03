@@ -181,6 +181,7 @@ public class AdminDashboardServlet extends HttpServlet {
         String especialidad = request.getParameter(ESPECIALIDAD);
         String sede = request.getParameter(SEDE);
         String estado = request.getParameter(ESTADO);
+        if (estado == null || estado.isBlank()) estado = ACTIVO;
 
         List<Map<String, Object>> medicos = obtenerMedicosPadronBD(query, especialidad, sede, estado,ambitoSede(request));
         int totalMedicosBD = medicos.size();
@@ -549,9 +550,8 @@ public class AdminDashboardServlet extends HttpServlet {
 
     private void filtrarMedicos(StringBuilder sql,List<Object> params,String query,String especialidad,String sede,String estado) {
         if (query != null && !query.trim().isEmpty()) {
-            sql.append("AND (LOWER(u.nombres) LIKE ? OR LOWER(u.apellidos) LIKE ? OR LOWER(m.cmp) LIKE ?) ");
-            String qLike = "%" + query.trim().toLowerCase() + "%";
-            params.add(qLike);
+            sql.append("AND (LOWER(CONCAT(u.nombres,' ',u.apellidos)) LIKE ? ESCAPE '!' OR LOWER(m.cmp) LIKE ? ESCAPE '!') ");
+            String qLike = "%" + query.trim().toLowerCase(Locale.ROOT).replace("!","!!").replace("%","!%").replace("_","!_") + "%";
             params.add(qLike);
             params.add(qLike);
         }

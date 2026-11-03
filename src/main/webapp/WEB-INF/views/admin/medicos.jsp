@@ -28,13 +28,13 @@
     List<Map<String, Object>> listaDisponibilidades = (List<Map<String, Object>>) request.getAttribute("listaDisponibilidades");
 
     Integer totalMedicos = (Integer) request.getAttribute("totalMedicos");
-    if (totalMedicos == null) totalMedicos = (listaMedicos != null ? listaMedicos.size() : 84);
+    if (totalMedicos == null) totalMedicos = (listaMedicos != null ? listaMedicos.size() : 0);
 
     Integer totalActivos = (Integer) request.getAttribute("totalActivos");
-    if (totalActivos == null) totalActivos = 79;
+    if (totalActivos == null) totalActivos = 0;
 
     Integer totalEspecialidades = (Integer) request.getAttribute("totalEspecialidades");
-    if (totalEspecialidades == null) totalEspecialidades = (especialidades != null ? especialidades.size() : 18);
+    if (totalEspecialidades == null) totalEspecialidades = (especialidades != null ? especialidades.size() : 0);
 
     String filtroQuery = (String) request.getAttribute("filtroQuery");
     if (filtroQuery == null) filtroQuery = "";
@@ -62,33 +62,33 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Médicos y Especialidades — Clínica Internacional</title>
-    <!-- FUENTES: Inter para interfaz y Playfair Display para títulos institucionales -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <!-- ICONOS LUCIDE -->
+
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ESTILOS INSTITUCIONALES DEL PORTAL ADMINISTRATIVO -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 </head>
 <body>
 
-    <!-- PANEL LATERAL INSTITUCIONAL (UNIFICADO) -->
-<%@ include file="/WEB-INF/jspf/admin-sidebar-medicos.jspf" %>
 
-    <!-- CONTENEDOR PRINCIPAL -->
+<%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
+
+
     <div class="adm-main-wrapper">
-        <!-- TOPBAR CON BREADCRUMB -->
+
         <header class="adm-topbar">
             <div class="adm-breadcrumb">
                 Personal administrativo &nbsp;/&nbsp; <span>Médicos y especialidades</span>
             </div>
         </header>
 
-        <!-- ÁREA CON SCROLL -->
+
         <main class="adm-content-scroll">
 
-            <!-- MENSAJE DE ÉXITO FLASH -->
+
             <% if (flashMessage != null) { %>
                 <div style="background: #dcfce7; border: 1px solid #86efac; color: #166534; padding: 12px 18px; border-radius: 8px; margin-bottom: 20px; font-size: 13.5px; font-weight: 600; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
@@ -103,22 +103,22 @@
                 <c:remove var="flashError" scope="session"/>
             </c:if>
 
-            <!-- ENCABEZADO -->
+
             <div class="adm-header-block">
                 <h1 class="adm-page-title">Médicos y especialidades</h1>
                 <div class="adm-page-subtitle">Padrón de médicos, horarios y motivos de consulta</div>
             </div>
 
-            <!-- TABS DE NAVEGACIÓN SECUNDARIA -->
+
             <div class="adm-tabs-row">
                 <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-tab-item active">Médicos</a>
                 <a href="${pageContext.request.contextPath}/admin/horarios" class="adm-tab-item">Propuestas de horarios</a>
                 <a href="${pageContext.request.contextPath}/admin/motivos" class="adm-tab-item">Motivos de consulta</a>
             </div>
 
-            <!-- FILTROS DE BÚSQUEDA OPERATIVA -->
+
             <form method="GET" action="${pageContext.request.contextPath}/admin/medicos" id="formFiltros" class="adm-filters-card">
-                <!-- Búsqueda por texto -->
+
                 <div class="adm-search-input-wrap">
                     <label class="adm-filter-label" for="inputBuscar">Buscar</label>
                     <div style="position: relative;">
@@ -127,7 +127,7 @@
                     </div>
                 </div>
 
-                <!-- Filtro Especialidad -->
+
                 <div class="adm-select-wrap">
                     <label class="adm-filter-label" for="selectEspecialidad">Especialidad</label>
                     <select id="selectEspecialidad" name="especialidad" class="adm-select" onchange="document.getElementById('formFiltros').submit()">
@@ -143,7 +143,7 @@
                     </select>
                 </div>
 
-                <!-- Filtro Sede -->
+
                 <div class="adm-select-wrap">
                     <label class="adm-filter-label" for="selectSede">Sede</label>
                     <select id="selectSede" name="sede" class="adm-select" onchange="document.getElementById('formFiltros').submit()">
@@ -159,22 +159,22 @@
                     </select>
                 </div>
 
-                <!-- Filtro Estado -->
+
                 <div class="adm-select-wrap">
                     <label class="adm-filter-label" for="selectEstado">Estado</label>
                     <select id="selectEstado" name="estado" class="adm-select" onchange="document.getElementById('formFiltros').submit()">
                         <option value="ACTIVO" <%= Html.texto("ACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Activo</option>
-                        <option value="INACTIVO" <%= Html.texto("INACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Inactivo</option>
+                        <option value="LICENCIA" <%= "LICENCIA".equals(filtroEstado) ? "selected" : "" %>>Licencia</option><option value="INACTIVO" <%= Html.texto("INACTIVO".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Inactivo</option>
                         <option value="Todos" <%= Html.texto("Todos".equalsIgnoreCase(filtroEstado) ? "selected" : "") %>>Todos</option>
                     </select>
                 </div>
             </form>
 
-            <!-- BARRA DE ACCIONES (NUEVO MÉDICO / EXPORTAR EXCEL / REINICIAR) -->
+
             <div class="adm-actions-bar">
                 <div class="adm-actions-left">
                     <span>El administrador del sistema gestiona las altas mediante invitación. Este padrón muestra los médicos de tu sede.</span>
-                    <button type="button" class="adm-btn-outline" onclick="exportarExcel()">
+                    <button type="button" class="adm-btn-outline" id="exportarMedicos" data-exportar-url="${pageContext.request.contextPath}/admin/medicos/exportar">
                         <i data-lucide="download" style="width: 16px; height: 16px;"></i> Exportar Excel
                     </button>
                 </div>
@@ -185,7 +185,7 @@
                 </div>
             </div>
 
-            <!-- TABLA DEL PADRÓN DE MÉDICOS -->
+
             <div class="adm-table-card">
                 <table class="adm-table">
                     <thead>
@@ -199,7 +199,7 @@
                             <th style="width: 14%; text-align: right;">ACCIONES</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody id="padronMedicos">
                         <% if (listaMedicos != null && !listaMedicos.isEmpty()) {
                             for (Map<String, Object> m : listaMedicos) {
                                 Object idMedObj = m.get("idMedico");
@@ -213,7 +213,7 @@
                                 String est = (String) m.get("estado");
                                 boolean esActivo = est == null || "ACTIVO".equalsIgnoreCase(est);
                         %>
-                            <tr>
+                            <tr data-medico>
                                 <td class="adm-td-cmp"><%= Html.texto(cmp) %></td>
                                 <td>
                                     <div class="adm-td-name"><%= Html.texto(nombre) %></div>
@@ -233,7 +233,7 @@
                                     <button type="button" class="adm-btn-action-turnos" data-turnos-medico="<%= Html.texto(idMedico) %>" data-nombre="<%= Html.texto(nombre) %>" data-cmp="<%= Html.texto(cmp) %>" data-especialidad="<%= Html.texto(especialidad) %>" data-sede="<%= Html.texto(sede) %>">
                                         <i data-lucide="calendar" style="width: 13px; height: 13px;"></i> Turnos
                                     </button>
-                                    <a href="javascript:void(0)" class="adm-btn-action-edit" data-editar-medico data-nombre="<%= Html.texto(nombre) %>" data-cmp="<%= Html.texto(cmp) %>">
+                                    <a href="${pageContext.request.contextPath}/admin/medicos/editar?id=<%= idMedico %>" class="adm-btn-action-edit">
                                         Editar
                                     </a>
                                 </td>
@@ -249,22 +249,22 @@
                     </tbody>
                 </table>
 
-                <!-- PIE DE TABLA / PAGINACIÓN -->
+
                 <div class="adm-table-footer">
-                    <div>
+                    <div id="medicosResumen" aria-live="polite">
                         Mostrando <%= Html.texto(medicosCount) %> de <%= Html.texto(totalMedicos) %> médicos
                     </div>
                     <div class="adm-pagination-controls">
-                        <button type="button" class="adm-btn-page" disabled>‹ Anterior</button>
-                        <span>Página 1 de <%= Html.texto(Math.max(1, (int) Math.ceil((double) totalMedicos / 5))) %></span>
-                        <button type="button" class="adm-btn-page">Siguiente ›</button>
+                        <button type="button" class="adm-btn-page" id="medicosAnterior" disabled>‹ Anterior</button>
+                        <span id="medicosPagina" aria-live="polite">Página 1</span>
+                        <button type="button" class="adm-btn-page" id="medicosSiguiente" disabled>Siguiente ›</button>
                     </div>
                 </div>
             </div>
 
-            <!-- TARJETAS KPI INFERIORES -->
+
             <div class="adm-kpi-grid">
-                <!-- Tarjeta 1: Total en padrón -->
+
                 <div class="adm-kpi-card">
                     <div>
                         <div class="adm-kpi-label">Total en padrón</div>
@@ -276,13 +276,13 @@
                     </div>
                 </div>
 
-                <!-- Tarjeta 2: Total activos -->
+
                 <div class="adm-kpi-card">
                     <div>
                         <div class="adm-kpi-label">Total activos</div>
                         <div class="adm-kpi-num"><%= Html.texto(totalActivos) %></div>
                         <div class="adm-kpi-sub">
-                            <%= Html.texto(totalMedicos > 0 ? Math.round(((double) totalActivos / totalMedicos) * 100) : 94) %> % del padrón
+                            <%= Html.texto(totalMedicos > 0 ? Math.round(((double) totalActivos / totalMedicos) * 100) : 0) %> % del padrón
                         </div>
                     </div>
                     <div class="adm-kpi-icon-wrap" style="color: #16a34a; background: #dcfce7;">
@@ -290,7 +290,7 @@
                     </div>
                 </div>
 
-                <!-- Tarjeta 3: Especialidades homologadas -->
+
                 <div class="adm-kpi-card">
                     <div>
                         <div class="adm-kpi-label">Especialidades homologadas</div>
@@ -306,10 +306,10 @@
         </main>
     </div>
 
-    <!-- MODAL DE REGISTRO: NUEVO MÉDICO -->
 
 
-    <!-- MODAL DE GESTIÓN: TURNOS Y DISPONIBILIDAD -->
+
+
     <div class="adm-modal-overlay" id="modalGestionarTurnos" style="display: none;">
         <div class="adm-modal-box" style="max-width: 780px; width: 95%; max-height: 92vh; overflow-y: auto; padding: 26px;">
             <div class="adm-modal-head" style="margin-bottom: 14px;">
@@ -325,7 +325,7 @@
                 <button type="button" class="adm-modal-close" onclick="cerrarModalTurnos()">&times;</button>
             </div>
 
-            <!-- Resumen del Médico Seleccionado -->
+
             <div style="background: #f0f7ff; border: 1px solid #bae0fd; border-radius: 8px; padding: 12px 16px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
                 <div>
                     <div style="font-size: 14.5px; font-weight: 700; color: #0369a1;" id="turnoDocNombre">Dr. Carlos Mendoza</div>
@@ -338,7 +338,7 @@
                 </span>
             </div>
 
-            <!-- Listado de Bloques de Turnos Existentes -->
+
             <div style="margin-bottom: 22px;">
                 <div style="font-size: 13.5px; font-weight: 700; color: #1e293b; margin-bottom: 10px; display: flex; align-items: center; gap: 6px;">
                     <i data-lucide="layers" style="width: 15px; height: 15px; color: #475569;"></i>
@@ -358,7 +358,7 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyTurnosMedico">
-                            <!-- Inyectado por JS -->
+
                         </tbody>
                     </table>
                 </div>
@@ -370,7 +370,7 @@
                 </div>
             </div>
 
-            <!-- Formulario de Publicación de Nuevo Turno -->
+
             <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 18px;">
                 <div style="font-size: 13.5px; font-weight: 700; color: #0f172a; margin-bottom: 12px; display: flex; align-items: center; gap: 8px;">
                     <i data-lucide="calendar-plus" style="width: 16px; height: 16px; color: #0077c8;"></i>
@@ -430,11 +430,11 @@
         </div>
     </div>
 
-    <!-- SCRIPTS -->
+
     <script>
         lucide.createIcons();
         document.querySelectorAll('[data-turnos-medico]').forEach(boton=>boton.addEventListener('click',()=>abrirModalTurnos(boton.dataset.turnosMedico,boton.dataset.nombre,boton.dataset.cmp,boton.dataset.especialidad,boton.dataset.sede)));
-        document.querySelectorAll('[data-editar-medico]').forEach(boton=>boton.addEventListener('click',()=>editarMedico(boton.dataset.cmp,boton.dataset.nombre)));
+
 
         // Datos de disponibilidades pasados desde el backend
         const turnosData = <%= Html.json(listaDisponibilidades == null ? java.util.List.of() : listaDisponibilidades) %>;
@@ -522,13 +522,7 @@
             document.getElementById('modalGestionarTurnos').style.display = 'none';
         }
 
-        function editarMedico(cmp, nombre) {
-            alert('Editar médico: ' + nombre + ' (' + cmp + '). Módulo en edición activa.');
-        }
 
-        function exportarExcel() {
-            window.print();
-        }
 
         // Cerrar modal al pulsar escape
         window.addEventListener('keydown', (e) => {
@@ -538,5 +532,5 @@
             }
         });
     </script>
-</body>
+<script src="${pageContext.request.contextPath}/assets/js/padron-medicos.js?v=20261103-1"></script></body>
 </html>
