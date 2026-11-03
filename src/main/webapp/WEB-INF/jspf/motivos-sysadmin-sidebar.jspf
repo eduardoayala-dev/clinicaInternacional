@@ -1,0 +1,48 @@
+<%@ page pageEncoding="UTF-8" %>
+<aside class="adm-sidebar" aria-label="Navegación del administrador">
+<a class="adm-brand" href="${pageContext.request.contextPath}/sysadmin/dashboard">
+<div class="adm-brand-logo-wrap">
+<img class="adm-brand-logo-img" alt="" src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png">
+</div>
+<div>
+<div class="adm-brand-name">Clínica Internacional</div>
+<div class="adm-brand-sub">Administrador del sistema</div>
+</div>
+</a>
+<nav class="adm-nav" aria-label="Secciones del administrador">
+<a class="adm-nav-item" href="${pageContext.request.contextPath}/sysadmin/dashboard">
+<img class="adm-nav-icon" alt="" src="${pageContext.request.contextPath}/assets/images/medico/inicio.svg">
+<span>Inicio</span>
+</a>
+<a class="adm-nav-item" href="${pageContext.request.contextPath}/sysadmin/usuarios">
+<img class="adm-nav-icon" alt="" src="${pageContext.request.contextPath}/assets/images/medico/pacientes.svg">
+<span>Usuarios y roles</span>
+</a>
+<a class="adm-nav-item" href="${pageContext.request.contextPath}/sysadmin/sedes">
+<img class="adm-nav-icon" alt="" src="${pageContext.request.contextPath}/assets/images/medico/sede.svg">
+<span>Sedes</span>
+</a>
+<a class="adm-nav-item active" aria-current="page" href="${pageContext.request.contextPath}/sysadmin/motivos">
+<img class="adm-nav-icon" alt="" src="${pageContext.request.contextPath}/assets/images/medico/nota.svg">
+<span>Motivos de consulta</span>
+</a>
+<a class="adm-nav-item" href="${pageContext.request.contextPath}/sysadmin/priorizacion">
+<img class="adm-nav-icon" alt="" src="${pageContext.request.contextPath}/assets/images/medico/guardar.svg">
+<span>Configuración</span>
+</a>
+</nav>
+<div class="adm-user-footer">
+<div class="adm-user-text">
+<div class="adm-user-name">
+<%= Html.texto(nombrePersonal) %>
+</div>
+<div class="adm-user-role">Administrador</div>
+</div>
+<form method="post" action="${pageContext.request.contextPath}/logout">
+<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<button class="adm-logout-btn" aria-label="Cerrar sesión">
+<img src="${pageContext.request.contextPath}/assets/images/medico/salir.svg" width="18" alt="">
+</button>
+</form>
+</div>
+</aside>
