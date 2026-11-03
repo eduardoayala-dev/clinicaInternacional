@@ -1,0 +1,49 @@
+name: clinica-rendimiento
+
+services:
+  app:
+    build: .
+    image: clinica-rendimiento:local
+    ports:
+      - "127.0.0.1:8083:8080"
+    cpus: 1.0
+    mem_limit: 512m
+    environment:
+      APP_ENV: development
+      DEMO_MODE: "false"
+      JAVA_OPTS: "-Xms128m -Xmx256m"
+      DB_MODE: mysql
+      DB_HOST: db
+      DB_PORT: "3306"
+      DB_NAME: clinica_db
+      DB_USER: clinica_app
+      DB_PASSWORD: ${PERF_DB_PASSWORD:?Ejecuta scripts/rendimiento/preparar.py}
+      DB_SSL_MODE: REQUIRED
+      APISPERU_TOKEN: ""
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: mysql:8.0
+    cpus: 1.0
+    mem_limit: 768m
+    command: ["--require-secure-transport=ON", "--innodb-buffer-pool-size=128M", "--max-connections=50"]
+    environment:
+      MYSQL_ROOT_PASSWORD: ${PERF_ROOT_PASSWORD:?Ejecuta scripts/rendimiento/preparar.py}
+      MYSQL_DATABASE: clinica_db
+      MYSQL_USER: clinica_app
+      MYSQL_PASSWORD: ${PERF_DB_PASSWORD:?Ejecuta scripts/rendimiento/preparar.py}
+    volumes:
+      - mysql_rendimiento:/var/lib/mysql
+      - ./sql/schema.sql:/docker-entrypoint-initdb.d/10-schema.sql:ro
+      - ./sql/init/20-app-permissions.sql:/docker-entrypoint-initdb.d/20-app-permissions.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "--host=127.0.0.1", "--silent"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+volumes:
+  mysql_rendimiento:

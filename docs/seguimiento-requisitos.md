@@ -1,6 +1,6 @@
 # Seguimiento de historias de usuario y requisitos
 
-Actualización: 02/11/2026. Fuente: requerimientos funcionales versión 2 y RNF suministrados por el equipo. HU001–HU018 se corresponden con RF01–RF18. El estado refleja funciones concretas; no se asigna un porcentaje ni se considera cerrado un requisito solo por tener su pantalla.
+Actualización: 03/11/2026. Fuente: requerimientos funcionales versión 2 y RNF suministrados por el equipo. HU001–HU018 se corresponden con RF01–RF18. El estado refleja funciones concretas; no se asigna un porcentaje ni se considera cerrado un requisito solo por tener su pantalla.
 
 ## Entregas comprobadas recientes
 
@@ -22,18 +22,18 @@ Actualización: 02/11/2026. Fuente: requerimientos funcionales versión 2 y RNF 
 | 003 / 03 | Catálogo de sedes | Importación Excel por código, consultorios/turnos y eliminación de respuestas de ejemplo ante fallos |
 | 004 / 04 | Médico, especialidad y sede; gestión de personal autorizada | Contrastar multiplicidad de asignaciones, cuenta buscada por DNI y cambios con citas vigentes |
 | 005 / 05 | Propuesta médica revisada/publicada por admisión, bloques reservables | Renovación/Por vencer, recurrencia y consultorios según prototipo; documentar la ampliación del médico proponente |
-| 006 / 06 | Motivos guardados por especialidad; gestión por PA y administrador e importación XLSX por fila en revisión local | Prueba manual, commits y PR de catálogo/importación |
+| 006 / 06 | Motivos guardados por especialidad; gestión por PA y administrador e importación XLSX por fila integradas mediante PR65/66 | Revisar nuevos motivos según las necesidades del catálogo |
 | 007 / 07 | Registro, DNI, perfil, correo y contraseña verificados | Estado de contacto verificado y medio habitual de confirmación; uniformar edición por admisión |
 | 008 / 08 | Prioridad, fecha e indicación; vigencia y control vinculado | Regresión conjunta de seguimientos con los demás flujos y alcance por motivo de seguimiento |
 | 009 / 09 | Búsqueda de horarios publicados y retención real | Medición de búsqueda menor de 3 segundos |
-| 010 / 10 | Reserva, asistencia separada, reprogramación/cancelación, retención y política de contactos comprobadas | Prueba manual de los enlaces autenticados y motivo obligatorio de cancelación |
+| 010 / 10 | Reserva, asistencia separada, reprogramación/cancelación, retención y política de contactos comprobadas | Enlaces autenticados comprobados; falta motivo obligatorio de cancelación |
 | 011 / 11 | Compatibilidad, prioridad vigente, antigüedad y ofertas exclusivas | Criterios configurables, protección contra postergación y explicación del candidato elegido |
 | 012 / 12 | Llegada por admisión, tardanza y atención por médico | Regresión integral por sede y cierre de atenciones pendientes; no inferir inasistencia por cambio de día |
-| 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional; seguimiento real por sede con filtros y páginas en revisión local | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
+| 013 / 13 | Oferta, aceptación, rechazo, vencimiento y reasignación transaccional; seguimiento real por sede con filtros y páginas integrado en PR67 | IA específica de aceptación de ofertas integrada y evaluada; mantener prioridad clínica y compatibilidad como restricciones |
 | 014 / 14 | Correos de reserva, oferta, recordatorio y cambios; enlaces autenticados y aviso de plazo vencido aprobados localmente en PR #61 | Despliegue final controlado y revisión visual de plantillas diferida |
 | 015 / 15 | Seguimiento de admisión con SSE; tablero operativo real por sede | Refresco, actualización manual y descargas comprobados; revisar indicadores del inicio administrativo y SysAdmin |
 | 016 / 16 | Exportación médica; reportes de admisión con filtros en PDF/XLSX/CSV | Exportación de indicadores comprobada; completar analítica y exportaciones del administrador del sistema y padrones |
-| 017 / 17 | Confirmaciones y contactos; integración local experimental del modelo con antecedentes documentados, factores y regla de plazo vencido | Prueba manual de IA, trazabilidad persistida y evaluación representativa; entrenamiento sintético no acredita precisión real |
+| 017 / 17 | Confirmaciones y contactos; integración local experimental del modelo con antecedentes documentados, factores y regla de plazo vencido | Revisión integral de IA, trazabilidad persistida y evaluación representativa; entrenamiento sintético no acredita precisión real |
 | 018 / 18 | Plazos de oferta/confirmación y tolerancia configurables; recordatorio y contactos mínimos comprobados | Criterios de priorización centralizados |
 
 ## Requisitos no funcionales
@@ -43,3 +43,8 @@ RNF10 tiene evidencia de retención y concurrencia en MySQL y prueba manual acep
 ## Siguiente entrega prioritaria
 
 RF14 y RF18: con la prueba real de correos aprobada, registrar la aprobación manual del flujo completo de enlaces y avisos vencidos. Prueba local aprobada el 2 de noviembre de 2026. Continuar con RF17/RF13 para integrar IA y RF03/RF06 para catálogos e importaciones pendientes. Mantener las ramas, pruebas manuales y PR por entrega.
+
+
+## Integración del 3 de noviembre de 2026
+
+PR65–68 fusionados en develop con SonarCloud aprobado. La regresión conjunta posterior a integrar importación e iconos pasó sin fallos. Se conservan las ramas. El laboratorio de rendimiento aporta herramientas y perfiles; todavía no acredita capacidad máxima ni sustituye Selenium o Lighthouse. El próximo cierre funcional prioritario es el motivo de cancelación y el recorrido completo del ciclo de citas entre roles.
