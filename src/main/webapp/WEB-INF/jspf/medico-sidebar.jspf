@@ -23,10 +23,10 @@
             <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("pacientes".equals(seccionMedico) ? "pacientes-activo.svg" : "pacientes.svg") %>" alt="" class="med-icon"> Mis pacientes
         </a>
         <a href="${pageContext.request.contextPath}/medico/seguimientos" class="med-nav-item<%= Html.texto("seguimientos".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("seguimientos".equals(seccionMedico) ? "page" : "false") %>">
-            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("seguimientos".equals(seccionMedico) ? "agenda-activa.svg" : "agenda.svg") %>" alt="" class="med-icon"> Seguimientos
+            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("seguimientos".equals(seccionMedico) ? "seguimientos-activo.svg" : "seguimientos.svg") %>" alt="" class="med-icon"> Seguimientos
         </a>
         <a href="${pageContext.request.contextPath}/medico/horarios" class="med-nav-item<%= Html.texto("horarios".equals(seccionMedico) ? " active" : "") %>" aria-current="<%= Html.texto("horarios".equals(seccionMedico) ? "page" : "false") %>">
-            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("horarios".equals(seccionMedico) ? "agenda-activa.svg" : "agenda.svg") %>" alt="" class="med-icon"> Mis horarios
+            <img src="${pageContext.request.contextPath}/assets/images/medico/<%= Html.texto("horarios".equals(seccionMedico) ? "horarios-activo.svg" : "horarios.svg") %>" alt="" class="med-icon"> Mis horarios
         </a>
     </nav>
     <div class="med-user-footer">
