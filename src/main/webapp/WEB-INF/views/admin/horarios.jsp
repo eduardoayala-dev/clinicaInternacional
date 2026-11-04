@@ -11,7 +11,7 @@
 %>
 <!DOCTYPE html><html lang="es"><head><title>Propuestas de horarios — Admisión</title>
 <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">

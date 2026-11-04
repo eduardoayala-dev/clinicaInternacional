@@ -9,12 +9,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Acceso Institucional - Clínica Internacional</title>
+    <meta name="description" content="Acceso del personal de Clínica Internacional para gestionar agendas, atención médica y tareas administrativas de forma segura.">
     <!-- Fuentes Google -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
     <!-- Lucide Icons SVG sin emojis -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <style>
         :root {
             --slate-dark-start: #0f172a;
@@ -205,7 +204,7 @@
     <%@ include file="/WEB-INF/jspf/acceso-marca.jspf" %>
 
     <!-- FORMULARIO INSTITUCIONAL -->
-    <div class="form-section">
+    <div class="form-section" role="main">
         <div class="form-inner">
             <section data-acceso-login>
             <div class="portal-switch">
@@ -240,7 +239,7 @@
                     <label for="password">Contraseña</label>
                     <div class="input-icon-wrapper">
                         <input type="password" id="password" name="password" required placeholder="Ingresa tu contraseña">
-                        <button type="button" class="acceso-ver-password" data-password-toggle="password" aria-pressed="false" title="Mostrar contraseña"><img src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt=""></button>
+                        <button type="button" class="acceso-ver-password" data-password-toggle="password" aria-pressed="false" title="Mostrar contraseña"><img width="18" height="18" src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt=""></button>
                     </div>
                 </div>
 

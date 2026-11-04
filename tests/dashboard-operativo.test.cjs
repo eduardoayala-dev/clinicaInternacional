@@ -8,12 +8,12 @@ function entorno() {
     const form={values:{desde:'2026-10-28',hasta:'2026-10-28',estado:''},contains:()=>false};
     const aviso={textContent:''};
     const panel={childNodes:['datos anteriores'],scrollTop:80,attributes:{},addEventListener:(name,fn)=>{listeners[name]=fn;},setAttribute(k,v){this.attributes[k]=v;},removeAttribute(k){delete this.attributes[k];},replaceChildren(...nodes){this.childNodes=nodes;}};
-    const doc={hidden:false,activeElement:null,getElementById:id=>({panelOperativo:panel,filtrosOperativo:form,estadoActualizacionOperativa:aviso}[id])};
+    const doc={hidden:false,activeElement:null,addEventListener:(name,fn)=>{listeners['document:'+name]=fn;},getElementById:id=>({panelOperativo:panel,filtrosOperativo:form,estadoActualizacionOperativa:aviso}[id])};
     const llamadas=[];let nuevo={childNodes:['datos nuevos']};
     const context={document:doc,window:{location:{href:'http://localhost/admin/dashboard-operativo?desde=2026-10-28&hasta=2026-10-28&estado=CONFIRMADA'},addEventListener:(name,fn)=>{listeners[name]=fn;}},URLSearchParams,AbortController,
         FormData:class {constructor(f){return Object.entries(f.values);}},DOMParser:class {parseFromString(){return {getElementById:()=>nuevo};}},
         fetch:async(url,options)=>{llamadas.push({url,options});return {ok:true,status:200,redirected:false,text:async()=>'<main></main>'};},
-        setInterval:(fn,ms)=>{timers.set('interval',{fn,ms});return 1;},clearInterval:()=>timers.delete('interval'),
+        queueMicrotask,setInterval:(fn,ms)=>{timers.set('interval',{fn,ms});return 1;},clearInterval:()=>timers.delete('interval'),
         setTimeout:(fn,ms)=>{const id=++secuencia;timers.set(id,{fn,ms});return id;},clearTimeout:id=>timers.delete(id)};
     vm.runInNewContext(source,context);
     return {context,doc,form,panel,aviso,llamadas,listeners,timers,automatico:()=>timers.get('interval').fn(),sinPanel:()=>{nuevo=null;}};

@@ -12,10 +12,10 @@
 <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Seguimiento con IA | Clínica Internacional</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/seguimiento-ia.css?v=20261102-4">
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head><body class="portal-admision">
 <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 <div class="adm-main-wrapper"><header class="adm-topbar"><div class="adm-breadcrumb">Admisión / Seguimiento con IA</div></header>

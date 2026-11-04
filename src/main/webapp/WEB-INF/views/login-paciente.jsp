@@ -16,10 +16,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clínica Internacional - Portal del Paciente</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=DM+Serif+Display:ital@0;1&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="description" content="Portal de pacientes de Clínica Internacional. Inicia sesión para gestionar tus citas, revisar tus avisos y actualizar tus datos de contacto.">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/login-paciente.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/registro-pasos.css">
@@ -80,7 +79,7 @@
                         <div class="input-box has-right-icon">
                             <input type="password" id="password" name="password" class="form-input" required placeholder="Ingresa tu contraseña">
                             <button type="button" class="btn-toggle-eye" data-password-toggle="password" aria-pressed="false" title="Mostrar/ocultar contraseña">
-                                <img src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt="">
+                                <img width="18" height="18" src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt="">
                             </button>
                         </div>
                     </div>

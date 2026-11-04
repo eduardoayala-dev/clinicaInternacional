@@ -147,6 +147,26 @@
         <finalName>clinicaInternacional</finalName>
         <plugins>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-antrun-plugin</artifactId>
+                <version>3.1.0</version>
+                <executions>
+                    <execution>
+                        <id>comprimir-recursos-publicos</id>
+                        <phase>prepare-package</phase>
+                        <goals><goal>run</goal></goals>
+                        <configuration>
+                            <target>
+                                <mkdir dir="${project.build.directory}/${project.build.finalName}/assets/vendor"/>
+                                <mkdir dir="${project.build.directory}/${project.build.finalName}/assets/css"/>
+                                <gzip src="src/main/webapp/assets/vendor/lucide-1.68.0.min.js" destfile="${project.build.directory}/${project.build.finalName}/assets/vendor/lucide-1.68.0.min.js.gz"/>
+                                <gzip src="src/main/webapp/assets/css/fuentes-locales.css" destfile="${project.build.directory}/${project.build.finalName}/assets/css/fuentes-locales.css.gz"/>
+                            </target>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId><artifactId>maven-surefire-plugin</artifactId><version>3.5.4</version>
             </plugin>
             <plugin>

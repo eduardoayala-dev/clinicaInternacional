@@ -7,9 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Seguridad de cuenta · Clínica Internacional</title>
     <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&amp;family=Inter:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-contenido.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
