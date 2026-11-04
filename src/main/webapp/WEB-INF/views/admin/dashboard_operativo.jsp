@@ -28,12 +28,12 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard-operativo.css?v=20261102-4">
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head>
+<body class="portal-admision">
 
     <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 <div class="adm-main-wrapper"><header class="adm-topbar"><div class="adm-breadcrumb">Admisión / <span>Dashboard operativo</span></div></header>
-<main class="adm-content-scroll" id="panelOperativo">
+<main class="adm-content-scroll" id="panelOperativo" data-eventos-url="${pageContext.request.contextPath}/admin/eventos-confirmaciones">
             <div class="page-header">
                 <div><h1 class="page-title">Dashboard operativo</h1><p class="page-subtitle"><%= Html.texto(reporte.sede()) %> · Actualizado <%= Html.texto(reporte.actualizado().toString().replace('T',' ')) %> (Lima)</p></div>
                 <form id="filtrosOperativo" class="header-filters" method="get" action="${pageContext.request.contextPath}/admin/dashboard-operativo">
@@ -49,13 +49,17 @@
                 </form>
             </div>
             <p class="page-subtitle" style="margin-bottom:20px">Período: <%= filtro.desde() %> al <%= filtro.hasta() %>. Hasta 31 días por consulta. Las cifras corresponden a las citas y al estado seleccionados.</p>
-            <output id="estadoActualizacionOperativa" aria-live="polite" class="page-subtitle" style="margin-bottom:16px">Actualización automática cada 5 minutos mientras esta pestaña está visible.</output>
+            <output id="estadoActualizacionOperativa" aria-live="polite" class="page-subtitle" style="margin-bottom:16px">Actualización en vivo con respaldo cada 5 minutos mientras esta pestaña está visible.</output>
             <div class="metrics-grid-5">
                 <div class="metric-card"><div class="metric-title">Citas del período</div><div class="metric-value"><%= resumen.total() %></div><div class="metric-sub"><%= resumen.atendidas() %> atendidas · <%= resumen.enAtencion() %> en atención<br><%= resumen.pendientes() %> activas pendientes de cierre</div></div>
                 <div class="metric-card"><div class="metric-title">Médicos habilitados</div><div class="metric-value"><%= resumen.medicos() %></div><div class="metric-sub">Personal activo de esta sede actualmente<br>No representa ocupación de consultorios</div></div>
                 <div class="metric-card"><div class="metric-title">Citas canceladas</div><div class="metric-value"><%= resumen.canceladas() %></div><div class="metric-sub"><%= porcentaje(resumen.canceladas(),resumen.total()) %> de las citas filtradas<br>Según el estado actual de cada cita</div></div>
                 <div class="metric-card"><div class="metric-title">Ofertas aceptadas</div><div class="metric-value"><%= resumen.aceptadas() %></div><div class="metric-sub"><%= resumen.ofertas() %> ofertas sobre cupos del período<br>Tasa de aceptación: <%= porcentaje(resumen.aceptadas(),resumen.ofertas()) %></div></div>
                 <div class="metric-card"><div class="metric-title">Espera media registrada</div><div class="metric-value"><%= resumen.esperaMedia()==null?"Sin datos":String.format(Locale.ROOT,"%.1f min",resumen.esperaMedia()) %></div><div class="metric-sub">Desde la llegada hasta iniciar la atención<br>Solo registros con ambas horas válidas</div></div>
+            </div>
+            <div class="metrics-grid-5" style="margin-top:20px">
+                <div class="metric-card"><div class="metric-title">Ocupación de agenda publicada</div><div class="metric-value"><%= porcentaje(reporte.ocupacion().ocupados(),reporte.ocupacion().capacidad()) %></div><div class="metric-sub"><%= reporte.ocupacion().ocupados() %> cupos ocupados de <%= reporte.ocupacion().capacidad() %> publicados en el período.<br>Incluye todos los estados que consumen horario; independiente del filtro de estado.</div></div>
+                <div class="metric-card"><div class="metric-title">Reasignaciones pendientes</div><div class="metric-value"><%= reporte.ocupacion().ofertasPendientes() %></div><div class="metric-sub">Ofertas vigentes para citas futuras del período.<br><a href="${pageContext.request.contextPath}/admin/reasignaciones">Revisar ofertas</a></div></div>
             </div>
             <div class="section-heading"><span>Riesgo registrado en citas activas</span></div>
             <div class="risk-grid">

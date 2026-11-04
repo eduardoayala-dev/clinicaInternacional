@@ -38,7 +38,12 @@ public class MedicoPortalDAO {
         try(Connection conn=connections.open();PreparedStatement ps=conn.prepareStatement(PERFIL)){
             ps.setInt(1,usuario);
             try(ResultSet rs=ps.executeQuery()){
-                if(!rs.next()) throw new AgendaException(403,"MEDICO_NO_HABILITADO","El perfil médico no está habilitado.");
+                if(!rs.next()) {
+                    try(var pendiente=conn.prepareStatement("SELECT u.id_usuario FROM usuario u WHERE u.id_usuario=? AND u.rol='MEDICO' AND u.activo=TRUE AND NOT EXISTS(SELECT 1 FROM medico m WHERE m.id_usuario=u.id_usuario)")) {
+                        pendiente.setInt(1,usuario);try(var r=pendiente.executeQuery()){if(r.next())throw new AgendaException(409,"PERFIL_MEDICO_PENDIENTE","Admisión debe completar tu perfil profesional antes de habilitar la agenda.");}
+                    }
+                    throw new AgendaException(403,"MEDICO_NO_HABILITADO","El perfil médico no está habilitado.");
+                }
                 Map<String,Object> data=new LinkedHashMap<>();
                 data.put("idMedico",rs.getInt("id_medico"));
                 data.put("nombreMedico",texto(rs,NOMBRES)+" "+texto(rs,APELLIDOS));

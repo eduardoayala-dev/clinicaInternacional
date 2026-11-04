@@ -21,6 +21,23 @@ import java.util.concurrent.atomic.AtomicReference;
 import static org.junit.jupiter.api.Assertions.*;
 
 abstract class OfertasContrato extends AgendaCitaContrato {
+    @Test void prioridadSinFechaOrdenaAltaMediaBajaAntesDeLaAntiguedad()throws Exception{
+        registrar(2);registrar(3);registrar(4);int original=cancelada();
+        evaluacionClinica(2,900,"BAJA","2026-10-26 08:30:00");
+        evaluacionClinica(3,901,"MEDIA","2026-10-26 08:30:00");
+        evaluacionClinica(4,902,"ALTA","2026-10-26 08:30:00");
+        sql("UPDATE cita SET fecha_recomendada_proxima=NULL WHERE id_cita IN (900,901,902)");
+        assertEquals("BAJA",lista.obtenerEstadoListaEspera(2).get("prioridad"));
+        assertEquals("MEDIA",lista.obtenerEstadoListaEspera(3).get("prioridad"));
+        assertEquals("ALTA",lista.obtenerEstadoListaEspera(4).get("prioridad"));
+        assertTrue(ofertas.generar(original)>0);
+        assertFalse(ofertas.obtenerParaPaciente(4).isEmpty());
+        assertTrue(ofertas.obtenerParaPaciente(3).isEmpty());
+        assertTrue(ofertas.obtenerParaPaciente(2).isEmpty());
+        int ofertaAlta=((Number)ofertas.obtenerParaPaciente(4).get("idOferta")).intValue();
+        ofertas.rechazar(4,ofertaAlta);
+        assertFalse(ofertas.obtenerParaPaciente(3).isEmpty());
+    }
     protected OfertasDAO ofertas;
     protected ListaEsperaDAO lista;
     protected NotificacionDAO notificaciones;
@@ -66,11 +83,11 @@ abstract class OfertasContrato extends AgendaCitaContrato {
 
     @Test void listaNoPresentaComoEvaluadaUnaPrioridadSinSeguimientoVigente() throws Exception {
         lista.registrar(2,1,1,"INDIFERENTE","ALTA","CORREO",180);
-        assertEquals("Sin evaluación vigente",lista.obtenerEstadoListaEspera(2).get("prioridad"));
+        assertEquals("Sin prioridad de seguimiento vigente",lista.obtenerEstadoListaEspera(2).get("prioridad"));
         evaluacionClinica(2,900,"ALTA","2026-10-26 08:30:00");
         assertEquals("ALTA",lista.obtenerEstadoListaEspera(2).get("prioridad"));
         sql("UPDATE cita SET fecha_recomendada_proxima='2026-10-01' WHERE id_cita=900");
-        assertEquals("Sin evaluación vigente",lista.obtenerEstadoListaEspera(2).get("prioridad"));
+        assertEquals("Sin prioridad de seguimiento vigente",lista.obtenerEstadoListaEspera(2).get("prioridad"));
     }
     @Test void nuevasOfertasUsanElPlazoGuardadoSinCambiarElVencimientoAnterior()throws Exception {
         registrar(2);registrar(3);

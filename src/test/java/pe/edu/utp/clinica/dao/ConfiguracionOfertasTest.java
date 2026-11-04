@@ -25,6 +25,18 @@ class ConfiguracionOfertasTest {
         for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V019__politica_contacto_recordatorio.sql")).split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
         dao=new ConfiguracionOfertasDAO(this::abrir,Clock.fixed(Instant.parse("2026-11-01T18:00:00Z"),ZoneOffset.UTC));
     }
+    @Test void nuevoPredeterminadoNoSobrescribeLaPoliticaExistente() throws Exception {
+
+        ejecutar("UPDATE configuracion_ofertas SET recordatorio_horas=36,version=1");
+        int guardado=dao.leer().recordatorioHoras();
+        for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V023__recordatorio_24_horas.sql")).split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
+        assertEquals(guardado,dao.leer().recordatorioHoras());
+        assertEquals(24,new ConfiguracionOfertasDAO.Parametros(7,0,0).recordatorioHoras());
+    }
+    @Test void migracionAjustaElValorInicialSinPersonalizar() throws Exception {
+        for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V023__recordatorio_24_horas.sql")).split(";")){if(!sentencia.isBlank())ejecutar(sentencia);}
+        assertEquals(24,dao.leer().recordatorioHoras());
+    }
     @Test void guardaPlazoYToleranciaConAuditoriaYConservaLosParametrosDeOferta() throws Exception {
         var guardado=dao.guardar(1,15,0,48,5,0);
         assertEquals(48,guardado.confirmacionHoras());assertEquals(5,guardado.toleranciaLlegada());assertEquals(guardado,dao.leer());

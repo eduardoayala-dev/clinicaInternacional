@@ -274,8 +274,8 @@
                                         <strong class="detalle-activo-val"><c:out value="${estadoListaEspera.preferencias}" /></strong>
                                     </div>
                                     <div class="detalle-activo-row" style="align-items: center;">
-                                        <span class="detalle-activo-label">Prioridad para ofertas</span>
-                                        <strong class="detalle-activo-val"><c:out value="${estadoListaEspera.prioridad}" /></strong>
+                                        <span class="detalle-activo-label">Asignación de ofertas</span>
+                                        <span class="detalle-activo-val">Según valoración médica, compatibilidad y antigüedad</span>
                                     </div>
                                     <div class="detalle-activo-row" style="align-items: center;">
                                           <span class="detalle-activo-label">Estado</span>

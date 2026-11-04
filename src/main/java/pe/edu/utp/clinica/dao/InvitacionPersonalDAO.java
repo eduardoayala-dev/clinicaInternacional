@@ -25,11 +25,25 @@ public class InvitacionPersonalDAO {
     InvitacionPersonalDAO(AgendaCitaDAO.ConnectionSource conexiones,Clock reloj){this.conexiones=conexiones;this.reloj=reloj;}
 
     public Entrega crear(int actor,Solicitud s,byte[] token) {
-        validar(s); validarHash(token);
+        return crear(actor,s,token,false);
+    }
+    public Entrega crearAcceso(int actor,Solicitud s,byte[] token) {
+        if(s==null)throw error(400,"DATOS_INVALIDOS","Completa los datos de acceso.");
+        return crear(actor,s,token,ROL_MEDICO.equals(s.rol()));
+    }
+    private Entrega crear(int actor,Solicitud s,byte[] token,boolean accesoMedico) {
+        if(accesoMedico)s=new Solicitud(s.nombres(),s.apellidos(),s.correo(),ROL_MEDICO,null,null,s.sede(),null);
+        Solicitud datos=s;
+        return crearValidado(actor,datos,token,accesoMedico);
+    }
+    private Entrega crearValidado(int actor,Solicitud s,byte[] token,boolean accesoMedico) {
+        if(accesoMedico)validarIdentidad(s);else validar(s);
+        validarHash(token);
         String hash=SecurityUtil.hashPassword(SecretosSesion.nuevo());
         return TransaccionJdbc.ejecutar(conexiones,c->{
             administrador(c,actor);
-            validarCatalogos(c,s,0);
+            if(accesoMedico)validarSedeDestino(c,s.sede());
+            if(!accesoMedico)validarCatalogos(c,s,0);
             try(var st=c.prepareStatement("SELECT id_usuario FROM usuario WHERE email=?")) {
                 st.setString(1,s.correo().trim().toLowerCase(Locale.ROOT));
                 try(var rs=st.executeQuery()){if(rs.next())throw error(409,"CORREO_EXISTENTE","El correo ya pertenece a una cuenta. No se modificó esa cuenta.");}
@@ -40,8 +54,9 @@ public class InvitacionPersonalDAO {
                 try(var rs=st.getGeneratedKeys()){if(!rs.next()){throw new SQLException("No se obtuvo el usuario");}
                     id=rs.getInt(1);}
             }
-            perfil(c,id,s);
+            if(!accesoMedico)perfil(c,id,s);
             guardarInvitacion(c,id,actor,token,false);
+            if(accesoMedico)asignarDestino(c,id,s.sede());
             auditar(c,actor,"PERSONAL_INVITADO",id);
             return new Entrega(id,s.correo().trim().toLowerCase(Locale.ROOT));
         });
@@ -149,6 +164,26 @@ public class InvitacionPersonalDAO {
             return null;
         });
     }
+    public void editarAcceso(int actor,int usuario,Solicitud s,boolean activo) {
+        if(!ROL_MEDICO.equals(s.rol())){editar(actor,usuario,s,activo);return;}
+        validarIdentidad(s);
+        TransaccionJdbc.ejecutar(conexiones,c->{
+            administrador(c,actor);
+            boolean anterior=validarEdicion(c,actor,usuario,s,activo);
+            Integer sedePerfil=null;
+            try(var st=c.prepareStatement("SELECT id_sede FROM medico WHERE id_usuario=? FOR UPDATE")){
+                st.setInt(1,usuario);try(var r=st.executeQuery()){if(r.next())sedePerfil=r.getInt(1);}
+            }
+            if(sedePerfil==null){validarSedeDestino(c,s.sede());asignarDestino(c,usuario,s.sede());}
+            else if(s.sede()!=null&&!s.sede().equals(sedePerfil))throw error(409,"MEDICO_CON_PERFIL","El cambio de sede requiere coordinar el perfil profesional y su agenda.");
+            if(anterior&&!activo)validarBajaMedico(c,usuario);
+            try(var st=c.prepareStatement("UPDATE usuario SET nombres=?,apellidos=?,activo=? WHERE id_usuario=?")){
+                st.setString(1,s.nombres().trim());st.setString(2,s.apellidos().trim());st.setBoolean(3,activo);st.setInt(4,usuario);st.executeUpdate();
+            }
+            if(!activo&&anterior)revocar(c,usuario);
+            auditar(c,actor,"ACCESO_MEDICO_EDITADO",usuario);return null;
+        });
+    }
     private static boolean validarEdicion(Connection c,int actor,int usuario,Solicitud s,boolean activo)throws SQLException {
         boolean anterior;
         try(var st=c.prepareStatement("SELECT email,rol,activo FROM usuario WHERE id_usuario=? FOR UPDATE")) {
@@ -159,11 +194,22 @@ public class InvitacionPersonalDAO {
             }
         }
         if(actor==usuario && !activo)throw error(409,"CAMBIO_PROPIO_NO_PERMITIDO","No puedes deshabilitar tu propia cuenta.");
-        if(activo&&!anterior)validarActivacionPanel(c,usuario);
+        if(activo)validarActivacionPanel(c,usuario);
         return anterior;
     }
     private static void validarActivacionPanel(Connection c,int usuario)throws SQLException {
         try(var st=c.prepareStatement("SELECT id_usuario FROM invitacion_personal WHERE id_usuario=? AND utilizada_en IS NULL")){st.setInt(1,usuario);try(var rs=st.executeQuery()){if(rs.next())throw error(409,"ACTIVACION_PENDIENTE","Debe crear su contraseña desde la invitación.");}}
+    }
+    private static void validarSedeDestino(Connection c,Integer sede)throws SQLException{
+        if(sede==null||sede<1)throw error(400,"SEDE_REQUERIDA","Selecciona la sede que completará el perfil médico.");
+        try(var st=c.prepareStatement("SELECT id_sede FROM sede WHERE id_sede=? AND estado='ACTIVO' FOR UPDATE")){
+            st.setInt(1,sede);try(var r=st.executeQuery()){if(!r.next())throw error(400,"SEDE_INVALIDA","Selecciona una sede activa.");}
+        }
+    }
+    private static void asignarDestino(Connection c,int usuario,int sede)throws SQLException{
+        try(var st=c.prepareStatement("UPDATE invitacion_personal SET id_sede_destino=? WHERE id_usuario=?")){
+            st.setInt(1,sede);st.setInt(2,usuario);if(st.executeUpdate()!=1)throw error(409,"INVITACION_REQUERIDA","La cuenta no tiene una invitación para asignar la sede.");
+        }
     }
     private void validarCambioDeAgenda(Connection c,int usuario,Solicitud s)throws SQLException {
         if(!ROL_MEDICO.equals(s.rol()))return;
@@ -215,11 +261,14 @@ public class InvitacionPersonalDAO {
         }
     }
     private static void validar(Solicitud s) {
+        validarIdentidad(s);
+        if(!ROL_ADMIN.equals(s.rol()) && (s.sede()==null||s.sede()<=0))throw error(400,"SEDE_INVALIDA","Selecciona una sede.");
+        if(ROL_MEDICO.equals(s.rol()) && (s.especialidad()==null||s.especialidad()<=0||s.cmp()==null||!s.cmp().trim().matches("[A-Za-z0-9-]{4,20}")))throw error(400,"MEDICO_INVALIDO","Completa CMP y especialidad.");
+    }
+    private static void validarIdentidad(Solicitud s) {
         if(s==null || !texto(s.nombres(),100) || !texto(s.apellidos(),100) || s.rol()==null || !Set.of(ROL_MEDICO,ROL_ADMISION,ROL_ADMIN).contains(s.rol()))throw error(400,"DATOS_INVALIDOS","Revisa los nombres y el rol del personal.");
         try{Correo.validarDireccion(s.correo()==null?null:s.correo().trim());}catch(IllegalArgumentException e){throw error(400,"CORREO_INVALIDO","Introduce un correo válido.");}
         if(s.correo().trim().length()>150)throw error(400,"CORREO_INVALIDO","El correo supera 150 caracteres.");
-        if(!ROL_ADMIN.equals(s.rol()) && (s.sede()==null||s.sede()<=0))throw error(400,"SEDE_INVALIDA","Selecciona una sede.");
-        if(ROL_MEDICO.equals(s.rol()) && (s.especialidad()==null||s.especialidad()<=0||s.cmp()==null||!s.cmp().trim().matches("[A-Za-z0-9-]{4,20}")))throw error(400,"MEDICO_INVALIDO","Completa CMP y especialidad.");
         if(s.cargo()!=null && s.cargo().length()>100)throw error(400,"CARGO_INVALIDO","El cargo supera 100 caracteres.");
     }
     private static boolean texto(String s,int max){return s!=null&&!s.isBlank()&&s.length()<=max&&s.chars().noneMatch(c->Character.isISOControl(c)||c=='<'||c=='>');}

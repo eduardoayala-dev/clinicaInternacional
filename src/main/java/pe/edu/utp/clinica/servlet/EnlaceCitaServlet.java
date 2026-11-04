@@ -39,7 +39,10 @@ public class EnlaceCitaServlet extends HttpServlet {
         if(actor==null){TransporteHttp.error(res,403);return;}
         try{
             var enlace=EnlaceCita.leer(req.getParameter("cita"),req.getParameter("accion"));
-            almacen().ejecutar(actor.getIdUsuario(),enlace);
+            if(enlace.accion()==EnlaceCita.Accion.CANCELAR) {
+                String motivo=pe.edu.utp.clinica.util.MotivoCancelacion.validar(req.getParameter("motivo"));
+                almacen().ejecutar(actor.getIdUsuario(),enlace,motivo);
+            } else almacen().ejecutar(actor.getIdUsuario(),enlace);
             req.getSession(false).setAttribute("flashMessage",enlace.accion()==EnlaceCita.Accion.CONFIRMAR?"Tu asistencia quedó confirmada.":"Tu cita quedó cancelada.");
             res.setStatus(303);res.setHeader("Location",req.getContextPath()+"/paciente/historial");
         }catch(IllegalArgumentException e){TransporteHttp.error(res,400);}

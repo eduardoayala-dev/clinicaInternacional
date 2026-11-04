@@ -415,10 +415,10 @@
                 <input type="hidden" name="idCita" id="modalCancelarIdCita" value="">
 
                 <div class="modal-cancelar-field">
-                    <label for="selectMotivoCancelacion" class="modal-cancelar-label">Motivo de cancelación (opcional)</label>
+                    <label for="selectMotivoCancelacion" class="modal-cancelar-label">Motivo de cancelación *</label>
                     <div class="select-wrapper">
-                        <select id="selectMotivoCancelacion" name="motivo" class="modal-cancelar-select">
-                            <option value="" selected>Selecciona un motivo</option>
+                        <select id="selectMotivoCancelacion" name="motivo" class="modal-cancelar-select" required>
+                            <option value="" selected disabled>Selecciona un motivo</option>
                             <option value="Cambio de planes">Cambio de planes</option>
                             <option value="Imprevisto laboral o personal">Imprevisto laboral o personal</option>
                             <option value="Problemas de salud / Emergencia">Problemas de salud / Emergencia</option>

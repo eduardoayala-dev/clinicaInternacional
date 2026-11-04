@@ -16,6 +16,7 @@ public class ApiHorariosServlet extends CatalogoApiServlet {
     @Override public void init() { catalogos = new CatalogoService(); }
 
     @Override protected ApiResponse<?> consultar(HttpServletRequest request) throws ApiException {
+        if("semana".equals(request.getParameter("vista")))return catalogos.semana(request.getParameter("idEspecialidad"),request.getParameter("idSede"),request.getParameter("idMedico"),request.getParameter("desde"));
         return catalogos.horarios(request.getParameter("idMedico"), request.getParameter("fecha"));
     }
 }

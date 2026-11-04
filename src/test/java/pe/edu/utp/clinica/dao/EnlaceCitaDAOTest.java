@@ -29,10 +29,10 @@ class EnlaceCitaDAOTest {
     }
     @Test void cancelarExigePropiedadYNoPermiteRepetirLaAccion()throws Exception {
         var cancelar=new EnlaceCita(7,EnlaceCita.Accion.CANCELAR);
-        assertEquals(404,assertThrows(AgendaException.class,()->enlaces.ejecutar(99,cancelar)).status());
-        enlaces.ejecutar(10,cancelar);
+        assertEquals(404,assertThrows(AgendaException.class,()->enlaces.ejecutar(99,cancelar,"Imprevisto personal")).status());
+        enlaces.ejecutar(10,cancelar,"Imprevisto personal");
         assertEquals(1,esquema.count("SELECT COUNT(*) FROM cita WHERE estado='CANCELADA'"));
-        assertEquals(409,assertThrows(AgendaException.class,()->enlaces.ejecutar(10,cancelar)).status());
+        assertEquals(409,assertThrows(AgendaException.class,()->enlaces.ejecutar(10,cancelar,"Imprevisto personal")).status());
     }
     @Test void citaYaIniciadaYPlazoVencidoSeRevalidanAlEjecutar()throws Exception {
         var confirmar=new EnlaceCita(7,EnlaceCita.Accion.CONFIRMAR);
@@ -40,7 +40,7 @@ class EnlaceCitaDAOTest {
         assertEquals("PLAZO_CONFIRMACION_VENCIDO",assertThrows(AgendaException.class,()->enlaces.ejecutar(10,confirmar)).code());
         ejecutar("UPDATE cita SET fecha_hora='2026-10-28 10:00:00' WHERE id_cita=7");
         var cancelar=new EnlaceCita(7,EnlaceCita.Accion.CANCELAR);
-        assertEquals(409,assertThrows(AgendaException.class,()->enlaces.ejecutar(10,cancelar)).status());
+        assertEquals(409,assertThrows(AgendaException.class,()->enlaces.ejecutar(10,cancelar,"Imprevisto personal")).status());
     }
     @Test void cuentaInactivaNoPuedeUsarUnEnlaceAnterior()throws Exception {
         ejecutar("UPDATE usuario SET activo=FALSE WHERE id_usuario=10");

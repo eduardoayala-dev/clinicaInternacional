@@ -1,0 +1,9 @@
+<%@ page pageEncoding="UTF-8" %>
+<form method="get" class="sistema-filtros" aria-label="Filtrar indicadores">
+<label>Desde<input type="date" name="desde" value="<%= ps.filtro().desde() %>" required></label>
+<label>Hasta<input type="date" name="hasta" value="<%= ps.filtro().hasta() %>" required></label>
+<label>Sede<select name="sede"><option value="0">Todas las sedes</option><% for(var opcion:ps.catalogoSedes()){ %><option value="<%= opcion.id() %>" <%= ps.filtro().sede()==opcion.id()?"selected":"" %>><%= Html.texto(opcion.nombre()) %></option><% } %></select></label>
+<label>Especialidad<select name="especialidad"><option value="0">Todas las especialidades</option><% for(var opcion:ps.especialidades()){ %><option value="<%= opcion.id() %>" <%= ps.filtro().especialidad()==opcion.id()?"selected":"" %>><%= Html.texto(opcion.nombre()) %></option><% } %></select></label>
+<button class="adm-btn-primary" type="submit">Actualizar indicadores</button>
+</form>
+<p class="sistema-nota">Citas con fecha de atención entre <%= ps.filtro().desde() %> y <%= ps.filtro().hasta() %>. Actualizado: <%= ps.actualizado().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) %> (Lima).</p>

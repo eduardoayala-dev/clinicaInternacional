@@ -36,6 +36,7 @@ abstract class AgendaCitaContrato {
         sql("CREATE TABLE seguimiento_cita(id_cita_origen INT PRIMARY KEY,id_cita_control INT)");
         for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V016__parametros_confirmacion_llegada.sql")).split(";")){if(!sentencia.isBlank())sql(sentencia);}
         for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V019__politica_contacto_recordatorio.sql")).split(";")){if(!sentencia.isBlank())sql(sentencia);}
+        sql("CREATE TABLE auditoria_seguridad(id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR(20))");
@@ -81,12 +82,12 @@ abstract class AgendaCitaContrato {
             assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,29)));
         }
     }
-    @Test void nuevaEvaluacionSinSeguimientoRetiraLaPrioridadAnterior() throws Exception {
+    @Test void nuevaEvaluacionSinFechaReemplazaLaPrioridadAnterior() throws Exception {
         evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
         evaluacionClinica(1,1900,"BAJA","2026-10-26 08:30:00");
         sql("UPDATE cita SET fecha_recomendada_proxima=NULL WHERE id_cita=1900");
         try(var conexion=abrir()) {
-            assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+            assertEquals("BAJA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
         }
     }
     @Test void controlVinculadoFinalizadoConsumeLaPrioridadPeroCanceladoNo() throws Exception {
@@ -274,10 +275,10 @@ abstract class AgendaCitaContrato {
 
     @Test void cancellationReleasesSlotAndCannotBeRepeated() {
         publicar(); int id=reservar(1,"09:00");
-        CitaDAO citas = new CitaDAO(){ @Override protected Connection abrirConexion() throws SQLException { return abrir(); } };
-        assertFalse(citas.actualizarEstadoCitaPaciente(id,2,"CANCELADA"));
-        assertTrue(citas.actualizarEstadoCitaPaciente(id,1,"CANCELADA"));
-        assertFalse(citas.actualizarEstadoCitaPaciente(id,1,"CANCELADA"));
+        CitaDAO citas = new CitaDAO(){ @Override protected Connection abrirConexion() throws SQLException { return abrir(); } @Override protected Clock relojClinico(){return clock;} };
+        assertFalse(citas.actualizarEstadoCitaPaciente(id,2,"CANCELADA","Imprevisto personal"));
+        assertTrue(citas.actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal"));
+        assertFalse(citas.actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal"));
         assertTrue(reservar(2,"09:00")>id);
     }
 
@@ -340,8 +341,9 @@ abstract class AgendaCitaContrato {
 
     @Test void administrativeStateChangeCannotReactivateCancelledOrReprogrammedAppointments() throws Exception {
         publicar(); int id=reservar(1,"09:00");
-        CitaDAO citas = new CitaDAO(){ @Override protected Connection abrirConexion() throws SQLException { return abrir(); } };
-        assertTrue(citas.actualizarEstadoCita(id,"CANCELADA"));
+        CitaDAO citas = new CitaDAO(){ @Override protected Connection abrirConexion() throws SQLException { return abrir(); } @Override protected Clock relojClinico(){return clock;} };
+        assertFalse(citas.actualizarEstadoCita(id,"CANCELADA"));
+        assertTrue(citas.actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal"));
         reservar(2,"09:00");
         assertFalse(citas.actualizarEstadoCita(id,"CONFIRMADA"));
         assertFalse(citas.actualizarEstadoCita(id,"EN_SALA"));

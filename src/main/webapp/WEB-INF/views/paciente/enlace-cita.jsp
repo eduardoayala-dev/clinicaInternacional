@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/enlace-cita.css">
     <script src="https://unpkg.com/lucide@latest" defer></script>
-</head><body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"></head><body>
     <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
     <main class="main-content">
         <header class="dash-top-header"><nav aria-label="Ruta de navegación">Paciente / Mis citas / <%= titulo %></nav></header>
@@ -41,6 +41,17 @@
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                     <input type="hidden" name="cita" value="<%= enlace.cita() %>">
                     <input type="hidden" name="accion" value="<%= confirmar?"confirmar":"cancelar" %>">
+                    <% if(!confirmar){ %>
+                    <label class="cancelacion-label" for="motivoCancelacion">Motivo de cancelación *</label>
+                    <select id="motivoCancelacion" name="motivo" required class="cancelacion-motivo">
+                        <option value="" disabled selected>Selecciona un motivo</option>
+                        <option>Cambio de planes</option>
+                        <option>Imprevisto laboral o personal</option>
+                        <option>Prefiero otra fecha u horario</option>
+                        <option>Ya no requiero la consulta médica</option>
+                        <option>Otro motivo</option>
+                    </select>
+                    <% } %>
                     <button type="submit" class="btn-primary <%= confirmar?"":"cita-enlace-cancelar" %>"><%= confirmar?"Confirmar mi asistencia":"Sí, cancelar cita" %></button>
                 </form>
                 <% } else { %>

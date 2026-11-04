@@ -31,8 +31,8 @@
 
     function validarPassword() {
         let mensaje = '';
-        if (password.value && !/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_-]).{8,}$/.test(password.value)) {
-            mensaje = 'Usa al menos 8 caracteres con mayúscula, minúscula, número y un símbolo indicado.';
+        if (password.value && (!/^(?=.*\d)(?=.*[a-z])(?=.*[A-Z])(?=.*[^a-zA-Z0-9\s]).{12,}$/.test(password.value) || new TextEncoder().encode(password.value).length > 72)) {
+            mensaje = 'Usa al menos 12 caracteres con mayúscula, minúscula, número y un símbolo. Máximo 72 bytes UTF-8.';
         } else if (documento.value && password.value.includes(documento.value)) {
             mensaje = 'La contraseña no debe contener tu número de documento.';
         }

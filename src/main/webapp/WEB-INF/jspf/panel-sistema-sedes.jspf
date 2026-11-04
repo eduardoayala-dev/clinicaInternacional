@@ -1,0 +1,6 @@
+<%@ page pageEncoding="UTF-8" %>
+<section class="sistema-panel"><div class="sistema-heading"><h2>Actividad por sede</h2><button type="button" class="adm-btn-outline" data-exportar-tabla="tablaSedes">Exportar CSV</button></div>
+<div class="sistema-tabla"><table id="tablaSedes"><thead><tr><th>Sede</th><th>Estado de sede</th><th>Citas registradas</th><th>Atendidas</th><th>Canceladas</th><th>Inasistencias documentadas</th><th>Citas reasignadas</th><th>Ofertas aceptadas / emitidas</th></tr></thead><tbody>
+<% if(ps.sedes().isEmpty()){ %><tr><td colspan="8">No hay sedes para los filtros seleccionados.</td></tr><% } %>
+<% for(var sede:ps.sedes()){var d=sede.datos(); %><tr><td><strong><%= Html.texto(sede.nombre()) %></strong><span class="sistema-secundario"><%= Html.texto(sede.direccion()) %></span></td><td><%= Html.texto(sede.estado()) %></td><td><%= d.citas() %></td><td><%= d.atendidas() %></td><td><%= d.canceladas() %></td><td><%= d.inasistencias() %></td><td><%= d.reasignadas() %></td><td><%= d.aceptadas() %> / <%= d.ofertas() %></td></tr><% } %>
+</tbody></table></div><p class="sistema-nota">Las ofertas se agrupan por la fecha de la cita original. Una cita reasignada tiene una oferta aceptada vinculada. Cero indica que no hay registros coincidentes.</p></section>

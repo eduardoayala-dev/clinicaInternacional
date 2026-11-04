@@ -54,6 +54,12 @@ abstract class MedicoPortalServlet extends HttpServlet {
         if(response.isCommitted()) return;
         try{
             if(status==405) response.setHeader("Allow",metodosPermitidos());
+            if("PERFIL_MEDICO_PENDIENTE".equals(code)&&!json(request)) {
+                response.setStatus(200);
+                try{request.getRequestDispatcher("/WEB-INF/views/medico/perfil-pendiente.jsp").forward(request,response);}
+                catch(ServletException e){response.setStatus(500);}
+                return;
+            }
             if(json(request)) ApiJson.write(response,status,new ApiResponse<>(code,message,null));
             else{response.setStatus(status);response.setContentType("text/plain;charset=UTF-8");response.getWriter().write(message);}
         }catch(IOException e){if(!response.isCommitted()) response.setStatus(500);}

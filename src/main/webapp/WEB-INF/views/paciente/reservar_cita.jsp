@@ -512,7 +512,7 @@
     </main>
 
     <!-- SCRIPTS Y LÓGICA DE CONTROL -->
-    <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js?v=20261104-cupos"></script>
     <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js?v=20261102-1"></script>
     <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
     <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
@@ -606,7 +606,7 @@
             fecha: '',
             hora: '',
             urgencia: 'MEDIA',
-            turno: 'TODOS',
+            turno: 'MANANA',
             motivo: ''
         };
 
@@ -1085,11 +1085,34 @@
                 number.textContent = day.getDate();
                 const count = document.createElement('div');
                 count.className = 'day-cupos';
-                count.textContent = 'Consultar';
+                count.textContent = 'Consultando…';
+                count.dataset.fecha=iso;
                 card.append(title, number, count);
                 card.onclick = () => seleccionarDiaSemana(iso);
                 grid.appendChild(card);
             });
+            void actualizarCuposSemana(formatearIsoDate(monday));
+        }
+
+        let consultaSemana;
+        async function actualizarCuposSemana(desde){
+            consultaSemana?.abort();
+            const solicitud=new AbortController();consultaSemana=solicitud;
+            const turno=state.turno;
+            try{
+                const dias=await ClinicaCatalogos.semana('${pageContext.request.contextPath}',state.especialidadId,state.sedeId,state.medicoId,desde,solicitud.signal);
+                if(consultaSemana!==solicitud)return;
+                const porFecha=new Map(dias.map(d=>[d.fecha,d]));
+                document.querySelectorAll('#weekDaysGrid .day-cupos').forEach(badge=>{
+                    const dia=porFecha.get(badge.dataset.fecha);
+                    if(!dia){badge.textContent='Sin verificar';return;}
+                    const total=turno==='MANANA'?dia.manana:(turno==='TARDE'?dia.tarde:dia.manana+dia.tarde);
+                    badge.textContent=total+(total===1?' cupo':' cupos');
+                });
+            }catch(error){
+                if(consultaSemana!==solicitud||error.name==='AbortError')return;
+                document.querySelectorAll('#weekDaysGrid .day-cupos').forEach(badge=>{badge.textContent='Sin verificar';});
+            }
         }
 
         function seleccionarDiaSemana(fechaIso) {
@@ -1140,8 +1163,14 @@
                 if (version !== grillaRequest) return;
                 container.replaceChildren();
                 let total = 0;
-                agendas.forEach(agenda => {
-                    const horas = agenda.horas.filter(hora => coincideTurno(hora, turno));
+                const disponibles = agendas.map(agenda => ({
+                    medico: agenda.medico,
+                    horas: agenda.horas.filter(hora => coincideTurno(hora, turno)).sort()
+                })).filter(agenda => agenda.horas.length);
+                disponibles.sort((a, b) => a.horas[0].localeCompare(b.horas[0])
+                    || Number(a.medico.idMedico) - Number(b.medico.idMedico));
+                disponibles.forEach(agenda => {
+                    const horas = agenda.horas;
                     if (horas.length) {
                         total += horas.length;
                         container.appendChild(tarjetaMedico(agenda.medico, horas, fecha, turno));

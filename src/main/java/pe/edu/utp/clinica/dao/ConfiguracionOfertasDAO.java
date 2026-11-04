@@ -9,8 +9,8 @@ import java.time.ZoneOffset;
 
 public class ConfiguracionOfertasDAO {
     public record Parametros(int minutosRespuesta,int anticipacionMinima,long version,int confirmacionHoras,int toleranciaLlegada,int recordatorioHoras,int intentosConfirmacion) {
-        public Parametros(int minutosRespuesta,int anticipacionMinima,long version){this(minutosRespuesta,anticipacionMinima,version,24,10,48,2);}
-        public Parametros(int minutosRespuesta,int anticipacionMinima,long version,int confirmacionHoras,int toleranciaLlegada){this(minutosRespuesta,anticipacionMinima,version,confirmacionHoras,toleranciaLlegada,48,2);}
+        public Parametros(int minutosRespuesta,int anticipacionMinima,long version){this(minutosRespuesta,anticipacionMinima,version,24,10,24,2);}
+        public Parametros(int minutosRespuesta,int anticipacionMinima,long version,int confirmacionHoras,int toleranciaLlegada){this(minutosRespuesta,anticipacionMinima,version,confirmacionHoras,toleranciaLlegada,24,2);}
     }
     public record Cambios(int minutosRespuesta,int anticipacionMinima,int confirmacionHoras,int toleranciaLlegada,int recordatorioHoras,int intentosConfirmacion,long version) {}
     private final AgendaCitaDAO.ConnectionSource conexiones;

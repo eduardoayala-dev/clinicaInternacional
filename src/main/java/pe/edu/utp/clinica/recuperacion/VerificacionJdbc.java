@@ -212,7 +212,7 @@ public final class VerificacionJdbc {
     }
     private boolean sesionVigente(Connection conn,Cuenta cuenta,String sesion,Instant ahora)throws SQLException {
         try(var st=conn.prepareStatement("SELECT id_sesion FROM sesion_autenticacion WHERE id_sesion=? AND id_usuario=? AND revocada_en IS NULL AND vence_en>? AND ultima_actividad_en>? AND rol_inicial=? AND credencial_hash=? FOR UPDATE")){
-            st.setString(1,sesion);st.setInt(2,cuenta.id());fecha(st,3,ahora);fecha(st,4,ahora.minusSeconds(1800));st.setString(5,cuenta.rol());st.setBytes(6,SecretosSesion.hash(cuenta.password()));try(var rs=st.executeQuery()){return rs.next();}
+            st.setString(1,sesion);st.setInt(2,cuenta.id());fecha(st,3,ahora);fecha(st,4,ahora.minusSeconds(PoliticaCredenciales.INACTIVIDAD_SEGUNDOS));st.setString(5,cuenta.rol());st.setBytes(6,SecretosSesion.hash(cuenta.password()));try(var rs=st.executeQuery()){return rs.next();}
         }
     }
     private boolean correoOcupado(Connection conn,String correo)throws SQLException {
@@ -245,9 +245,7 @@ public final class VerificacionJdbc {
     }
     private static Instant minimo(Instant uno,Instant dos){return uno.isBefore(dos)?uno:dos;}
     public static boolean passwordValida(String password){
-        return password!=null && password.length()>=12 && password.getBytes(StandardCharsets.UTF_8).length<=72
-                && password.chars().anyMatch(Character::isUpperCase) && password.chars().anyMatch(Character::isLowerCase)
-                && password.chars().anyMatch(Character::isDigit) && password.chars().anyMatch(c->!Character.isLetterOrDigit(c));
+        return pe.edu.utp.clinica.auth.PoliticaCredenciales.valida(password);
     }
     @FunctionalInterface private interface Operacion<T>{T ejecutar(Connection conn)throws SQLException;}
     private <T>T transaccion(Operacion<T> operacion)throws SQLException {

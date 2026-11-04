@@ -56,22 +56,9 @@ public class RegistroPacienteServlet extends HttpServlet {
             return;
         }
 
-        if (password == null || password.length() < 8) {
-            request.getSession().setAttribute("registerError", "La contraseña debe tener al menos 8 caracteres.");
-            response.sendRedirect(request.getContextPath() + "/login?action=register");
-            return;
-        }
-
-        if (dni != null && !dni.isEmpty() && password.contains(dni)) {
-            request.getSession().setAttribute("registerError", "Por razones de seguridad, la contraseña no debe contener su número de documento.");
-            response.sendRedirect(request.getContextPath() + "/login?action=register");
-            return;
-        }
-
-        String pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_\\-]).{8,}$";
-        if (!password.matches(pattern)) {
-            request.getSession().setAttribute("registerError", "La contraseña debe tener al menos una mayúscula, una minúscula, un número y un símbolo.");
-            response.sendRedirect(request.getContextPath() + "/login?action=register");
+        if (!pe.edu.utp.clinica.auth.PoliticaCredenciales.valida(password) || (dni!=null && !dni.isEmpty() && password.contains(dni))) {
+            request.getSession().setAttribute("registerError", "Usa al menos 12 caracteres con mayúscula, minúscula, número y símbolo, sin incluir tu documento. Máximo 72 bytes UTF-8.");
+            response.sendRedirect(request.getContextPath() + "/login/paciente?action=register");
             return;
         }
 

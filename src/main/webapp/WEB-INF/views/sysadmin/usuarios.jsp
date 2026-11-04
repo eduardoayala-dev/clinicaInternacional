@@ -54,60 +54,13 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-usuarios.css">
 
     <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"></head>
+<body class="sysadmin-portal">
 
     <!-- ==========================================================================
          PANEL IZQUIERDO INSTITUCIONAL (260px)
          ========================================================================== -->
-    <aside class="sidebar">
-        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png"
-                 alt="Logo Clínica Internacional" class="brand-logo-img"
-                 onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del administrador</span>
-            </div>
-        </a>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item">
-                <i data-lucide="home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item active">
-                <i data-lucide="shield"></i>
-                <span>Usuarios y roles</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-item">
-                <i data-lucide="building"></i>
-                <span>Sedes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-item">
-                <i data-lucide="sliders"></i>
-                <span>Configuración de priorización</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-item">
-                <i data-lucide="trending-up"></i>
-                <span>Indicadores y analítica</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= Html.texto(nombreAdmin != null && !nombreAdmin.trim().isEmpty() ? ("" + nombreAdmin.charAt(0) + (nombreAdmin.contains(" ") ? ("" + nombreAdmin.charAt(nombreAdmin.indexOf(" ") + 1)) : "")).toUpperCase() : "JV") %></div>
-            <div class="user-info">
-                <span class="user-name"><%= Html.texto(nombreAdmin) %></span>
-                <span class="user-role">Administrador</span>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out"></i>
-            </button>
-</form>
-        </div>
-    </aside>
+    <%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 
     <!-- ==========================================================================
          CONTENEDOR PRINCIPAL CON HEADER SUPERIOR BLANCO
@@ -144,7 +97,7 @@
                 </div>
             <% } %>
 
-            <!-- 1. TARJETAS DE MÉTRICAS (3 COLUMNAS) -->
+            <p class="page-subtitle">Los totales y la tabla se actualizan con los filtros seleccionados.</p>
             <div class="metrics-row">
                 <div class="stat-card">
                     <div class="stat-header">
@@ -153,8 +106,8 @@
                             <i data-lucide="stethoscope"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= Html.texto(medicosTotal) %></div>
-                    <div class="stat-subtext">Activos: <%= Html.texto(medicosActivos) %></div>
+                    <div class="stat-number" id="medicosTotal"><%= Html.texto(medicosTotal) %></div>
+                    <div class="stat-subtext">Activos: <span id="medicosActivos"><%= Html.texto(medicosActivos) %></span></div>
                 </div>
 
                 <div class="stat-card">
@@ -164,8 +117,8 @@
                             <i data-lucide="users"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= Html.texto(personalTotal) %></div>
-                    <div class="stat-subtext">Activos: <%= Html.texto(personalActivos) %></div>
+                    <div class="stat-number" id="personalTotal"><%= Html.texto(personalTotal) %></div>
+                    <div class="stat-subtext">Activos: <span id="personalActivos"><%= Html.texto(personalActivos) %></span></div>
                 </div>
 
                 <div class="stat-card">
@@ -175,8 +128,8 @@
                             <i data-lucide="shield"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= Html.texto(adminsTotal) %></div>
-                    <div class="stat-subtext">Activos: <%= Html.texto(adminsActivos) %></div>
+                    <div class="stat-number" id="adminsTotal"><%= Html.texto(adminsTotal) %></div>
+                    <div class="stat-subtext">Activos: <span id="adminsActivos"><%= Html.texto(adminsActivos) %></span></div>
                 </div>
             </div>
 
@@ -185,14 +138,14 @@
                 <div class="filter-group">
                     <label for="inputBuscar">Buscar</label>
                     <div class="search-input-wrapper">
-                        <input type="text" id="inputBuscar" placeholder="Nombre o correo" oninput="filtrarUsuarios()">
+                        <input type="text" id="inputBuscar" placeholder="Nombre o correo" oninput="filtrarUsuarios(true)">
                         <i data-lucide="search"></i>
                     </div>
                 </div>
 
                 <div class="filter-group">
                     <label for="selectRol">Rol</label>
-                    <select id="selectRol" class="filter-select" onchange="filtrarUsuarios()">
+                    <select id="selectRol" class="filter-select" onchange="filtrarUsuarios(true)">
                         <option value="">Todos los roles</option>
                         <option value="Médico">Médico</option>
                         <option value="Personal administrativo">Personal administrativo</option>
@@ -201,8 +154,15 @@
                 </div>
 
                 <div class="filter-group">
+                    <label for="selectSede">Sede</label>
+                    <select id="selectSede" class="filter-select" onchange="filtrarUsuarios(true)">
+                        <option value="">Todas las sedes</option>
+                        <% if(sedes!=null){for(Map<String,Object> sede:sedes){ %><option value="<%= Html.texto(sede.get("id")) %>"><%= Html.texto(sede.get("nombre")) %></option><% }} %>
+                        <option value="multisede">Multisede</option><option value="sin-sede">Sin sede asignada</option>
+                    </select>
+                </div>                <div class="filter-group">
                     <label for="selectEstado">Estado</label>
-                    <select id="selectEstado" class="filter-select" onchange="filtrarUsuarios()">
+                    <select id="selectEstado" class="filter-select" onchange="filtrarUsuarios(true)">
                         <option value="">Todos (activo, inactivo, suspendido)</option>
                         <option value="Activo">Activo</option>
                         <option value="Inactivo">Inactivo</option>
@@ -220,7 +180,7 @@
                     </button>
                     <button class="btn-secondary-action" onclick="exportarExcel()">
                         <i data-lucide="download"></i>
-                        <span>Exportar Excel</span>
+                        <span>Exportar CSV</span>
                     </button>
                 </div>
                 <button class="btn-reset-filters" onclick="reiniciarFiltros()">Reiniciar filtros</button>
@@ -249,7 +209,7 @@
                             data-nombre="<%= Html.texto(u.getNombreMostrar().toLowerCase()) %>"
                             data-correo="<%= Html.texto(u.getEmail() != null ? u.getEmail().toLowerCase() : "") %>"
                             data-rol="<%= Html.texto(u.getRolEtiqueta()) %>"
-                            data-estado="<%= Html.texto(u.isActivo() ? "ACTIVO" : "INACTIVO") %>"
+                            data-estado="<%= Html.texto(u.getEstadoDetallado().toUpperCase(java.util.Locale.ROOT)) %>" data-activacion-pendiente="<%= estadosInvitacion.containsKey(u.getIdUsuario()) %>"
                             data-id="<%= Html.texto(u.getIdUsuario()) %>"
                             data-nombres="<%= Html.texto(u.getNombres() != null ? u.getNombres() : "") %>"
                             data-apellidos="<%= Html.texto(u.getApellidos() != null ? u.getApellidos() : "") %>"
@@ -350,7 +310,7 @@
 
                     <div class="form-field">
                         <label for="formEstado">Estado de la cuenta</label>
-                        <select id="formEstado" name="estado" required>
+                        <input type="hidden" name="estado" id="formEstadoFijo" value="INACTIVO" disabled><p id="estadoInvitacionAviso" hidden>La persona debe crear su contraseña desde la invitación. No se puede activar esta cuenta desde el panel.</p><select id="formEstado" name="estado" required>
                             <option value="ACTIVO">Activo</option>
                             <option value="INACTIVO">Inactivo</option>
                             <option value="SUSPENDIDO">Suspendido</option>
@@ -362,7 +322,7 @@
                         <select id="formSede" name="id_sede" required>
                             <option value="" disabled selected>Seleccione la sede asignada...</option>
                             <% if (sedes != null) {
-                                for (Map<String, Object> s : sedes) { %>
+                                for (Map<String, Object> s : sedes) { if(!"ACTIVO".equals(s.get("estado")))continue; %>
                                     <option value="<%= Html.texto(s.get("id")) %>"><%= Html.texto(s.get("nombre")) %></option>
                             <%  }
                                } %>
@@ -429,10 +389,12 @@
         });
 
         // Filtrado en vivo de la tabla por Nombre/Correo, Rol y Estado
-        function filtrarUsuarios() {
+        function filtrarUsuarios(reiniciar = false) {
+            if(reiniciar) paginaActual=1;
             const texto = document.getElementById("inputBuscar").value.toLowerCase().trim();
             const rolSeleccionado = document.getElementById("selectRol").value;
-            const estadoSeleccionado = document.getElementById("selectEstado").value;
+            const estadoSeleccionado = document.getElementById("selectEstado").value.toUpperCase();
+            const sedeSeleccionada = document.getElementById("selectSede").value;
 
             const filas = document.querySelectorAll("#tbodyUsuarios .user-row");
             let visibles = [];
@@ -447,13 +409,21 @@
                 const coincideRol = !rolSeleccionado || rol === rolSeleccionado;
                 const coincideEstado = !estadoSeleccionado || estado === estadoSeleccionado;
 
-                if (coincideTexto && coincideRol && coincideEstado) {
+                const sedeFila=rol === "Administrador" ? "multisede" : (fila.dataset.sedeId && fila.dataset.sedeId !== "0" ? fila.dataset.sedeId : "sin-sede");
+                const coincideSede=!sedeSeleccionada || sedeFila===sedeSeleccionada;
+                fila.dataset.coincide=String(coincideTexto && coincideRol && coincideEstado && coincideSede);
+                if (fila.dataset.coincide === "true") {
                     visibles.push(fila);
                 } else {
                     fila.style.display = "none";
                 }
             });
 
+            for(const [clave,rol] of [['medicos','Médico'],['personal','Personal administrativo'],['admins','Administrador']]){
+                const grupo=visibles.filter(f=>f.getAttribute('data-rol')===rol);
+                document.getElementById(clave+'Total').textContent=grupo.length;
+                document.getElementById(clave+'Activos').textContent=grupo.filter(f=>f.getAttribute('data-estado')==='ACTIVO').length;
+            }
             // Paginación visual
             const totalVisibles = visibles.length;
             const totalPaginas = Math.max(1, Math.ceil(totalVisibles / filasPorPagina));
@@ -491,41 +461,24 @@
             document.getElementById("inputBuscar").value = "";
             document.getElementById("selectRol").value = "";
             document.getElementById("selectEstado").value = "";
+            document.getElementById("selectSede").value = "";
             paginaActual = 1;
             filtrarUsuarios();
         }
 
         // Exportar tabla a Excel / CSV en tiempo real sin recargar página
         function exportarExcel() {
-            const filas = document.querySelectorAll("#tbodyUsuarios .user-row");
-            let csv = "\uFEFF"; // BOM UTF-8 para apertura directa en Microsoft Excel
-            csv += "NOMBRE Y APELLIDOS;CORREO / IDENTIFICADOR;ROL ASIGNADO;SEDE PRINCIPAL;ESTADO;FECHA DE REGISTRO\r\n";
-
-            filas.forEach(f => {
-                const cols = f.querySelectorAll("td");
-                if (cols.length >= 6) {
-                    const nombre = cols[0].querySelector(".user-name-title") ? cols[0].querySelector(".user-name-title").innerText.trim() : cols[0].innerText.trim();
-                    const correo = cols[1].innerText.trim();
-                    const rol = cols[2].innerText.trim();
-                    const sede = cols[3].innerText.trim();
-                    const estado = cols[4].innerText.trim();
-                    const fecha = cols[5].innerText.trim();
-
-                    csv += '"' + nombre + '";"' + correo + '";"' + rol + '";"' + sede + '";"' + estado + '";"' + fecha + '"\r\n';
-                }
-            });
-
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "usuarios_clinica_internacional.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const proteger=valor=>{
+                let texto=String(valor).replace(/\s+/g,' ').trim();
+                if(/^[=+@-]/.test(texto))texto="'"+texto;
+                return '"'+texto.replaceAll('"','""')+'"';
+            };
+            const filas=Array.from(document.querySelectorAll('#tbodyUsuarios .user-row')).filter(f=>f.dataset.coincide==='true');
+            const datos=[['Nombre y apellidos','Correo','Rol','Sede','Estado','Fecha de registro'],...filas.map(f=>Array.from(f.cells).slice(0,6).map(c=>c.textContent))];
+            const csv='\uFEFF'+datos.map(f=>f.map(proteger).join(';')).join('\r\n');
+            const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+            const enlace=document.createElement('a');enlace.href=url;enlace.download='personal-filtrado.csv';enlace.click();URL.revokeObjectURL(url);
         }
-
         // Gestión de Modales
         function abrirModalNuevo() {
             document.getElementById("modalTitulo").innerText = "Nuevo usuario";
@@ -540,7 +493,9 @@
             document.getElementById("formRolFijo").disabled = true;
             document.getElementById("formEstado").value = "INACTIVO";
             document.getElementById("formEstado").disabled = true;
-            document.getElementById("formSede").value = "3"; // Sede San Borja por defecto
+            document.getElementById("formSede").value = "";
+            document.getElementById("formEstadoFijo").disabled=false;
+            document.getElementById("estadoInvitacionAviso").hidden=false;
             document.getElementById("formCmp").value = "";
             document.getElementById("formEspecialidad").value = "";
             document.getElementById("formCargo").value = "";
@@ -572,7 +527,10 @@
 
             const estado = fila.getAttribute("data-estado") || "Activo";
             document.getElementById("formEstado").value = estado.toUpperCase();
-            document.getElementById("formEstado").disabled = false;
+            const pendiente=fila.dataset.activacionPendiente === "true";
+            document.getElementById("formEstado").disabled = pendiente;
+            document.getElementById("formEstadoFijo").disabled = !pendiente;
+            document.getElementById("estadoInvitacionAviso").hidden = !pendiente;
 
             document.getElementById("formSede").value = fila.getAttribute("data-sede-id") || "";
             document.getElementById("formCmp").value = fila.getAttribute("data-cmp") || "";
@@ -603,14 +561,16 @@
             const groupSede = document.getElementById("groupSede");
             const formSede = document.getElementById("formSede");
 
+            formSede.disabled=false;
             if (rol === "MEDICO") {
-                boxMedico.style.display = "block";
-                boxPersonal.style.display = "none";
-                if (groupSede) {
-                    groupSede.style.display = "flex";
-                    formSede.required = true;
-                }
-            } else if (rol === "PERSONAL_ADMINISTRATIVO") {
+                groupSede.style.display="flex";
+                const perfilCompleto=document.getElementById('formAction').value==='editar'&&Boolean(document.getElementById('formCmp').value.trim());
+                formSede.disabled=perfilCompleto;
+                formSede.required=!perfilCompleto;
+                document.getElementById('formCmp').disabled=true;
+                document.getElementById('formEspecialidad').disabled=true;
+                boxMedico.style.display="none";
+                boxPersonal.style.display="none";            } else if (rol === "PERSONAL_ADMINISTRATIVO") {
                 boxMedico.style.display = "none";
                 boxPersonal.style.display = "block";
                 if (groupSede) {

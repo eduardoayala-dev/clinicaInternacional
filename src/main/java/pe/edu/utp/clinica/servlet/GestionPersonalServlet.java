@@ -25,7 +25,7 @@ public class GestionPersonalServlet extends HttpServlet {
         if(sesion==null||!(sesion.getAttribute("usuarioLogueado") instanceof Usuario usuario)||!"ADMINISTRADOR".equals(usuario.getRol())){response.sendError(403);return;}
         try {
             String accion=request.getParameter("action");
-            if("registrar".equals(accion))resultado(sesion,servicio().invitar(usuario.getIdUsuario(),solicitud(request)));
+            if("registrar".equals(accion))resultado(sesion,servicio().invitarAcceso(usuario.getIdUsuario(),solicitud(request)));
             else if("reinvitar".equals(accion))resultado(sesion,servicio().reenviar(usuario.getIdUsuario(),positivo(request.getParameter(ID_USUARIO))));
             else if("cambiarEstado".equals(accion))cambiarEstado(request,sesion,usuario);
             else if("editar".equals(accion))editar(request,sesion,usuario);
@@ -43,11 +43,12 @@ public class GestionPersonalServlet extends HttpServlet {
     private void editar(HttpServletRequest request,HttpSession sesion,Usuario usuario) {
         String estado=request.getParameter("estado");
         if(!java.util.Set.of("ACTIVO","INACTIVO","SUSPENDIDO").contains(estado==null?"":estado))throw new IllegalArgumentException();
-        almacen().editar(usuario.getIdUsuario(),positivo(request.getParameter(ID_USUARIO)),solicitud(request),"ACTIVO".equals(estado));
+        almacen().editarAcceso(usuario.getIdUsuario(),positivo(request.getParameter(ID_USUARIO)),solicitud(request),"ACTIVO".equals(estado));
         sesion.setAttribute(FLASH_MESSAGE,"Datos del personal actualizados.");
     }
     private static InvitacionPersonalDAO.Solicitud solicitud(HttpServletRequest r) {
         String rol=r.getParameter("rol");
+        if("MEDICO".equals(rol))return new InvitacionPersonalDAO.Solicitud(r.getParameter("nombres"),r.getParameter("apellidos"),r.getParameter("email"),rol,null,null,opcional(r.getParameter("id_sede")),null);
         String sede=r.getParameter("MEDICO".equals(rol)?"id_sede_medico":"id_sede_personal");
         if(sede==null||sede.isBlank()){sede=r.getParameter("id_sede");}
         return new InvitacionPersonalDAO.Solicitud(r.getParameter("nombres"),r.getParameter("apellidos"),r.getParameter("email"),rol,r.getParameter("cmp"),opcional(r.getParameter("id_especialidad")),opcional(sede),r.getParameter("cargo"));

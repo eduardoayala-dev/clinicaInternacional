@@ -10,7 +10,7 @@
         nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
     }
     if (nombrePersonal == null || nombrePersonal.trim().isEmpty()) {
-        nombrePersonal = "Lucía Ramírez";
+        nombrePersonal = "Personal de admisión";
     }
 
     String inicialesPersonal = "LR";
@@ -62,8 +62,8 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-pacientes.css">
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head>
+<body class="portal-admision">
 
 
     <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
@@ -265,10 +265,10 @@
 
 
                 <div class="pacientes-table-footer">
-                    <span id="pacientesPaginationInfo">Mostrando 5 de 12 480 pacientes</span>
+                    <span id="pacientesPaginationInfo">Mostrando 0 de 0 pacientes</span>
                     <div class="pacientes-pagination-controls">
                         <button type="button" id="btnPrevPage" class="btn-pagination" onclick="cambiarPagina(-1)">&lt; Anterior</button>
-                        <span id="pacientesPageNum" class="pagination-page-indicator">Página 1 de 2 496</span>
+                        <span id="pacientesPageNum" class="pagination-page-indicator">Página 1 de 1</span>
                         <button type="button" id="btnNextPage" class="btn-pagination" onclick="cambiarPagina(1)">Siguiente &gt;</button>
                     </div>
                 </div>

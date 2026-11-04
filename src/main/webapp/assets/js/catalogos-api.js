@@ -50,5 +50,13 @@
         return data;
     }
 
-    globalThis.ClinicaCatalogos = Object.freeze({obtener, medicos, horarios});
+    async function semana(base,especialidad,sede,medico,desde,signal){
+        const query=new URLSearchParams({vista:'semana',idEspecialidad:String(especialidad),desde});
+        if(sede&&String(sede)!=='0')query.set('idSede',String(sede));
+        if(medico&&String(medico)!=='0')query.set('idMedico',String(medico));
+        const data=await obtener(base+'/api/horarios?'+query,signal);
+        if(data.length!==7||!data.every(d=>d&&/^\d{4}-\d{2}-\d{2}$/.test(d.fecha)&&Number.isInteger(d.manana)&&d.manana>=0&&Number.isInteger(d.tarde)&&d.tarde>=0))throw new Error('La disponibilidad semanal tiene un formato inválido.');
+        return data;
+    }
+    globalThis.ClinicaCatalogos = Object.freeze({obtener, medicos, horarios,semana});
 })();

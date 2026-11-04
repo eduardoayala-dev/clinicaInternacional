@@ -49,7 +49,7 @@ public final class SesionesJdbc implements AlmacenSesiones {
                             String rol=rs.getString("rol");
                             Instant vence=fecha(rs,"vence_en");
                             boolean valida=rs.getTimestamp("revocada_en")==null && rs.getBoolean("activo")
-                                    && now.isBefore(vence) && now.isBefore(fecha(rs,"ultima_actividad_en").plusSeconds(1800))
+                                    && now.isBefore(vence) && now.isBefore(fecha(rs,"ultima_actividad_en").plusSeconds(PoliticaCredenciales.INACTIVIDAD_SEGUNDOS))
                                     && rol.equals(rs.getString("rol_inicial"))
                                     && MessageDigest.isEqual(rs.getBytes("credencial_hash"),SecretosSesion.hash(rs.getString("password_hash")));
                             if (valida) {

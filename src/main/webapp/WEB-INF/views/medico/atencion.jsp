@@ -258,7 +258,7 @@
                         <div class="med-atencion-tag-title">Plan de seguimiento</div>
 
                         <span class="med-field-label">Nivel de prioridad clínica *</span>
-                        <p class="med-subtitle">La prioridad del seguimiento se aplica en esta especialidad hasta la fecha límite recomendada. Al completar el control o registrar una nueva evaluación deja de aplicarse la anterior. Sin fecha, solo queda en el historial. No cambia ofertas ya emitidas.</p>
+                        <p class="med-subtitle">La prioridad registrada se aplica a las ofertas compatibles de esta especialidad. La fecha recomendada es opcional: sin fecha, la prioridad se mantiene hasta una nueva evaluación o hasta completar el control vinculado. Si indicas fecha límite, solo prioriza cupos dentro de ese plazo. No cambia ofertas ya emitidas.</p>
 
                         <fieldset class="med-prioridad-cards" aria-label="Nivel de prioridad clínica"><legend class="med-sr-only">Nivel de prioridad clínica</legend>
                             <button type="button" class="med-prio-card <%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "active" : "") %>" data-prioridad="ALTA" aria-pressed="<%= Html.texto("ALTA".equalsIgnoreCase(urgencia) ? "true" : "false") %>" onclick="setPrioridad('ALTA', this)">

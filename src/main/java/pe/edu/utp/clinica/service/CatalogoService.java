@@ -29,4 +29,11 @@ public final class CatalogoService {
         return new ApiResponse<>("HORARIOS_OBTENIDOS", "Consulta de horarios completada.",
                 List.copyOf(dao.obtenerHorariosDisponibles(idMedico, date.toString())));
     }
+    public ApiResponse<List<MedicoDAO.DiaCupos>> semana(String especialidad,String sede,String medico,String desde)throws ApiException{
+        int idEspecialidad=ParametrosApi.positivo(especialidad,"idEspecialidad");
+        Integer idSede=ParametrosApi.positivoOpcional(sede,"idSede"),idMedico=ParametrosApi.positivoOpcional(medico,"idMedico");
+        LocalDate fecha=ParametrosApi.fechaOpcional(desde);
+        if(fecha==null||fecha.getYear()<1000||fecha.getYear()>9998)throw new ApiException(400,"FECHA_INVALIDA","Selecciona la fecha inicial de la semana.");
+        return new ApiResponse<>("CUPOS_SEMANA_OBTENIDOS","Disponibilidad de siete días consultada.",dao.disponibilidadSemanal(idEspecialidad,idSede,idMedico,fecha));
+    }
 }

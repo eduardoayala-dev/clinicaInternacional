@@ -12,7 +12,7 @@ class GestionPersonalServletTest {
     private static class Servicio extends InvitacionPersonalServicio {
         int llamadas;
         Servicio(){super(null,null,"http://localhost:8080");}
-        @Override public Resultado invitar(int actor,InvitacionPersonalDAO.Solicitud datos){assertEquals(90,actor);assertEquals(1,datos.sede());assertEquals("MEDICO",datos.rol());llamadas++;return new Resultado(100,true);}
+        @Override public Resultado invitarAcceso(int actor,InvitacionPersonalDAO.Solicitud datos){assertEquals(90,actor);assertEquals(1,datos.sede());assertNull(datos.cmp());assertNull(datos.especialidad());assertEquals("MEDICO",datos.rol());llamadas++;return new Resultado(100,true);}
         @Override public Resultado reenviar(int actor,int usuario){assertEquals(90,actor);assertEquals(100,usuario);llamadas++;return new Resultado(100,false);}
     }
     private HttpExchange peticion(String rol){var x=new HttpExchange();x.session.setAttribute("usuarioLogueado",new Usuario(90,"Admin","Prueba","admin@example.test","",rol,null,true));return x;}
