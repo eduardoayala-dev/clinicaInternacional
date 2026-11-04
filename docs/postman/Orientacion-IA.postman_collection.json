@@ -340,6 +340,17 @@
       },
       "event": [
         {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// El servidor permite 1 consulta de orientación cada 15 s por sesión (LimiteOrientacion).",
+              "// Se esperan 16 s para que la petición anterior no bloquee esta con 429 ORIENTACION_LIMITE.",
+              "setTimeout(() => {}, 16000);"
+            ]
+          }
+        },
+        {
           "listen": "test",
           "script": {
             "type": "text/javascript",
@@ -389,6 +400,17 @@
         }
       },
       "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// El servidor permite 1 consulta de orientación cada 15 s por sesión (LimiteOrientacion).",
+              "// Se esperan 16 s para que la petición anterior no bloquee esta con 429 ORIENTACION_LIMITE.",
+              "setTimeout(() => {}, 16000);"
+            ]
+          }
+        },
         {
           "listen": "test",
           "script": {
