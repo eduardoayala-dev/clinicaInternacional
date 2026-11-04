@@ -70,7 +70,7 @@
                     <div class="form-group">
                         <label class="form-label" for="identificador">N° de documento (DNI o Carné de Extranjería) *</label>
                         <div class="input-box">
-                            <input type="text" id="identificador" name="identificador" class="form-input" required maxlength="15" pattern="[A-Za-z0-9]+" placeholder="Ej. 45879632 o 001234567">
+                            <input type="text" id="identificador" name="identificador" class="form-input" inputmode="numeric" autocomplete="username" required maxlength="15" pattern="[A-Za-z0-9]+" placeholder="Ej. 45879632 o 001234567">
                         </div>
                     </div>
 
@@ -146,7 +146,7 @@
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="regDni">Número de documento *</label>
-                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">
+                                <input type="text" name="dni" id="regDni" class="form-input" inputmode="numeric" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">
                                 <output id="dniLookupStatus" class="dni-lookup-status" for="regDni" aria-live="polite"></output>
                             </div>
                         </div>
