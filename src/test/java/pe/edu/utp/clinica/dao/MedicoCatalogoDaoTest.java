@@ -12,6 +12,28 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoCatalogoDaoTest {
+    @Test void semanaAgrupaConsultasAunqueAumentenMedicosYConservaFiltros()throws Exception {
+        for(int i=0;i<7;i++)agenda(java.time.LocalDate.of(2026,10,28).plusDays(i).toString(),"09:00","10:00",30,"PUBLICADO");
+        sql("INSERT INTO disponibilidad(id_medico,id_sede,fecha,hora_inicio,hora_fin,duracion_minutos,estado) VALUES(43,2,'2026-10-28','14:00','15:00',30,'PUBLICADO')");
+        var consultas=new java.util.concurrent.atomic.AtomicInteger();
+        var medido=new MedicoDAO(()->{
+            var c=DriverManager.getConnection(url);
+            return (java.sql.Connection)java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{java.sql.Connection.class},(proxy,metodo,args)->{
+                if(metodo.getName().equals("prepareStatement"))consultas.incrementAndGet();
+                try{return metodo.invoke(c,args);}catch(java.lang.reflect.InvocationTargetException e){throw e.getCause();}
+            });
+        },clock);
+        var desde=java.time.LocalDate.of(2026,10,28);
+        var todos=medido.disponibilidadSemanal(1,null,null,desde);
+        assertEquals(16,todos.stream().mapToInt(d->d.manana()+d.tarde()).sum());
+        assertEquals(5,consultas.get());
+        consultas.set(0);
+        assertEquals(14,medido.disponibilidadSemanal(1,1,42,desde).stream().mapToInt(d->d.manana()+d.tarde()).sum());
+        assertEquals(5,consultas.get());
+        assertEquals(2,medido.disponibilidadSemanal(1,2,null,desde).stream().mapToInt(d->d.manana()+d.tarde()).sum());
+        sql("UPDATE sede SET estado='INACTIVO' WHERE id_sede=2");
+        assertEquals(14,medido.disponibilidadSemanal(1,null,null,desde).stream().mapToInt(d->d.manana()+d.tarde()).sum());
+    }
     @Test void conteoAgrupadoCoincideConHorariosYUsaCuatroConsultas()throws Exception {
         for(int i=0;i<7;i++){
             String dia=java.time.LocalDate.of(2026,10,27).plusDays(i).toString();
