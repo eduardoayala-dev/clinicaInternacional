@@ -32,7 +32,7 @@ abstract class SesionesContrato {
     @Test void resolvesSameSessionFromAccessOrRefreshAndKeepsCsrf() throws Exception {
         assertEquals(sid,dao.resolver(null,refresh,now,false).id());
         assertEquals(csrf,dao.resolver(sid,null,now.plusSeconds(300),true).csrf());
-        assertNotNull(dao.resolver(sid,null,now.plusSeconds(1900),false));
+        assertNotNull(dao.resolver(sid,null,now.plusSeconds(1100),false));
         assertNull(dao.resolver(null,SecretosSesion.hash("wrong"),now,false));
         assertNull(dao.resolver("desconocida",refresh,now,false));
         assertNull(dao.resolver("' OR 1=1 --",null,now,false));
@@ -43,11 +43,11 @@ abstract class SesionesContrato {
         assertNull(dao.resolver(null,refresh,now,true));
     }
     @Test void pollsDoNotExtendIdleSession() throws Exception {
-        assertNotNull(dao.resolver(sid,null,now.plusSeconds(1700),false));
-        assertNull(dao.resolver(sid,null,now.plusSeconds(1800),true));
+        assertNotNull(dao.resolver(sid,null,now.plusSeconds(899),false));
+        assertNull(dao.resolver(sid,null,now.plusSeconds(900),true));
     }
     @Test void absoluteExpiryCannotBeExtendedByActivity() throws Exception {
-        for(int i=1;i<=16;i++) assertNotNull(dao.resolver(sid,null,now.plusSeconds(1700L*i),true));
+        for(int i=1;i<=35;i++) assertNotNull(dao.resolver(sid,null,now.plusSeconds(800L*i),true));
         assertNull(dao.resolver(null,refresh,now.plusSeconds(28800),true));
     }
     @Test void disablingAccountRevokesItsExistingAccess() throws Exception {

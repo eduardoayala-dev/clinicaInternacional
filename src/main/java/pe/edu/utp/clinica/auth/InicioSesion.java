@@ -22,7 +22,7 @@ public final class InicioSesion {
             http.setAttribute("rol",usuario.getRol());
             http.setAttribute("nombreUsuario",usuario.getNombreCompleto());
             CsrfToken.getOrCreate(http);
-            http.setMaxInactiveInterval(1800);
+            http.setMaxInactiveInterval(PoliticaCredenciales.INACTIVIDAD_SEGUNDOS);
         }
         return request.getSession(false);
     }

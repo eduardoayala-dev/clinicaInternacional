@@ -88,7 +88,7 @@ public class AuthService {
     }
 
     public boolean registrarPaciente(Usuario usuario, pe.edu.utp.clinica.model.Paciente paciente) {
-        if (existeDocumentoOCorreo(paciente.getDni(), usuario.getEmail())) {
+        if (usuario == null || paciente == null || paciente.getDni() == null || paciente.getDni().isBlank() || !pe.edu.utp.clinica.auth.PoliticaCredenciales.valida(usuario.getPasswordHash()) || usuario.getPasswordHash().contains(paciente.getDni()) || existeDocumentoOCorreo(paciente.getDni(), usuario.getEmail())) {
             return false;
         }
         

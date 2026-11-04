@@ -81,7 +81,7 @@ public final class GestorAutenticacion {
         http.setAttribute("rol",sesion.usuario().getRol());
         http.setAttribute(AUTH_SID,sesion.id());
         http.setAttribute(CsrfToken.ATTRIBUTE,sesion.csrf());
-        http.setMaxInactiveInterval(1800);
+        http.setMaxInactiveInterval(PoliticaCredenciales.INACTIVIDAD_SEGUNDOS);
         request.setAttribute(SESION,sesion);
     }
     public void cerrar(HttpServletRequest request,HttpServletResponse response) throws SQLException {
