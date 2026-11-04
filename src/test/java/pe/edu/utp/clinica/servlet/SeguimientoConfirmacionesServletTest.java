@@ -7,6 +7,13 @@ import java.io.IOException;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SeguimientoConfirmacionesServletTest {
+    @Test void volverTrasUnErrorConservaLaPaginaDeOrigen() {
+        var exchange=new HttpExchange();
+        exchange.session.setAttribute("usuarioLogueado",new Usuario(60,"Admisión","Prueba","admision@example.test","hash","PERSONAL_ADMINISTRATIVO",null,true));
+        exchange.parameters.put("idCita","0");exchange.parameters.put("pagina","3");
+        new SeguimientoConfirmacionesServlet().doPost(exchange.request,exchange.response);
+        assertEquals("/admin/seguimiento-confirmaciones?pagina=3",exchange.redirect);
+    }
     @Test void disconnectedAnonymousRedirectDoesNotEscapeTheServlet() {
         var exchange = new HttpExchange();
         exchange.redirectFailure = new IOException("Cliente desconectado");

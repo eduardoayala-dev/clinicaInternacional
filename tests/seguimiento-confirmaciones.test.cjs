@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const vm = require('node:vm');
 const code = fs.readFileSync('src/main/webapp/assets/js/seguimiento-confirmaciones.js', 'utf8');
 
-function entorno(conEventos = false) {
+function entorno(conEventos = false, paginaUrl = null) {
     const pendientes = new Map();
     const listeners = {};
     let secuencia = 0;
@@ -34,7 +34,7 @@ function entorno(conEventos = false) {
         clearTimeout(id) { pendientes.delete(id); }
     };
     class DOMParser {
-        parseFromString(html) { return {getElementById() { return html.startsWith('valido:') ? {childNodes: [html]} : null; }}; }
+        parseFromString(html) { return {getElementById() { return html.startsWith('valido:') ? {childNodes: [html],dataset:{paginaUrl}} : null; }}; }
     }
     const fuentes = [];
     class FuenteEventos {
@@ -160,3 +160,21 @@ test('detiene consultas al vencer la sesión y no muestra el login dentro de la 
     e.controller.reanudar();
     assert.equal(e.fuentes.length, 2);
  });
+
+test('la actualización conserva la página solicitada y adopta la página ajustada por el servidor', async () => {
+    const e=entorno(false,'http://localhost/admin/seguimiento-confirmaciones?pagina=2');
+    e.element('seguimientoActualizar').href='http://localhost/admin/seguimiento-confirmaciones?pagina=3';
+    await e.controller.actualizar();
+    assert.equal(e.requests[0][0],'http://localhost/admin/seguimiento-confirmaciones?pagina=3');
+    await e.controller.actualizar();
+    assert.equal(e.requests[1][0],'http://localhost/admin/seguimiento-confirmaciones?pagina=2');
+});
+test('no permite descartar una gestión pendiente al cambiar de página', () => {
+    const e=entorno();e.select.value='CORREO';let bloqueado=false;
+    const evento={target:{closest:()=>({})},preventDefault(){bloqueado=true;}};
+    e.listeners['panel:click'](evento);
+    assert.equal(bloqueado,true);assert.equal(e.select.value,'CORREO');
+    assert.equal(e.element('seguimientoDescartar').hidden,false);
+    e.select.value='';bloqueado=false;e.listeners['panel:click'](evento);
+    assert.equal(bloqueado,false);
+});

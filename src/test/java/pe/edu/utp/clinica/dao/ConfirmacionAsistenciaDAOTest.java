@@ -8,6 +8,29 @@ import static org.junit.jupiter.api.Assertions.*;
 class ConfirmacionAsistenciaDAOTest extends CitaAutorizacionTest {
     private ConfirmacionAsistenciaDAO confirmaciones() { return new ConfirmacionAsistenciaDAO(this::abrir, reloj()); }
 
+    @Test void paginasConservanTotalesSinRepetirCitasYSeAjustanAlConfirmar() throws Exception {
+        try(var c=abrir();var st=c.createStatement()) {
+            st.execute("INSERT INTO usuario(id_usuario,nombres,rol) VALUES(60,'Admisión','PERSONAL_ADMINISTRATIVO')");
+            st.execute("INSERT INTO personal_administrativo(id_personal,id_usuario,id_sede) VALUES(60,60,1)");
+            st.execute("UPDATE cita SET estado='CANCELADA'");
+            for(int i=0;i<11;i++) {
+                String fecha=java.time.LocalDate.of(2026,11,1).plusDays(i)+" 09:00:00";
+                st.execute("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado) VALUES("+(100+i)+",1,1,'"+fecha+"','CONFIRMADA')");
+                st.execute("INSERT INTO confirmacion_asistencia(id_cita,creada_en,vence_en) VALUES("+(100+i)+",'2026-10-01 08:00:00','"+(i<7?"2026-10-27":"2026-11-01")+" 08:00:00')");
+            }
+        }
+        var dao=confirmaciones();var uno=dao.consultarPagina(60,1);var dos=dao.consultarPagina(60,2);var tres=dao.consultarPagina(60,3);
+        assertEquals(11,uno.total());assertEquals(7,uno.vencidas());assertEquals(3,uno.paginas());
+        assertEquals(5,uno.registros().size());assertEquals(5,dos.registros().size());assertEquals(1,tres.registros().size());
+        var ids=new java.util.HashSet<Integer>();
+        for(var pagina:java.util.List.of(uno,dos,tres))for(var fila:pagina.registros())assertTrue(ids.add(fila.idCita()));
+        assertEquals(11,ids.size());
+        dao.registrarContacto(60,tres.registros().get(0).idCita(),"CORREO","CONFIRMA");
+        var ajustada=dao.consultarPagina(60,3);assertEquals(2,ajustada.pagina());assertEquals(10,ajustada.total());assertEquals(5,ajustada.registros().size());
+        assertEquals(400,assertThrows(AgendaException.class,()->dao.consultarPagina(60,0)).status());
+        assertEquals(403,assertThrows(AgendaException.class,()->dao.consultarPagina(10,1)).status());
+    }
+
     @Test void deadlineIsExpiredAtTheExactBoundaryWithoutCancellingTheAppointment() throws Exception {
         var daoConfirmacion = confirmaciones();
         try (Connection c = abrir(); Statement s = c.createStatement()) {

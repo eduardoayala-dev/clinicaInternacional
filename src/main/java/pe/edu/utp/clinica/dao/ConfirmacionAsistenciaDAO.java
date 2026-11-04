@@ -86,11 +86,35 @@ public final class ConfirmacionAsistenciaDAO {
         catch (SQLException e) { throw new AgendaException(503, "SEGUIMIENTO_NO_DISPONIBLE", "No se pudo comprobar la sede."); }
     }
 
+    public static final int FILAS_POR_PAGINA=5;
+    public record PaginaSeguimiento(List<Seguimiento> registros,long total,long vencidas,int pagina,int paginas) {}
+
+    public PaginaSeguimiento consultarPagina(int idUsuario,int solicitada) {
+        if(solicitada<1 || solicitada>100000)throw new AgendaException(400,"PAGINA_INVALIDA","Selecciona una página válida.");
+        return TransaccionJdbc.ejecutar(connections,conn->{
+            conn.setTransactionIsolation(Connection.TRANSACTION_REPEATABLE_READ);
+            int sede=sedePersonal(conn,idUsuario);
+            LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
+            long total,vencidas;
+            String conteo="SELECT COUNT(*),COALESCE(SUM(CASE WHEN ca.vence_en<=? THEN 1 ELSE 0 END),0) FROM cita c JOIN medico m ON m.id_medico=c.id_medico LEFT JOIN confirmacion_asistencia ca ON ca.id_cita=c.id_cita WHERE m.id_sede=? AND c.estado IN ('SOLICITADA','CONFIRMADA') AND c.fecha_hora>? AND ca.confirmada_en IS NULL";
+            try(var ps=conn.prepareStatement(conteo)) {
+                ps.setObject(1,ahora);ps.setInt(2,sede);ps.setObject(3,ahora);
+                try(var rs=ps.executeQuery()){rs.next();total=rs.getLong(1);vencidas=rs.getLong(2);}
+            }
+            int paginas=Math.max(1,(int)((total+FILAS_POR_PAGINA-1)/FILAS_POR_PAGINA));
+            int pagina=Math.min(solicitada,paginas);
+            return new PaginaSeguimiento(pendientes(conn,sede,ahora,FILAS_POR_PAGINA,(pagina-1)*FILAS_POR_PAGINA),total,vencidas,pagina,paginas);
+        });
+    }
+
     public List<Seguimiento> listarPendientes(int idUsuario) {
-        try (Connection conn = connections.open()) {
-            int sede = sedePersonal(conn, idUsuario);
-            LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
-            String sql = "SELECT c.id_cita,CONCAT(u.nombres,' ',u.apellidos),p.dni,u.email,p.telefono,c.fecha_hora,c.estado,"
+        try(Connection conn=connections.open()) {
+            return pendientes(conn,sedePersonal(conn,idUsuario),LocalDateTime.now(clock).withNano(0),Integer.MAX_VALUE,0);
+        } catch(SQLException e){throw new AgendaException(503,"SEGUIMIENTO_NO_DISPONIBLE","No se pudo consultar el seguimiento de confirmaciones.");}
+    }
+
+    private static List<Seguimiento> pendientes(Connection conn,int sede,LocalDateTime ahora,int limite,int offset)throws SQLException {
+        String sql = "SELECT c.id_cita,CONCAT(u.nombres,' ',u.apellidos),p.dni,u.email,p.telefono,c.fecha_hora,c.estado,"
                     + "COUNT(co.id_contacto),MAX(co.fecha_contacto),"
                     + "(SELECT co2.resultado FROM contacto_admision_cita co2 WHERE co2.id_cita=c.id_cita ORDER BY co2.fecha_contacto DESC,co2.id_contacto DESC LIMIT 1),"
                     + "ca.vence_en "
@@ -99,9 +123,9 @@ public final class ConfirmacionAsistenciaDAO {
                     + "LEFT JOIN contacto_admision_cita co ON co.id_cita=c.id_cita "
                     + "WHERE m.id_sede=? AND c.estado IN ('SOLICITADA','CONFIRMADA') AND c.fecha_hora>? "
                     + "AND (ca.confirmada_en IS NULL) GROUP BY c.id_cita,u.nombres,u.apellidos,p.dni,u.email,p.telefono,c.fecha_hora,c.estado,ca.vence_en "
-                    + "ORDER BY ca.vence_en,c.fecha_hora";
+                    + "ORDER BY ca.vence_en,c.fecha_hora,c.id_cita LIMIT ? OFFSET ?";
             try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, sede); ps.setObject(2, ahora);
+                ps.setInt(1, sede); ps.setObject(2, ahora); ps.setInt(3,limite);ps.setInt(4,offset);
                 try (ResultSet rs = ps.executeQuery()) {
                     List<Seguimiento> pendientes = new ArrayList<>();
                     while (rs.next()) {
@@ -115,9 +139,6 @@ public final class ConfirmacionAsistenciaDAO {
                     return List.copyOf(pendientes);
                 }
             }
-        } catch (SQLException e) {
-            throw new AgendaException(503, "SEGUIMIENTO_NO_DISPONIBLE", "No se pudo consultar el seguimiento de confirmaciones.");
-        }
     }
 
     public ResultadoContacto registrarContacto(int idUsuario, int idCita, String canal, String resultado) {
