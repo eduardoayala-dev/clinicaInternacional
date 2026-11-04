@@ -1,6 +1,13 @@
 <%@ page pageEncoding="UTF-8" %>
 <%@ page import="pe.edu.utp.clinica.util.Html" %>
-<aside class="sidebar" aria-label="Navegación del paciente">
+<button type="button" class="patient-menu-toggle" aria-label="Abrir menú del paciente" aria-controls="patientNavigation" aria-expanded="false">
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+</button>
+<div class="patient-menu-backdrop" hidden></div>
+<aside class="sidebar" id="patientNavigation" aria-label="Navegación del paciente">
+    <button type="button" class="patient-menu-close" aria-label="Cerrar menú del paciente">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 6 12 12M18 6 6 18"/></svg>
+    </button>
     <a href="${pageContext.request.contextPath}/paciente/dashboard" class="brand-container">
         <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="" class="brand-logo-img">
         <span class="brand-text">
@@ -46,3 +53,4 @@
         </form>
     </div>
 </aside>
+<script defer src="${pageContext.request.contextPath}/assets/js/paciente-navegacion.js?v=20261104-1"></script>

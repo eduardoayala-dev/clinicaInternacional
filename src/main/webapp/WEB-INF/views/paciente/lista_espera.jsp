@@ -47,7 +47,9 @@
     <!-- Estilos Base y Específicos -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css?v=20261030-5">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-responsive.css?v=20261104-1">
+</head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->
