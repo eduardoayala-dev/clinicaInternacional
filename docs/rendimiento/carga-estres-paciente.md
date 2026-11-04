@@ -47,14 +47,40 @@ Métricas por escenario (de la petición 04 y del total): tiempo promedio, p90/p
 
 ## 5. Resultados
 
-Completar con los reportes de Postman (capturas en `docs/rendimiento/evidencias/carga-paciente/`). No llenar campos sin medir.
+Ejecución del 4 de noviembre de 2026 (18:00-18:30, hora de Perú) en la laptop de un integrante con Docker Desktop (WSL 2) y Postman Performance (método App). Reportes PDF y capturas en `docs/rendimiento/evidencias/carga-paciente/`.
 
-| Escenario | Usuarios | Prom. (ms) | p90 (ms) | p95 (ms) | p99 (ms) | Req/s | Errores % | ¿Cumple? |
+### 5.1 Un usuario (Run funcional)
+
+| Versión | Búsqueda (04) | Aserciones |
+|---|---|---|
+| Antes | 2 205 ms | 11/12 (falla la meta ≤ 2 s) |
+| Después | 710 ms (primer acceso tras arrancar) | 12/12 |
+
+### 5.2 Carga nominal y estrés
+
+| Escenario | Usuarios | Req/s | Prom. total (ms) | p95 total (ms) | p95 búsqueda 04 (ms) | Errores HTTP % | Aserciones fallidas % | ¿Búsqueda ≤ 2 s? |
 |---|---|---|---|---|---|---|---|---|
-| 1 Antes | 50 | | | | | | | |
-| 2 Después | 50 | | | | | | | |
-| 3 Estrés después | 10→100 | | | | | | | |
+| 1 Antes | 50 | 7,18 | 5 424 | 17 337 | 11 568 | 10,85 | 32,46 | No |
+| 2 Después | 50 | 28,38 | 810 | 3 963 | 1 371 | 0,00 | 0,16 | Sí |
+| 3 Estrés después | 10→100 | 29,24 | 1 262 | 7 048 | 2 453 | 0,00 | 1,43 | No (7,30 % de aserciones fallidas) |
+
+p95 por petición (ms):
+
+| Petición | Antes 50 | Después 50 | Estrés 100 |
+|---|---|---|---|
+| 01 Abrir login | 459 | 466 | 1 689 |
+| 02 Autenticar (BCrypt) | 15 966 | 5 962 | 10 037 |
+| 03 Abrir inicio | 27 139 | 3 026 | 5 511 |
+| 04 Disponibilidad semanal | 11 568 | 1 371 | 2 453 |
+| 05 Cerrar sesión | 38 | 169 | 167 |
+
+### 5.3 Interpretación
+
+- Con 50 usuarios, la mejora reduce el p95 de la búsqueda un 88 % (11 568 → 1 371 ms), cuadruplica el throughput (7,18 → 28,38 req/s) y elimina los errores HTTP (10,85 → 0 %). La búsqueda pasa a cumplir RNF‑12.
+- Antes, el login y el inicio también eran lentos; la explicación probable (no medida con monitoreo del pool) es que cada búsqueda retenía una de las 5 conexiones JDBC durante segundos y las demás peticiones esperaban. Después, el p95 total (3 963 ms) lo determinan el login (BCrypt, costoso por diseño de seguridad) y el inicio, con 1 CPU para la app: el cuello de botella se desplaza a la autenticación.
+- En el estrés, el throughput se estanca en ≈ 29 req/s, igual que con 50 usuarios: esa es la capacidad de este entorno. Según la Ley de Little, si N se duplica y X no crece, R aumenta; el p95 total pasa de 3,9 s a 7,0 s y el 7,3 % de las peticiones de búsqueda falla alguna aserción (principalmente la meta de 2 s). El punto de degradación está entre 50 y 100 usuarios, sin caídas (0 % de errores HTTP).
+- Postman marca "Fail" en las corridas 2 y 3 porque su criterio usa el p95 de todas las peticiones juntas, no solo el de la búsqueda.
 
 ## 6. Límites
 
-Postman y Docker comparten la misma laptop, así que hay que anotar su CPU y RAM. El resultado vale para este entorno, estos datos y este flujo, no para Railway ni para toda la aplicación. Las pruebas HTTP no miden el renderizado en el navegador (eso es Lighthouse/PageSpeed).
+Postman y Docker comparten la misma laptop: la memoria llegó al 95,3 % (antes), 86,0 % (después) y 97,7 % (estrés), y Postman advirtió que la máquina limitaba la carga. Una sola corrida por escenario. El resultado vale para este entorno, estos datos y este flujo, no para Railway ni para toda la aplicación. Las pruebas HTTP no miden el renderizado en el navegador (eso es Lighthouse/PageSpeed).
