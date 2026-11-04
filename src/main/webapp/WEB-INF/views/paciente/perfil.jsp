@@ -63,7 +63,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/perfil-paciente.css?v=20261030-7">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body style="display: flex; height: 100vh; overflow: hidden; background: #f4f7fb; font-family: 'Inter', sans-serif;">
 
     <!-- SIDEBAR INSTITUCIONAL -->

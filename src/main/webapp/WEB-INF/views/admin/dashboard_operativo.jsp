@@ -28,7 +28,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard-operativo.css?v=20261102-4">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body class="portal-admision">
 
     <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
@@ -57,7 +57,7 @@
                 <div class="metric-card"><div class="metric-title">Ofertas aceptadas</div><div class="metric-value"><%= resumen.aceptadas() %></div><div class="metric-sub"><%= resumen.ofertas() %> ofertas sobre cupos del período<br>Tasa de aceptación: <%= porcentaje(resumen.aceptadas(),resumen.ofertas()) %></div></div>
                 <div class="metric-card"><div class="metric-title">Espera media registrada</div><div class="metric-value"><%= resumen.esperaMedia()==null?"Sin datos":String.format(Locale.ROOT,"%.1f min",resumen.esperaMedia()) %></div><div class="metric-sub">Desde la llegada hasta iniciar la atención<br>Solo registros con ambas horas válidas</div></div>
             </div>
-            <div class="metrics-grid-5" style="margin-top:20px">
+            <div class="metrics-grid-2">
                 <div class="metric-card"><div class="metric-title">Ocupación de agenda publicada</div><div class="metric-value"><%= porcentaje(reporte.ocupacion().ocupados(),reporte.ocupacion().capacidad()) %></div><div class="metric-sub"><%= reporte.ocupacion().ocupados() %> cupos ocupados de <%= reporte.ocupacion().capacidad() %> publicados en el período.<br>Incluye todos los estados que consumen horario; independiente del filtro de estado.</div></div>
                 <div class="metric-card"><div class="metric-title">Reasignaciones pendientes</div><div class="metric-value"><%= reporte.ocupacion().ofertasPendientes() %></div><div class="metric-sub">Ofertas vigentes para citas futuras del período.<br><a href="${pageContext.request.contextPath}/admin/reasignaciones">Revisar ofertas</a></div></div>
             </div>

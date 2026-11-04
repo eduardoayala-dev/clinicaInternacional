@@ -11,7 +11,7 @@
 <%@ include file="/WEB-INF/jspf/medico-head.jspf" %>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/horarios-propuestas.css">
 <script defer src="${pageContext.request.contextPath}/assets/js/horarios-propuestas.js"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head><body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head><body>
 <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>
 <div class="med-main-wrapper"><%@ include file="/WEB-INF/jspf/medico-topbar.jspf" %>
 <main class="med-content-scroll" id="medContenido" tabindex="-1">

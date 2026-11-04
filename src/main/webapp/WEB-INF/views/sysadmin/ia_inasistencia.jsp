@@ -6,7 +6,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/ia-inasistencia.css">
 <script defer src="${pageContext.request.contextPath}/assets/js/ia-inasistencia-api.js"></script>
 <script defer src="${pageContext.request.contextPath}/assets/js/ia-inasistencia.js"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head><body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head><body>
 <header class="ia-cabecera"><a href="${pageContext.request.contextPath}/sysadmin/dashboard"><img src="${pageContext.request.contextPath}/assets/images/medico/logo-clinica.svg" alt="">Clínica Internacional</a><span>Administrador del sistema</span></header>
 <main class="ia-contenido">
     <a class="ia-volver" href="${pageContext.request.contextPath}/sysadmin/priorizacion">‹ Volver a priorización</a>

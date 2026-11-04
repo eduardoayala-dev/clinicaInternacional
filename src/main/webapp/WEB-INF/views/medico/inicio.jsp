@@ -66,7 +66,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css?v=20261028">
     <script defer src="${pageContext.request.contextPath}/assets/js/medico-portal.js?v=20261028"></script>
     <script defer src="${pageContext.request.contextPath}/assets/js/medico-inicio.js?v=20261028"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body>
 
 

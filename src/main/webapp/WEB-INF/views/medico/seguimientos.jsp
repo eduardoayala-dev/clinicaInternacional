@@ -15,7 +15,7 @@
 <head>
 <title><%= Html.texto(tituloPagina) %> — Portal del médico</title>
 <%@ include file="/WEB-INF/jspf/medico-head.jspf" %>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body>
 <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>
 <div class="med-main-wrapper">

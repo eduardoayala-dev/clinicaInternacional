@@ -28,7 +28,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-inline.css">
     <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion.js"></script>
     <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion-inline.js"></script>
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body class="portal-paciente">
 
 <div class="login-container ${showRegister ? 'is-registering' : ''}" id="mainContainer">

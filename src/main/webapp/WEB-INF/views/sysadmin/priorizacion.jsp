@@ -103,7 +103,7 @@
 
         @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .grid-2col, .form-row { grid-template-columns: 1fr; } }
     .catalogo-acceso{display:inline-flex;float:right;padding:10px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;color:#1668b8;text-decoration:none;font-size:13px;font-weight:600}.catalogo-acceso:hover{background:#eff6ff}.catalogo-acceso:focus-visible{outline:3px solid #1668b8;outline-offset:3px}@media(max-width:700px){.catalogo-acceso{float:none;margin-bottom:16px}}</style>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body class="sysadmin-portal">
 
     <!-- PANEL DE LA IZQUIERDA ESTÁNDAR -->
