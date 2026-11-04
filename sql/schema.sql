@@ -415,7 +415,7 @@ CREATE TABLE reporte (
 CREATE TABLE auditoria_seguridad (
     id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
-    ip_origen VARCHAR(45) NOT NULL,
+    ip_origen VARCHAR(45) NULL DEFAULT NULL,
     evento VARCHAR(100) NOT NULL,
     descripcion TEXT,
     sospechoso TINYINT(1) DEFAULT 0,
