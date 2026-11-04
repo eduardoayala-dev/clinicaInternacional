@@ -121,7 +121,7 @@ public class ListaEsperaDAO {
         data.put("especialidad", rs.getString("especialidad"));
         data.put("sede", rs.getString("sede") == null ? "Cualquier sede" : rs.getString("sede"));
         data.put("posicion", rs.getInt("posicion_real"));
-        data.put("prioridad",rs.getString("prioridad_clinica")==null?"Sin evaluación vigente":rs.getString("prioridad_clinica"));
+        data.put("prioridad",rs.getString("prioridad_clinica")==null?"Sin prioridad de seguimiento vigente":rs.getString("prioridad_clinica"));
         String horario = switch (rs.getString("rango_horario")) {
             case "MANANA" -> "Mañana";
             case "TARDE" -> "Tarde";

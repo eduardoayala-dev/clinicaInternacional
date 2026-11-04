@@ -6,7 +6,7 @@ import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
-import pe.edu.utp.clinica.dao.CitaDAO;
+
 import pe.edu.utp.clinica.dao.UsuarioDAO;
 import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.config.DatabaseConfig;
@@ -36,19 +36,20 @@ public class SysAdminServlet extends HttpServlet {
 
 
     private UsuarioDAO usuarioDAO;
-    private CitaDAO citaDAO;
+
     private pe.edu.utp.clinica.dao.SedeDAO sedeDAO;
 
     @Override
     public void init() throws ServletException {
         this.usuarioDAO = new UsuarioDAO();
-        this.citaDAO = new CitaDAO();
+
         this.sedeDAO = new pe.edu.utp.clinica.dao.SedeDAO();
     }
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) {
         try {procesarGet(request,response);}
+        catch(pe.edu.utp.clinica.dao.AgendaException e){try{response.sendError(e.status(),e.getMessage());}catch(IOException ex){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}}
         catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarGet(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
@@ -86,11 +87,7 @@ public class SysAdminServlet extends HttpServlet {
                 break;
 
             case "/sysadmin/sedes":
-                List<pe.edu.utp.clinica.model.Sede> listaSedes = sedeDAO.listarTodas();
-                Map<String, Object> metricasSedes = sedeDAO.obtenerMetricasSedes();
-                request.setAttribute("listaSedes", listaSedes);
-                request.setAttribute("metricasSedes", metricasSedes);
-                request.getRequestDispatcher("/WEB-INF/views/sysadmin/sedes.jsp").forward(request, response);
+                response.sendRedirect(request.getContextPath()+"/sysadmin/catalogo-sedes");
                 break;
 
             case "/sysadmin/priorizacion":
@@ -98,87 +95,37 @@ public class SysAdminServlet extends HttpServlet {
                 break;
 
             case "/sysadmin/analitica":
+                cargarPanelSistema(request);
                 request.getRequestDispatcher("/WEB-INF/views/sysadmin/analitica.jsp").forward(request, response);
                 break;
 
             case "/sysadmin/dashboard":
             case "/sysadmin/inicio":
             default:
-                cargarMetricsSysAdmin(request);
+                cargarPanelSistema(request);
                 request.getRequestDispatcher("/WEB-INF/views/sysadmin/dashboard.jsp").forward(request, response);
                 break;
         }
     }
 
-    private void cargarMetricsSysAdmin(HttpServletRequest request) {
-        int totalUsuarios = 0;
-        int countPacientes = 0;
-        int countMedicos = 0;
-        int countPersonal = 0;
-        int countAdmins = 0;
-        int countSedes = 0;
-        int countCitas = 0;
-
-        try (Connection conn = DatabaseConfig.getConnection()) {
-            // Count medicos directly from medico table
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM medico");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) countMedicos = rs.getInt(1);
-            }
-
-            // Count pacientes directly from paciente table
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM paciente");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) countPacientes = rs.getInt(1);
-            }
-
-            // Count personal directly from personal_administrativo table
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM personal_administrativo");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) countPersonal = rs.getInt(1);
-            }
-
-            // Count admins directly from administrador table
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM administrador");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) countAdmins = rs.getInt(1);
-            }
-
-            totalUsuarios = countMedicos + countPacientes + countPersonal + countAdmins;
-
-            // Count sedes
-            String sqlSedes = "SELECT COUNT(*) FROM sede WHERE estado = 'ACTIVO'";
-            try (PreparedStatement ps = conn.prepareStatement(sqlSedes);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) countSedes = rs.getInt(1);
-            }
-
-            // Count citas
-            String sqlCitas = "SELECT COUNT(*) FROM cita";
-            try (PreparedStatement ps = conn.prepareStatement(sqlCitas);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) countCitas = rs.getInt(1);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        request.setAttribute("totalUsuarios", totalUsuarios);
-        request.setAttribute("countPacientes", countPacientes);
-        request.setAttribute("countMedicos", countMedicos);
-        request.setAttribute("countPersonal", countPersonal);
-        request.setAttribute("countAdmins", countAdmins);
-        request.setAttribute("countSedes", countSedes);
-        request.setAttribute("countCitas", countCitas);
-
-        // Fetch radar citas
-        List<Map<String, Object>> radarCitas = citaDAO.obtenerCitasConRiesgo();
-        request.setAttribute("radarCitas", radarCitas);
+    protected pe.edu.utp.clinica.dao.PanelSistemaDAO panelSistema(){return new pe.edu.utp.clinica.dao.PanelSistemaDAO();}
+    private void cargarPanelSistema(HttpServletRequest request) {
+        var hoy=java.time.LocalDate.now(java.time.ZoneId.of("America/Lima"));
+        try {
+            String desde=request.getParameter("desde"),hasta=request.getParameter("hasta");
+            var filtro=new pe.edu.utp.clinica.dao.PanelSistemaDAO.Filtro(
+                desde==null||desde.isBlank()?hoy.minusDays(29):java.time.LocalDate.parse(desde),
+                hasta==null||hasta.isBlank()?hoy:java.time.LocalDate.parse(hasta),
+                filtroId(request.getParameter("sede")),filtroId(request.getParameter("especialidad")));
+            var actor=(Usuario)request.getSession(false).getAttribute("usuarioLogueado");
+            request.setAttribute("panelSistema",panelSistema().consultar(actor.getIdUsuario(),filtro));
+        }catch(java.time.DateTimeException|NumberFormatException e){throw new pe.edu.utp.clinica.dao.AgendaException(400,"FILTROS_INVALIDOS","Revisa las fechas y los filtros seleccionados.");}
     }
-
+    private static int filtroId(String valor){return valor==null||valor.isBlank()?0:Integer.parseInt(valor);}
     @Override
     protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         try {procesarPost(request,response);}
+        catch(pe.edu.utp.clinica.dao.AgendaException e){try{response.sendError(e.status(),e.getMessage());}catch(IOException ex){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}}
         catch(IOException|ServletException e){pe.edu.utp.clinica.util.TransporteServlet.fallo(response);}
     }
     private void procesarPost(HttpServletRequest request,HttpServletResponse response) throws IOException,ServletException {
@@ -199,9 +146,9 @@ public class SysAdminServlet extends HttpServlet {
 
         switch(action==null?"":action) {
             case "guardarPriorizacion" -> guardarPriorizacion(request,response);
-            case "crearSede" -> crearSede(request,response,session);
-            case "editarSede" -> editarSede(request,response,session);
-            case "cambiarEstadoSede" -> cambiarEstadoSede(request,response,session);
+            case "crearSede" -> response.sendError(410,"Utiliza el catálogo de sedes actualizado.");
+            case "editarSede" -> response.sendError(410,"Utiliza el catálogo de sedes actualizado.");
+            case "cambiarEstadoSede" -> response.sendError(410,"Utiliza el catálogo de sedes actualizado.");
             default -> response.sendRedirect(request.getContextPath()+"/sysadmin/dashboard");
         }
 }
@@ -210,11 +157,12 @@ public class SysAdminServlet extends HttpServlet {
         List<Map<String, Object>> sedes = new ArrayList<>();
         List<Map<String, Object>> especialidades = new ArrayList<>();
         try (Connection conn = DatabaseConfig.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT id_sede, nombre FROM sede WHERE estado='ACTIVO'");
+            try (PreparedStatement ps = conn.prepareStatement("SELECT id_sede, nombre,estado FROM sede ORDER BY nombre,id_sede");
                  ResultSet rs = ps.executeQuery()) {
                 while (rs.next()) {
                     Map<String, Object> m = new HashMap<>();
                     m.put("id", rs.getInt("id_sede"));
+                    m.put("estado",rs.getString("estado"));
                     m.put(NOMBRE, rs.getString(NOMBRE));
                     sedes.add(m);
                 }

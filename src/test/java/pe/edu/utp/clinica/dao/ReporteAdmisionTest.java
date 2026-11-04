@@ -22,6 +22,8 @@ class ReporteAdmisionTest {
         ejecutar("INSERT INTO personal_administrativo(id_personal,id_usuario,id_sede) VALUES(1,40,1),(2,41,2)");
         ejecutar("UPDATE medico SET id_sede=2 WHERE id_medico=2");
         ejecutar("ALTER TABLE reasignacion_inteligente ADD COLUMN id_cita_original INT");
+        ejecutar("ALTER TABLE reasignacion_inteligente ADD COLUMN id_disponibilidad INT");
+        ejecutar("ALTER TABLE reasignacion_inteligente ADD COLUMN fecha_limite_respuesta DATETIME");
         ejecutar("UPDATE cita SET riesgo_cancelacion='ALTO' WHERE id_cita=7");
         ejecutar("INSERT INTO cita(id_cita,id_paciente,id_medico,fecha_hora,estado) VALUES(8,1,2,'2026-10-28 09:00:00','CONFIRMADA'),(9,1,1,'2026-10-29 00:00:00','CONFIRMADA'),(10,1,1,'2026-10-28 23:59:59','CANCELADA')");
     }
@@ -68,6 +70,22 @@ class ReporteAdmisionTest {
         assertEquals(422,assertThrows(AgendaException.class,()->reportes.consultar(40,criterios,1,true)).status());
         var f=new FiltroReporte(filtro().desde(),filtro().hasta(),"","indicadores");
         var indicadores=reportes.consultar(40,f,1,true);assertEquals(2023,indicadores.resumen().total());assertTrue(indicadores.citas().isEmpty());
+    }
+    @Test void ocupacionUsaBloquesPublicadosYCuposSinDuplicar() throws Exception {
+        ejecutar("INSERT INTO disponibilidad(id_disponibilidad,id_medico,id_sede,fecha,hora_inicio,hora_fin,duracion_minutos,estado) VALUES(60,1,1,'2026-10-28','09:00:00','11:00:00',30,'PUBLICADO'),(61,1,2,'2026-10-28','09:00:00','11:00:00',30,'PUBLICADO')");
+        ejecutar("UPDATE cita SET id_disponibilidad=60,fecha_hora='2026-10-28 09:00:00' WHERE id_cita=7");
+        var r=reportes.consultar(40,filtro(),1,false);
+        assertEquals(4,r.ocupacion().capacidad());assertEquals(1,r.ocupacion().ocupados());
+        ejecutar("UPDATE cita SET estado='CANCELADA' WHERE id_cita=7");
+        assertEquals(0,reportes.consultar(40,filtro(),1,false).ocupacion().ocupados());
+    }
+    @Test void pendientesExcluyenVencidasYOtrasSedes() throws Exception {
+        ejecutar("INSERT INTO disponibilidad(id_disponibilidad,id_medico,id_sede,fecha,hora_inicio,hora_fin,duracion_minutos,estado) VALUES(60,1,1,'2026-10-28','20:00:00','23:59:00',30,'PUBLICADO')");
+        ejecutar("INSERT INTO reasignacion_inteligente(id_cita_original,id_disponibilidad,estado,fecha_limite_respuesta) VALUES(10,60,'PENDIENTE','2026-10-28 23:59:59')");
+        assertEquals(1,reportes.consultar(40,filtro(),1,false).ocupacion().ofertasPendientes());
+        assertEquals(0,reportes.consultar(41,filtro(),1,false).ocupacion().ofertasPendientes());
+        ejecutar("UPDATE reasignacion_inteligente SET fecha_limite_respuesta='2026-10-27 00:00:00'");
+        assertEquals(0,reportes.consultar(40,filtro(),1,false).ocupacion().ofertasPendientes());
     }
     @Test void falloDeBaseNoSePresentaComoUnReporteVacio() throws Exception {
         ejecutar("DROP TABLE reasignacion_inteligente");assertEquals(503,assertThrows(AgendaException.class,()->reportes.consultar(40,criterios,1,true)).status());

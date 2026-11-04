@@ -136,44 +136,20 @@ public class AdminDashboardServlet extends HttpServlet {
         List<Map<String, Object>> citas = obtenerCitasSalaEsperaBD(usuario.getIdUsuario());
         request.setAttribute("listaCitas", citas);
 
-        int totalCitasBD = 0;
-        int cancelacionesBD = 0;
-        int cuposLibresBD = 0;
-        int reasignacionesBD = 0;
-
-        try (Connection conn = DatabaseConfig.getConnection()) {
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) totalCitasBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita WHERE estado = 'CANCELADA'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) cancelacionesBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM disponibilidad WHERE estado = 'PUBLICADO'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) cuposLibresBD = rs.getInt(1);
-            }
-            try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM lista_espera WHERE estado = 'ACTIVA'");
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) reasignacionesBD = rs.getInt(1);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        // Métricas de tablero institucional directamente desde la base de datos
-        request.setAttribute("totalCitas", totalCitasBD);
-        request.setAttribute("cancelaciones", cancelacionesBD);
-        request.setAttribute("cuposLibres", cuposLibresBD);
-        request.setAttribute("reasignacionesPendientes", reasignacionesBD);
-
+        var resumen=new pe.edu.utp.clinica.dao.InicioOperativoDAO().consultar(usuario.getIdUsuario());
+        request.setAttribute("totalCitas",resumen.citas());
+        request.setAttribute("cancelaciones",resumen.canceladas());
+        request.setAttribute("cuposLibres",resumen.cupos());
+        request.setAttribute("reasignacionesPendientes",resumen.ofertas());
+        request.setAttribute("actualizadoOperativo",pe.edu.utp.clinica.util.FormatoClinico.fechaHora(resumen.actualizado()));
         // Sedes para el filtro
-        MedicoDAO medicoDAO = new MedicoDAO();
-        request.setAttribute(SEDES, medicoDAO.obtenerSedes());
+        var ambito=new pe.edu.utp.clinica.dao.AmbitoAdmisionDAO();
+        int sedeAsignada=ambito.sede(usuario.getIdUsuario());String nombreSede=ambito.nombreSede(usuario.getIdUsuario());
+        request.setAttribute(SEDES,List.of(Map.of("id",sedeAsignada,"nombre",nombreSede)));
+        request.setAttribute("nombreSedeActual",nombreSede);
 
         // Feed de últimas operaciones en vivo desde la base de datos
-        request.setAttribute("ultimasOperaciones", obtenerUltimasOperaciones());
+        request.setAttribute("ultimasOperaciones", new pe.edu.utp.clinica.dao.InicioOperativoDAO().operaciones(usuario.getIdUsuario()));
     }
 
     private void cargarDatosMedicos(HttpServletRequest request) {
@@ -407,44 +383,6 @@ public class AdminDashboardServlet extends HttpServlet {
         }
         return list;
     }
-
-    private List<Map<String, String>> obtenerUltimasOperaciones() {
-        List<Map<String, String>> list = new ArrayList<>();
-        String sql = "SELECT mensaje, fecha_envio FROM notificacion " +
-                     "ORDER BY id_notificacion DESC LIMIT 6";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, String> o = new HashMap<>();
-                Timestamp ts = rs.getTimestamp("fecha_envio");
-                String hora = "09:00";
-                if (ts != null) {
-                    hora = String.format("%02d:%02d", ts.toLocalDateTime().getHour(), ts.toLocalDateTime().getMinute());
-                }
-                o.put(HORA, hora);
-                String msg = rs.getString("mensaje");
-                o.put("texto", msg != null ? msg : "Operación registrada en sistema");
-                list.add(o);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        if (list.isEmpty()) {
-            Map<String, String> o1 = new HashMap<>();
-            o1.put(HORA, "09:00");
-            o1.put("texto", "Sistema de control operativo y sala de espera iniciado");
-            list.add(o1);
-        }
-
-        return list;
-    }
-
-
-
-
-
 
     private List<Map<String, Object>> obtenerTodasDisponibilidades(int ambito) {
         List<Map<String, Object>> list = new ArrayList<>();

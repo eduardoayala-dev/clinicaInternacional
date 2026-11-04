@@ -207,12 +207,13 @@ public class UsuarioDAO {
     public java.util.List<Usuario> obtenerTodos() {
         java.util.List<Usuario> lista = new java.util.ArrayList<>();
         String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +
-                     "m.cmp, m.id_especialidad, m.id_sede AS id_sede_medico, m.estado AS estado_medico, " +
-                     "e.nombre AS especialidad, sm.nombre AS sede_medico, " +
+                     "m.cmp, m.id_especialidad, COALESCE(m.id_sede,i.id_sede_destino) AS id_sede_medico, m.estado AS estado_medico, " +
+                     "e.nombre AS especialidad, COALESCE(sm.nombre,si.nombre) AS sede_medico, " +
                      "pa.codigo_empleado, pa.cargo, pa.id_sede AS id_sede_personal, sp.nombre AS sede_personal, " +
                      "a.estado AS estado_admin " +
                      "FROM usuario u " +
                      "LEFT JOIN medico m ON u.id_usuario = m.id_usuario " +
+                     "LEFT JOIN invitacion_personal i ON i.id_usuario=u.id_usuario LEFT JOIN sede si ON si.id_sede=i.id_sede_destino " +
                      "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
                      "LEFT JOIN sede sm ON m.id_sede = sm.id_sede " +
                      "LEFT JOIN personal_administrativo pa ON u.id_usuario = pa.id_usuario " +
@@ -245,7 +246,7 @@ public class UsuarioDAO {
                     u.setIdEspecialidad(rs.getInt("id_especialidad"));
                     u.setIdSede(rs.getInt("id_sede_medico"));
                     String sNom = rs.getString("sede_medico");
-                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sede Central");
+                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sin sede asignada");
                     String estM = rs.getString("estado_medico");
                     if (!u.isActivo() || "INACTIVO".equalsIgnoreCase(estM)) {
                         u.setEstadoDetallado("Inactivo");
@@ -257,7 +258,7 @@ public class UsuarioDAO {
                 } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
                     u.setIdSede(rs.getInt("id_sede_personal"));
                     String sNom = rs.getString("sede_personal");
-                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sede Central");
+                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sin sede asignada");
                     u.setEstadoDetallado(u.isActivo() ? "Activo" : "Inactivo");
                 } else if ("ADMINISTRADOR".equals(u.getRol())) {
                     u.setNombreSede("Multisede");
@@ -274,7 +275,7 @@ public class UsuarioDAO {
                 lista.add(u);
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al listar usuarios reales: " + e.getMessage(), e);
+            throw new AgendaException(503,"PERSONAL_NO_DISPONIBLE","No se pudo consultar el personal. Inténtalo nuevamente.");
         }
 
         return lista;
@@ -336,7 +337,7 @@ public class UsuarioDAO {
                 }
             }
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al calcular métricas reales de personal en BD: " + e.getMessage(), e);
+            throw new AgendaException(503,"PERSONAL_NO_DISPONIBLE","No se pudieron consultar los indicadores de personal.");
         }
 
         metricas.put("medicosTotal", medicosTotal);

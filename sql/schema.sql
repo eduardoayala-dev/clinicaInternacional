@@ -791,6 +791,7 @@ CREATE TABLE IF NOT EXISTS correo_oferta (
 
 CREATE TABLE IF NOT EXISTS invitacion_personal (
     id_usuario INT PRIMARY KEY,
+    id_sede_destino INT NULL,
     token_hash BINARY(32) NOT NULL UNIQUE,
     creada_por INT NOT NULL,
     creada_en DATETIME(6) NOT NULL,
@@ -871,7 +872,7 @@ CREATE TABLE IF NOT EXISTS correo_recordatorio (
     INDEX idx_correo_recordatorio_pendiente (estado,disponible_en)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-ALTER TABLE configuracion_ofertas ADD COLUMN recordatorio_horas INT NOT NULL DEFAULT 48;
+ALTER TABLE configuracion_ofertas ADD COLUMN recordatorio_horas INT NOT NULL DEFAULT 24;
 ALTER TABLE configuracion_ofertas ADD COLUMN intentos_confirmacion INT NOT NULL DEFAULT 2;
 ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_recordatorio CHECK(recordatorio_horas BETWEEN 1 AND 168);
 ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_intentos CHECK(intentos_confirmacion BETWEEN 1 AND 10);

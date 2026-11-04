@@ -24,6 +24,10 @@ public class InvitacionPersonalServicio {
         var entrega=almacen.crear(actor,solicitud,hash);
         return enviar(entrega,secreto,hash);
     }
+    public Resultado invitarAcceso(int actor,InvitacionPersonalDAO.Solicitud solicitud) {
+        String secreto=SecretosSesion.nuevo();byte[] hash=SecretosSesion.hash(secreto);
+        return enviar(almacen.crearAcceso(actor,solicitud,hash),secreto,hash);
+    }
     public Resultado reenviar(int actor,int usuario) {
         String secreto=SecretosSesion.nuevo();
         byte[] hash=SecretosSesion.hash(secreto);

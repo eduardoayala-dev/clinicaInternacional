@@ -7,7 +7,7 @@ import java.time.LocalDate;
 final class PrioridadClinicaJdbc {
     private static final String FUENTE=" FROM cita pc JOIN atencion_cita pa ON pa.id_cita=pc.id_cita AND pa.id_medico=pc.id_medico WHERE pc.estado='ATENDIDA' AND pa.fecha_fin IS NOT NULL AND pc.nivel_urgencia IN ('ALTA','MEDIA','BAJA') ";
     private static final String ULTIMA=" ORDER BY pa.fecha_fin DESC,pc.id_cita DESC LIMIT 1";
-    private static final String NIVEL="CASE WHEN pc.fecha_recomendada_proxima>=? AND NOT EXISTS (SELECT 1 FROM seguimiento_cita sc JOIN cita control ON control.id_cita=sc.id_cita_control WHERE sc.id_cita_origen=pc.id_cita AND control.id_paciente=pc.id_paciente AND control.estado='ATENDIDA') THEN pc.nivel_urgencia ELSE NULL END";
+    private static final String NIVEL="CASE WHEN (pc.fecha_recomendada_proxima IS NULL OR pc.fecha_recomendada_proxima>=?) AND NOT EXISTS (SELECT 1 FROM seguimiento_cita sc JOIN cita control ON control.id_cita=sc.id_cita_control WHERE sc.id_cita_origen=pc.id_cita AND control.id_paciente=pc.id_paciente AND control.estado='ATENDIDA') THEN pc.nivel_urgencia ELSE NULL END";
     static final String EVALUACION_LISTA="(SELECT "+NIVEL+FUENTE+"AND pc.id_paciente=le.id_paciente AND pa.id_especialidad_prioridad=le.id_especialidad"+ULTIMA+")";
     static final String PARA_LISTA="COALESCE("+EVALUACION_LISTA+",'MEDIA')";
     private PrioridadClinicaJdbc() {}

@@ -12,7 +12,12 @@ public class ReporteAdmisionDAO {
     private final Clock clock;
     public record Cita(int id,LocalDateTime fecha,String paciente,String documento,String correo,String telefono,String medico,String especialidad,String estado,String riesgo,String confirmacion) {}
     public record Resumen(long total,long atendidas,long enAtencion,long pendientes,long canceladas,long bajo,long medio,long alto,long sinRiesgo,Double esperaMedia,long medicos,long ofertas,long aceptadas) {}
-    public record Reporte(String sede,FiltroReporte filtro,Resumen resumen,List<Cita> citas,int pagina,int paginas,LocalDateTime actualizado) {}
+    public record Ocupacion(long capacidad,long ocupados,long ofertasPendientes) {}
+    public record Reporte(String sede,FiltroReporte filtro,Resumen resumen,List<Cita> citas,int pagina,int paginas,LocalDateTime actualizado,Ocupacion ocupacion) {
+        public Reporte(String sede,FiltroReporte filtro,Resumen resumen,List<Cita> citas,int pagina,int paginas,LocalDateTime actualizado) {
+            this(sede,filtro,resumen,citas,pagina,paginas,actualizado,new Ocupacion(0,0,0));
+        }
+    }
     private static final String FILTROS="""
          FROM cita c
          JOIN medico m ON m.id_medico=c.id_medico
@@ -73,9 +78,36 @@ public class ReporteAdmisionDAO {
             int offset=exportar?0:(actual-1)*20;
             List<Cita> citas=INDICADORES.equals(filtro.tipo())?List.of():citas(c,sede,filtro,ahora,limite,offset);
             String nombre=nombreSede(c,sede);
+            Ocupacion ocupacion=ocupacion(c,sede,filtro,ahora);
             c.commit();
-            return new Reporte(nombre,filtro,resumen,List.copyOf(citas),actual,paginas,ahora);
+            return new Reporte(nombre,filtro,resumen,List.copyOf(citas),actual,paginas,ahora,ocupacion);
         } catch(SQLException|RuntimeException e){c.rollback();throw e;}
+    }
+    private static Ocupacion ocupacion(Connection c,int sede,FiltroReporte filtro,LocalDateTime ahora)throws SQLException {
+        record Cupo(int medico,LocalDateTime inicio) {}
+        Set<Cupo> publicados=new HashSet<>();
+        try(var ps=c.prepareStatement("SELECT d.id_medico,d.fecha,d.hora_inicio,d.hora_fin,d.duracion_minutos FROM disponibilidad d WHERE d.id_sede=? AND d.fecha>=? AND d.fecha<=? AND d.estado='PUBLICADO' AND d.duracion_minutos>0 AND d.hora_fin>d.hora_inicio")) {
+            ps.setInt(1,sede);ps.setObject(2,filtro.desde());ps.setObject(3,filtro.hasta());
+            try(var rs=ps.executeQuery()){while(rs.next()) {
+                LocalDate dia=rs.getObject(2,LocalDate.class);
+                LocalDateTime inicio=dia.atTime(rs.getObject(3,LocalTime.class));
+                LocalDateTime fin=dia.atTime(rs.getObject(4,LocalTime.class));int minutos=rs.getInt(5);
+                for(var hora=inicio;!hora.plusMinutes(minutos).isAfter(fin);hora=hora.plusMinutes(minutos))publicados.add(new Cupo(rs.getInt(1),hora));
+            }}
+        }
+        Set<Cupo> reservados=new HashSet<>();
+        try(var ps=c.prepareStatement("SELECT ci.id_medico,ci.fecha_hora FROM cita ci JOIN medico m ON m.id_medico=ci.id_medico LEFT JOIN disponibilidad d ON d.id_disponibilidad=ci.id_disponibilidad WHERE COALESCE(d.id_sede,m.id_sede)=? AND ci.fecha_hora>=? AND ci.fecha_hora<? AND ci.estado NOT IN ('CANCELADA','REPROGRAMADA')")) {
+            ps.setInt(1,sede);ps.setObject(2,filtro.desde().atStartOfDay());ps.setObject(3,filtro.hasta().plusDays(1).atStartOfDay());
+            try(var rs=ps.executeQuery()){while(rs.next())reservados.add(new Cupo(rs.getInt(1),rs.getObject(2,LocalDateTime.class)));}
+        }
+        reservados.retainAll(publicados);
+        long capacidad=publicados.size(),ocupados=reservados.size();
+        long pendientes;
+        try(var ps=c.prepareStatement("SELECT COUNT(*) FROM reasignacion_inteligente r JOIN disponibilidad d ON d.id_disponibilidad=r.id_disponibilidad JOIN cita ci ON ci.id_cita=r.id_cita_original WHERE d.id_sede=? AND ci.fecha_hora>=? AND ci.fecha_hora<? AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>? AND ci.fecha_hora>? AND ci.estado='CANCELADA' AND d.estado='PUBLICADO'")) {
+            ps.setInt(1,sede);ps.setObject(2,filtro.desde().atStartOfDay());ps.setObject(3,filtro.hasta().plusDays(1).atStartOfDay());ps.setObject(4,ahora);ps.setObject(5,ahora);
+            try(var rs=ps.executeQuery()){rs.next();pendientes=rs.getLong(1);}
+        }
+        return new Ocupacion(capacidad,ocupados,pendientes);
     }
     private static String nombreSede(Connection c,int sede)throws SQLException {
         try(var ps=c.prepareStatement("SELECT nombre FROM sede WHERE id_sede=?")) {

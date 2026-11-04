@@ -10,6 +10,24 @@ import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 abstract class InvitacionPersonalContrato {
+    @Test void accesoMedicoSeActivaAntesDeCompletarSuPerfilEnAdmision()throws Exception {
+        sql("ALTER TABLE auditoria_seguridad ADD COLUMN ip_origen VARCHAR(45) NULL");
+        byte[] invitacion=token();int id=dao().crearAcceso(90,solicitud(),invitacion).usuario();
+        assertEquals(0,cuenta("SELECT COUNT(*) FROM medico WHERE id_usuario="+id));
+        assertEquals(409,assertThrows(AgendaException.class,()->dao().editarAcceso(90,id,solicitud(),true)).status());
+        assertEquals(1,cuenta("SELECT COUNT(*) FROM usuario WHERE id_usuario="+id+" AND activo=FALSE"));
+        dao().activar(invitacion,"ClaveNuevaSegura#2026");
+        var perfiles=new PerfilProfesionalMedicoDAO(this::abrir);
+        assertTrue(perfiles.pendientes(91).stream().anyMatch(c->c.id()==id&&c.activa()));
+        assertEquals(403,assertThrows(AgendaException.class,()->perfiles.completar(90,id,"123456",1,null)).status());
+        assertTrue(perfiles.pendientes(92).stream().noneMatch(c->c.id()==id));
+        assertEquals(403,assertThrows(AgendaException.class,()->perfiles.completar(92,id,"123456",1,null)).status());
+        perfiles.completar(91,id,"123456",1,null);
+        assertEquals(1,cuenta("SELECT COUNT(*) FROM medico WHERE id_usuario="+id+" AND id_sede=1 AND cmp='123456'"));
+        assertFalse(perfiles.pendientes(91).stream().anyMatch(c->c.id()==id));
+        assertEquals(403,assertThrows(AgendaException.class,()->perfiles.completar(92,id,"654321",1,null)).status());
+        assertEquals(1,cuenta("SELECT COUNT(*) FROM auditoria_seguridad WHERE evento='PERFIL_MEDICO_COMPLETADO'"));
+    }
     @Test void cancelacionDeAdmisionRequiereMotivoYLoAudita()throws Exception {
         var admision=new AdmisionCitaDAO(this::abrir,reloj,10);
         assertEquals(400,assertThrows(AgendaException.class,()->admision.cancelar(91,1,"")).status());
@@ -56,6 +74,7 @@ abstract class InvitacionPersonalContrato {
         sql("INSERT INTO cita VALUES(1,1,1,1,'2026-11-03 09:00:00','CONFIRMADA'),(2,2,2,2,'2026-11-03 09:00:00','CONFIRMADA')");
         String ddl=Files.readString(Path.of("sql/migrations/V012__invitacion_personal.sql"));
         if(url.startsWith("jdbc:h2:"))ddl=ddl.replace(" ENGINE=InnoDB DEFAULT CHARSET=utf8mb4","");sql(ddl);
+        sql("ALTER TABLE invitacion_personal ADD COLUMN id_sede_destino INT NULL");
     }
     @Test void creaCuentaInactivaConPerfilYAuditoriaSinPasswordCompartido()throws Exception {
         byte[] token=token();int id=crear(token);

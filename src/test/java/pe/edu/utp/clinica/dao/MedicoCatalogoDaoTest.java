@@ -12,6 +12,26 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoCatalogoDaoTest {
+    @Test void semanaCuentaCuposRealesPorTurnoExcluyendoReservasYRetenciones()throws Exception{
+        agenda("2026-10-28","09:00","10:00",30,"PUBLICADO");agenda("2026-10-28","13:00","14:00",30,"PUBLICADO");
+        sql("INSERT INTO cita(id_medico,fecha_hora,estado) VALUES(42,'2026-10-28 09:00:00','CONFIRMADA')");
+        sql("INSERT INTO retencion_cupo VALUES(1,42,'2026-10-28 13:00:00',30,'prueba','2026-10-29 10:00:00')");
+        var semana=dao.disponibilidadSemanal(1,1,42,java.time.LocalDate.of(2026,10,26));assertEquals(7,semana.size());
+        var dia=semana.stream().filter(d->d.fecha().equals("2026-10-28")).findFirst().orElseThrow();assertEquals(1,dia.manana());assertEquals(1,dia.tarde());
+        assertEquals(0,dao.disponibilidadSemanal(1,2,42,java.time.LocalDate.of(2026,10,26)).stream().mapToInt(d->d.manana()+d.tarde()).sum());
+        assertEquals(0,dao.disponibilidadSemanal(1,1,43,java.time.LocalDate.of(2026,10,26)).stream().mapToInt(d->d.manana()+d.tarde()).sum());
+    }
+    @Test void inicioOperativoCuentaCuposReservablesYNoMezclaSedes()throws Exception {
+        sql("CREATE TABLE personal_administrativo(id_usuario INT PRIMARY KEY,id_sede INT)");
+        sql("INSERT INTO usuario VALUES(90,'Admisión','Uno',TRUE,'PERSONAL_ADMINISTRATIVO')");
+        sql("INSERT INTO personal_administrativo VALUES(90,1)");
+        agenda("2026-10-27","11:00","12:00",20,"PUBLICADO");
+        sql("INSERT INTO disponibilidad(id_medico,id_sede,fecha,hora_inicio,hora_fin,duracion_minutos,estado) VALUES(43,2,'2026-10-27','11:00','12:00',20,'PUBLICADO')");
+        sql("INSERT INTO cita(id_medico,fecha_hora,estado,id_disponibilidad) VALUES(42,'2026-10-27 11:00:00','CONFIRMADA',1),(42,'2026-10-27 11:20:00','CANCELADA',1),(43,'2026-10-27 11:00:00','CONFIRMADA',2)");
+        var resumen=new InicioOperativoDAO(()->DriverManager.getConnection(url),clock).consultar(90);
+        assertEquals(2,resumen.citas());assertEquals(1,resumen.canceladas());assertEquals(2,resumen.cupos());assertEquals(0,resumen.ofertas());
+        assertEquals(403,assertThrows(AgendaException.class,()->new InicioOperativoDAO(()->DriverManager.getConnection(url),clock).consultar(1)).status());
+    }
     private String url;
     private MedicoDAO dao;
     private final Clock clock = Clock.fixed(Instant.parse("2026-10-27T15:10:00Z"), ZoneId.of("America/Lima"));

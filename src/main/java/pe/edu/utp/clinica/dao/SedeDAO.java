@@ -45,11 +45,6 @@ public class SedeDAO {
             LOGGER.log(Level.SEVERE, "Error al listar sedes: " + e.getMessage(), e);
         }
 
-        // Si la tabla estuviese vacía por algún motivo, retornar semillas por defecto
-        if (lista.isEmpty()) {
-            return obtenerSedesFallback();
-        }
-
         return lista;
     }
 
@@ -184,14 +179,5 @@ public class SedeDAO {
         m.put("disponibilidadPorc", total > 0 ? String.format("%.1f%%", ((double) activas / total) * 100) : "92.8%");
 
         return m;
-    }
-
-    private List<Sede> obtenerSedesFallback() {
-        List<Sede> list = new ArrayList<>();
-        list.add(new Sede(1, "SB-01", "Sede San Borja", "Av. Guardia Civil 337, San Borja", "01-610-2222", null, "ACTIVO"));
-        list.add(new Sede(2, "LI-02", "Sede Lima", "Av. Garcilaso de la Vega 1420, Cercado de Lima", "01-610-1111", null, "ACTIVO"));
-        list.add(new Sede(3, "LM-03", "Sede La Molina", "Av. La Molina 1100, La Molina", "01-610-5555", null, "ACTIVO"));
-        list.add(new Sede(4, "SU-04", "Sede Surco", "Av. Primavera 1750, Santiago de Surco", "01-610-4444", null, "MANTENIMIENTO"));
-        return list;
     }
 }

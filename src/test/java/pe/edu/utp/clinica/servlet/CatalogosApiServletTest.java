@@ -14,8 +14,16 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogosApiServletTest {
+    @Test void semanaDevuelveSieteDiasConConteosPorTurno()throws Exception{
+        var x=request();x.parameters.putAll(java.util.Map.of("vista","semana","idEspecialidad","1","idSede","1","desde","2026-10-26"));
+        new ApiHorariosServlet(catalogos).service(x.request,x.response);
+        var datos=assertBody(x,200,"CUPOS_SEMANA_OBTENIDOS").get("data");assertEquals(7,datos.size());assertEquals(2,datos.get(0).get("manana").asInt());assertEquals(3,datos.get(0).get("tarde").asInt());
+    }
     private final AtomicInteger calls = new AtomicInteger();
     private final CatalogoService catalogos = new CatalogoService(new MedicoDAO() {
+        @Override public List<MedicoDAO.DiaCupos> disponibilidadSemanal(int especialidad,Integer sede,Integer medico,java.time.LocalDate desde){
+            calls.incrementAndGet();return java.util.stream.IntStream.range(0,7).mapToObj(n->new MedicoDAO.DiaCupos(desde.plusDays(n).toString(),2,3)).toList();
+        }
         @Override public List<MedicoCatalogo> consultarMedicos(int especialidad, Integer sede) {
             calls.incrementAndGet();
             if (Integer.valueOf(2).equals(sede)) return List.of();

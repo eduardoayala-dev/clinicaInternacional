@@ -82,12 +82,12 @@ abstract class AgendaCitaContrato {
             assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,29)));
         }
     }
-    @Test void nuevaEvaluacionSinSeguimientoRetiraLaPrioridadAnterior() throws Exception {
+    @Test void nuevaEvaluacionSinFechaReemplazaLaPrioridadAnterior() throws Exception {
         evaluacionClinica(1,900,"ALTA","2026-10-01 08:30:00");
         evaluacionClinica(1,1900,"BAJA","2026-10-26 08:30:00");
         sql("UPDATE cita SET fecha_recomendada_proxima=NULL WHERE id_cita=1900");
         try(var conexion=abrir()) {
-            assertEquals("MEDIA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
+            assertEquals("BAJA",PrioridadClinicaJdbc.resolver(conexion,1,1,java.time.LocalDate.of(2026,10,28)));
         }
     }
     @Test void controlVinculadoFinalizadoConsumeLaPrioridadPeroCanceladoNo() throws Exception {

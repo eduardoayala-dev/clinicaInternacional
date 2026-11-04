@@ -24,6 +24,18 @@ import java.util.Map;
  * DAO para gestión del cuerpo médico, sedes, especialidades y disponibilidad de horarios.
  */
 public class MedicoDAO {
+    public record DiaCupos(String fecha,int manana,int tarde){}
+    public List<DiaCupos> disponibilidadSemanal(int especialidad,Integer sede,Integer medico,LocalDate desde){
+        var cantidades=new TreeMap<LocalDate,int[]>();for(int n=0;n<7;n++)cantidades.put(desde.plusDays(n),new int[2]);
+        String sql="SELECT DISTINCT d.id_medico,d.fecha FROM disponibilidad d JOIN medico m ON m.id_medico=d.id_medico "+ACTIVE_JOINS+
+            " WHERE m.id_especialidad=? AND (?=0 OR m.id_sede=?) AND (?=0 OR m.id_medico=?) AND d.fecha>=? AND d.fecha<? AND d.fecha>=? AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND "+ACTIVE_FILTER+" ORDER BY d.fecha,d.id_medico";
+        try(var c=connections.open();var st=c.prepareStatement(sql)){
+            st.setInt(1,especialidad);st.setInt(2,sede==null?0:sede);st.setInt(3,sede==null?0:sede);st.setInt(4,medico==null?0:medico);st.setInt(5,medico==null?0:medico);st.setObject(6,desde);st.setObject(7,desde.plusDays(7));st.setObject(8,LocalDate.now(clock));
+            var agendas=new ArrayList<Map.Entry<Integer,LocalDate>>();try(var r=st.executeQuery()){while(r.next())agendas.add(Map.entry(r.getInt(1),r.getObject(2,LocalDate.class)));}
+            for(var agenda:agendas){var dia=cantidades.get(agenda.getValue());for(String hora:horariosDisponibles(c,agenda.getKey(),agenda.getValue()))dia[LocalTime.parse(hora).getHour()<13?0:1]++;}
+        }catch(SQLException e){throw new CatalogoDatosException(e);}
+        return cantidades.entrySet().stream().map(e->new DiaCupos(e.getKey().toString(),e.getValue()[0],e.getValue()[1])).toList();
+    }
     private static final String ID_SEDE = "id_sede";
     private static final String ID_ESPECIALIDAD = "idEspecialidad";
     private static final DateTimeFormatter SLOT_FORMAT = DateTimeFormatter.ofPattern("HH:mm");
@@ -185,6 +197,12 @@ public class MedicoDAO {
         LocalDate date = LocalDate.parse(fecha);
         if (date.isBefore(LocalDate.now(clock))) return List.of();
         try (Connection conn = connections.open()) {
+            return horariosDisponibles(conn,idMedico,date);
+        } catch (SQLException e) {
+            throw new CatalogoDatosException(e);
+        }
+    }
+    private List<String> horariosDisponibles(Connection conn,int idMedico,LocalDate date)throws SQLException {
             Map<LocalTime, Integer> publicados = publishedSlots(conn, idMedico, date);
             List<Ocupacion> ocupados = occupiedSlots(conn, idMedico, date);
             agregarRetenciones(conn,idMedico,date,ocupados);
@@ -194,9 +212,13 @@ public class MedicoDAO {
                     .filter(slot -> noSeCruza(slot.getKey(), slot.getValue(), ocupados))
                     .map(slot -> slot.getKey().format(SLOT_FORMAT))
                     .toList();
-        } catch (SQLException e) {
-            throw new CatalogoDatosException(e);
+    }
+    int contarCuposDisponibles(Connection conn,int sede,LocalDate desde,LocalDate hasta)throws SQLException {
+        var fechas=new java.util.ArrayList<java.util.Map.Entry<Integer,LocalDate>>();
+        try(var st=conn.prepareStatement("SELECT DISTINCT d.id_medico,d.fecha FROM disponibilidad d JOIN medico m ON m.id_medico=d.id_medico JOIN usuario u ON u.id_usuario=m.id_usuario JOIN especialidad e ON e.id_especialidad=m.id_especialidad WHERE d.id_sede=? AND d.estado='PUBLICADO' AND d.fecha>=? AND d.fecha<? AND m.id_sede=d.id_sede AND m.estado='ACTIVO' AND u.activo=TRUE AND e.estado='ACTIVO' ORDER BY d.id_medico,d.fecha")){
+            st.setInt(1,sede);st.setObject(2,desde);st.setObject(3,hasta);try(var r=st.executeQuery()){while(r.next())fechas.add(java.util.Map.entry(r.getInt(1),r.getObject(2,LocalDate.class)));}
         }
+        int total=0;for(var fila:fechas)total+=horariosDisponibles(conn,fila.getKey(),fila.getValue()).size();return total;
     }
 
     private void agregarRetenciones(Connection conn,int medico,LocalDate fecha,List<Ocupacion> ocupados) throws SQLException {
