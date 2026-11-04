@@ -4,15 +4,15 @@ Primero se cierra y prueba el funcionamiento HU001–HU015. No se presentan resu
 
 ## Versiones que se conservarán
 
-Tras aprobar los commits y PR funcionales, crear el tag anotado `baseline/funcional-hu15`. No moverlo después. Registrar el SHA, fecha, versión de Java, imagen de MySQL, configuración de recursos y versión de las herramientas.
+La versión funcional actual se conserva en `v1.0.0`, commit `8d0fd85a630ac0633c692c397d5dd2342d73460c`, anterior a las mejoras web de PageSpeed y Lighthouse. Se conserva también `v0.1.0-alpha`. Registrar el SHA, fecha, versión de Java, imagen de MySQL, configuración de recursos y versión de las herramientas.
 
-| Evaluación | Rama para las mejoras | Tag antes | Tag después |
+| Evaluación | Rama para las mejoras | Versión antes | Referencia después |
 |---|---|---|---|
-| Recorridos Selenium | `test/selenium-hu15` | `baseline/funcional-hu15` | `validacion/selenium-hu15` |
-| Carga y estrés | `perf/carga-hu15` | `baseline/carga-hu15` | `mejora/carga-hu15` |
-| Lighthouse y PageSpeed | `perf/web-hu15` | `baseline/web-hu15` | `mejora/web-hu15` |
+| Recorridos Selenium | `test/selenium-hu15` | `v1.0.0` | Commit de validación |
+| Carga y estrés | `perf/carga-hu15` | `v1.0.0` | Commit medido |
+| Lighthouse y PageSpeed | `perf/rendimiento-web` | `v1.0.0` | Versión posterior aprobada |
 
-Los nombres son un protocolo pendiente de aprobación, no tags ya creados. Cada baseline apunta al código efectivamente medido; una rama sola cambia con el tiempo y no basta como referencia. No fusionar optimizaciones de una evaluación antes de capturar su medición inicial.
+Por indicación del equipo se conservan únicamente los tags de versiones, sin tags auxiliares por prueba. El nombre de la versión posterior se decidirá al aprobar las mejoras. Cada medición registra el commit efectivamente desplegado; una rama sola cambia con el tiempo y no basta como referencia. No fusionar optimizaciones de una evaluación antes de capturar su medición inicial.
 
 ## Condiciones de comparación
 
