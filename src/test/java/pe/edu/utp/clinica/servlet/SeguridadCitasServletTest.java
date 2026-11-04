@@ -8,6 +8,12 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SeguridadCitasServletTest {
+    @Test void motivoVacioNoEjecutaCancelacionNiEfectos()throws Exception {
+        Dao dao=new Dao();dao.allowed=true;var x=patient();x.parameters.remove("motivo");
+        patientServlet(dao).doPost(x.request,x.response);
+        assertEquals(0,dao.attempts);assertEquals(0,dao.offers);assertEquals(0,dao.notifications);
+        assertNotNull(x.session.getAttribute("agendaError"));assertEquals("/paciente/historial",x.redirect);
+    }
     private static class Dao extends CitaDAO {
         @Override public boolean finalizarConsultaClinica(int cita,int medico,String prioridad,String fecha,String notas,pe.edu.utp.clinica.model.medico.ConsultaClinica consulta) {
             return actualizarAtencionMedicaValidada(cita,medico,"ATENDIDA",prioridad,fecha,notas);
@@ -20,7 +26,7 @@ class SeguridadCitasServletTest {
         int offers;
         @Override public int obtenerIdPacientePorUsuarioId(int id) { return id == 10 ? 5 : -1; }
         @Override public int obtenerIdMedicoPorUsuarioId(int id) { return id == 20 ? 8 : -1; }
-        @Override public boolean actualizarEstadoCitaPaciente(int id, int patient, String state) {
+        @Override public boolean actualizarEstadoCitaPaciente(int id, int patient, String state, String motivo) {
             attempts++; owner = patient; return allowed;
         }
         @Override public String ejecutarReasignacionInteligente(int id) { offers++; return ""; }
@@ -39,7 +45,7 @@ class SeguridadCitasServletTest {
     private HttpExchange patient() {
         HttpExchange x = new HttpExchange();
         x.session.setAttribute("usuarioLogueado", new Usuario(10,"P","Uno","p@test","","PACIENTE",null,true));
-        x.parameters.put("action","cancelar"); x.parameters.put("idCita","7");
+        x.parameters.put("motivo","Imprevisto personal"); x.parameters.put("action","cancelar"); x.parameters.put("idCita","7");
         return x;
     }
 

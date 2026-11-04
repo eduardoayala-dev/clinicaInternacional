@@ -104,7 +104,16 @@ public class PacienteHistorialServlet extends HttpServlet {
         }
         CitaDAO citaDAO = crearCitaDAO();
         int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
-        if (!citaDAO.actualizarEstadoCitaPaciente(idCita, idPaciente, estado)) {
+        boolean actualizado;
+        try {
+            String motivo="CANCELADA".equals(estado)?pe.edu.utp.clinica.util.MotivoCancelacion.validar(request.getParameter("motivo")):null;
+            actualizado=citaDAO.actualizarEstadoCitaPaciente(idCita,idPaciente,estado,motivo);
+        } catch(AgendaException e) {
+            session.setAttribute("agendaError",e.getMessage());
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath()+"/paciente/historial");
+            return;
+        }
+        if (!actualizado) {
             // Misma respuesta para cita ajena, inexistente o no modificable.
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;

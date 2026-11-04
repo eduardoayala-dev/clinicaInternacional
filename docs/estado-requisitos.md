@@ -14,7 +14,7 @@ Las ramas se conservan. Publicar o fusionar código no acredita por sí mismo re
 
 ## Ciclo de citas
 
-Existen reserva con retención real, confirmación de asistencia separada, reprogramación, cancelación, llegada por admisión, atención, cierre, inasistencia explícita y oferta de cupos liberados. No se infiere inasistencia automáticamente al cambiar de día. Quedan el motivo obligatorio de cancelación y la regresión final integrada entre roles para cerrar el alcance completo.
+Existen reserva con retención real, confirmación de asistencia separada, reprogramación, cancelación, llegada por admisión, atención, cierre, inasistencia explícita y oferta de cupos liberados. No se infiere inasistencia automáticamente al cambiar de día. El motivo obligatorio de cancelación y cuatro recorridos completos sobre MySQL real están comprobados en feature/motivo-cancelacion; el usuario aprobó la prueba local el 4 de noviembre de 2026. Falta integrar la entrega y validar el despliegue final.
 
 ## Pendientes principales
 

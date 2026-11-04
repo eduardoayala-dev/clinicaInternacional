@@ -2,7 +2,8 @@
 param(
     [string]$RepositorioMaven = (Join-Path $env:USERPROFILE '.m2/repository'),
     [string]$VersionTomcat = '10.1.61',
-    [ValidateSet(11,17)][int]$NivelJava = 11
+    [ValidateSet(11,17)][int]$NivelJava = 11,
+    [string[]]$VistasAdicionales = @()
 )
 
 Set-StrictMode -Version Latest
@@ -21,6 +22,7 @@ $classpath = (@($tomcat.FullName) + @($ant.FullName) + @($ecj.FullName) + @(Get-
 $vistas = @('dashboard','medicos','editar-medico','pacientes','horarios','seguimiento-confirmaciones','seguimiento-ia','reasignaciones','dashboard_operativo') | ForEach-Object { "WEB-INF/views/admin/$_.jsp" }
 New-Item -ItemType Directory -Force -Path $salida | Out-Null
 $vistas += @('WEB-INF/views/catalogo/motivos.jsp','WEB-INF/views/catalogo/error.jsp','WEB-INF/views/catalogo/importar-motivos.jsp')
+$vistas += $VistasAdicionales
 $registro = Join-Path $salida 'compilacion.log'
 & java -cp $classpath org.apache.jasper.JspC -uriroot (Join-Path $proyecto 'src/main/webapp') -d $salida -compile -source $NivelJava -target $NivelJava @vistas *> $registro
 $codigo = $LASTEXITCODE
@@ -29,4 +31,4 @@ if ($codigo -ne 0 -or $texto -notmatch 'completed with \[0\] errors') {
     Get-Content -LiteralPath $registro | Write-Output
     throw "No se pudieron compilar las vistas con nivel Java $NivelJava."
 }
-Write-Output "Doce vistas de admisión y catálogo compiladas sin errores con nivel Java $NivelJava."
+Write-Output "$($vistas.Count) vistas compiladas sin errores con nivel Java $NivelJava."

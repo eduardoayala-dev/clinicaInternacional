@@ -10,6 +10,15 @@ import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 abstract class InvitacionPersonalContrato {
+    @Test void cancelacionDeAdmisionRequiereMotivoYLoAudita()throws Exception {
+        var admision=new AdmisionCitaDAO(this::abrir,reloj,10);
+        assertEquals(400,assertThrows(AgendaException.class,()->admision.cancelar(91,1,"")).status());
+        assertEquals(1,cuenta("SELECT COUNT(*) FROM cita WHERE id_cita=1 AND estado='CONFIRMADA'"));
+        admision.cancelar(91,1,"Cambio solicitado por paciente");
+        admision.cancelar(91,1,"Intento duplicado");
+        assertEquals(1,cuenta("SELECT COUNT(*) FROM auditoria_seguridad WHERE id_usuario=91 AND evento='CITA_CANCELADA_ADMISION' AND descripcion LIKE '%Cambio solicitado por paciente%'"));
+        assertEquals(1,cuenta("SELECT COUNT(*) FROM auditoria_seguridad WHERE evento='CITA_CANCELADA_ADMISION'"));
+    }
     protected String url;
     protected abstract void configurar();
     private final Clock reloj=Clock.fixed(Instant.parse("2026-10-31T17:00:00Z"),ZoneOffset.UTC);
@@ -132,8 +141,8 @@ abstract class InvitacionPersonalContrato {
     }
     @Test void cancelacionValidaSedeYRegistraAuditadaSinAfectarLaAjena()throws Exception {
         var admision=new AdmisionCitaDAO(this::abrir,reloj,10);
-        assertEquals(404,assertThrows(AgendaException.class,()->admision.cancelar(91,2)).status());
-        admision.cancelar(91,1);admision.cancelar(91,1);
+        assertEquals(404,assertThrows(AgendaException.class,()->admision.cancelar(91,2,"Imprevisto personal")).status());
+        admision.cancelar(91,1,"Imprevisto personal");admision.cancelar(91,1,"Imprevisto personal");
         assertEquals(1,cuenta("SELECT COUNT(*) FROM cita WHERE id_cita=1 AND estado='CANCELADA'"));
         assertEquals(1,cuenta("SELECT COUNT(*) FROM cita WHERE id_cita=2 AND estado='CONFIRMADA'"));
         assertEquals(1,cuenta("SELECT COUNT(*) FROM auditoria_seguridad WHERE evento='CITA_CANCELADA_ADMISION'"));
@@ -151,7 +160,7 @@ abstract class InvitacionPersonalContrato {
     }
     @Test void unaCancelacionFallidaNoPublicaElAvisoNiModificaLaCita()throws Exception {
         sql("DROP TABLE auditoria_seguridad");var dao=new AdmisionCitaDAO(this::abrir,reloj,10);
-        assertEquals(503,assertThrows(AgendaException.class,()->dao.cancelar(91,1)).status());
+        assertEquals(503,assertThrows(AgendaException.class,()->dao.cancelar(91,1,"Imprevisto personal")).status());
         assertEquals(1,cuenta("SELECT COUNT(*) FROM cita WHERE id_cita=1 AND estado='CONFIRMADA'"));assertEquals(0,cuenta("SELECT COUNT(*) FROM notificacion"));
     }
     @Test void noSeDeshabilitaNiMueveUnMedicoConCitasVigentes()throws Exception {

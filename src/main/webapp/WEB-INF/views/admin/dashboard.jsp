@@ -76,7 +76,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"></head>
 <body>
 
 
@@ -398,14 +398,7 @@
         <input type="hidden" name="idCita" id="formAdmitirIdCita" value="">
     </form>
 
-    <form id="formCancelar" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-        <input type="hidden" name="action" value="cancelar_cita">
-        <input type="hidden" name="idCita" id="formCancelarIdCita" value="">
-    </form>
-
-
-    <div class="tablero-modal-overlay" id="modalRegistrarPaciente" onclick="cerrarModalFondo(event)">
+<div class="tablero-modal-overlay" id="modalRegistrarPaciente" onclick="cerrarModalFondo(event)">
         <div class="tablero-modal-card">
             <div class="tablero-modal-head">
                 <h3 class="tablero-modal-title">Registrar nuevo paciente en padrón</h3>
@@ -490,9 +483,11 @@
 
             <form id="formConfirmarAnular" action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-                <input type="hidden" name="action" value="cambiar_estado">
+                <input type="hidden" name="action" value="cancelar_cita">
                 <input type="hidden" id="modalAnularIdCita" name="idCita" value="">
                 <input type="hidden" name="nuevoEstado" value="CANCELADA">
+                <label class="cancelacion-label" for="motivoAnulacion">Motivo de cancelación *</label>
+                <input type="text" id="motivoAnulacion" name="motivo" class="cancelacion-motivo" required minlength="5" maxlength="160" placeholder="Indica el motivo, sin datos clínicos sensibles.">
 
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <button type="button" class="btn-secundario" onclick="cerrarModalAnularCita()">Volver / Conservar cita</button>
@@ -602,6 +597,7 @@
 
         // Modal de confirmación para anulación crítica
         function abrirModalAnularCita(idCita, pacienteNom, hora, medicoNom) {
+            document.getElementById("motivoAnulacion").value = "";
             document.getElementById("modalAnularIdCita").value = idCita;
             document.getElementById("modalAnularPacienteNombre").textContent = pacienteNom;
             document.getElementById("modalAnularHora").textContent = hora;

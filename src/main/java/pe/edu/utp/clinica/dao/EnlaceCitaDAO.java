@@ -33,6 +33,9 @@ public class EnlaceCitaDAO {
         }catch(SQLException e){throw new AgendaException(503,"CITA_NO_DISPONIBLE","No se pudo consultar tu cita. Inténtalo nuevamente.");}
     }
     public void ejecutar(int usuario,EnlaceCita enlace){
+        ejecutar(usuario,enlace,null);
+    }
+    public void ejecutar(int usuario,EnlaceCita enlace,String motivo){
         Resumen cita=consultar(usuario,enlace.cita());
         if(!cita.futura()||!("CONFIRMADA".equals(cita.estado())||"SOLICITADA".equals(cita.estado())))throw new AgendaException(409,"CITA_NO_DISPONIBLE","La cita ya no está disponible para esta acción.");
         if(enlace.accion()==EnlaceCita.Accion.CONFIRMAR){new ConfirmacionAsistenciaDAO(conexiones,reloj).confirmarPaciente(usuario,enlace.cita());return;}
@@ -41,6 +44,6 @@ public class EnlaceCitaDAO {
             @Override protected Clock relojClinico(){return reloj;}
         };
         int paciente=citas.obtenerIdPacientePorUsuarioId(usuario);
-        if(!citas.actualizarEstadoCitaPaciente(enlace.cita(),paciente,"CANCELADA"))throw new AgendaException(409,"CITA_NO_DISPONIBLE","La cita cambió de estado o ya pasó su horario.");
+        if(!citas.actualizarEstadoCitaPaciente(enlace.cita(),paciente,"CANCELADA",motivo))throw new AgendaException(409,"CITA_NO_DISPONIBLE","La cita cambió de estado o ya pasó su horario.");
     }
 }

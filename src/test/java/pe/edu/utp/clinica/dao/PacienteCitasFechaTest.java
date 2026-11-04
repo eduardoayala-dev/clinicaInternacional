@@ -22,7 +22,7 @@ class PacienteCitasFechaTest {
         assertEquals("CONFIRMADA",pasada.get("estado"));assertEquals(true,pasada.get("pendienteCierre"));
         assertEquals("Pasada · asistencia por registrar",pasada.get("estadoTexto"));
         assertEquals(1,fixture.count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
-        assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA"));
+        assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA","Imprevisto personal"));
     }
     @Test void hoyPermaneceActivaYUnaConsultaEnCursoConservaSuEstado()throws Exception {
         assertEquals(1,dao.obtenerProximasCitasPaciente(1).size());assertTrue(dao.obtenerHistorialPaciente(1).isEmpty());

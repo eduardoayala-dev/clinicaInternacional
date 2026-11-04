@@ -305,8 +305,9 @@ public class CitaDAO {
 
     public boolean actualizarEstadoCita(int idCita, String nuevoEstado) {
         if (idCita <= 0 || nuevoEstado == null) return false;
+        if (ESTADO_CANCELADA.equals(nuevoEstado)) return false;
         String anterior = switch (nuevoEstado) {
-            case ESTADO_CONFIRMADA, ESTADO_CANCELADA -> ESTADO_SOLICITADA;
+            case ESTADO_CONFIRMADA -> ESTADO_SOLICITADA;
             default -> null;
         };
         if (anterior == null) return false;
@@ -334,6 +335,12 @@ public class CitaDAO {
 
     /** Actualización condicionada al propietario y al estado actual de la cita. */
     public boolean actualizarEstadoCitaPaciente(int idCita, int idPaciente, String nuevoEstado) {
+        if (ESTADO_CANCELADA.equals(nuevoEstado)) return false;
+        return actualizarEstadoCitaPaciente(idCita,idPaciente,nuevoEstado,null);
+    }
+
+    public boolean actualizarEstadoCitaPaciente(int idCita, int idPaciente, String nuevoEstado, String motivo) {
+        String motivoValidado=ESTADO_CANCELADA.equals(nuevoEstado)?pe.edu.utp.clinica.util.MotivoCancelacion.validar(motivo):null;
         if (idCita <= 0 || idPaciente <= 0) return false;
         if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
@@ -349,6 +356,7 @@ public class CitaDAO {
                     ps.setObject(6,LocalDateTime.now(relojClinico()));
                     boolean actualizado = ps.executeUpdate() == 1;
                     if (actualizado) {
+                        if(motivoValidado!=null)auditarCancelacionPaciente(conn,idCita,idPaciente,motivoValidado);
                         registrarCambio(conn,idCita,nuevoEstado);
                     }
                     return actualizado;
@@ -366,6 +374,12 @@ public class CitaDAO {
                     pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.CANCELADA,relojClinico().instant());
         }
         avisarCambioCita(conn,cita);
+    }
+    private static void auditarCancelacionPaciente(Connection conn,int cita,int paciente,String motivo)throws SQLException {
+        try(var st=conn.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) SELECT id_usuario,'CITA_CANCELADA_PACIENTE',?,FALSE FROM paciente WHERE id_paciente=?")) {
+            st.setString(1,"Cita #"+cita+"; motivo: "+motivo);st.setInt(2,paciente);
+            if(st.executeUpdate()!=1)throw new SQLException("No se pudo registrar el motivo de cancelación.");
+        }
     }
     protected boolean correosActivos(){return Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false"));}
     protected java.time.Clock relojClinico() {

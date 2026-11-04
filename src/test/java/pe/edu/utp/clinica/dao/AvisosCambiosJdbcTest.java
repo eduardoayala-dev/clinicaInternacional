@@ -20,16 +20,16 @@ class AvisosCambiosJdbcTest extends CorreoCitaContrato {
         throw new AssertionError("La cola de avisos no terminó de procesarse.");
     }
     @Test void cancelacionPropiaEncolaUnSoloAvisoConEstadoReal()throws Exception {
-        int id=cita();assertTrue(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA"));
-        assertFalse(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA"));
+        int id=cita();assertTrue(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal"));
+        assertFalse(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal"));
         var lista=enviar();assertEquals(1,lista.size());assertTrue(lista.get(0).asunto().contains("cancelada"));
         assertEquals("paciente@example.test",lista.get(0).destinatario());assertTrue(lista.get(0).html().contains("Sede Ñúñez"));
     }
     @Test void otroPacienteNoCancelaNiGeneraAvisos()throws Exception {
-        int id=cita();assertFalse(paciente().actualizarEstadoCitaPaciente(id,2,"CANCELADA"));assertTrue(enviar().isEmpty());
+        int id=cita();assertFalse(paciente().actualizarEstadoCitaPaciente(id,2,"CANCELADA","Imprevisto personal"));assertTrue(enviar().isEmpty());
     }
     @Test void unaFallaDeLaColaRevierteLaCancelacion()throws Exception {
-        int id=cita();sql("DROP TABLE correo_cambio_cita");assertFalse(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA"));
+        int id=cita();sql("DROP TABLE correo_cambio_cita");assertFalse(paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal"));
         assertEquals(1,count("SELECT COUNT(*) FROM cita WHERE estado='CONFIRMADA'"));
     }
     @Test void unaFallaDeLaColaRevierteLaReprogramacion()throws Exception {
@@ -43,14 +43,14 @@ class AvisosCambiosJdbcTest extends CorreoCitaContrato {
     }
     @Test void cancelarLaNuevaCitaOmiteElAvisoDeReprogramacionPendiente()throws Exception {
         int id=cita();dao.reprogramar(id,1,1,"2026-10-28","09:20",null,"MEDIA");
-        int nueva=count("SELECT MAX(id_cita) FROM cita");assertTrue(paciente().actualizarEstadoCitaPaciente(nueva,1,"CANCELADA"));
+        int nueva=count("SELECT MAX(id_cita) FROM cita");assertTrue(paciente().actualizarEstadoCitaPaciente(nueva,1,"CANCELADA","Imprevisto personal"));
         var lista=enviar();assertEquals(1,lista.size());assertTrue(lista.get(0).asunto().contains("cancelada"));
     }
     @Test void cuentaInactivaNoRecibeAvisosDeCancelacion()throws Exception {
-        int id=cita();paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA");sql("UPDATE usuario SET activo=FALSE WHERE id_usuario=1");assertTrue(enviar().isEmpty());
+        int id=cita();paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal");sql("UPDATE usuario SET activo=FALSE WHERE id_usuario=1");assertTrue(enviar().isEmpty());
     }
     @Test void usaLaSedeDeLaReservaAunqueElMedicoCambieDeSede()throws Exception {
-        int id=cita();paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA");
+        int id=cita();paciente().actualizarEstadoCitaPaciente(id,1,"CANCELADA","Imprevisto personal");
         sql("UPDATE sede SET nombre='Otra sede' WHERE id_sede=2");sql("UPDATE medico SET id_sede=2 WHERE id_medico=1");
         var lista=enviar();assertEquals(1,lista.size());assertTrue(lista.get(0).texto().contains("Sede Ñúñez"));assertFalse(lista.get(0).texto().contains("Otra sede"));
     }
@@ -59,9 +59,9 @@ class AvisosCambiosJdbcTest extends CorreoCitaContrato {
         sql("CREATE TABLE personal_administrativo(id_personal INT PRIMARY KEY,id_usuario INT,id_sede INT)");
         sql("CREATE TABLE admision_cita(id_cita INT PRIMARY KEY)");
         sql("INSERT INTO personal_administrativo VALUES(1,40,1)");
-        sql("CREATE TABLE auditoria_seguridad(id_usuario INT,evento VARCHAR(50),descripcion VARCHAR(255),sospechoso BOOLEAN)");
+        sql("CREATE TABLE IF NOT EXISTS auditoria_seguridad(id_usuario INT,evento VARCHAR(50),descripcion VARCHAR(255),sospechoso BOOLEAN)");
         var admision=new AdmisionCitaDAO(this::abrir,clock,10){@Override protected boolean correosActivos(){return true;}};
-        admision.cancelar(40,id);assertEquals(1,enviar().size());admision.cancelar(40,id);assertTrue(enviar().isEmpty());
+        admision.cancelar(40,id,"Imprevisto personal");assertEquals(1,enviar().size());admision.cancelar(40,id,"Imprevisto personal");assertTrue(enviar().isEmpty());
     }
 }
 

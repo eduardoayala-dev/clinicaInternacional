@@ -622,7 +622,7 @@ public class AdminDashboardServlet extends HttpServlet {
     private void cancelarCita(HttpServletRequest request,HttpServletResponse response,HttpSession session,Usuario usuario) throws IOException {
             try {
                 int idCita=Integer.parseInt(request.getParameter(ID_CITA));
-                admisionDAO.cancelar(usuario.getIdUsuario(),idCita);
+                admisionDAO.cancelar(usuario.getIdUsuario(),idCita,request.getParameter("motivo"));
                 ofertarCancelacion(request,idCita);
                 session.setAttribute(FLASH_MESSAGE,"Cita cancelada correctamente.");
             } catch(NumberFormatException e){session.setAttribute(FLASH_ERROR,"Selecciona una cita válida.");}

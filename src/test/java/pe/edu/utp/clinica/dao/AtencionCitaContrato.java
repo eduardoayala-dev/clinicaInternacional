@@ -137,7 +137,7 @@ abstract class AtencionCitaContrato extends CitaAutorizacionTest {
     }
     @Test void citaEnConsultaNoPuedeCancelarsePorLasRutasAnteriores() {
         sala();atencion.iniciar(1,7);
-        assertFalse(dao.actualizarEstadoCita(7,"CANCELADA"));assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA"));
+        assertFalse(dao.actualizarEstadoCita(7,"CANCELADA"));assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA","Imprevisto personal"));
         assertFalse(dao.actualizarAtencionMedica(7,1,"NO_ASISTIO",null,null,null));
     }
     @Test void inasistenciaExigeHoraToleranciaAusenciaYResponsable()throws Exception {

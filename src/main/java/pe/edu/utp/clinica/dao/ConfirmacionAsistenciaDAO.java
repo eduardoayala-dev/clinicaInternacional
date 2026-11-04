@@ -176,7 +176,7 @@ public final class ConfirmacionAsistenciaDAO {
                 s.setInt(1,idCita);try(var r=s.executeQuery()){r.next();intentos=r.getInt(1);}
             }
             if(intentos<parametros.intentosConfirmacion())throw new AgendaException(409,"CONTACTOS_INSUFICIENTES","Registra al menos "+parametros.intentosConfirmacion()+" contactos realizados antes de cancelar por falta de confirmación.");
-            new AdmisionCitaDAO(connections,clock).cancelar(conn,usuario,idCita);
+            new AdmisionCitaDAO(connections,clock).cancelar(conn,usuario,idCita,"Falta de confirmación tras vencer el plazo y completar los contactos requeridos");
             try(var s=conn.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) VALUES(?,'CITA_CANCELADA_SIN_CONFIRMAR',?,FALSE)")){
                 s.setInt(1,usuario);s.setString(2,"Cita #"+idCita+"; contactos "+intentos+"; mínimo "+parametros.intentosConfirmacion()+"; política versión "+parametros.version());s.executeUpdate();
             }
