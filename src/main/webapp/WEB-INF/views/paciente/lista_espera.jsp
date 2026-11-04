@@ -37,12 +37,10 @@
     <title>Lista de Espera - Portal del Paciente | Clínica Internacional</title>
 
     <!-- Google Fonts: Inter & Playfair Display -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
 
     <!-- Estilos Base y Específicos -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">

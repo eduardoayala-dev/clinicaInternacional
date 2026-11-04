@@ -45,15 +45,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usuarios y roles - Clínica Internacional</title>
     <!-- Tipografía Institucional: Playfair Display + Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
 
     <!-- CSS del Layout Institucional y Estilos de Usuarios -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-usuarios.css">
 
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body class="sysadmin-portal">
 

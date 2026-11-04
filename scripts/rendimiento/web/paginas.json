@@ -1,0 +1,14 @@
+[
+  {"id":"login-paciente","rol":"publico","ruta":"/login/paciente"},
+  {"id":"login-personal","rol":"publico","ruta":"/login/personal"},
+  {"id":"admision-inicio","rol":"admision","ruta":"/admin/dashboard"},
+  {"id":"admision-confirmaciones","rol":"admision","ruta":"/admin/seguimiento-confirmaciones"},
+  {"id":"admision-indicadores","rol":"admision","ruta":"/admin/dashboard-operativo"},
+  {"id":"administrador-inicio","rol":"administrador","ruta":"/sysadmin/dashboard"},
+  {"id":"administrador-usuarios","rol":"administrador","ruta":"/sysadmin/usuarios"},
+  {"id":"paciente-inicio","rol":"paciente","ruta":"/paciente/dashboard"},
+  {"id":"paciente-citas","rol":"paciente","ruta":"/paciente/historial"},
+  {"id":"paciente-reserva","rol":"paciente","ruta":"/paciente/citas"},
+  {"id":"medico-inicio","rol":"medico","ruta":"/medico/inicio"},
+  {"id":"medico-agenda","rol":"medico","ruta":"/medico/agenda"}
+]

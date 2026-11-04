@@ -1,7 +1,7 @@
 <%@ page pageEncoding="UTF-8" %>
     <aside class="marca-panel" aria-label="Clínica Internacional">
         <div class="marca-cabecera">
-            <div class="marca-icono"><img src="${pageContext.request.contextPath}/assets/images/seguridad/logo.svg" alt=""></div>
+            <div class="marca-icono"><img width="38" height="38" src="${pageContext.request.contextPath}/assets/images/seguridad/logo.svg" alt=""></div>
             <div><p class="marca-titulo">${portalPersonal ? 'CLÍNICA INTERNACIONAL' : 'Clínica Internacional'}</p><p class="marca-subtitulo">${portalPersonal ? 'SISTEMA INSTITUCIONAL' : 'Portal del paciente'}</p></div>
         </div>
         <div class="marca-mensaje">

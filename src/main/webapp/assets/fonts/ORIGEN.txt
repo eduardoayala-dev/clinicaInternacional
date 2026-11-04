@@ -1,0 +1,5 @@
+Familias Inter DM Serif Display y Playfair Display
+Origen Google Fonts y fonts.gstatic.com
+Licencias SIL Open Font License incluidas por familia.
+Los nombres de los archivos WOFF2 se obtienen de los primeros 12 caracteres del SHA256 de su URL de origen.
+La hoja fuentes-locales.css conserva los rangos Unicode y pesos suministrados por Google Fonts con font-display swap.

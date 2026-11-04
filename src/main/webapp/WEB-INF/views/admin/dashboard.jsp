@@ -68,11 +68,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero de Control Operativo Diario — Clínica Internacional</title>
 
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
 
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
@@ -210,7 +208,7 @@
 <select id="filtroSede" class="tablero-select" disabled aria-label="Sede asignada"><option value=""><%= Html.texto(request.getAttribute("nombreSedeActual")) %></option></select>
 
 
-                        <select id="filtroEstado" class="tablero-select" onchange="filtrarCitas()">
+                        <select id="filtroEstado" class="tablero-select" aria-label="Filtrar citas por estado" onchange="filtrarCitas()">
                             <option value="">Todos los estados</option>
                             <option value="En sala">En sala</option>
                             <option value="Llegó tarde">Llegó tarde</option>
@@ -240,7 +238,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyCitas">
-                            <% if (listaCitas != null && !listaCitas.isEmpty()) {
+                            <% int indiceCitaInicial = 0;
+                               if (listaCitas != null && !listaCitas.isEmpty()) {
                                 for (Map<String, Object> c : listaCitas) {
                                     String hora = (String) c.get("hora");
                                     String pacienteNom = (String) c.get("pacienteNombre");
@@ -259,7 +258,7 @@
                                     else if ("Confirmada - Web".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado)) pillClass = "pill-confirmada";
                                     else if ("Sin confirmar".equalsIgnoreCase(estado) || "Cancelada".equalsIgnoreCase(estado)) pillClass = "pill-sinconfirmar";
                             %>
-                            <tr class="cita-fila fila-interactiva"
+                            <tr class="cita-fila fila-interactiva" style="<%= indiceCitaInicial++ >= 4 ? "display:none" : "" %>"
                                 data-paciente="<%= Html.texto(pacienteNom != null ? pacienteNom.toLowerCase() : "") %>"
                                 data-dni="<%= Html.texto(dni != null ? dni : "") %>"
                                 data-medico="<%= Html.texto(medicoNom != null ? medicoNom.toLowerCase() : "") %>"

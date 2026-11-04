@@ -1,6 +1,6 @@
 # Optimización de admisión
 
-Base anterior: `baseline/admision-antes-optimizacion-20261104`, commit `462dee2bbbaefc2b3adfec1a6af9317541965f25`.
+Base anterior: commit `462dee2bbbaefc2b3adfec1a6af9317541965f25`. Se conserva por SHA en el historial; los tags auxiliares se retiraron para usar únicamente versiones publicadas.
 Rama: `perf/consultas-admision`.
 
 ## Hallazgo

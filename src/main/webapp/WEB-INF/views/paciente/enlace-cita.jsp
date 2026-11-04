@@ -20,7 +20,7 @@
     <title><%= titulo %> · Clínica Internacional</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/enlace-cita.css">
-    <script src="https://unpkg.com/lucide@latest" defer></script>
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js" defer></script>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-responsive.css?v=20261104-1">
 </head><body>
