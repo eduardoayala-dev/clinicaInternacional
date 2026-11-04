@@ -1,0 +1,280 @@
+{
+  "info": {
+    "name": "Clínica - Rendimiento de búsqueda de disponibilidad del paciente",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo laboratorio local 8083. Cada iteración: abre login, autentica un paciente sintético con DNI (BCrypt real), abre su inicio, consulta la disponibilidad semanal de una especialidad (50 médicos x 7 días) y cierra sesión. Requiere target/rendimiento/pacientes.csv (scripts/rendimiento/preparar_paciente.py). No reserva ni modifica citas, no llama DNI ni Gemini. Comparar la petición 04 entre la versión antes y después (cambiar_version.py)."
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "function rechazarDestino(mensaje) {",
+          " pm.execution.skipRequest();",
+          " throw new Error(mensaje);",
+          "}",
+          "const base = pm.variables.get('baseUrl');",
+          "if (!['http://127.0.0.1:8083', 'http://localhost:8083'].includes(base)) rechazarDestino('Esta colección está limitada al laboratorio local 8083.');",
+          "for (const clave of ['dni','clave','idEspecialidad','desde']) {",
+          " if (!pm.variables.get(clave)) rechazarDestino('Falta el archivo de datos sintéticos: '+clave);",
+          "}",
+          "const ruta = pm.variables.replaceIn(pm.request.url.toString());",
+          "if (!ruta.startsWith(base+'/')) rechazarDestino('Destino fuera del laboratorio.');"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://127.0.0.1:8083"
+    },
+    {
+      "key": "dni",
+      "value": ""
+    },
+    {
+      "key": "clave",
+      "value": ""
+    },
+    {
+      "key": "idEspecialidad",
+      "value": ""
+    },
+    {
+      "key": "desde",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 Abrir login del paciente",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          },
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{sesionCarga}}"
+          }
+        ],
+        "url": "{{baseUrl}}/login/paciente"
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.variables.set('sesionCarga', '');",
+              "pm.variables.set('csrfCarga', '');"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Login disponible', () => pm.response.to.have.status(200));",
+              "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+              "const sesion = cookie.match(/JSESSIONID=([^;,\\s]+)/);",
+              "pm.test('El servidor crea una sesión propia', () => pm.expect(sesion).not.to.equal(null));",
+              "if (!sesion) throw new Error('No se recibió JSESSIONID');",
+              "pm.variables.set('sesionCarga', sesion[1]);",
+              "const token = pm.response.text().match(/<meta\\s+name=\"csrf-token\"\\s+content=\"([^\"]+)\"/);",
+              "pm.test('La página contiene CSRF', () => pm.expect(token).not.to.equal(null));",
+              "if (!token) throw new Error('No se recibió CSRF');",
+              "pm.variables.set('csrfCarga', token[1]);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookieJar": true,
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "02 Autenticar paciente con DNI",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          },
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{sesionCarga}}"
+          }
+        ],
+        "url": "{{baseUrl}}/login/paciente",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "identificador",
+              "value": "{{dni}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{clave}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfCarga}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Autenticación real, sin seguir redirecciones', () => {",
+              " pm.response.to.have.status(302);",
+              " pm.expect(pm.response.headers.get('Location')).to.include('/paciente/dashboard');",
+              "});",
+              "const cookie = pm.response.headers.get('Set-Cookie') || '';",
+              "const sesion = cookie.match(/JSESSIONID=([^;,\\s]+)/);",
+              "pm.test('El servidor crea una sesión propia', () => pm.expect(sesion).not.to.equal(null));",
+              "if (!sesion) throw new Error('No se recibió JSESSIONID');",
+              "pm.variables.set('sesionCarga', sesion[1]);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookieJar": true,
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "03 Abrir inicio del paciente y renovar CSRF",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          },
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{sesionCarga}}"
+          }
+        ],
+        "url": "{{baseUrl}}/paciente/dashboard"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Inicio autenticado', () => pm.response.to.have.status(200));",
+              "const token = pm.response.text().match(/<meta\\s+name=\"csrf-token\"\\s+content=\"([^\"]+)\"/);",
+              "pm.test('La página contiene CSRF', () => pm.expect(token).not.to.equal(null));",
+              "if (!token) throw new Error('No se recibió CSRF');",
+              "pm.variables.set('csrfCarga', token[1]);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookieJar": true,
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "04 Consultar disponibilidad semanal",
+      "request": {
+        "method": "GET",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{sesionCarga}}"
+          }
+        ],
+        "url": "{{baseUrl}}/api/horarios?vista=semana&idEspecialidad={{idEspecialidad}}&desde={{desde}}"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Responde 200', () => pm.response.to.have.status(200));",
+              "const cuerpo = pm.response.json();",
+              "pm.test('Devuelve la semana consultada', () => { pm.expect(cuerpo.code).to.equal('CUPOS_SEMANA_OBTENIDOS'); pm.expect(cuerpo.data).to.have.lengthOf(7); });",
+              "pm.test('La semana tiene cupos (datos sintéticos cargados)', () => pm.expect(cuerpo.data.reduce((s, d) => s + d.manana + d.tarde, 0)).to.be.above(0));",
+              "pm.test('Meta RNF: búsqueda menor o igual a 2 s', () => pm.expect(pm.response.responseTime).to.be.at.most(2000));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookieJar": true,
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "05 Cerrar sesión y pausa de usuario",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          },
+          {
+            "key": "Cookie",
+            "value": "JSESSIONID={{sesionCarga}}"
+          }
+        ],
+        "url": "{{baseUrl}}/logout",
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfCarga}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test('Sesión cerrada', () => { pm.response.to.have.status(302); pm.expect(pm.response.headers.get('Location')).to.include('/login'); });",
+              "pm.variables.unset('sesionCarga'); pm.variables.unset('csrfCarga');",
+              "// Tiempo de pensar Z = 4,5 s (ley de Little): con 50 usuarios virtuales da ≈ 10 iteraciones/s, la meta de RNF-13.",
+              "setTimeout(() => {}, 4500);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "disableCookieJar": true,
+        "followRedirects": false
+      }
+    }
+  ]
+}
