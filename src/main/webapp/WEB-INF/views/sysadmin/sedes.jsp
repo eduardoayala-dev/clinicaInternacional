@@ -582,7 +582,7 @@
             .btn-pill-primary { margin-left: 0; }
         }
     </style>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body class="sysadmin-portal">
 
     <!-- ======================================================== -->

@@ -76,7 +76,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body class="portal-admision">
 
 

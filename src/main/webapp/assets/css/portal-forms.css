@@ -1,0 +1,44 @@
+body .flash-alert,body .flash-notification,body .flash-success,body .flash-error,body .hor-mensaje,body .hor-error,body .alert-success,body .alert-danger,body .alert-error,body .med-message,body .med-error,body .citas-flash,body .perfil-alert-success,body .perfil-alert-error {
+    background:#fff!important;color:#334155!important;border:1px solid #cbd5e1!important;border-left:3px solid #64748b!important;border-radius:8px;padding:16px 20px;line-height:1.6;box-shadow:none;margin:0 0 24px;
+}
+body .flash-alert svg,body .flash-notification svg{color:inherit;flex-shrink:0}
+body .form-field,body .form-group,body .med-form-group{min-width:0}
+body .form-field label,body .form-group label,body .med-form-label{line-height:1.5}
+body .form-field input,body .form-field select,body .form-group input,body .form-group select,body .med-form-input{min-height:44px;max-width:100%;box-sizing:border-box}
+body .form-field input:disabled,body .form-field select:disabled{opacity:1;background:#f8fafc;color:#64748b}
+body .form-help{font-size:13px;color:#64748b;line-height:1.6;margin:8px 0 0}
+body .form-help[hidden]{display:none}
+body .form-actions{display:flex;align-items:center;justify-content:flex-end;gap:12px;flex-wrap:wrap;padding-top:24px;margin-top:24px;border-top:1px solid #e2e8f0}
+body .schedule-proposal{max-width:1120px;padding:28px}
+body .schedule-proposal .hor-form-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px}
+body .schedule-proposal .hor-form-grid .med-form-group:last-child{max-width:260px}
+body .schedule-proposal .hor-dias{gap:12px 24px;padding:16px 20px;margin:24px 0}
+body .schedule-proposal .hor-dias label{font-size:14px}
+body .schedule-proposal .hor-dias input{accent-color:#334155;width:16px;height:16px}
+body .schedule-proposal h2{margin-bottom:12px}
+body.sysadmin-portal .modal-window{width:min(680px,calc(100vw - 32px));max-width:680px;max-height:calc(100dvh - 48px);overflow-y:auto;padding:28px}
+body.sysadmin-portal .form-grid-modal{grid-template-columns:repeat(2,minmax(0,1fr));gap:24px 20px}
+body.sysadmin-portal .form-grid-modal .full{grid-column:1/-1}
+body.sysadmin-portal .modal-header-row{margin-bottom:24px;padding-bottom:20px}
+body.sysadmin-portal .modal-header-title{font-family:'Playfair Display',Georgia,serif;font-size:22px;line-height:1.3}
+body.sysadmin-portal .modal-footer-row{padding-top:20px;margin-top:24px;gap:12px}
+body .priority-settings{max-width:1120px}
+body .priority-settings .page-header{display:flex;flex-wrap:wrap;align-items:flex-start;gap:12px 20px}
+body .priority-settings .page-header .page-title{width:100%;order:-1;font-size:28px}
+body .priority-settings .page-header .page-subtitle{width:100%;line-height:1.6}
+body .priority-settings .catalogo-acceso{float:none}
+body .priority-settings .panel{padding:28px}
+body .priority-settings .panel-title{line-height:1.5;gap:16px}
+body .priority-settings .step-item{background:#fff;padding:16px 0;border:0;border-bottom:1px solid #e2e8f0;border-radius:0;align-items:flex-start}
+body .priority-settings .step-item:last-child{border-bottom:0}
+body .priority-settings .step-list{gap:0}
+body .priority-settings .step-desc{line-height:1.6}
+body .priority-settings .form-row{gap:24px;margin-top:20px}
+body .priority-settings .form-group{display:flex;flex-direction:column;gap:8px}
+body .priority-settings .form-group label{margin:0}
+body .priority-settings .form-group>span{line-height:1.6;margin-top:0!important}
+body .priority-settings .actions-row{border-top:1px solid #e2e8f0;padding-top:24px;margin-top:28px}
+body .priority-settings .btn-reset,body .priority-settings .btn-save{border-radius:8px;box-shadow:none;min-height:44px}
+@media(max-width:640px){body .schedule-proposal{padding:20px}body .schedule-proposal .hor-form-grid,body.sysadmin-portal .form-grid-modal,body .priority-settings .form-row{grid-template-columns:1fr}body .priority-settings .panel{padding:20px}body .form-actions button{width:100%}}
+
+body .med-pill-green,body .med-badge-atendido,body .med-profile-badge{background:#eef2f6;color:#334155}

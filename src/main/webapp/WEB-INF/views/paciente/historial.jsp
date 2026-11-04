@@ -44,7 +44,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/mis-citas.css">
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->

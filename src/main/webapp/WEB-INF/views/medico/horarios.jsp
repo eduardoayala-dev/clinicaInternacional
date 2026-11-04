@@ -11,13 +11,13 @@
 <%@ include file="/WEB-INF/jspf/medico-head.jspf" %>
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/horarios-propuestas.css">
 <script defer src="${pageContext.request.contextPath}/assets/js/horarios-propuestas.js"></script>
-</head><body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head><body>
 <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>
 <div class="med-main-wrapper"><%@ include file="/WEB-INF/jspf/medico-topbar.jspf" %>
 <main class="med-content-scroll" id="medContenido" tabindex="-1">
     <div class="med-header-row"><div><h1 class="med-title">Mis horarios</h1><p class="med-subtitle">Propón tus turnos. Admisión revisa y publica la disponibilidad para los pacientes.</p></div></div>
     <%@ include file="/WEB-INF/jspf/horarios-mensajes.jspf" %>
-    <section class="med-atencion-card" aria-labelledby="proponerTitulo">
+    <section class="med-atencion-card schedule-proposal" aria-labelledby="proponerTitulo">
         <h2 class="med-section-heading" id="proponerTitulo">Nueva propuesta semanal</h2>
         <p>Sede asignada: <strong><%= Html.texto(request.getAttribute("sedeMedico")) %></strong>. Las horas corresponden a Perú.</p>
         <form method="POST" action="${pageContext.request.contextPath}/medico/horarios" data-pending-label="Enviando…">
@@ -34,7 +34,7 @@
                 <div class="med-form-group"><label class="med-form-label" for="minutos">Minutos por cita</label><input class="med-form-input" type="number" id="minutos" name="minutos" min="5" max="240" value="30" required></div>
             </div>
             <p class="med-subtitle">Vigencia máxima: 90 días. El turno debe permitir citas completas. Las renovaciones se envían como nuevas propuestas.</p>
-            <button type="submit" class="med-btn-primary"><span class="med-button-label">Enviar a admisión</span></button>
+            <div class="form-actions"><button type="submit" class="med-btn-primary"><span class="med-button-label">Enviar a admisión</span></button></div>
         </form>
     </section>
     <h2 class="med-section-heading">Propuestas recientes</h2>

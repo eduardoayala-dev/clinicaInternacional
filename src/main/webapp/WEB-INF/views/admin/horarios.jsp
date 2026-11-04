@@ -17,7 +17,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/horarios-propuestas.css">
 <script defer src="${pageContext.request.contextPath}/assets/js/horarios-propuestas.js"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head><body class="hor-adm portal-admision">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head><body class="hor-adm portal-admision">
 <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 
 <div class="adm-main-wrapper"><header class="adm-topbar"><div class="adm-breadcrumb">Admisión / Propuestas de horarios</div></header>

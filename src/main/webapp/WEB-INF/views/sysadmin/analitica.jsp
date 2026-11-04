@@ -8,7 +8,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/panel-sistema.css?v=20261104-admin2">
 <script defer src="${pageContext.request.contextPath}/assets/js/panel-sistema.js"></script>
-</head><body class="sysadmin-portal"><%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head><body class="sysadmin-portal"><%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 <main class="adm-main-wrapper"><header class="adm-topbar"><span class="adm-breadcrumb">Administrador / Indicadores y analítica</span></header><div class="adm-content-scroll">
 <h1 class="adm-page-title">Indicadores y analítica global</h1><p class="adm-page-subtitle">Actividad asistencial registrada, agrupada por sede y período.</p>
 <%@ include file="/WEB-INF/jspf/panel-sistema-filtros.jspf" %>

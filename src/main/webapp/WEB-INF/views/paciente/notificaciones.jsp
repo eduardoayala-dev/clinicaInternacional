@@ -39,7 +39,7 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/notificaciones.css?v=20261031-2">
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body style="display: flex; height: 100vh; overflow: hidden; background: #f8fafc; font-family: 'Inter', sans-serif;">
 
     <!-- SIDEBAR INSTITUCIONAL -->

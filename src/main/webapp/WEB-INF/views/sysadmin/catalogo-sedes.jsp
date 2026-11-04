@@ -7,7 +7,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin2">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogo-sedes.css?v=20261104-admin2">
-</head><body class="sysadmin-portal"><%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head><body class="sysadmin-portal"><%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 <main class="adm-main-wrapper"><header class="adm-topbar"><span class="adm-breadcrumb">Administrador / Sedes</span></header><div class="adm-content-scroll">
 <div class="sedes-heading"><div><h1 class="adm-page-title">Sedes</h1><p class="adm-page-subtitle">Gestiona los datos de contacto y el estado de las sedes clínicas.</p></div><button type="button" class="adm-btn-primary" data-abrir-dialog="nuevaSede">Nueva sede</button></div>
 <% for(String atributo:new String[]{"mensajeSedes","errorSedes"}){Object mensaje=session.getAttribute(atributo);if(mensaje!=null){ %><p role="status" class="sedes-mensaje <%= atributo.equals("errorSedes")?"sedes-error":"" %>"><%= Html.texto(mensaje) %></p><% session.removeAttribute(atributo);}} %>

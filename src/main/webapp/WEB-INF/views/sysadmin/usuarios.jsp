@@ -54,7 +54,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-usuarios.css">
 
     <script src="https://unpkg.com/lucide@latest"></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body class="sysadmin-portal">
 
     <!-- ==========================================================================
@@ -272,10 +272,10 @@
          MODAL CREAR / EDITAR USUARIO
          ========================================================================== -->
     <div class="modal-backdrop" id="modalUsuarioBackdrop" onclick="cerrarModalFondo(event)">
-        <div class="modal-window">
+        <div class="modal-window" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
             <div class="modal-header-row">
                 <h3 class="modal-header-title" id="modalTitulo">Nuevo usuario</h3>
-                <button type="button" class="btn-modal-close" onclick="cerrarModal()">&times;</button>
+                <button type="button" class="btn-modal-close" aria-label="Cerrar formulario" onclick="cerrarModal()">&times;</button>
             </div>
 
             <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST" id="formUsuario">
@@ -310,13 +310,14 @@
 
                     <div class="form-field">
                         <label for="formEstado">Estado de la cuenta</label>
-                        <input type="hidden" name="estado" id="formEstadoFijo" value="INACTIVO" disabled><p id="estadoInvitacionAviso" hidden>La persona debe crear su contraseña desde la invitación. No se puede activar esta cuenta desde el panel.</p><select id="formEstado" name="estado" required>
+                        <input type="hidden" name="estado" id="formEstadoFijo" value="INACTIVO" disabled><select id="formEstado" name="estado" required>
                             <option value="ACTIVO">Activo</option>
                             <option value="INACTIVO">Inactivo</option>
                             <option value="SUSPENDIDO">Suspendido</option>
                         </select>
                     </div>
 
+                    <p id="estadoInvitacionAviso" class="form-help full" hidden>La cuenta se activará cuando la persona cree su contraseña desde el enlace enviado a su correo.</p>
                     <div class="form-field full" id="groupSede">
                         <label for="formSede">Sede asignada</label>
                         <select id="formSede" name="id_sede" required>

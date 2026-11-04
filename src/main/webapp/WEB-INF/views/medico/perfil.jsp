@@ -34,7 +34,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css?v=20261028">
     <script defer src="${pageContext.request.contextPath}/assets/js/medico-portal.js?v=20261028"></script>
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body>
 
     <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>

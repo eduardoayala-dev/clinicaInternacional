@@ -49,7 +49,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261102-3">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261102-2">
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->

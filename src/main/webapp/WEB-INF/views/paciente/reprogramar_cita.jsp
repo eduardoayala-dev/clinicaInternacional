@@ -86,7 +86,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/mis-citas.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/reprogramar-cita.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->

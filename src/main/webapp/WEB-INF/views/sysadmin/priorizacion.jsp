@@ -103,16 +103,16 @@
 
         @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .grid-2col, .form-row { grid-template-columns: 1fr; } }
     .catalogo-acceso{display:inline-flex;float:right;padding:10px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;color:#1668b8;text-decoration:none;font-size:13px;font-weight:600}.catalogo-acceso:hover{background:#eff6ff}.catalogo-acceso:focus-visible{outline:3px solid #1668b8;outline-offset:3px}@media(max-width:700px){.catalogo-acceso{float:none;margin-bottom:16px}}</style>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-1"></head>
 <body class="sysadmin-portal">
 
     <!-- PANEL DE LA IZQUIERDA ESTÁNDAR -->
     <%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 
-    <main class="main-content sysadmin-simple">
+    <main class="main-content sysadmin-simple priority-settings">
         <div class="breadcrumb-trail">Administrador / <span>Configuración de priorización</span></div>
         <div class="page-header"><a class="catalogo-acceso" href="${pageContext.request.contextPath}/sysadmin/motivos">Gestionar motivos de consulta →</a>
-            <h1 class="page-title">Configuración de Priorización y Reasignación</h1>
+            <h1 class="page-title">Priorización y reasignación</h1>
             <a href="${pageContext.request.contextPath}/sysadmin/ia/inasistencia">Abrir simulador de IA de inasistencias (experimental)</a>
             <p class="page-subtitle">Parámetros que rigen la cola algorítmica y los tiempos de oferta automática para cupos recuperados.</p>
         </div>
@@ -133,8 +133,8 @@
                 <!-- SECCIÓN 1 -->
                 <div class="panel">
                     <div class="panel-title">
-                        <span>Criterios Principales de Asignación Algorítmica</span>
-                        <span class="panel-tag">REGLAS DEL MOTOR ACTUAL</span>
+                        <span>Criterios de asignación</span>
+
                     </div>
                     <div class="step-list">
                         <div class="step-item">
@@ -143,7 +143,7 @@
                                 <div class="step-name">Especialidad Requerida</div>
                                 <div class="step-desc">Coincidencia exacta con la especialidad médica del cupo liberado. Requisito obligatorio para el emparejamiento.</div>
                             </div>
-                            <span class="step-tag">OBLIGATORIO</span>
+
                         </div>
 
                         <div class="step-item">
@@ -152,16 +152,16 @@
                                 <div class="step-name">Sede Clínica</div>
                                 <div class="step-desc">Coincidencia con la sede clínica declarada por el paciente o preferencia de campus.</div>
                             </div>
-                            <span class="step-tag">TERRITORIAL</span>
+
                         </div>
 
                         <div class="step-item">
                             <div class="step-badge">3</div>
                             <div class="step-content">
                                 <div class="step-name">Prioridad Clínica</div>
-                                <div class="step-desc">Nivel de urgencia registrado por triaje o médico tratante (Alta > Media > Baja).</div>
+                                <div class="step-desc">Prioridad registrada por el médico tratante (Alta > Media > Baja).</div>
                             </div>
-                            <span class="step-tag">TRIAJE</span>
+
                         </div>
 
                         <div class="step-item">
@@ -170,7 +170,7 @@
                                 <div class="step-name">Tiempo de Espera en Lista</div>
                                 <div class="step-desc">Antigüedad cronológica (FIFO) de inscripción en lista de espera.</div>
                             </div>
-                            <span class="step-tag">COLA FIFO</span>
+
                         </div>
 
                         <div class="step-item">
@@ -179,7 +179,7 @@
                                 <div class="step-name">Preferencias del paciente</div>
                                 <div class="step-desc">Se respeta el médico preferido, el turno y la anticipación indicada por el paciente.</div>
                             </div>
-                            <span class="step-tag">PREFERENCIAS</span>
+
                         </div>
                     </div>
                 </div>
@@ -189,8 +189,8 @@
                 <!-- SECCIÓN 3 -->
                 <div class="panel">
                     <div class="panel-title">
-                        <span>Parámetros Operativos de Oferta Temporal</span>
-                        <span class="panel-tag">TIEMPOS DE RESPUESTA</span>
+                        <span>Plazos de las ofertas</span>
+
                     </div>
                     <div class="form-row">
                         <div class="form-group">
@@ -208,7 +208,7 @@
                 </div>
 
                 <div class="panel">
-                    <div class="panel-title"><span>Confirmación y llegada</span><span class="panel-tag">PARÁMETROS DE ATENCIÓN</span></div>
+                    <div class="panel-title"><span>Confirmación y llegada</span></div>
                     <div class="form-row">
                         <div class="form-group">
                             <label for="confirmacionHoras">Límite para confirmar (horas antes de la cita): *</label>
@@ -223,7 +223,7 @@
                     </div>
                 </div>
                     <div class="panel">
-                        <div class="panel-title"><span>Recordatorios y contactos</span><span class="panel-tag">SEGUIMIENTO DE ASISTENCIA</span></div>
+                        <div class="panel-title"><span>Recordatorios y contactos</span></div>
                         <div class="form-row">
                             <div class="form-group">
                                 <label for="recordatorioHoras">Recordar la cita (horas antes): *</label>
@@ -239,7 +239,7 @@
                     </div>
                 <div class="actions-row">
                     <button type="reset" class="btn-reset">Descartar cambios</button>
-                    <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar Configuración</button>
+                    <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar cambios</button>
                 </div>
             </form>
         </main>
