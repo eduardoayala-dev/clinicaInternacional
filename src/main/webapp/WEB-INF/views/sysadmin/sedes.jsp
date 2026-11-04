@@ -582,60 +582,13 @@
             .btn-pill-primary { margin-left: 0; }
         }
     </style>
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"></head>
+<body class="sysadmin-portal">
 
     <!-- ======================================================== -->
     <!-- PANEL DE LA IZQUIERDA (SIDEBAR INSTITUCIONAL - 260px)   -->
     <!-- ======================================================== -->
-    <aside class="sidebar">
-        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
-                 alt="Logo" class="brand-logo-img"
-                 onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del administrador</span>
-            </div>
-        </a>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item">
-                <i data-lucide="home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item">
-                <i data-lucide="shield"></i>
-                <span>Usuarios y roles</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-item active">
-                <i data-lucide="building"></i>
-                <span>Sedes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-item">
-                <i data-lucide="sliders"></i>
-                <span>Configuración de priorización</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-item">
-                <i data-lucide="trending-up"></i>
-                <span>Indicadores y analítica</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesAdmin %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombreAdmin %></span>
-                <span class="user-role">Administrador</span>
-            </div>
-            <form method="POST" action="${pageContext.request.contextPath}/logout" style="margin:0;display:inline;">
-                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
-<button type="submit" class="btn-logout" title="Cerrar sesión" style="border:0;cursor:pointer;font-family:inherit;">
-                <i data-lucide="log-out"></i>
-            </button>
-</form>
-        </div>
-    </aside>
+    <%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 
     <!-- ======================================================== -->
     <!-- ÁREA PRINCIPAL CON HEADER SUPERIOR DISTINGUIDO          -->

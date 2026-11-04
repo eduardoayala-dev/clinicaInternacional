@@ -1,0 +1,26 @@
+<%@ page pageEncoding="UTF-8" %>
+<%
+pe.edu.utp.clinica.model.Usuario sysNavUsuario=(pe.edu.utp.clinica.model.Usuario)session.getAttribute("usuarioLogueado");
+String sysNavNombre=sysNavUsuario==null?"Administrador":sysNavUsuario.getNombreCompleto();
+String sysNavInicial=sysNavNombre.isBlank()?"A":sysNavNombre.substring(0,1).toUpperCase(java.util.Locale.ROOT);
+String sysNavRuta=String.valueOf(request.getAttribute("jakarta.servlet.forward.request_uri"));
+if("null".equals(sysNavRuta))sysNavRuta=request.getRequestURI();
+String[][] sysNavEnlaces={
+    {"/sysadmin/dashboard","Inicio","inicio.svg"},
+    {"/sysadmin/usuarios","Usuarios y roles","pacientes.svg"},
+    {"/sysadmin/sedes","Sedes","sede.svg"},
+    {"/sysadmin/motivos","Motivos de consulta","atencion.svg"},
+    {"/sysadmin/priorizacion","Configuración de priorización","horarios.svg"},
+    {"/sysadmin/analitica","Indicadores y analítica","agenda-indicador.svg"},
+    {"/cuenta/seguridad","Seguridad de cuenta","guardar.svg"}
+};
+%>
+<aside class="adm-sidebar" aria-label="Navegación del administrador">
+<a class="adm-brand" href="${pageContext.request.contextPath}/sysadmin/dashboard"><div class="adm-brand-logo-wrap"><img class="adm-brand-logo-img" src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt=""></div><div><div class="adm-brand-name">Clínica Internacional</div><div class="adm-brand-sub">Administrador del sistema</div></div></a>
+<nav class="adm-nav" aria-label="Secciones del administrador">
+<% for(String[] enlace:sysNavEnlaces){boolean activo=sysNavRuta.endsWith(enlace[0])||(enlace[0].endsWith("/sedes")&&sysNavRuta.endsWith("/catalogo-sedes"))||(enlace[0].endsWith("/priorizacion")&&sysNavRuta.contains("/ia/inasistencia")); %>
+<a class="adm-nav-item<%= activo?" active":"" %>" href="<%= request.getContextPath()+enlace[0] %>"<%= activo?" aria-current='page'":"" %>><img class="adm-nav-icon" src="<%= request.getContextPath()+"/assets/images/medico/"+enlace[2] %>" alt=""><span><%= enlace[1] %></span></a>
+<% } %>
+</nav>
+<div class="adm-user-footer"><div class="adm-user-info-link"><div class="adm-avatar"><%= pe.edu.utp.clinica.util.Html.texto(sysNavInicial) %></div><div class="adm-user-text"><div class="adm-user-name" title="<%= pe.edu.utp.clinica.util.Html.texto(sysNavNombre) %>"><%= pe.edu.utp.clinica.util.Html.texto(sysNavNombre) %></div><div class="adm-user-role">Administrador</div></div></div><form method="post" action="${pageContext.request.contextPath}/logout"><input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><button class="adm-logout-btn" type="submit" title="Cerrar sesión" aria-label="Cerrar sesión"><img src="${pageContext.request.contextPath}/assets/images/medico/salir.svg" alt=""></button></form></div>
+</aside>

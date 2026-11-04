@@ -18,8 +18,8 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261103-1">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogo-motivos.css?v=20261103-1">
-</head>
-<body>
+<% if(panel.administrador()){ %><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><% } %><% if(!panel.administrador()){ %><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><% } %></head>
+<body class="<%= panel.administrador() ? "sysadmin-portal" : "portal-admision" %>">
 <% if(!panel.administrador()){ %>
 <%@ include file="/WEB-INF/jspf/admin-sidebar-medicos.jspf" %>
 <% }else{ %>

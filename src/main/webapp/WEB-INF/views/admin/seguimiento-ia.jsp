@@ -16,7 +16,7 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/seguimiento-ia.css?v=20261102-4">
 <script src="https://unpkg.com/lucide@latest"></script>
-</head><body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head><body class="portal-admision">
 <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 <div class="adm-main-wrapper"><header class="adm-topbar"><div class="adm-breadcrumb">Admisión / Seguimiento con IA</div></header>
 <main class="adm-content-scroll ia-seguimiento"><div class="ia-seguimiento-inner">

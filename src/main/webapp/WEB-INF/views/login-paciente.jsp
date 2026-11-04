@@ -229,7 +229,7 @@
                             <div class="form-group">
                                 <label class="form-label" for="regPwd">Crear contraseña *</label>
                                 <div class="input-box has-right-icon">
-                                    <input type="password" name="password" id="regPwd" class="form-input" required minlength="8" autocomplete="new-password" aria-describedby="registroPasswordAyuda" placeholder="Crea una contraseña">
+                                    <input type="password" name="password" id="regPwd" class="form-input" required minlength="12" autocomplete="new-password" aria-describedby="registroPasswordAyuda" placeholder="Crea una contraseña">
                                     <button type="button" class="btn-toggle-eye" data-password-toggle="regPwd" aria-pressed="false" title="Mostrar contraseña">
                                         <img src="${pageContext.request.contextPath}/assets/images/seguridad/registro-ojo.svg" alt="">
                                     </button>
@@ -249,7 +249,7 @@
                                 </div>
                             </div>
                         </div>
-                        <p class="registro-ayuda" id="registroPasswordAyuda">Usa al menos 8 caracteres, con mayúscula, minúscula, número y un símbolo (@ # $ % ^ &amp; + = ! _ -). No incluyas tu documento.</p>
+                        <p class="registro-ayuda" id="registroPasswordAyuda">Usa al menos 12 caracteres, con mayúscula, minúscula, número y un símbolo. Máximo 72 bytes UTF-8. No incluyas tu documento.</p>
                     </fieldset>
 
                     <fieldset class="registro-paso">

@@ -22,8 +22,8 @@
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261103-2">
 <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogo-motivos.css?v=20261103-2">
 <script defer src="${pageContext.request.contextPath}/assets/js/importar-motivos.js?v=20261103-1"></script>
-</head>
-<body>
+<% if(sistema){ %><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><% } %><% if(!sistema){ %><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><% } %></head>
+<body class="<%= sistema ? "sysadmin-portal" : "portal-admision" %>">
 <% if(sistema){ %><%@ include file="/WEB-INF/jspf/motivos-sysadmin-sidebar.jspf" %><% }else{ %><%@ include file="/WEB-INF/jspf/admin-sidebar-medicos.jspf" %><% } %>
 <div class="adm-main-wrapper">
 <header class="adm-topbar"><div class="adm-breadcrumb"><%= sistema?"Administración":"Admisión" %> / Motivos / Importar Excel</div></header>

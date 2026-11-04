@@ -13,10 +13,10 @@
         nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
     }
     if (nombrePersonal == null || nombrePersonal.trim().isEmpty()) {
-        nombrePersonal = "Lucía Ramírez";
+        nombrePersonal = "Personal de admisión";
     }
 
-    String inicialesPersonal = "LR";
+    String inicialesPersonal = "A";
     if (nombrePersonal != null && !nombrePersonal.trim().isEmpty()) {
         String cleanNom = nombrePersonal.replaceAll("(?i)\\b(Lic\\.|Ing\\.|Sr\\.|Sra\\.)\\b", "").trim();
         String[] partes = cleanNom.split("\\s+");
@@ -32,16 +32,16 @@
     List<Map<String, String>> ultimasOperaciones = (List<Map<String, String>>) request.getAttribute("ultimasOperaciones");
 
     Integer totalCitas = (Integer) request.getAttribute("totalCitas");
-    if (totalCitas == null) totalCitas = 126;
+    if (totalCitas == null) totalCitas = 0;
 
     Integer cancelaciones = (Integer) request.getAttribute("cancelaciones");
-    if (cancelaciones == null) cancelaciones = 38;
+    if (cancelaciones == null) cancelaciones = 0;
 
     Integer cuposLibres = (Integer) request.getAttribute("cuposLibres");
-    if (cuposLibres == null) cuposLibres = 74;
+    if (cuposLibres == null) cuposLibres = 0;
 
     Integer reasignacionesPendientes = (Integer) request.getAttribute("reasignacionesPendientes");
-    if (reasignacionesPendientes == null) reasignacionesPendientes = 12;
+    if (reasignacionesPendientes == null) reasignacionesPendientes = 0;
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
@@ -53,7 +53,7 @@
         session.removeAttribute("flashError");
     }
 
-    LocalDateTime ahora = LocalDateTime.now();
+    LocalDateTime ahora = LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
     DateTimeFormatter dtfDia = DateTimeFormatter.ofPattern("EEE dd MMM yyyy", new Locale("es", "PE"));
     DateTimeFormatter dtfHora = DateTimeFormatter.ofPattern("HH:mm");
     String fechaHoyFormateada = ahora.format(dtfDia);
@@ -76,8 +76,8 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"></head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head>
+<body class="portal-admision">
 
 
     <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
@@ -116,11 +116,11 @@
                 <div class="tablero-title-block">
                     <h1 class="tablero-page-title">Tablero de control operativo diario</h1>
                     <div class="tablero-page-subtitle" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <span><%= Html.texto(fechaHoyFormateada) %> · Admisión de tu sede</span>
+                        <span><%= Html.texto(fechaHoyFormateada) %> · <%= Html.texto(request.getAttribute("nombreSedeActual")) %></span>
                         <span>•</span>
                         <div class="widget-actualizacion-adm" id="widgetActualizacion">
                             <span id="txtActualizadoHace">Actualizado hace <span id="numMinutos">0</span> min</span>
-                            <button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(this)">
+                            <button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(false)">
                                 <i data-lucide="refresh-cw" id="iconoRefreshBtn" style="width: 13px; height: 13px;"></i> Actualizar
                             </button>
                         </div>
@@ -136,7 +136,7 @@
                         <i data-lucide="download"></i>
                         <span>Exportar CSV</span>
                     </button>
-                    <button type="button" class="tablero-btn-primary" id="btnActualizarAhora" onclick="actualizarEnVivo(this)">
+                    <button type="button" class="tablero-btn-primary" id="btnActualizarAhora" onclick="actualizarEnVivo(false)">
                         <i data-lucide="refresh-cw"></i>
                         <span>Actualizar ahora</span>
                     </button>
@@ -144,7 +144,7 @@
             </div>
 
 
-            <div class="tablero-metrics-grid">
+            <p id="ultimaActualizacionOperativa" role="status">Actualizado: <%= Html.texto(request.getAttribute("actualizadoOperativo")) %></p><div class="tablero-metrics-grid" id="indicadoresInicio">
 
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
@@ -154,7 +154,7 @@
                         </div>
                     </div>
                     <div class="tablero-stat-number"><%= Html.texto(totalCitas) %></div>
-                    <div class="tablero-stat-subtext">En las sedes de la red</div>
+                    <div class="tablero-stat-subtext">En tu sede, para hoy</div>
                 </div>
 
 
@@ -166,13 +166,13 @@
                         </div>
                     </div>
                     <div class="tablero-stat-number"><%= Html.texto(cancelaciones) %></div>
-                    <div class="tablero-stat-subtext">Hoy, en la red</div>
+                    <div class="tablero-stat-subtext">Citas de hoy canceladas en tu sede</div>
                 </div>
 
 
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
-                        <span class="tablero-stat-label">Cupos disponibles en red</span>
+                        <span class="tablero-stat-label">Cupos disponibles en tu sede</span>
                         <div class="tablero-stat-icon-wrap">
                             <i data-lucide="calendar"></i>
                         </div>
@@ -207,18 +207,7 @@
                         </div>
 
 
-                        <select id="filtroSede" class="tablero-select" onchange="filtrarCitas()">
-                            <option value="">Todas las sedes</option>
-                            <% if (sedes != null) {
-                                for (Map<String, Object> s : sedes) { %>
-                                    <option value="<%= Html.texto(s.get("nombre")) %>"><%= Html.texto(s.get("nombre")) %></option>
-                            <%  }
-                               } else { %>
-                                <option value="Sede San Borja">Sede San Borja</option>
-                                <option value="Sede Lima">Sede Lima</option>
-                                <option value="Sede La Molina">Sede La Molina</option>
-                            <% } %>
-                        </select>
+<select id="filtroSede" class="tablero-select" disabled aria-label="Sede asignada"><option value=""><%= Html.texto(request.getAttribute("nombreSedeActual")) %></option></select>
 
 
                         <select id="filtroEstado" class="tablero-select" onchange="filtrarCitas()">
@@ -322,16 +311,17 @@
                             </tr>
                             <%  }
                                } %>
+                            <tr id="sinCitasSala" hidden><td colspan="6">No hay citas que coincidan con los filtros para hoy en tu sede.</td></tr>
                         </tbody>
                     </table>
                 </div>
 
 
                 <div class="tablero-footer-bar">
-                    <span id="tableroPaginationInfo">Mostrando 4 de 18 citas en sala</span>
+                    <span id="tableroPaginationInfo">Mostrando 0 de 0 citas en sala</span>
                     <div class="tablero-pagination-ctrls">
                         <button type="button" class="btn-tablero-page" id="btnPrevPage" onclick="cambiarPagina(-1)">&lt; Anterior</button>
-                        <span id="tableroPageNum" style="font-weight: 500; color: #334155; padding: 0 4px;">Página 1 de 3</span>
+                        <span id="tableroPageNum" style="font-weight: 500; color: #334155; padding: 0 4px;">Página 1 de 1</span>
                         <button type="button" class="btn-tablero-page btn-tablero-page-next" id="btnNextPage" onclick="cambiarPagina(1)">Siguiente &gt;</button>
                     </div>
                 </div>
@@ -342,13 +332,14 @@
 
                 <div class="tablero-feed-card">
                     <div class="tablero-feed-head">
-                        <h3 class="tablero-feed-title">Últimas operaciones registradas</h3>
+                        <h3 class="tablero-feed-title">Actividad reciente de citas</h3>
                         <div class="tablero-live-badge">
                             <span class="tablero-live-dot"></span>
-                            <span>En vivo</span>
+                            <span id="estadoEventosInicio">Conectando…</span>
                         </div>
                     </div>
 
+                    <p class="admision-nota">Últimas notificaciones registradas para pacientes de tu sede.</p>
                     <div class="tablero-feed-list" id="feedOperaciones">
                         <% if (ultimasOperaciones != null && !ultimasOperaciones.isEmpty()) {
                             for (Map<String, String> op : ultimasOperaciones) { %>
@@ -358,19 +349,7 @@
                             </div>
                         <%  }
                            } else { %>
-                            <div class="tablero-feed-item">
-                                <span class="tablero-feed-time">08:53</span>
-                                <span>Admisión: Rosa Díaz Paredes llegó tarde (cita 08:40) - Consultorio 102</span>
-                            </div>
-                            <div class="tablero-feed-item">
-                                <span class="tablero-feed-time">08:47</span>
-                                <span>Cancelación: cita de Cardiología de las 12:40 - cupo ofertado a la lista de espera</span>
-                            </div>
-                            <div class="tablero-feed-item">
-                                <span class="tablero-feed-time">08:41</span>
-                                <span>Confirmación: Raúl Chávez Pinto confirmó por WhatsApp (cita 12:00)</span>
-                            </div>
-                        <% } %>
+                            <p class="tablero-feed-empty">No hay notificaciones de citas registradas en tu sede.</p>                        <% } %>
                     </div>
                 </div>
 
@@ -442,12 +421,7 @@
 
                     <div class="tablero-form-group full">
                         <label for="paciSede">Sede de preferencia</label>
-                        <select id="paciSede" name="sede_preferida" class="tablero-form-select">
-                            <option value="Sede San Borja">Sede San Borja</option>
-                            <option value="Sede Lima Norte">Sede Lima Norte</option>
-                            <option value="Sede Central Garcilaso">Sede Central Garcilaso</option>
-                            <option value="Sede Lima Principal">Sede Lima Principal</option>
-                        </select>
+                        <select id="paciSede" name="sede_preferida" class="tablero-form-select"><option value="<%= Html.texto(request.getAttribute("nombreSedeActual")) %>"><%= Html.texto(request.getAttribute("nombreSedeActual")) %></option></select>
                     </div>
                 </div>
 
@@ -509,6 +483,25 @@
             }
             filtrarCitas();
 
+            let canalInicio;
+            const cerrarCanalInicio = () => { canalInicio?.close(); canalInicio = null; };
+            const abrirCanalInicio = () => {
+                if (document.hidden || canalInicio || !window.EventSource) return;
+                canalInicio = new EventSource("${pageContext.request.contextPath}/admin/eventos-confirmaciones");
+                canalInicio.addEventListener("open",()=>{document.getElementById("estadoEventosInicio").textContent="En vivo";});
+                canalInicio.addEventListener("error",()=>{document.getElementById("estadoEventosInicio").textContent="Reconectando…";});
+                const actualizar = () => { if (!document.hidden) void actualizarEnVivo(true); };
+                canalInicio.addEventListener("sincronizar", actualizar);
+                canalInicio.addEventListener("cambio", actualizar);
+            };
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) cerrarCanalInicio();
+                else abrirCanalInicio();
+            });
+            window.addEventListener("pagehide", cerrarCanalInicio);
+            window.addEventListener("pageshow", abrirCanalInicio);
+            abrirCanalInicio();
+
             // Selección visual de filas al hacer click (como especifica el diseño)
             document.getElementById("tbodyCitas").addEventListener("click", function (e) {
                     const fila = e.target.closest(".cita-fila");
@@ -526,7 +519,7 @@
 
                 // Cada 5 minutos realiza actualización automática según notas de admisión
                 if (minutosDesdeActualizacion >= 5) {
-                    actualizarEnVivo();
+                    actualizarEnVivo(true);
                 }
             }, 60000);
         });
@@ -560,6 +553,7 @@
 
             // Paginación visual
             const totalVisibles = visibles.length;
+            document.getElementById("sinCitasSala").hidden=totalVisibles>0;
             const totalPaginas = Math.max(1, Math.ceil(totalVisibles / filasPorPagina));
             if (paginaActual > totalPaginas) paginaActual = 1;
 
@@ -612,22 +606,27 @@
 
         // Actualización en vivo (la tabla no se borra, feedback visual transparente)
         let actualizandoSala = false;
-        async function actualizarEnVivo() {
-            if (actualizandoSala) return;
+        async function actualizarEnVivo(automatica = false) {
+            if (actualizandoSala || (automatica && document.querySelector("#tbodyCitas details[open]"))) return;
             actualizandoSala = true;
             const boton = document.getElementById("btnActualizarAhora");
             const indicador = document.getElementById("txtActualizadoHace");
             if (boton) boton.disabled = true;
             if (indicador) indicador.textContent = "Actualizando sala...";
             try {
-                const respuesta = await fetch("${pageContext.request.contextPath}/admin/dashboard", {cache: "no-store", headers: {Accept: "text/html"}});
+                const respuesta = await fetch("${pageContext.request.contextPath}/admin/dashboard", {cache: "no-store", headers: {Accept: "text/html", "X-Actualizacion-Automatica": automatica ? "true" : "false"}});
                 if (!respuesta.ok || respuesta.redirected) throw new Error("No se pudo actualizar la sala. Recarga la página para verificar tu sesión.");
                 const documento = new DOMParser().parseFromString(await respuesta.text(), "text/html");
                 const tabla = documento.getElementById("tbodyCitas");
                 if (!tabla) throw new Error("No se pudo actualizar la sala.");
                 document.getElementById("tbodyCitas").replaceChildren(...Array.from(tabla.children, fila => document.importNode(fila, true)));
+                for(const id of ['indicadoresInicio','ultimaActualizacionOperativa','feedOperaciones']) {
+                    const nuevo=documento.getElementById(id);
+                    if(nuevo)document.getElementById(id).replaceChildren(...Array.from(nuevo.childNodes,n=>document.importNode(n,true)));
+                }
                 filtrarCitas();
                 minutosDesdeActualizacion = 0;
+                if(window.lucide)window.lucide.createIcons();
                 if (indicador) {
                     const numero = document.createElement("span");
                     numero.id = "numMinutos";

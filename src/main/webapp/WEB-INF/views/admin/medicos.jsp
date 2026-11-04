@@ -9,7 +9,7 @@
     if (nombrePersonal == null && usuario != null) {
         nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
     }
-    if (nombrePersonal == null) nombrePersonal = "Lucía Ramírez";
+    if (nombrePersonal == null) nombrePersonal = "Personal de admisión";
 
     String inicialesPersonal = "LR";
     if (nombrePersonal != null && !nombrePersonal.trim().isEmpty()) {
@@ -70,8 +70,8 @@
     <script src="https://unpkg.com/lucide@latest"></script>
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"></head>
+<body class="portal-admision">
 
 
 <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
@@ -172,8 +172,8 @@
 
 
             <div class="adm-actions-bar">
-                <div class="adm-actions-left">
-                    <span>El administrador del sistema gestiona las altas mediante invitación. Este padrón muestra los médicos de tu sede.</span>
+                <div class="adm-actions-left"><a class="adm-btn-primary" href="${pageContext.request.contextPath}/admin/medicos/nuevo">Completar perfil médico</a>
+                    <span>El administrador crea el acceso y admisión completa el perfil profesional de los médicos de su sede.</span>
                     <button type="button" class="adm-btn-outline" id="exportarMedicos" data-exportar-url="${pageContext.request.contextPath}/admin/medicos/exportar">
                         <i data-lucide="download" style="width: 16px; height: 16px;"></i> Exportar Excel
                     </button>
