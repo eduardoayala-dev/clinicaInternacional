@@ -9,7 +9,7 @@
     <title>Editar médico · Clínica Internacional</title>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261103-1">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/padron-medicos.css?v=20261103-1">
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"></head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body class="portal-admision">
 <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 <main class="adm-main-wrapper">

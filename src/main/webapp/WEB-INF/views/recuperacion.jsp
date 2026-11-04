@@ -14,7 +14,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-contenido.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
     <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion.js"></script>
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body class="${portalPersonal ? 'portal-personal' : 'portal-paciente'}">
 <div class="seguridad-layout">
     <%@ include file="/WEB-INF/jspf/acceso-marca.jspf" %>

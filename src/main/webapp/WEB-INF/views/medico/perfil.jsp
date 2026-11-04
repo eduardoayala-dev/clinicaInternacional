@@ -34,7 +34,7 @@
     <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&amp;family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css?v=20261028">
     <script defer src="${pageContext.request.contextPath}/assets/js/medico-portal.js?v=20261028"></script>
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body>
 
     <%@ include file="/WEB-INF/jspf/medico-sidebar.jspf" %>
@@ -46,9 +46,8 @@
             <div>
                 <h1 class="med-title">Perfil del Médico</h1>
                 <p class="med-subtitle">Información profesional, especialidad y credenciales registradas.</p>
-                <p><a href="${pageContext.request.contextPath}/cuenta/seguridad">Cambiar correo o contraseña con verificación</a></p>
             </div>
-            <a href="${pageContext.request.contextPath}/medico/agenda" class="med-btn-outline"><img src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt="" class="med-icon"> Mi agenda</a>
+            <div class="med-header-actions"><a href="${pageContext.request.contextPath}/cuenta/seguridad" class="med-btn-outline">Seguridad de cuenta</a><a href="${pageContext.request.contextPath}/medico/agenda" class="med-btn-outline"><img src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" alt="" class="med-icon"> Mi agenda</a></div>
         </div>
 
         <%

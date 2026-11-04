@@ -76,7 +76,7 @@
 
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-medico.css?v=20261028">
     <script defer src="${pageContext.request.contextPath}/assets/js/medico-portal.js?v=20261028"></script>
-</head>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
 <body>
 
 
@@ -92,7 +92,7 @@
 
 
             <% if (mensajeExito != null) { %>
-                <div>
+                <div class="flash-alert" role="status">
                     <img src="${pageContext.request.contextPath}/assets/images/medico/informacion.svg" alt="" class="med-icon">
                     <%= Html.texto(mensajeExito) %>
                 </div>

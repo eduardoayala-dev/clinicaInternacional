@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/enlace-cita.css">
     <script src="https://unpkg.com/lucide@latest" defer></script>
-<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"></head><body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head><body>
     <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
     <main class="main-content">
         <header class="dash-top-header"><nav aria-label="Ruta de navegación">Paciente / Mis citas / <%= titulo %></nav></header>
