@@ -1,0 +1,41 @@
+{
+  "fecha": "2026-11-04T19:14:47.238Z",
+  "tipo": "Diagnóstico secuencial autenticado, no prueba de carga",
+  "mediciones": [
+    {
+      "ruta": "login-admision",
+      "http": 302,
+      "ms": 999
+    },
+    {
+      "ruta": "/admin/dashboard",
+      "http": 200,
+      "ms": 19946
+    },
+    {
+      "ruta": "/admin/medicos",
+      "http": 200,
+      "ms": 2174
+    },
+    {
+      "ruta": "/admin/pacientes",
+      "http": 200,
+      "ms": 1962
+    },
+    {
+      "ruta": "/admin/seguimiento-confirmaciones?pagina=1",
+      "http": 503,
+      "ms": 18149
+    },
+    {
+      "ruta": "/admin/reasignaciones",
+      "http": 200,
+      "ms": 2168
+    },
+    {
+      "ruta": "/admin/dashboard-operativo",
+      "http": 200,
+      "ms": 2034
+    }
+  ]
+}
