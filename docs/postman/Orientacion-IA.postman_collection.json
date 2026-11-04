@@ -1,0 +1,477 @@
+{
+  "info": {
+    "name": "Clínica - Orientación IA (Gemini)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Pruebas de integración del endpoint /paciente/orientacion con Google Gemini. Ejecutar en orden con el Runner (cookies activas). Requiere una cuenta de paciente: configurar pacienteDni y pacienteClave solo en Postman, nunca en el repositorio. 05-08 no llaman al proveedor; 09 hace una consulta real a Gemini con un caso ficticio (consume cuota). No incluye API keys."
+  },
+  "item": [
+    {
+      "name": "01 - Abrir login de pacientes y obtener CSRF",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "// Empieza siempre sin sesión: borra cookies de corridas anteriores",
+              "pm.cookies.jar().clear(pm.collectionVariables.get(\"baseUrl\"), err => { if (err) console.log(err); });"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);",
+              "pm.test(\"Token disponible\", () => pm.expect(m).to.not.eql(null));",
+              "if(m) pm.collectionVariables.set(\"csrfToken\",m[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Orientación sin sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/orientacion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "relato",
+              "value": "Caso ficticio: dolor de cabeza frecuente desde hace una semana",
+              "type": "text"
+            },
+            {
+              "key": "casoFicticio",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 403\", () => pm.response.to.have.status(403));",
+              "const r=pm.response.json();",
+              "pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"SESION_REQUERIDA\"); pm.expect(r.data).to.eql(null); });"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "03 - Iniciar sesión como paciente",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "identificador",
+              "value": "{{pacienteDni}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{pacienteClave}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "if(!/^[0-9]{8,12}$/.test(pm.collectionVariables.get(\"pacienteDni\")||\"\")||!(pm.collectionVariables.get(\"pacienteClave\")||\"\")) throw new Error(\"Configura pacienteDni y pacienteClave en las variables de la colección\");"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Redirección tras login (302/303)\", () => pm.expect(pm.response.code).to.be.oneOf([302,303]));",
+              "pm.test(\"Destino portal paciente\", () => pm.expect(pm.response.headers.get(\"Location\")||\"\").to.include(\"/paciente\"));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "04 - Abrir portal del paciente y obtener CSRF de la sesión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/dashboard",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 200\", () => pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrf-token\"\\s+content=\"([^\"]+)\"/);",
+              "pm.test(\"Token de sesión disponible\", () => pm.expect(m).to.not.eql(null));",
+              "if(m) pm.collectionVariables.set(\"csrfToken\",m[1]);"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    },
+    {
+      "name": "05 - GET rechazado",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/orientacion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 405\", () => pm.response.to.have.status(405));",
+              "const r=pm.response.json();",
+              "pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"METODO_NO_PERMITIDO\"); pm.expect(r.data).to.eql(null); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Sin CSRF",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/orientacion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "relato",
+              "value": "Caso ficticio: dolor de cabeza frecuente desde hace una semana",
+              "type": "text"
+            },
+            {
+              "key": "casoFicticio",
+              "value": "true",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 403\", () => pm.response.to.have.status(403));",
+              "const r=pm.response.json();",
+              "pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"CSRF_INVALIDO\"); pm.expect(r.data).to.eql(null); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Caso no declarado ficticio (sin llamada externa)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/orientacion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "relato",
+              "value": "Caso ficticio: dolor de cabeza frecuente desde hace una semana",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 400\", () => pm.response.to.have.status(400));",
+              "const r=pm.response.json();",
+              "pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"CASO_FICTICIO_REQUERIDO\"); pm.expect(r.data).to.eql(null); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Relato demasiado corto (sin llamada externa)",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/orientacion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "relato",
+              "value": "dolor",
+              "type": "text"
+            },
+            {
+              "key": "casoFicticio",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Estado HTTP 400\", () => pm.response.to.have.status(400));",
+              "const r=pm.response.json();",
+              "pm.test(\"Contrato y código\", () => { pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]); pm.expect(r.code).to.eql(\"RELATO_INVALIDO\"); pm.expect(r.data).to.eql(null); });"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Orientación real con Gemini",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/paciente/orientacion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "relato",
+              "value": "Caso ficticio: dolor de cabeza frecuente y visión borrosa desde hace una semana",
+              "type": "text"
+            },
+            {
+              "key": "casoFicticio",
+              "value": "true",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "const r=pm.response.json();",
+              "pm.test(\"Contrato JSON\", () => pm.expect(Object.keys(r).sort()).to.eql([\"code\",\"data\",\"message\"]));",
+              "pm.test(\"Respuesta del servidor: \" + r.code + \" - \" + r.message, () => pm.expect(r.message).to.be.a(\"string\"));",
+              "pm.test(\"Gemini respondió (HTTP 200)\", () => pm.response.to.have.status(200));",
+              "if(pm.response.code===200){",
+              " pm.test(\"Código de orientación\", () => pm.expect(r.code).to.eql(\"ORIENTACION_DEMOSTRATIVA_OBTENIDA\"));",
+              " pm.test(\"Proveedor GEMINI y tipo válido\", () => { pm.expect(r.data.proveedor).to.eql(\"GEMINI\"); pm.expect(r.data.tipo).to.be.oneOf([\"SUGERENCIA\",\"ACLARAR\"]); });",
+              " if(r.data.tipo===\"SUGERENCIA\") pm.test(\"Especialidad del catálogo\", () => { pm.expect(r.data.idEspecialidad).to.be.a(\"number\"); pm.expect(r.data.especialidad).to.be.a(\"string\"); });",
+              "} else { pm.test(\"Fallo controlado sin datos\", () => { pm.expect(pm.response.code).to.be.oneOf([429,503]); pm.expect(r.data).to.eql(null); }); }",
+              "pm.test(\"Tiempo de respuesta ≤ 20 s (límite del cliente Gemini)\", () => pm.expect(pm.response.responseTime).to.be.below(20000));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Cerrar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "text/html"
+          },
+          {
+            "key": "Content-Type",
+            "value": "application/x-www-form-urlencoded"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "action",
+              "value": "logout",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"Redirección al cerrar sesión\", () => pm.expect(pm.response.code).to.be.oneOf([302,303]));"
+            ]
+          }
+        }
+      ],
+      "protocolProfileBehavior": {
+        "followRedirects": false
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://clinicainternacional-production.up.railway.app"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "pacienteDni",
+      "value": ""
+    },
+    {
+      "key": "pacienteClave",
+      "value": ""
+    }
+  ]
+}
