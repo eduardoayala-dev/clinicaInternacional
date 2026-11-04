@@ -320,7 +320,7 @@
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
                             <label class="adm-modal-label" for="campoPaciente1">DNI *</label>
-                            <input id="campoPaciente1" type="text" name="dni" class="adm-modal-input" required maxlength="8" placeholder="Ej: 45879632">
+                            <input id="campoPaciente1" type="text" name="dni" class="adm-modal-input" inputmode="numeric" required maxlength="8" placeholder="Ej: 45879632">
                         </div>
                         <div class="adm-modal-field">
                             <label class="adm-modal-label" for="campoPaciente2">Fecha de nacimiento</label>

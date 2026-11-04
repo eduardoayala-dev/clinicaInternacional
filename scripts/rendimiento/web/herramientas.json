@@ -1,6 +1,0 @@
-{
-  "node": "24.15.0",
-  "lighthouse": "13.6.0",
-  "puppeteer-core": "25.16.0",
-  "chrome-launcher": "1.2.2"
-}
