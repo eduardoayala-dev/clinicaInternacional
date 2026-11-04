@@ -11,7 +11,7 @@ import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.dao.ConfirmacionAsistenciaDAO;
 import pe.edu.utp.clinica.model.Usuario;
 import java.io.IOException;
-import java.util.List;
+
 
 @WebServlet(name="SeguimientoConfirmacionesServlet", urlPatterns="/admin/seguimiento-confirmaciones")
 public final class SeguimientoConfirmacionesServlet extends HttpServlet {
@@ -27,11 +27,12 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         Usuario usuario=usuario(request);
         if(usuario==null) { response.sendRedirect(request.getContextPath()+"/login/personal?error=acceso_denegado"); return; }
         try {
-            List<ConfirmacionAsistenciaDAO.Seguimiento> pendientes=confirmaciones.listarPendientes(usuario.getIdUsuario());
-            request.setAttribute("seguimientos",pendientes);
+            var pagina=confirmaciones.consultarPagina(usuario.getIdUsuario(),pagina(request.getParameter("pagina")));
+            request.setAttribute("seguimientos",pagina.registros());
+            request.setAttribute("paginaSeguimiento",pagina);
             request.setAttribute("intentosMinimos",confirmaciones.intentosMinimos(usuario.getIdUsuario()));
-            request.setAttribute("totalPendientes",pendientes.size());
-            request.setAttribute("totalVencidas",pendientes.stream().filter(ConfirmacionAsistenciaDAO.Seguimiento::vencida).count());
+            request.setAttribute("totalPendientes",pagina.total());
+            request.setAttribute("totalVencidas",pagina.vencidas());
             if (!"XMLHttpRequest".equals(request.getHeader("X-Requested-With"))) {
                 request.setAttribute("mensajeFlash",request.getSession(false).getAttribute(FLASH_MESSAGE));
                 request.getSession(false).removeAttribute(FLASH_MESSAGE);
@@ -43,13 +44,15 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
     private void guardar(HttpServletRequest request,HttpServletResponse response) throws IOException {
         Usuario usuario=usuario(request);
         if(usuario==null) { error(response,403,"ACCESO_DENEGADO","Ingresa con una cuenta de admisión."); return; }
+        int pagina=1;
         try {
+            pagina=pagina(request.getParameter("pagina"));
             int idCita=identificador(request.getParameter("idCita"));
             if("cancelar_sin_confirmacion".equals(request.getParameter("accion"))){
                 confirmaciones.cancelarSinConfirmacion(usuario.getIdUsuario(),idCita);
                 String mensaje="Cita cancelada por falta de confirmación, con los contactos mínimos comprobados.";
                 if(json(request))ApiJson.write(response,200,new ApiResponse<>("CITA_CANCELADA",mensaje,null));
-                else{request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje);response.sendRedirect(request.getContextPath()+RUTA);}
+                else{request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje);response.sendRedirect(request.getContextPath()+RUTA+"?pagina="+pagina);}
                 return;
             }
             var resultado=confirmaciones.registrarContacto(usuario.getIdUsuario(),idCita,
@@ -58,10 +61,10 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
                     ? "Contacto registrado. La asistencia quedó confirmada por admisión."
                     : "Intento de contacto registrado. La cita conserva su estado.";
             if(json(request)) ApiJson.write(response,200,new ApiResponse<>("CONTACTO_REGISTRADO",mensaje,resultado));
-            else { request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje); response.sendRedirect(request.getContextPath()+RUTA); }
+            else { request.getSession(false).setAttribute(FLASH_MESSAGE,mensaje); response.sendRedirect(request.getContextPath()+RUTA+"?pagina="+pagina); }
         } catch(AgendaException e) {
             if(json(request)) error(response,e.status(),e.code(),e.getMessage());
-            else { request.getSession(false).setAttribute(FLASH_MESSAGE,e.getMessage()); response.sendRedirect(request.getContextPath()+RUTA); }
+            else { request.getSession(false).setAttribute(FLASH_MESSAGE,e.getMessage()); response.sendRedirect(request.getContextPath()+RUTA+"?pagina="+pagina); }
         }
     }
 
@@ -84,6 +87,11 @@ public final class SeguimientoConfirmacionesServlet extends HttpServlet {
         if(session==null || !(session.getAttribute("usuarioLogueado") instanceof Usuario usuario)
                 || !"PERSONAL_ADMINISTRATIVO".equals(usuario.getRol())) return null;
         return usuario;
+    }
+    private static int pagina(String valor) {
+        if(valor==null || valor.isBlank())return 1;
+        try {int numero=Integer.parseInt(valor);if(numero<1||numero>100000)throw new NumberFormatException();return numero;}
+        catch(NumberFormatException e){throw new AgendaException(400,"PAGINA_INVALIDA","Selecciona una página válida.");}
     }
     private static int identificador(String valor) {
         try {

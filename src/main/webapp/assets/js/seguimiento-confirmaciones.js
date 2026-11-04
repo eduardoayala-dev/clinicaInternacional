@@ -51,6 +51,7 @@
             if (editando()) { pausar(); return; }
             const actuales = doc.getElementById('seguimientoDatos');
             actuales.replaceChildren(...[...nuevos.childNodes].map(node => doc.importNode(node, true)));
+            if(nuevos.dataset?.paginaUrl)boton.href=nuevos.dataset.paginaUrl;
             icons?.();
             error.hidden = true;
             descartar.hidden = true;
@@ -133,6 +134,12 @@
             cerrarCanal();
         }
         boton.addEventListener('click', event => { event.preventDefault(); void actualizar(); });
+        panel.addEventListener('click', event => {
+            if(event.target.closest?.('[data-seguimiento-pagina]') && editando()) {
+                event.preventDefault();pausar();
+                estado.textContent='Guarda la gestión o descarta los cambios antes de cambiar de página.';
+            }
+        });
         panel.addEventListener('change', cambios);
         descartar.addEventListener('click', () => {
             panel.querySelectorAll('.seguimiento-form').forEach(form => form.reset());
