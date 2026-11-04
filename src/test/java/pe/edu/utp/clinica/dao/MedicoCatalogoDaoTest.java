@@ -12,6 +12,31 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoCatalogoDaoTest {
+    @Test void conteoAgrupadoCoincideConHorariosYUsaCuatroConsultas()throws Exception {
+        for(int i=0;i<7;i++){
+            String dia=java.time.LocalDate.of(2026,10,27).plusDays(i).toString();
+            agenda(dia,"09:00","14:00",30,"PUBLICADO");
+            agenda(dia,"09:00","11:00",30,"PUBLICADO");
+        }
+        sql("INSERT INTO cita(id_medico,fecha_hora,estado,id_disponibilidad) VALUES(42,'2026-10-28 09:15:00','CONFIRMADA',1),(42,'2026-10-28 11:00:00','CANCELADA',1)");
+        sql("INSERT INTO retencion_cupo VALUES(1,42,'2026-10-28 13:00:00',30,'prueba','2026-10-29 10:00:00')");
+        sql("INSERT INTO usuario VALUES(91,'Paciente','Oferta',TRUE,'PACIENTE')");
+        sql("INSERT INTO paciente VALUES(91,91)");
+        sql("INSERT INTO lista_espera VALUES(91,91,'OFERTADA')");
+        sql("INSERT INTO reasignacion_inteligente(id_lista_espera,id_cita_original,id_disponibilidad,fecha_limite_respuesta,estado) VALUES(91,2,1,'2026-10-28 10:30:00','PENDIENTE')");
+        int esperado=0;
+        for(int i=0;i<7;i++)esperado+=dao.obtenerHorariosDisponibles(42,java.time.LocalDate.of(2026,10,27).plusDays(i).toString()).size();
+        var consultas=new java.util.concurrent.atomic.AtomicInteger();
+        try(var c=DriverManager.getConnection(url)){
+            var medida=(java.sql.Connection)java.lang.reflect.Proxy.newProxyInstance(getClass().getClassLoader(),new Class<?>[]{java.sql.Connection.class},(proxy,metodo,args)->{
+                if(metodo.getName().equals("prepareStatement"))consultas.incrementAndGet();
+                try{return metodo.invoke(c,args);}catch(java.lang.reflect.InvocationTargetException e){throw e.getCause();}
+            });
+            assertEquals(esperado,dao.contarCuposDisponibles(medida,1,java.time.LocalDate.of(2026,10,27),java.time.LocalDate.of(2026,11,3)));
+            assertEquals(4,consultas.get());
+            assertEquals(0,dao.contarCuposDisponibles(c,3,java.time.LocalDate.of(2026,10,27),java.time.LocalDate.of(2026,11,3)));
+        }
+    }
     @Test void semanaCuentaCuposRealesPorTurnoExcluyendoReservasYRetenciones()throws Exception{
         agenda("2026-10-28","09:00","10:00",30,"PUBLICADO");agenda("2026-10-28","13:00","14:00",30,"PUBLICADO");
         sql("INSERT INTO cita(id_medico,fecha_hora,estado) VALUES(42,'2026-10-28 09:00:00','CONFIRMADA')");

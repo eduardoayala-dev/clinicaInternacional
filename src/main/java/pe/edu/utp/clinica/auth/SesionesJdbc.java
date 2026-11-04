@@ -34,15 +34,14 @@ public final class SesionesJdbc implements AlmacenSesiones {
     @Override public SesionAutenticada resolver(String id, byte[] refresh, Instant now, boolean actividad) throws SQLException {
         String sql = "SELECT s.*,u.nombres,u.apellidos,u.email,u.password_hash,u.rol,u.activo "
                 + "FROM sesion_autenticacion s JOIN usuario u ON u.id_usuario=s.id_usuario "
-                + "WHERE s.id_sesion=? OR (? IS NULL AND s.refresh_hash=?) FOR UPDATE";
+                + (id != null ? "WHERE s.id_sesion=? FOR UPDATE" : "WHERE s.refresh_hash=? FOR UPDATE");
         try (var conn = conexion.abrir()) {
             conn.setAutoCommit(false);
             try {
                 SesionAutenticada sesion = null;
                 try (var st = conn.prepareStatement(sql)) {
-                    st.setString(1,id);
-                    st.setString(2,id);
-                    st.setBytes(3,refresh);
+                    if (id != null) st.setString(1,id);
+                    else st.setBytes(1,refresh);
                     try (var rs = st.executeQuery()) {
                         if (rs.next()) {
                             String sid=rs.getString("id_sesion");

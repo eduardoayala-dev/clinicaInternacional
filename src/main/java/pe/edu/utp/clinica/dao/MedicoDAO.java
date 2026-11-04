@@ -214,11 +214,57 @@ public class MedicoDAO {
                     .toList();
     }
     int contarCuposDisponibles(Connection conn,int sede,LocalDate desde,LocalDate hasta)throws SQLException {
-        var fechas=new java.util.ArrayList<java.util.Map.Entry<Integer,LocalDate>>();
-        try(var st=conn.prepareStatement("SELECT DISTINCT d.id_medico,d.fecha FROM disponibilidad d JOIN medico m ON m.id_medico=d.id_medico JOIN usuario u ON u.id_usuario=m.id_usuario JOIN especialidad e ON e.id_especialidad=m.id_especialidad WHERE d.id_sede=? AND d.estado='PUBLICADO' AND d.fecha>=? AND d.fecha<? AND m.id_sede=d.id_sede AND m.estado='ACTIVO' AND u.activo=TRUE AND e.estado='ACTIVO' ORDER BY d.id_medico,d.fecha")){
-            st.setInt(1,sede);st.setObject(2,desde);st.setObject(3,hasta);try(var r=st.executeQuery()){while(r.next())fechas.add(java.util.Map.entry(r.getInt(1),r.getObject(2,LocalDate.class)));}
+        var publicados=new HashMap<AgendaDia,Map<LocalTime,Integer>>();
+        String sql="SELECT d.id_medico,d.fecha,d.hora_inicio,d.hora_fin,d.duracion_minutos FROM disponibilidad d JOIN medico m ON m.id_medico=d.id_medico "+ACTIVE_JOINS
+                +" WHERE d.id_sede=? AND d.fecha>=? AND d.fecha<? AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND "+ACTIVE_FILTER;
+        try(var st=conn.prepareStatement(sql)){
+            st.setInt(1,sede);st.setObject(2,desde);st.setObject(3,hasta);
+            try(var r=st.executeQuery()){while(r.next())addSlots(publicados.computeIfAbsent(new AgendaDia(r.getInt("id_medico"),r.getObject("fecha",LocalDate.class)),k->new TreeMap<>()),r);}
         }
-        int total=0;for(var fila:fechas)total+=horariosDisponibles(conn,fila.getKey(),fila.getValue()).size();return total;
+        if(publicados.isEmpty())return 0;
+        var ocupados=ocupacionesDeSede(conn,sede,desde,hasta);
+        var ahora=java.time.LocalDateTime.now(clock);
+        int total=0;
+        for(var agenda:publicados.entrySet()){
+            var fecha=agenda.getKey().fecha();
+            if(fecha.isBefore(ahora.toLocalDate()))continue;
+            var intervalos=ocupados.getOrDefault(agenda.getKey(),List.of());
+            for(var slot:agenda.getValue().entrySet()){
+                if((!fecha.equals(ahora.toLocalDate())||slot.getKey().isAfter(ahora.toLocalTime()))
+                        &&noSeCruza(slot.getKey(),slot.getValue(),intervalos))total++;
+            }
+        }
+        return total;
+    }
+
+    private record AgendaDia(int medico,LocalDate fecha){}
+
+    private Map<AgendaDia,List<Ocupacion>> ocupacionesDeSede(Connection conn,int sede,LocalDate desde,LocalDate hasta)throws SQLException {
+        var resultado=new HashMap<AgendaDia,List<Ocupacion>>();
+        String citas="SELECT c.id_medico,c.fecha_hora AS inicio,d.duracion_minutos FROM cita c JOIN disponibilidad d ON d.id_disponibilidad=c.id_disponibilidad JOIN medico m ON m.id_medico=c.id_medico WHERE m.id_sede=? AND c.fecha_hora>=? AND c.fecha_hora<? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA')";
+        leerOcupaciones(conn,citas,sede,desde,hasta,0,resultado);
+        String ofertas="SELECT c.id_medico,c.fecha_hora AS inicio,d.duracion_minutos FROM reasignacion_inteligente r JOIN cita c ON c.id_cita=r.id_cita_original JOIN disponibilidad d ON d.id_disponibilidad=r.id_disponibilidad JOIN medico m ON m.id_medico=c.id_medico WHERE m.id_sede=? AND c.fecha_hora>=? AND c.fecha_hora<? AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>? AND c.fecha_hora>? AND c.estado='CANCELADA' AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND EXISTS(SELECT 1 FROM lista_espera le JOIN paciente p ON p.id_paciente=le.id_paciente JOIN usuario u ON u.id_usuario=p.id_usuario WHERE le.id_lista_espera=r.id_lista_espera AND le.estado='OFERTADA' AND u.activo=TRUE AND u.rol='PACIENTE')";
+        leerOcupaciones(conn,ofertas,sede,desde,hasta,2,resultado);
+        String retenciones="SELECT r.id_medico,r.inicio,r.duracion_minutos FROM retencion_cupo r JOIN medico m ON m.id_medico=r.id_medico WHERE m.id_sede=? AND r.inicio>=? AND r.inicio<? AND r.vence>?";
+        leerOcupaciones(conn,retenciones,sede,desde,hasta,1,resultado);
+        return resultado;
+    }
+
+    private void leerOcupaciones(Connection conn,String sql,int sede,LocalDate desde,LocalDate hasta,
+            int filtrosVigencia,Map<AgendaDia,List<Ocupacion>> destino)throws SQLException {
+        try(var st=conn.prepareStatement(sql)){
+            st.setInt(1,sede);st.setObject(2,desde.atStartOfDay());st.setObject(3,hasta.atStartOfDay());
+            for(int i=0;i<filtrosVigencia;i++)st.setObject(4+i,java.time.LocalDateTime.now(clock));
+            try(var r=st.executeQuery()){
+                while(r.next()){
+                    var inicio=r.getObject("inicio",java.time.LocalDateTime.class);
+                    int minutos=r.getInt("duracion_minutos");
+                    if(minutos<=0||minutos>1440)throw new SQLException("La duración de la cita no es válida");
+                    int segundo=inicio.toLocalTime().toSecondOfDay();
+                    destino.computeIfAbsent(new AgendaDia(r.getInt("id_medico"),inicio.toLocalDate()),k->new ArrayList<>()).add(new Ocupacion(segundo,segundo+minutos*60));
+                }
+            }
+        }
     }
 
     private void agregarRetenciones(Connection conn,int medico,LocalDate fecha,List<Ocupacion> ocupados) throws SQLException {
