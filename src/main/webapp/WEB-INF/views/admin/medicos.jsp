@@ -205,7 +205,6 @@
                                 Object idMedObj = m.get("idMedico");
                                 int idMedico = idMedObj != null ? ((Number) idMedObj).intValue() : 1;
                                 String cmp = (String) m.get("cmp");
-                                String dni = (String) m.get("dni");
                                 String nombre = (String) m.get("nombre");
                                 String especialidad = (String) m.get("especialidad");
                                 String sede = (String) m.get("sede");
@@ -217,7 +216,6 @@
                                 <td class="adm-td-cmp"><%= Html.texto(cmp) %></td>
                                 <td>
                                     <div class="adm-td-name"><%= Html.texto(nombre) %></div>
-                                    <div class="adm-td-sub">DNI <%= Html.texto(dni) %></div>
                                 </td>
                                 <td><%= Html.texto(especialidad) %></td>
                                 <td><%= Html.texto(sede) %></td>
