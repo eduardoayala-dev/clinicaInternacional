@@ -14,7 +14,7 @@ Para explorar las funcionalidades del sistema, se dispone de las siguientes cuen
 | Rol | Usuario / DNI | Contraseña |
 |---|---|---|
 | **Paciente** | `70976343` | `Lucascool123@` |
-| **Médico** | `eduardo@medico.com` | `Password123!` |
+| **Médico** | `eduardoayala@yopmail.com` | `Lucascool123@` |
 | **Personal Administrativo** | `eduardo@padmin.com` | `Password123!` |
 | **Administrador del Sistema (SysAdmin)** | `eduardo@admin.com` | `Password123!` |
 
