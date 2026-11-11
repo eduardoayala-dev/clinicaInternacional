@@ -14,6 +14,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.junit.jupiter.api.Assertions.*;
 
 class CatalogosApiServletTest {
+    @Test void semanaRechazaFragmentosSqlAntesDeConsultar() throws Exception {
+        for (String parametro : List.of("idEspecialidad", "idSede", "idMedico")) {
+            var intercambio = request();
+            intercambio.parameters.putAll(java.util.Map.of(
+                    "vista", "semana", "idEspecialidad", "1", "desde", "2026-10-28"));
+            intercambio.parameters.put(parametro, "1 OR 1=1 --");
+            new ApiHorariosServlet(catalogos).service(intercambio.request, intercambio.response);
+            assertBody(intercambio, 400, "PARAMETRO_INVALIDO");
+        }
+        assertEquals(0, calls.get());
+    }
+
     @Test void semanaDevuelveSieteDiasConConteosPorTurno()throws Exception{
         var x=request();x.parameters.putAll(java.util.Map.of("vista","semana","idEspecialidad","1","idSede","1","desde","2026-10-26"));
         new ApiHorariosServlet(catalogos).service(x.request,x.response);

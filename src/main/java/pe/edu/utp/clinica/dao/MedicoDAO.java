@@ -14,6 +14,7 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.TreeMap;
 import pe.edu.utp.clinica.model.MedicoCatalogo;
+import pe.edu.utp.clinica.repository.DisponibilidadRepository;
 import pe.edu.utp.clinica.util.NombrePersona;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -24,25 +25,37 @@ import java.util.Map;
  * DAO para gestión del cuerpo médico, sedes, especialidades y disponibilidad de horarios.
  */
 public class MedicoDAO {
-    public record DiaCupos(String fecha,int manana,int tarde){}
-    public List<DiaCupos> disponibilidadSemanal(int especialidad,Integer sede,Integer medico,LocalDate desde){
-        var cantidades=new TreeMap<LocalDate,int[]>();for(int n=0;n<7;n++)cantidades.put(desde.plusDays(n),new int[2]);
-        String sql="SELECT DISTINCT d.id_medico,d.fecha FROM disponibilidad d JOIN medico m ON m.id_medico=d.id_medico "+ACTIVE_JOINS+
-            " WHERE m.id_especialidad=? AND (?=0 OR m.id_sede=?) AND (?=0 OR m.id_medico=?) AND d.fecha>=? AND d.fecha<? AND d.fecha>=? AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND "+ACTIVE_FILTER+" ORDER BY d.fecha,d.id_medico";
-        try(var c=connections.open();var st=c.prepareStatement(sql)){
-            st.setInt(1,especialidad);st.setInt(2,sede==null?0:sede);st.setInt(3,sede==null?0:sede);st.setInt(4,medico==null?0:medico);st.setInt(5,medico==null?0:medico);st.setObject(6,desde);st.setObject(7,desde.plusDays(7));st.setObject(8,LocalDate.now(clock));
-            var agendas=new ArrayList<Map.Entry<Integer,LocalDate>>();try(var r=st.executeQuery()){while(r.next())agendas.add(Map.entry(r.getInt(1),r.getObject(2,LocalDate.class)));}
-            if(!agendas.isEmpty()){
-                var seleccionadas=new java.util.HashSet<AgendaDia>();
-                for(var agenda:agendas)seleccionadas.add(new AgendaDia(agenda.getKey(),agenda.getValue()));
-                var disponibles=cuposPorAgenda(c,sede==null?0:sede,desde,desde.plusDays(7),seleccionadas);
-                for(var agenda:agendas){
-                    var dia=cantidades.get(agenda.getValue());
-                    for(var hora:disponibles.getOrDefault(new AgendaDia(agenda.getKey(),agenda.getValue()),List.of()))dia[hora.getHour()<13?0:1]++;
+    public record DiaCupos(String fecha, int manana, int tarde) {}
+
+    public List<DiaCupos> disponibilidadSemanal(int especialidad, Integer sede, Integer medico, LocalDate desde) {
+        var cantidades = new TreeMap<LocalDate, int[]>();
+        for (int dia = 0; dia < 7; dia++) {
+            cantidades.put(desde.plusDays(dia), new int[2]);
+        }
+        try (var conexion = connections.open()) {
+            var repositorio = new DisponibilidadRepository(conexion);
+            var agendas = repositorio.agendasSemana(especialidad, sede, medico, desde, LocalDate.now(clock));
+            if (!agendas.isEmpty()) {
+                var seleccionadas = new java.util.HashSet<AgendaDia>();
+                for (var agenda : agendas) {
+                    seleccionadas.add(new AgendaDia(agenda.medico(), agenda.fecha()));
+                }
+                var disponibles = cuposPorAgenda(conexion, sede == null ? 0 : sede,
+                        desde, desde.plusDays(7), seleccionadas);
+                for (var agenda : agendas) {
+                    var cantidadDia = cantidades.get(agenda.fecha());
+                    var horas = disponibles.getOrDefault(new AgendaDia(agenda.medico(), agenda.fecha()), List.of());
+                    for (var hora : horas) {
+                        cantidadDia[hora.getHour() < 13 ? 0 : 1]++;
+                    }
                 }
             }
-        }catch(SQLException e){throw new CatalogoDatosException(e);}
-        return cantidades.entrySet().stream().map(e->new DiaCupos(e.getKey().toString(),e.getValue()[0],e.getValue()[1])).toList();
+        } catch (SQLException error) {
+            throw new CatalogoDatosException(error);
+        }
+        return cantidades.entrySet().stream()
+                .map(dia -> new DiaCupos(dia.getKey().toString(), dia.getValue()[0], dia.getValue()[1]))
+                .toList();
     }
     private static final String ID_SEDE = "id_sede";
     private static final String ID_ESPECIALIDAD = "idEspecialidad";
@@ -221,70 +234,73 @@ public class MedicoDAO {
                     .map(slot -> slot.getKey().format(SLOT_FORMAT))
                     .toList();
     }
-    int contarCuposDisponibles(Connection conn,int sede,LocalDate desde,LocalDate hasta)throws SQLException {
-        return cuposPorAgenda(conn,sede,desde,hasta,null).values().stream().mapToInt(List::size).sum();
+    int contarCuposDisponibles(Connection conexion, int sede, LocalDate desde, LocalDate hasta) throws SQLException {
+        return cuposPorAgenda(conexion, sede, desde, hasta, null).values().stream().mapToInt(List::size).sum();
     }
 
-    private Map<AgendaDia,List<LocalTime>> cuposPorAgenda(Connection conn,int sede,LocalDate desde,LocalDate hasta,java.util.Set<AgendaDia> seleccionadas)throws SQLException {
-        var publicados=new HashMap<AgendaDia,Map<LocalTime,Integer>>();
-        String sql="SELECT d.id_medico,d.fecha,d.hora_inicio,d.hora_fin,d.duracion_minutos FROM disponibilidad d JOIN medico m ON m.id_medico=d.id_medico "+ACTIVE_JOINS
-                +" WHERE (?=0 OR d.id_sede=?) AND d.fecha>=? AND d.fecha<? AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND "+ACTIVE_FILTER;
-        try(var st=conn.prepareStatement(sql)){
-            st.setInt(1,sede);st.setInt(2,sede);st.setObject(3,desde);st.setObject(4,hasta);
-            try(var r=st.executeQuery()){
-                while(r.next()){
-                    var agenda=new AgendaDia(r.getInt("id_medico"),r.getObject("fecha",LocalDate.class));
-                    if(seleccionadas==null||seleccionadas.contains(agenda))addSlots(publicados.computeIfAbsent(agenda,k->new TreeMap<>()),r);
-                }
+    private Map<AgendaDia, List<LocalTime>> cuposPorAgenda(Connection conexion, int sede,
+            LocalDate desde, LocalDate hasta, java.util.Set<AgendaDia> seleccionadas) throws SQLException {
+        var publicados = new HashMap<AgendaDia, Map<LocalTime, Integer>>();
+        var repositorio = new DisponibilidadRepository(conexion);
+        for (var turno : repositorio.turnosPublicados(sede, desde, hasta)) {
+            var agenda = new AgendaDia(turno.medico(), turno.fecha());
+            if (seleccionadas == null || seleccionadas.contains(agenda)) {
+                addSlots(publicados.computeIfAbsent(agenda, clave -> new TreeMap<>()),
+                        turno.inicio(), turno.fin(), turno.minutos());
             }
         }
-        if(publicados.isEmpty())return Map.of();
-        var ocupados=ocupacionesDeSede(conn,sede,desde,hasta,publicados.keySet());
-        var ahora=java.time.LocalDateTime.now(clock);
-        var disponibles=new HashMap<AgendaDia,List<LocalTime>>();
-        for(var agenda:publicados.entrySet()){
-            var fecha=agenda.getKey().fecha();
-            if(fecha.isBefore(ahora.toLocalDate()))continue;
-            var intervalos=ocupados.getOrDefault(agenda.getKey(),List.of());
-            var horas=new ArrayList<LocalTime>();
-            for(var slot:agenda.getValue().entrySet()){
-                if((!fecha.equals(ahora.toLocalDate())||slot.getKey().isAfter(ahora.toLocalTime()))
-                        &&noSeCruza(slot.getKey(),slot.getValue(),intervalos))horas.add(slot.getKey());
+        if (publicados.isEmpty()) {
+            return Map.of();
+        }
+        var ocupados = ocupacionesDeSede(conexion, sede, desde, hasta, publicados.keySet());
+        var ahora = java.time.LocalDateTime.now(clock);
+        var disponibles = new HashMap<AgendaDia, List<LocalTime>>();
+        for (var agenda : publicados.entrySet()) {
+            var fecha = agenda.getKey().fecha();
+            if (fecha.isBefore(ahora.toLocalDate())) {
+                continue;
             }
-            disponibles.put(agenda.getKey(),List.copyOf(horas));
+            var intervalos = ocupados.getOrDefault(agenda.getKey(), List.of());
+            var horas = new ArrayList<LocalTime>();
+            for (var horario : agenda.getValue().entrySet()) {
+                boolean horarioFuturo = !fecha.equals(ahora.toLocalDate())
+                        || horario.getKey().isAfter(ahora.toLocalTime());
+                if (horarioFuturo && noSeCruza(horario.getKey(), horario.getValue(), intervalos)) {
+                    horas.add(horario.getKey());
+                }
+            }
+            disponibles.put(agenda.getKey(), List.copyOf(horas));
         }
         return disponibles;
     }
 
-    private record AgendaDia(int medico,LocalDate fecha){}
+    private record AgendaDia(int medico, LocalDate fecha) {}
 
-    private Map<AgendaDia,List<Ocupacion>> ocupacionesDeSede(Connection conn,int sede,LocalDate desde,LocalDate hasta,java.util.Set<AgendaDia> seleccionadas)throws SQLException {
-        var resultado=new HashMap<AgendaDia,List<Ocupacion>>();
-        for(var agenda:seleccionadas)resultado.put(agenda,new ArrayList<>());
-        String citas="SELECT c.id_medico,c.fecha_hora AS inicio,d.duracion_minutos FROM cita c JOIN disponibilidad d ON d.id_disponibilidad=c.id_disponibilidad JOIN medico m ON m.id_medico=c.id_medico WHERE (?=0 OR m.id_sede=?) AND c.fecha_hora>=? AND c.fecha_hora<? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA')";
-        leerOcupaciones(conn,citas,sede,desde,hasta,0,resultado);
-        String ofertas="SELECT c.id_medico,c.fecha_hora AS inicio,d.duracion_minutos FROM reasignacion_inteligente r JOIN cita c ON c.id_cita=r.id_cita_original JOIN disponibilidad d ON d.id_disponibilidad=r.id_disponibilidad JOIN medico m ON m.id_medico=c.id_medico WHERE (?=0 OR m.id_sede=?) AND c.fecha_hora>=? AND c.fecha_hora<? AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>? AND c.fecha_hora>? AND c.estado='CANCELADA' AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND EXISTS(SELECT 1 FROM lista_espera le JOIN paciente p ON p.id_paciente=le.id_paciente JOIN usuario u ON u.id_usuario=p.id_usuario WHERE le.id_lista_espera=r.id_lista_espera AND le.estado='OFERTADA' AND u.activo=TRUE AND u.rol='PACIENTE')";
-        leerOcupaciones(conn,ofertas,sede,desde,hasta,2,resultado);
-        String retenciones="SELECT r.id_medico,r.inicio,r.duracion_minutos FROM retencion_cupo r JOIN medico m ON m.id_medico=r.id_medico WHERE (?=0 OR m.id_sede=?) AND r.inicio>=? AND r.inicio<? AND r.vence>?";
-        leerOcupaciones(conn,retenciones,sede,desde,hasta,1,resultado);
+    private Map<AgendaDia, List<Ocupacion>> ocupacionesDeSede(Connection conexion, int sede,
+            LocalDate desde, LocalDate hasta, java.util.Set<AgendaDia> seleccionadas) throws SQLException {
+        var resultado = new HashMap<AgendaDia, List<Ocupacion>>();
+        for (var agenda : seleccionadas) {
+            resultado.put(agenda, new ArrayList<>());
+        }
+        var repositorio = new DisponibilidadRepository(conexion);
+        var ahora = java.time.LocalDateTime.now(clock);
+        agregarOcupaciones(repositorio.citasOcupadas(sede, desde, hasta), resultado);
+        agregarOcupaciones(repositorio.ofertasVigentes(sede, desde, hasta, ahora), resultado);
+        agregarOcupaciones(repositorio.retencionesVigentes(sede, desde, hasta, ahora), resultado);
         return resultado;
     }
 
-    private void leerOcupaciones(Connection conn,String sql,int sede,LocalDate desde,LocalDate hasta,
-            int filtrosVigencia,Map<AgendaDia,List<Ocupacion>> destino)throws SQLException {
-        try(var st=conn.prepareStatement(sql)){
-            st.setInt(1,sede);st.setInt(2,sede);st.setObject(3,desde.atStartOfDay());st.setObject(4,hasta.atStartOfDay());
-            for(int i=0;i<filtrosVigencia;i++)st.setObject(5+i,java.time.LocalDateTime.now(clock));
-            try(var r=st.executeQuery()){
-                while(r.next()){
-                    var inicio=r.getObject("inicio",java.time.LocalDateTime.class);
-                    var agenda=new AgendaDia(r.getInt("id_medico"),inicio.toLocalDate());
-                    if(!destino.containsKey(agenda))continue;
-                    int minutos=r.getInt("duracion_minutos");
-                    if(minutos<=0||minutos>1440)throw new SQLException("La duración de la cita no es válida");
-                    int segundo=inicio.toLocalTime().toSecondOfDay();
-                    destino.get(agenda).add(new Ocupacion(segundo,segundo+minutos*60));
+    private static void agregarOcupaciones(List<DisponibilidadRepository.Ocupacion> ocupaciones,
+            Map<AgendaDia, List<Ocupacion>> destino) throws SQLException {
+        for (var ocupacion : ocupaciones) {
+            var agenda = new AgendaDia(ocupacion.medico(), ocupacion.inicio().toLocalDate());
+            if (destino.containsKey(agenda)) {
+                int minutos = ocupacion.minutos();
+                if (minutos <= 0 || minutos > 1440) {
+                    throw new SQLException("La duración de la cita no es válida");
                 }
+                int segundo = ocupacion.inicio().toLocalTime().toSecondOfDay();
+                destino.get(agenda).add(new Ocupacion(segundo, segundo + minutos * 60));
             }
         }
     }
@@ -320,12 +336,17 @@ public class MedicoDAO {
     private static void addSlots(Map<LocalTime, Integer> slots, ResultSet rs) throws SQLException {
         java.sql.Time start = rs.getTime("hora_inicio");
         java.sql.Time end = rs.getTime("hora_fin");
-        int minutes = rs.getInt("duracion_minutos");
+        addSlots(slots, start == null ? null : start.toLocalTime(),
+                end == null ? null : end.toLocalTime(), rs.getInt("duracion_minutos"));
+    }
+
+    private static void addSlots(Map<LocalTime, Integer> slots, LocalTime start, LocalTime end,
+            int minutes) throws SQLException {
         if (start == null || end == null || minutes <= 0 || minutes > 1440) {
             throw new SQLException("Intervalo de disponibilidad inválido");
         }
-        long first = start.toLocalTime().toSecondOfDay();
-        long last = end.toLocalTime().toSecondOfDay();
+        long first = start.toSecondOfDay();
+        long last = end.toSecondOfDay();
         if (first % 60 != 0 || last % 60 != 0) throw new SQLException("El intervalo debe usar minutos completos");
         if (first >= last) throw new SQLException("Intervalo de disponibilidad inválido");
         long duration = minutes * 60L;

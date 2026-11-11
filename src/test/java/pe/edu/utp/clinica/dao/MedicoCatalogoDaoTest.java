@@ -12,6 +12,32 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoCatalogoDaoTest {
+    @Test void conteoConSpringConservaLaConexionYLaTransaccionDelLlamador() throws Exception {
+        agenda("2026-10-28", "09:00", "10:00", 30, "PUBLICADO");
+        var desde = java.time.LocalDate.of(2026, 10, 28);
+        try (var conexion = DriverManager.getConnection(url)) {
+            conexion.setAutoCommit(false);
+            try (var insercion = conexion.prepareStatement(
+                    "INSERT INTO cita(id_medico,fecha_hora,estado,id_disponibilidad) VALUES(42,?,'CONFIRMADA',1)")) {
+                insercion.setObject(1, desde.atTime(9, 0));
+                insercion.executeUpdate();
+            }
+            assertEquals(1, dao.contarCuposDisponibles(conexion, 1, desde, desde.plusDays(1)));
+            assertFalse(conexion.isClosed());
+            assertFalse(conexion.getAutoCommit());
+            conexion.rollback();
+            assertEquals(2, dao.contarCuposDisponibles(conexion, 1, desde, desde.plusDays(1)));
+        }
+    }
+
+    @Test void erroresDeSpringMantienenElContratoDelCatalogo() throws Exception {
+        sql("DROP TABLE disponibilidad");
+        var error = assertThrows(CatalogoDatosException.class,
+                () -> dao.disponibilidadSemanal(1, 1, 42, java.time.LocalDate.of(2026, 10, 28)));
+        assertInstanceOf(SQLException.class, error.getCause());
+        assertEquals("No fue posible consultar el catálogo.", error.getMessage());
+    }
+
     @Test void semanaAgrupaConsultasAunqueAumentenMedicosYConservaFiltros()throws Exception {
         for(int i=0;i<7;i++)agenda(java.time.LocalDate.of(2026,10,28).plusDays(i).toString(),"09:00","10:00",30,"PUBLICADO");
         sql("INSERT INTO disponibilidad(id_medico,id_sede,fecha,hora_inicio,hora_fin,duracion_minutos,estado) VALUES(43,2,'2026-10-28','14:00','15:00',30,'PUBLICADO')");

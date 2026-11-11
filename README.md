@@ -7,6 +7,13 @@
 
 Sistema integral de gestión de citas médicas y reasignación inteligente para la Clínica Internacional, desarrollado bajo el estándar de arquitectura **MVC (Modelo-Vista-Controlador)**.
 
+## Revisión de mejoras de persistencia
+
+La primera migración incorpora Spring JDBC al cálculo agrupado de disponibilidad
+semanal y al contador de cupos de admisión. El alcance, los archivos modificados,
+las comprobaciones y el acceso a la versión anterior están en
+[Persistencia de disponibilidad](docs/persistencia-disponibilidad.md).
+
 ## 🔐 Credenciales de Acceso
 
 Para explorar las funcionalidades del sistema, se dispone de las siguientes cuentas de demostración:
@@ -32,7 +39,7 @@ Para explorar las funcionalidades del sistema, se dispone de las siguientes cuen
 Este proyecto ha sido estructurado buscando alta cohesión y bajo acoplamiento:
 
 - **Backend:** Java 17, Jakarta EE 10 (Servlets, JSP).
-- **Acceso a Datos:** JDBC nativo implementando el patrón de diseño **DAO** (Data Access Object) y pool de conexiones con **HikariCP**.
+- **Acceso a Datos:** Spring JDBC para el cálculo agrupado de disponibilidad, DAO con JDBC en los demás módulos y pool de conexiones con **HikariCP**.
 - **Frontend:** HTML5, CSS3 nativo (variables globales), JavaScript (Fetch API/AJAX) y Lucide Icons.
 - **Gestión de dependencias:** Apache Maven.
 - **Base de Datos:** MySQL 8.0+.
