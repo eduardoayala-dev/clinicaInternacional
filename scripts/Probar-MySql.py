@@ -7,6 +7,7 @@ parser.add_argument('--solo-correos',action='store_true')
 parser.add_argument('--solo-horarios',action='store_true')
 parser.add_argument('--solo-catalogos',action='store_true')
 parser.add_argument('--solo-ciclo-citas',action='store_true')
+parser.add_argument('--toda-persistencia',action='store_true')
 argumentos=parser.parse_args()
 root=Path(__file__).resolve().parents[1]; tag=uuid.uuid4().hex[:12]; name='clinica-pr-mysql-'+tag; schema='clinica_agendas_test_'+tag
 assert name.startswith('clinica-pr-mysql-') and schema.startswith('clinica_agendas_test_')
@@ -29,6 +30,8 @@ try:
         suites='MySqlPruebasTest,MedicoCatalogoDaoTest,CatalogosApiServletTest,DisponibilidadServletTest,MotivoCitaDAOTest,CicloVidaCitaMySqlTest,OfertasMySqlTest'
     if argumentos.solo_ciclo_citas:
         suites='MySqlPruebasTest,AgendaCitaMySqlTest,CicloVidaCitaMySqlTest,OfertasMySqlTest,PropuestaHorarioMySqlTest,CorreoCitaMySqlTest,AtencionCitaMySqlTest,AdmisionCitaMySqlTest,HistorialMedicoMySqlTest,MedicoPortalMySqlTest'
+    if argumentos.toda_persistencia:
+        suites=','.join(sorted(p.stem for p in (root/'src/test/java').rglob('*MySqlTest.java')))+',MySqlPruebasTest'
     shell='mkdir -p /tmp/revision-pr && cp /work/pom.xml /tmp/revision-pr/ && cp -r /work/src /work/sql /tmp/revision-pr/ && cd /tmp/revision-pr && mvn -B -Dtest='+suites+' -DargLine=-Xmx256m -Dsurefire.reportNameSuffix=mysql test; resultado=$?; if [ -d target/surefire-reports ]; then cp target/surefire-reports/* /work/target/pruebas-mysql/reports/; fi; exit "$resultado"'
     (root/'target/pruebas-mysql/reports').mkdir(parents=True,exist_ok=True)
     with (root/'target/pruebas-mysql/ejecucion.log').open('wb') as log:

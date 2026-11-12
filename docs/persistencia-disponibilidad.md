@@ -1,23 +1,30 @@
-# Persistencia del catálogo y ciclo de citas con JPA
+# Persistencia del sistema con JPA
 
 ## Alcance de la migración
 
 La rama `feature/persistencia-jpa` reemplaza el enfoque intermedio de Spring JDBC.
-`MedicoDAO` delega la lectura del catálogo de médicos, especialidades y sedes, las
-fechas y los horarios diarios, el calendario semanal y el conteo de cupos a
-repositorios JPA con Hibernate. No contiene SQL manual ni `PreparedStatement`.
-Los motivos de consulta también se leen mediante `MotivoCitaRepository` y Criteria API.
-La migración incluye la retención de cupos, reserva, reprogramación y cancelación
-del paciente, así como las lecturas de Mis citas e historial. `AgendaCitaDAO` y
-`CitaDAO` ya no contienen SQL manual. Sus contratos públicos se conservan.
-Los catálogos administrativos, autenticación, procesamiento de correo, lista de
-espera y otros módulos continúan usando JDBC mientras avanza su migración.
+Todos los módulos de producción delegan el acceso a datos a repositorios JPA con
+Hibernate y Criteria API. No hay SQL manual, consultas nativas, cadenas JPQL ni
+`PreparedStatement` en `src/main/java`.
+
+La migración incluye autenticación y revocación de sesiones, verificación de
+cuentas, invitaciones y perfiles profesionales, catálogos e importaciones,
+publicación de horarios, disponibilidad y retención de cupos, ciclo de citas,
+registro de llegada y atención, historial y seguimientos, prioridad clínica,
+lista de espera y ofertas, notificaciones, colas de correo y reportes.
+Los contratos de los DAO y las rutas del sistema se conservan.
+
+Los archivos SQL de creación, migración, respaldo y pruebas siguen siendo
+necesarios para administrar MySQL. HikariCP y el driver JDBC siguen transportando
+las operaciones generadas por Hibernate; usar ORM no elimina el driver.
+La comprobación del esquema lee metadatos JDBC y valida la configuración y las
+restricciones mediante repositorios, sin crear ni modificar tablas.
 
 ## Implementación
 
 | Componente | Responsabilidad |
 | --- | --- |
-| `persistence/entity` | Mapear las tablas existentes y sus relaciones para las lecturas del catálogo. |
+| `persistence/entity` | Mapear las tablas existentes, relaciones, proyecciones y escrituras del sistema. |
 | `PersistenciaJpa` | Compartir las fábricas de Hibernate por motor y abrir sesiones sobre la conexión de la operación. |
 | `MotivoCitaRepository` | Filtrar motivos activos de especialidades activas. |
 | `CatalogoMedicoRepository` | Proyectar los datos de médicos, especialidades y sedes mediante Criteria API. |
@@ -46,7 +53,7 @@ Las entidades de escritura conservan las columnas y claves generadas del esquema
 
 La fábrica se comparte por motor y se cierra al detener la aplicación.
 `hibernate.type.java_time_use_direct_jdbc=true` conserva los valores `java.time`
-sin convertirlos a `java.sql.Timestamp`. Se comprueba con MySQL y una JVM en UTC
+sin desplazarlos al leer y escribir. Las conversiones temporales de agregaciones se realizan dentro de la consulta generada, no alteran el huso de los datos. Se comprueba con MySQL y una JVM en UTC
 usando una conexión configurada para America/Lima, evitando desplazar horarios y
 vencimientos.
 
@@ -68,26 +75,35 @@ variables de conexión para desplegar este bloque en Railway.
 ## Verificación
 
 ```powershell
-mvn "-Dtest=MedicoCatalogoDaoTest,CatalogosApiServletTest,DisponibilidadServletTest" test
 mvn test
+py scripts/Probar-MySql.py --toda-persistencia
 mvn -DskipTests package
-py scripts/Probar-MySql.py --solo-catalogos
-py scripts/Probar-MySql.py --solo-ciclo-citas
 ```
 
-Los casos del catálogo comprueban permisos implícitos por estados activos, separación
-por sede, fechas, cruces de intervalos, ofertas y retenciones. También verifican la
-misma cantidad de consultas y el rollback de una cita insertada sin commit en la
-conexión del llamador. Las pruebas de integración usan una base MySQL temporal
-`clinica_agendas_test_*`, separada de los datos locales de la clínica.
-La primera etapa de catálogo aprobó 1.045 pruebas generales y una suite adicional
-de 120 casos con MySQL. Tras incorporar el ciclo de citas, la suite general
-completó 1.047 pruebas sin fallos y omitió 613 por condiciones de entorno.
-Las pruebas específicas de autorización, reserva, historial y avisos completaron
-135 casos sin fallos. La integración ampliada en MySQL completó 307 pruebas sin fallos ni omisiones,
-incluyendo reservas concurrentes, atención, admisión, correos, ofertas e historial.
-Las tablas temporales de auditoría se ajustaron a la clave primaria real del
-esquema para probar la generación de identificadores JPA.
+Las pruebas MySQL se ejecutan en un contenedor temporal con TLS y esquema
+`clinica_agendas_test_*`, separado del volumen y de los datos locales de la clínica.
+El ejecutor retira únicamente ese contenedor temporal al terminar.
+
+Se comprueban autorización por usuario y sede, estados y fechas, filtros y
+paginación, revocación, códigos de un uso, reservas y ofertas concurrentes,
+rollback de escrituras compuestas e idempotencia de las colas de correo.
+Los reportes conservan agrupaciones en la base de datos, y los contactos de las
+citas se consultan por lote para evitar una consulta por fila.
+
+Las tablas temporales de auditoría y notificaciones se ajustaron a las claves
+primarias reales del esquema para comprobar los identificadores generados por JPA.
+Resultados de la migración completa, comprobados el 12 de noviembre de 2026:
+
+- Regresión general: 1.669 casos declarados, 1.054 ejecutados y 615 omitidos por condiciones de entorno; sin fallos ni errores.
+- Integración MySQL con TLS: 614 casos ejecutados, sin fallos, errores ni omisiones.
+- Compilación y empaquetado del WAR: correctos.
+- Comprobación HTTP local: disponibilidad y logins, perfil e historial del paciente, padrones y seguimiento de admisión, usuarios, sedes, analítica y priorización del administrador responden HTTP 200 con las cuentas correspondientes.
+- Revisión estática de `src/main/java`: sin SQL manual, consultas nativas ni llamadas a `PreparedStatement`.
+
+La integración amplia detectó una tabla de reporte que impedía limpiar el esquema
+temporal entre suites. Se completó la lista de tablas de prueba y se repitió toda
+la integración con resultado correcto. Esto no modificó la base local ni Railway.
+El usuario confirmó que cargan Mi agenda, Mis pacientes, Seguimientos y Mis horarios en el servidor local actualizado. Los casos automatizados del portal y del historial también están incluidos.
 
 ## Comparación de código
 
@@ -105,6 +121,10 @@ No se atribuye una mejora de latencia a este cambio sin repetir las mediciones.
 4. Reprogramar la cita y comprobar que se libera el horario anterior y se ocupa el nuevo.
 5. Cancelar con motivo y revisar que el cupo se libera y la cita aparece en Canceladas.
 6. Revisar los avisos y el contador de cupos de admisión para la misma sede.
+7. Registrar llegada, iniciar y cerrar atención como médico; revisar historial y seguimiento.
+8. Inscribir una lista de espera y aceptar o rechazar una oferta válida.
+9. Comprobar invitaciones, activación y recuperación con las cuentas de prueba.
+10. Consultar reportes y exportaciones por sede y fechas; comprobar que los totales coinciden.
 
 Referencias: [Hibernate 6.6 y compatibilidad](https://hibernate.org/orm/releases/6.6/),
 [gestión de conexiones](https://docs.hibernate.org/orm/6.6/javadocs/org/hibernate/SessionBuilder.html).
