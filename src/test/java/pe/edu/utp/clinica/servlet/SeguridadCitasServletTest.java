@@ -8,6 +8,26 @@ import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 
 class SeguridadCitasServletTest {
+    @Test void falloAlConsultarCancelacionDevuelve503SinEfectos() {
+        Dao dao = new Dao() {
+            @Override public boolean estaCanceladaPorPaciente(int cita, int paciente) {
+                throw new pe.edu.utp.clinica.dao.CatalogoDatosException(new java.sql.SQLException("fallo de prueba"));
+            }
+        };
+        var x = patient();
+        var servlet = patientServlet(dao);
+        servlet.doPost(x.request, x.response);
+        assertEquals(503, x.status);
+        var response = new jakarta.servlet.http.HttpServletResponseWrapper(x.response) {
+            @Override public void sendError(int status) throws java.io.IOException {
+                throw new java.io.IOException("cliente desconectado");
+            }
+        };
+        assertDoesNotThrow(() -> servlet.doPost(x.request, response));
+        assertEquals(0, dao.offers);
+        assertEquals(0, dao.notifications);
+    }
+
     @Test void motivoVacioNoEjecutaCancelacionNiEfectos()throws Exception {
         Dao dao=new Dao();dao.allowed=true;var x=patient();x.parameters.remove("motivo");
         patientServlet(dao).doPost(x.request,x.response);

@@ -2,7 +2,6 @@ package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
 
-import java.sql.*;
 import java.time.*;
 import java.time.temporal.ChronoUnit;
 import java.util.*;

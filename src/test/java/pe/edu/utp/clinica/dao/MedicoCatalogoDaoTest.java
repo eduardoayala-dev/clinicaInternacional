@@ -12,6 +12,12 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoCatalogoDaoTest {
+    @Test void detallesConservanLetrasAcentuadasYNombresConEnie() throws Exception {
+        sql("UPDATE usuario SET nombres='Dra. Ángela',apellidos='Peña Ñúñez' WHERE id_usuario=(SELECT id_usuario FROM medico WHERE id_medico=42)");
+        var detalle=dao.obtenerDetallesMedico(42);
+        assertEquals("Dr. Ángela Peña Ñúñez",detalle.get("nombreMedico"));
+    }
+
     @Test void catalogosJpaConservanDatosConteosYDetalles() throws Exception {
         sql("UPDATE especialidad SET nombre='Cardiología' WHERE id_especialidad=1");
         sql("UPDATE sede SET nombre='San Borja',direccion='Avenida de prueba 123' WHERE id_sede=1");

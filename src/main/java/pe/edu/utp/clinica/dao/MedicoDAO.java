@@ -337,7 +337,7 @@ public class MedicoDAO {
     }
 
     private static String limpiarNombre(String nombre) {
-        return nombre.replaceAll("(?i)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-zA-ZáéíóúÁÉÍÓÚñÑ\\s]", "")
+        return nombre.replaceAll("(?iu)\\b(Dr\\.|Dra\\.|Dr|Dra)\\b|[^a-záéíóúñ\\s]", "")
                 .replaceAll("\\s+", " ").trim();
     }
 
