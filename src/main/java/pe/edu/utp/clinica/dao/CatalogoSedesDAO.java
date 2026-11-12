@@ -28,7 +28,7 @@ public final class CatalogoSedesDAO {
         boolean automatico=sede!=null&&sede.id()==0&&(sede.codigo()==null||sede.codigo().isBlank());
         Sede validada=validar(automatico?conCodigo(sede,"AUTO"):sede);
         TransaccionJdbc.ejecutar(conexiones,c->{
-            InvitacionPersonalDAO.administrador(c,actor);serializarCodigos(c);
+            serializarCodigos(c);InvitacionPersonalDAO.administrador(c,actor);
             Sede definitiva=automatico?conCodigo(validada,codigoDisponible(c,validada.nombre())):validada;
             guardar(c,actor,definitiva,ip,false);return null;
         });
@@ -36,8 +36,8 @@ public final class CatalogoSedesDAO {
     public List<Fila> importar(int actor,List<Fila> filas,String ip){
         if(filas==null||filas.isEmpty()||filas.size()>200)throw invalida("Importa entre 1 y 200 filas.");
         return TransaccionJdbc.ejecutar(conexiones,c->{
-            InvitacionPersonalDAO.administrador(c,actor);
             serializarCodigos(c);
+            InvitacionPersonalDAO.administrador(c,actor);
             var resultado=new ArrayList<Fila>();var vistos=new java.util.HashSet<String>();
             for(var fila:filas){
                 var punto=c.setSavepoint();
