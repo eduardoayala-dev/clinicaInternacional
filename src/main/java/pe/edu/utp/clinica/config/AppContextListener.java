@@ -50,6 +50,7 @@ public class AppContextListener implements ServletContextListener {
         LOGGER.info("Deteniendo recursos de la aplicación...");
         if (ofertas != null) ofertas.close();
         if (disponibilidad != null) disponibilidad.close();
+        pe.edu.utp.clinica.persistence.PersistenciaJpa.cerrar();
         DatabaseConfig.shutdown();
         LOGGER.info("Recursos de base de datos liberados exitosamente.");
     }

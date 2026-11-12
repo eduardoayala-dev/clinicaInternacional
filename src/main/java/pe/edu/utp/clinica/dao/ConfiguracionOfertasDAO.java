@@ -1,6 +1,7 @@
 package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
+
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.time.Clock;
@@ -8,64 +9,211 @@ import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 
 public class ConfiguracionOfertasDAO {
-    public record Parametros(int minutosRespuesta,int anticipacionMinima,long version,int confirmacionHoras,int toleranciaLlegada,int recordatorioHoras,int intentosConfirmacion) {
-        public Parametros(int minutosRespuesta,int anticipacionMinima,long version){this(minutosRespuesta,anticipacionMinima,version,24,10,24,2);}
-        public Parametros(int minutosRespuesta,int anticipacionMinima,long version,int confirmacionHoras,int toleranciaLlegada){this(minutosRespuesta,anticipacionMinima,version,confirmacionHoras,toleranciaLlegada,24,2);}
+    public record Parametros(
+            int minutosRespuesta,
+            int anticipacionMinima,
+            long version,
+            int confirmacionHoras,
+            int toleranciaLlegada,
+            int recordatorioHoras,
+            int intentosConfirmacion) {
+        public Parametros(int minutosRespuesta, int anticipacionMinima, long version) {
+            this(minutosRespuesta, anticipacionMinima, version, 24, 10, 24, 2);
+        }
+
+        public Parametros(
+                int minutosRespuesta,
+                int anticipacionMinima,
+                long version,
+                int confirmacionHoras,
+                int toleranciaLlegada) {
+            this(
+                    minutosRespuesta,
+                    anticipacionMinima,
+                    version,
+                    confirmacionHoras,
+                    toleranciaLlegada,
+                    24,
+                    2);
+        }
     }
-    public record Cambios(int minutosRespuesta,int anticipacionMinima,int confirmacionHoras,int toleranciaLlegada,int recordatorioHoras,int intentosConfirmacion,long version) {}
+
+    public record Cambios(
+            int minutosRespuesta,
+            int anticipacionMinima,
+            int confirmacionHoras,
+            int toleranciaLlegada,
+            int recordatorioHoras,
+            int intentosConfirmacion,
+            long version) {}
+
     private final AgendaCitaDAO.ConnectionSource conexiones;
     private final Clock reloj;
-    public ConfiguracionOfertasDAO(){this(DatabaseConfig::getConnection,Clock.systemUTC());}
-    ConfiguracionOfertasDAO(AgendaCitaDAO.ConnectionSource conexiones,Clock reloj){this.conexiones=conexiones;this.reloj=reloj;}
+
+    public ConfiguracionOfertasDAO() {
+        this(DatabaseConfig::getConnection, Clock.systemUTC());
+    }
+
+    ConfiguracionOfertasDAO(AgendaCitaDAO.ConnectionSource conexiones, Clock reloj) {
+        this.conexiones = conexiones;
+        this.reloj = reloj;
+    }
+
     public Parametros leer() {
-        try(var conexion=conexiones.open()){return leer(conexion);}
-        catch(SQLException e){throw noDisponible();}
-    }
-    static Parametros leer(Connection conexion)throws SQLException {
-        try(var consulta=conexion.prepareStatement("SELECT minutos_respuesta,anticipacion_minima,version,confirmacion_horas,tolerancia_llegada,recordatorio_horas,intentos_confirmacion FROM configuracion_ofertas WHERE id_configuracion=1");var filas=consulta.executeQuery()) {
-            if(!filas.next())throw noDisponible();
-            return new Parametros(filas.getInt(1),filas.getInt(2),filas.getLong(3),filas.getInt(4),filas.getInt(5),filas.getInt(6),filas.getInt(7));
+        try (var conexion = conexiones.open()) {
+            return leer(conexion);
+        } catch (SQLException e) {
+            throw noDisponible();
         }
     }
-    public Parametros guardar(int actor,int minutos,int anticipacion,long version) {
-        Parametros actual=leer();return guardar(actor,new Cambios(minutos,anticipacion,actual.confirmacionHoras(),actual.toleranciaLlegada(),actual.recordatorioHoras(),actual.intentosConfirmacion(),version));
+
+    static Parametros leer(Connection conexion) throws SQLException {
+        var parametros =
+                new pe.edu.utp.clinica.repository.ConfiguracionOfertasRepository(conexion).leer();
+        if (parametros == null) throw noDisponible();
+        return parametros;
     }
-    public Parametros guardar(int actor,int minutos,int anticipacion,int confirmacion,int tolerancia,long version) {
-        Parametros actual=leer();return guardar(actor,new Cambios(minutos,anticipacion,confirmacion,tolerancia,actual.recordatorioHoras(),actual.intentosConfirmacion(),version));
+
+    public Parametros guardar(int actor, int minutos, int anticipacion, long version) {
+        Parametros actual = leer();
+        return guardar(
+                actor,
+                new Cambios(
+                        minutos,
+                        anticipacion,
+                        actual.confirmacionHoras(),
+                        actual.toleranciaLlegada(),
+                        actual.recordatorioHoras(),
+                        actual.intentosConfirmacion(),
+                        version));
     }
-    public Parametros guardar(int actor,Cambios cambios) {
+
+    public Parametros guardar(
+            int actor,
+            int minutos,
+            int anticipacion,
+            int confirmacion,
+            int tolerancia,
+            long version) {
+        Parametros actual = leer();
+        return guardar(
+                actor,
+                new Cambios(
+                        minutos,
+                        anticipacion,
+                        confirmacion,
+                        tolerancia,
+                        actual.recordatorioHoras(),
+                        actual.intentosConfirmacion(),
+                        version));
+    }
+
+    public Parametros guardar(int actor, Cambios cambios) {
         java.util.Objects.requireNonNull(cambios);
-        int minutos=cambios.minutosRespuesta();
-        int anticipacion=cambios.anticipacionMinima();
-        int confirmacion=cambios.confirmacionHoras();
-        int tolerancia=cambios.toleranciaLlegada();
-        int recordatorio=cambios.recordatorioHoras();
-        int intentos=cambios.intentosConfirmacion();
-        long version=cambios.version();
-        if(minutos<5||minutos>60||anticipacion<0||anticipacion>10080||version<0||confirmacion<1||confirmacion>168||tolerancia<0||tolerancia>120||recordatorio<1||recordatorio>168||intentos<1||intentos>10)throw new AgendaException(400,"CONFIGURACION_INVALIDA","Revisa los rangos de oferta, confirmación (1 a 168 horas) y tolerancia (0 a 120 minutos), recordatorio (1 a 168 horas) e intentos (1 a 10).");
-        return TransaccionJdbc.ejecutar(conexiones,conexion->{
-            exigirAdministrador(conexion,actor);
-            try(var consulta=conexion.prepareStatement("SELECT version FROM configuracion_ofertas WHERE id_configuracion=1 FOR UPDATE");var filas=consulta.executeQuery()) {
-                if(!filas.next())throw noDisponible();
-                if(filas.getLong(1)!=version)throw new AgendaException(409,"CONFIGURACION_CAMBIADA","Otro administrador cambió la configuración. Recarga la página antes de guardar.");
-            }
-            Parametros anterior=leer(conexion);
-            try(var cambio=conexion.prepareStatement("UPDATE configuracion_ofertas SET minutos_respuesta=?,anticipacion_minima=?,version=version+1,actualizado_por=?,actualizado_en=?,confirmacion_horas=?,tolerancia_llegada=?,recordatorio_horas=?,intentos_confirmacion=? WHERE id_configuracion=1 AND version=?")) {
-                cambio.setInt(1,minutos);cambio.setInt(2,anticipacion);cambio.setInt(3,actor);
-                cambio.setObject(4,LocalDateTime.ofInstant(reloj.instant(),ZoneOffset.UTC));cambio.setInt(5,confirmacion);cambio.setInt(6,tolerancia);cambio.setInt(7,recordatorio);cambio.setInt(8,intentos);cambio.setLong(9,version);
-                if(cambio.executeUpdate()!=1)throw noDisponible();
-            }
-            try(var auditoria=conexion.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) VALUES(?,'CONFIGURACION_OFERTAS',?,FALSE)")) {
-                auditoria.setInt(1,actor);auditoria.setString(2,"Plazo "+anterior.minutosRespuesta()+"→"+minutos+" min; anticipación "+anterior.anticipacionMinima()+"→"+anticipacion+" min; confirmación "+anterior.confirmacionHoras()+"→"+confirmacion+" h; tolerancia "+anterior.toleranciaLlegada()+"→"+tolerancia+" min; recordatorio "+anterior.recordatorioHoras()+"→"+recordatorio+" h; intentos "+anterior.intentosConfirmacion()+"→"+intentos+"; versión "+(version+1));auditoria.executeUpdate();
-            }
-            return new Parametros(minutos,anticipacion,version+1,confirmacion,tolerancia,recordatorio,intentos);
-        });
+        int minutos = cambios.minutosRespuesta();
+        int anticipacion = cambios.anticipacionMinima();
+        int confirmacion = cambios.confirmacionHoras();
+        int tolerancia = cambios.toleranciaLlegada();
+        int recordatorio = cambios.recordatorioHoras();
+        int intentos = cambios.intentosConfirmacion();
+        long version = cambios.version();
+        if (minutos < 5
+                || minutos > 60
+                || anticipacion < 0
+                || anticipacion > 10080
+                || version < 0
+                || confirmacion < 1
+                || confirmacion > 168
+                || tolerancia < 0
+                || tolerancia > 120
+                || recordatorio < 1
+                || recordatorio > 168
+                || intentos < 1
+                || intentos > 10)
+            throw new AgendaException(
+                    400,
+                    "CONFIGURACION_INVALIDA",
+                    "Revisa los rangos de oferta, confirmación (1 a 168 horas) y tolerancia (0 a"
+                        + " 120 minutos), recordatorio (1 a 168 horas) e intentos (1 a 10).");
+        return TransaccionJdbc.ejecutar(
+                conexiones,
+                conexion -> {
+                    exigirAdministrador(conexion, actor);
+                    var repo =
+                            new pe.edu.utp.clinica.repository.ConfiguracionOfertasRepository(
+                                    conexion);
+                    Long previa = repo.bloquearVersion();
+                    if (previa == null) throw noDisponible();
+                    if (previa != version)
+                        throw new AgendaException(
+                                409,
+                                "CONFIGURACION_CAMBIADA",
+                                "Otro administrador cambió la configuración. Recarga la página"
+                                    + " antes de guardar.");
+                    Parametros anterior = leer(conexion);
+                    if (repo.guardar(
+                                    actor,
+                                    cambios,
+                                    LocalDateTime.ofInstant(reloj.instant(), ZoneOffset.UTC))
+                            != 1) throw noDisponible();
+                    new pe.edu.utp.clinica.repository.UsuarioRepository(conexion)
+                            .auditar(
+                                    actor,
+                                    null,
+                                    "CONFIGURACION_OFERTAS",
+                                    "Plazo "
+                                            + anterior.minutosRespuesta()
+                                            + "→"
+                                            + minutos
+                                            + " min; anticipación "
+                                            + anterior.anticipacionMinima()
+                                            + "→"
+                                            + anticipacion
+                                            + " min; confirmación "
+                                            + anterior.confirmacionHoras()
+                                            + "→"
+                                            + confirmacion
+                                            + " h; tolerancia "
+                                            + anterior.toleranciaLlegada()
+                                            + "→"
+                                            + tolerancia
+                                            + " min; recordatorio "
+                                            + anterior.recordatorioHoras()
+                                            + "→"
+                                            + recordatorio
+                                            + " h; intentos "
+                                            + anterior.intentosConfirmacion()
+                                            + "→"
+                                            + intentos
+                                            + "; versión "
+                                            + (version + 1),
+                                    false);
+                    return new Parametros(
+                            minutos,
+                            anticipacion,
+                            version + 1,
+                            confirmacion,
+                            tolerancia,
+                            recordatorio,
+                            intentos);
+                });
     }
-    private static void exigirAdministrador(Connection conexion,int actor)throws SQLException {
-        try(var consulta=conexion.prepareStatement("SELECT id_usuario FROM usuario WHERE id_usuario=? AND activo=TRUE AND rol='ADMINISTRADOR' FOR UPDATE")) {
-            consulta.setInt(1,actor);
-            try(var filas=consulta.executeQuery()){if(!filas.next())throw new AgendaException(403,"ADMINISTRADOR_REQUERIDO","La configuración solo puede cambiarla un administrador activo.");}
-        }
+
+    private static void exigirAdministrador(Connection conexion, int actor) throws SQLException {
+        if (!"ADMINISTRADOR"
+                .equals(
+                        new pe.edu.utp.clinica.repository.AutorizacionRepository(conexion)
+                                .rolActivo(actor)))
+            throw new AgendaException(
+                    403,
+                    "ADMINISTRADOR_REQUERIDO",
+                    "La configuración solo puede cambiarla un administrador activo.");
     }
-    private static AgendaException noDisponible(){return new AgendaException(503,"CONFIGURACION_NO_DISPONIBLE","No se pudo obtener la configuración de ofertas.");}
+
+    private static AgendaException noDisponible() {
+        return new AgendaException(
+                503,
+                "CONFIGURACION_NO_DISPONIBLE",
+                "No se pudo obtener la configuración de ofertas.");
+    }
 }

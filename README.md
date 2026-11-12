@@ -7,6 +7,12 @@
 
 Sistema integral de gestión de citas médicas y reasignación inteligente para la Clínica Internacional, desarrollado bajo el estándar de arquitectura **MVC (Modelo-Vista-Controlador)**.
 
+## Revisión de mejoras de persistencia
+
+La persistencia utiliza JPA con Hibernate y Criteria API para todos los módulos: autenticación, cuentas, catálogos, agenda, citas, atención, lista de espera, correos y reportes. El alcance, los archivos modificados,
+las comprobaciones y el acceso a la versión anterior están en
+[Persistencia con JPA](docs/persistencia-disponibilidad.md).
+
 ## 🔐 Credenciales de Acceso
 
 Para explorar las funcionalidades del sistema, se dispone de las siguientes cuentas de demostración:
@@ -32,7 +38,7 @@ Para explorar las funcionalidades del sistema, se dispone de las siguientes cuen
 Este proyecto ha sido estructurado buscando alta cohesión y bajo acoplamiento:
 
 - **Backend:** Java 17, Jakarta EE 10 (Servlets, JSP).
-- **Acceso a Datos:** JDBC nativo implementando el patrón de diseño **DAO** (Data Access Object) y pool de conexiones con **HikariCP**.
+- **Acceso a Datos:** JPA/Hibernate con Criteria API y repositorios para todos los módulos; pool de conexiones con **HikariCP**.
 - **Frontend:** HTML5, CSS3 nativo (variables globales), JavaScript (Fetch API/AJAX) y Lucide Icons.
 - **Gestión de dependencias:** Apache Maven.
 - **Base de Datos:** MySQL 8.0+.

@@ -36,7 +36,7 @@ abstract class AgendaCitaContrato {
         sql("CREATE TABLE seguimiento_cita(id_cita_origen INT PRIMARY KEY,id_cita_control INT)");
         for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V016__parametros_confirmacion_llegada.sql")).split(";")){if(!sentencia.isBlank())sql(sentencia);}
         for(String sentencia:java.nio.file.Files.readString(java.nio.file.Path.of("sql/migrations/V019__politica_contacto_recordatorio.sql")).split(";")){if(!sentencia.isBlank())sql(sentencia);}
-        sql("CREATE TABLE auditoria_seguridad(id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
+        sql("CREATE TABLE auditoria_seguridad(id_auditoria INT AUTO_INCREMENT PRIMARY KEY,id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
         sql("CREATE TABLE paciente(id_paciente INT PRIMARY KEY,id_usuario INT)");
         sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR(20))");
         sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR(20))");

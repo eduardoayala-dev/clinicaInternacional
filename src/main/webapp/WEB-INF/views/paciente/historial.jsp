@@ -516,5 +516,6 @@
         });
     </script>
 
+    <script src="${pageContext.request.contextPath}/assets/js/cancelacion-cita.js?v=20261111-1"></script>
 </body>
 </html>

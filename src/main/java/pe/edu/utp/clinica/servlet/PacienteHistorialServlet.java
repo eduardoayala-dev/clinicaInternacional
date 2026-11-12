@@ -69,7 +69,7 @@ public class PacienteHistorialServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
             pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/login?error=sesion_requerida");
@@ -78,7 +78,7 @@ public class PacienteHistorialServlet extends HttpServlet {
 
         Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
         if (!"PACIENTE".equals(usuario.getRol())) {
-            response.sendError(HttpServletResponse.SC_FORBIDDEN);
+            pe.edu.utp.clinica.util.TransporteHttp.error(response,HttpServletResponse.SC_FORBIDDEN);
             return;
         }
         String action = request.getParameter("action");
@@ -91,7 +91,7 @@ public class PacienteHistorialServlet extends HttpServlet {
         if ("confirmar".equals(action)) estado = "CONFIRMADA";
         else if ("cancelar".equals(action)) estado = "CANCELADA";
         else {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            pe.edu.utp.clinica.util.TransporteHttp.error(response,HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         int idCita;
@@ -99,7 +99,7 @@ public class PacienteHistorialServlet extends HttpServlet {
             idCita = Integer.parseInt(request.getParameter(ID_CITA));
             if (idCita <= 0) throw new NumberFormatException();
         } catch (NumberFormatException e) {
-            response.sendError(HttpServletResponse.SC_BAD_REQUEST);
+            pe.edu.utp.clinica.util.TransporteHttp.error(response,HttpServletResponse.SC_BAD_REQUEST);
             return;
         }
         CitaDAO citaDAO = crearCitaDAO();
@@ -114,8 +114,7 @@ public class PacienteHistorialServlet extends HttpServlet {
             return;
         }
         if (!actualizado) {
-            // Misma respuesta para cita ajena, inexistente o no modificable.
-            response.sendError(HttpServletResponse.SC_NOT_FOUND);
+            resolverSinCambio(request,response,session,citaDAO,idCita,idPaciente,estado);
             return;
         }
         if ("CANCELADA".equals(estado)) {
@@ -128,6 +127,22 @@ public class PacienteHistorialServlet extends HttpServlet {
             }
         }
         pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/paciente/historial");
+    }
+
+    private void resolverSinCambio(HttpServletRequest request,HttpServletResponse response,HttpSession session,CitaDAO citas,int cita,int paciente,String estado) {
+        if ("CANCELADA".equals(estado)) {
+            try {
+                if (citas.estaCanceladaPorPaciente(cita,paciente)) {
+                    session.setAttribute(FLASH_MESSAGE,"Esta cita ya está cancelada.");
+                    pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath()+"/paciente/historial");
+                    return;
+                }
+            } catch (CatalogoDatosException error) {
+                pe.edu.utp.clinica.util.TransporteHttp.error(response,HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                return;
+            }
+        }
+        pe.edu.utp.clinica.util.TransporteHttp.error(response,HttpServletResponse.SC_NOT_FOUND);
     }
 
     private void confirmarAsistencia(HttpServletRequest request, HttpSession session, Usuario usuario) {

@@ -14,7 +14,6 @@ final class TransaccionJdbc {
     static <T> T ejecutar(AgendaCitaDAO.ConnectionSource source, Operacion<T> operacion) {
         try (Connection conn = source.open()) {
             conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
-            conn.setAutoCommit(false);
             return completar(conn, operacion);
         } catch (SQLException e) {
             LOGGER.warning(() -> "Operación de agenda no disponible: " + e.getSQLState());
@@ -27,13 +26,9 @@ final class TransaccionJdbc {
         var avisos = new java.util.ArrayList<Runnable>();
         AVISOS.set(avisos);
         try {
-            T result = operacion.ejecutar(conn);
-            conn.commit();
+            T result = pe.edu.utp.clinica.persistence.PersistenciaJpa.transaccion(conn, () -> operacion.ejecutar(conn));
             emitir(avisos);
             return result;
-        } catch (SQLException | RuntimeException e) {
-            conn.rollback();
-            throw e;
         } finally {
             if (previos == null) AVISOS.remove();
             else AVISOS.set(previos);
