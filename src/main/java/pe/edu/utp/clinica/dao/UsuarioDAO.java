@@ -1,437 +1,139 @@
 package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
+import pe.edu.utp.clinica.model.Paciente;
+import pe.edu.utp.clinica.model.PerfilPaciente;
 import pe.edu.utp.clinica.model.Usuario;
+import pe.edu.utp.clinica.persistence.PersistenciaJpa;
+import pe.edu.utp.clinica.repository.UsuarioRepository;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
+import java.util.List;
+import java.util.Map;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class UsuarioDAO {
+    private static final Logger LOGGER = Logger.getLogger(UsuarioDAO.class.getName());
 
     protected Connection abrirConexion() throws SQLException {
         return DatabaseConfig.getConnection();
     }
 
-
-    private static final Logger LOGGER = Logger.getLogger(UsuarioDAO.class.getName());
-
     public Usuario buscarPorEmailODni(String identificador) {
-        String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.password_hash, u.rol, u.fecha_registro, u.activo " +
-                     "FROM usuario u " +
-                     "LEFT JOIN paciente p ON u.id_usuario = p.id_usuario " +
-                     "WHERE (u.email = ? OR p.dni = ?) AND u.activo = 1";
-        
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            stmt.setString(1, identificador);
-            stmt.setString(2, identificador);
-
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    Timestamp ts = rs.getTimestamp("fecha_registro");
-                    return new Usuario(
-                            rs.getInt("id_usuario"),
-                            rs.getString("nombres"),
-                            rs.getString("apellidos"),
-                            rs.getString("email"),
-                            rs.getString("password_hash"),
-                            rs.getString("rol"),
-                            ts != null ? ts.toLocalDateTime() : null,
-                            rs.getBoolean("activo")
-                    );
-                }
-            }
+        try (var c = abrirConexion()) {
+            return new UsuarioRepository(c).buscar(identificador);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al buscar usuario: " + e.getMessage(), e);
-        }
-        return null;
-    }
-
-    public int crearUsuario(Usuario u) {
-        String sql = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
-        
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql, PreparedStatement.RETURN_GENERATED_KEYS)) {
-
-            stmt.setString(1, u.getNombres());
-            stmt.setString(2, u.getApellidos());
-            stmt.setString(3, u.getEmail());
-            stmt.setString(4, u.getPasswordHash());
-            stmt.setString(5, u.getRol());
-            stmt.setBoolean(6, u.isActivo());
-
-            int affectedRows = stmt.executeUpdate();
-            if (affectedRows > 0) {
-                try (ResultSet generatedKeys = stmt.getGeneratedKeys()) {
-                    if (generatedKeys.next()) {
-                        return generatedKeys.getInt(1);
-                    }
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al crear usuario: " + e.getMessage(), e);
-        }
-        return -1;
-    }
-
-    public void registrarAuditoria(Integer idUsuario, String ip, String evento, String descripcion, boolean sospechoso) {
-        String sql = "INSERT INTO auditoria_seguridad (id_usuario, ip_origen, evento, descripcion, sospechoso) VALUES (?, ?, ?, ?, ?)";
-        
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-
-            if (idUsuario != null) {
-                stmt.setInt(1, idUsuario);
-            } else {
-                stmt.setNull(1, java.sql.Types.INTEGER);
-            }
-            stmt.setString(2, ip);
-            stmt.setString(3, evento);
-            stmt.setString(4, descripcion);
-            stmt.setBoolean(5, sospechoso);
-
-            stmt.executeUpdate();
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al registrar auditoría: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al buscar usuario.", e);
+            return null;
         }
     }
+
+    public int crearUsuario(Usuario usuario) {
+        try (var c = abrirConexion()) {
+            return PersistenciaJpa.transaccion(c, () -> new UsuarioRepository(c).crear(usuario));
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al crear usuario.", e);
+            return -1;
+        }
+    }
+
+    public void registrarAuditoria(
+            Integer usuario, String ip, String evento, String descripcion, boolean sospechoso) {
+        try (var c = abrirConexion()) {
+            PersistenciaJpa.transaccion(
+                    c,
+                    () -> {
+                        new UsuarioRepository(c)
+                                .auditar(usuario, ip, evento, descripcion, sospechoso);
+                        return null;
+                    });
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al registrar auditoría.", e);
+        }
+    }
+
     public boolean existeDocumentoOCorreo(String documento, String email) {
-        String sql = "SELECT 1 FROM usuario u LEFT JOIN paciente p ON u.id_usuario = p.id_usuario WHERE u.email = ? OR p.dni = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, email);
-            stmt.setString(2, documento);
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
-            }
+        try (var c = abrirConexion()) {
+            return new UsuarioRepository(c).existe(documento, email, false);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al verificar existencia de documento o correo: " + e.getMessage(), e);
+            LOGGER.log(Level.SEVERE, "Error al comprobar documento o correo.", e);
+            return false;
         }
-        return false;
     }
 
     public boolean existeEmail(String email) {
-        String sql = "SELECT 1 FROM usuario WHERE LOWER(email) = LOWER(?)";
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setString(1, email != null ? email.trim() : "");
-            try (ResultSet rs = stmt.executeQuery()) {
-                return rs.next();
-            }
+        try (var c = abrirConexion()) {
+            return new UsuarioRepository(c).existe(null, email != null ? email.trim() : "", true);
         } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al verificar si email ya existe: " + e.getMessage(), e);
-        }
-        return false;
-    }
-
-    public boolean crearCuentaPaciente(Usuario u, pe.edu.utp.clinica.model.Paciente p) {
-        String sqlUsuario = "INSERT INTO usuario (nombres, apellidos, email, password_hash, rol, activo) VALUES (?, ?, ?, ?, ?, ?)";
-        String sqlPacienteFull = "INSERT INTO paciente (id_usuario, dni, fecha_nacimiento, telefono, direccion, canal_aviso, sede_preferida, alergias, tipo_cobertura) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)";
-
-        Connection conn = null;
-        try {
-            conn = abrirConexion();
-            conn.setAutoCommit(false);
-
-            try (PreparedStatement stmtUsuario = conn.prepareStatement(sqlUsuario, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                stmtUsuario.setString(1, u.getNombres());
-                stmtUsuario.setString(2, u.getApellidos());
-                stmtUsuario.setString(3, u.getEmail());
-                stmtUsuario.setString(4, u.getPasswordHash());
-                stmtUsuario.setString(5, u.getRol());
-                stmtUsuario.setBoolean(6, u.isActivo());
-                stmtUsuario.executeUpdate();
-
-                try (ResultSet rs = stmtUsuario.getGeneratedKeys()) {
-                    if (rs.next()) {
-                        int userId = rs.getInt(1);
-                        u.setIdUsuario(userId);
-                        p.setUsuarioId(userId);
-                    } else {
-                        throw new SQLException("No se pudo obtener el ID del usuario insertado.");
-                    }
-                }
-            }
-
-            boolean insertado = false;
-            try (PreparedStatement stmtPaciente = conn.prepareStatement(sqlPacienteFull, PreparedStatement.RETURN_GENERATED_KEYS)) {
-                stmtPaciente.setInt(1, p.getUsuarioId());
-                stmtPaciente.setString(2, p.getDni());
-                stmtPaciente.setDate(3, java.sql.Date.valueOf(p.getFechaNacimiento()));
-                stmtPaciente.setString(4, p.getTelefono());
-                stmtPaciente.setString(5, p.getDireccion());
-                stmtPaciente.setString(6, p.getCanalAviso() != null ? p.getCanalAviso() : "WhatsApp");
-                stmtPaciente.setString(7, p.getSedePreferida() != null ? p.getSedePreferida() : "Sede San Borja");
-                stmtPaciente.setString(8, p.getAlergias() != null ? p.getAlergias() : "");
-                stmtPaciente.setString(9, p.getTipoCobertura() != null ? p.getTipoCobertura() : "EPS");
-                stmtPaciente.executeUpdate();
-
-                try (ResultSet rsP = stmtPaciente.getGeneratedKeys()) {
-                    if (rsP.next()) {
-                        p.setIdPaciente(rsP.getInt(1));
-                    }
-                }
-                insertado = true;
-            }
-
-            conn.commit();
-            return insertado;
-        } catch (SQLException e) {
-            if (conn != null) {
-                try {
-                    conn.rollback();
-                } catch (SQLException ex) {
-                    LOGGER.log(Level.SEVERE, "Error al hacer rollback: " + ex.getMessage(), ex);
-                }
-            }
-            LOGGER.log(Level.SEVERE, "Error al crear cuenta de paciente: " + e.getMessage(), e);
-            return false;
-        } finally {
-            if (conn != null) {
-                try {
-                    conn.setAutoCommit(true);
-                    conn.close();
-                } catch (SQLException e) {
-                    LOGGER.log(Level.SEVERE, "Error al restaurar autoCommit/cerrar: " + e.getMessage(), e);
-                }
-            }
-        }
-    }
-
-    public java.util.List<Usuario> obtenerTodos() {
-        java.util.List<Usuario> lista = new java.util.ArrayList<>();
-        String sql = "SELECT u.id_usuario, u.nombres, u.apellidos, u.email, u.rol, u.fecha_registro, u.activo, " +
-                     "m.cmp, m.id_especialidad, COALESCE(m.id_sede,i.id_sede_destino) AS id_sede_medico, m.estado AS estado_medico, " +
-                     "e.nombre AS especialidad, COALESCE(sm.nombre,si.nombre) AS sede_medico, " +
-                     "pa.codigo_empleado, pa.cargo, pa.id_sede AS id_sede_personal, sp.nombre AS sede_personal, " +
-                     "a.estado AS estado_admin " +
-                     "FROM usuario u " +
-                     "LEFT JOIN medico m ON u.id_usuario = m.id_usuario " +
-                     "LEFT JOIN invitacion_personal i ON i.id_usuario=u.id_usuario LEFT JOIN sede si ON si.id_sede=i.id_sede_destino " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede sm ON m.id_sede = sm.id_sede " +
-                     "LEFT JOIN personal_administrativo pa ON u.id_usuario = pa.id_usuario " +
-                     "LEFT JOIN sede sp ON pa.id_sede = sp.id_sede " +
-                     "LEFT JOIN administrador a ON u.id_usuario = a.id_usuario " +
-                     "ORDER BY u.id_usuario ASC";
-        
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql);
-             ResultSet rs = stmt.executeQuery()) {
-            
-            while (rs.next()) {
-                Timestamp ts = rs.getTimestamp("fecha_registro");
-                Usuario u = new Usuario(
-                        rs.getInt("id_usuario"),
-                        rs.getString("nombres"),
-                        rs.getString("apellidos"),
-                        rs.getString("email"),
-                        "", // No mandar el hash a la vista por seguridad
-                        rs.getString("rol"),
-                        ts != null ? ts.toLocalDateTime() : null,
-                        rs.getBoolean("activo")
-                );
-                u.setCmp(rs.getString("cmp"));
-                u.setEspecialidad(rs.getString("especialidad"));
-                u.setCodigoEmpleado(rs.getString("codigo_empleado"));
-                u.setCargo(rs.getString("cargo"));
-                
-                if ("MEDICO".equals(u.getRol())) {
-                    u.setIdEspecialidad(rs.getInt("id_especialidad"));
-                    u.setIdSede(rs.getInt("id_sede_medico"));
-                    String sNom = rs.getString("sede_medico");
-                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sin sede asignada");
-                    String estM = rs.getString("estado_medico");
-                    if (!u.isActivo() || "INACTIVO".equalsIgnoreCase(estM)) {
-                        u.setEstadoDetallado("Inactivo");
-                    } else if ("LICENCIA".equalsIgnoreCase(estM)) {
-                        u.setEstadoDetallado("Suspendido");
-                    } else {
-                        u.setEstadoDetallado("Activo");
-                    }
-                } else if ("PERSONAL_ADMINISTRATIVO".equals(u.getRol())) {
-                    u.setIdSede(rs.getInt("id_sede_personal"));
-                    String sNom = rs.getString("sede_personal");
-                    u.setNombreSede(sNom != null && !sNom.trim().isEmpty() ? sNom : "Sin sede asignada");
-                    u.setEstadoDetallado(u.isActivo() ? "Activo" : "Inactivo");
-                } else if ("ADMINISTRADOR".equals(u.getRol())) {
-                    u.setNombreSede("Multisede");
-                    String estA = rs.getString("estado_admin");
-                    if (!u.isActivo() || "INACTIVO".equalsIgnoreCase(estA)) {
-                        u.setEstadoDetallado("Inactivo");
-                    } else {
-                        u.setEstadoDetallado("Activo");
-                    }
-                } else {
-                    u.setEstadoDetallado(u.isActivo() ? "Activo" : "Inactivo");
-                }
-                
-                lista.add(u);
-            }
-        } catch (SQLException e) {
-            throw new AgendaException(503,"PERSONAL_NO_DISPONIBLE","No se pudo consultar el personal. Inténtalo nuevamente.");
-        }
-
-        return lista;
-    }
-
-    public java.util.Map<String, Object> obtenerMetricasPersonal() {
-        java.util.Map<String, Object> metricas = new java.util.HashMap<>();
-        int medicosTotal = 0;
-        int medicosActivos = 0;
-        int personalTotal = 0;
-        int personalActivos = 0;
-        int adminsTotal = 0;
-        int adminsActivos = 0;
-        int totalPersonal = 0;
-
-        try (Connection conn = abrirConexion()) {
-            // Métricas reales de Médicos
-            String sqlMed = "SELECT COUNT(*) AS total, " +
-                            "SUM(CASE WHEN (m.estado = 'ACTIVO' OR m.estado IS NULL) AND u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
-                            "FROM medico m JOIN usuario u ON m.id_usuario = u.id_usuario";
-            try (PreparedStatement ps = conn.prepareStatement(sqlMed);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    medicosTotal = rs.getInt("total");
-                    medicosActivos = rs.getInt("activos");
-                }
-            }
-
-            // Métricas reales de Personal Administrativo
-            String sqlPers = "SELECT COUNT(*) AS total, " +
-                             "SUM(CASE WHEN u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
-                             "FROM personal_administrativo pa JOIN usuario u ON pa.id_usuario = u.id_usuario";
-            try (PreparedStatement ps = conn.prepareStatement(sqlPers);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    personalTotal = rs.getInt("total");
-                    personalActivos = rs.getInt("activos");
-                }
-            }
-
-            // Métricas reales de Administradores
-            String sqlAdm = "SELECT COUNT(*) AS total, " +
-                            "SUM(CASE WHEN (a.estado = 'ACTIVO' OR a.estado IS NULL) AND u.activo = 1 THEN 1 ELSE 0 END) AS activos " +
-                            "FROM administrador a JOIN usuario u ON a.id_usuario = u.id_usuario";
-            try (PreparedStatement ps = conn.prepareStatement(sqlAdm);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    adminsTotal = rs.getInt("total");
-                    adminsActivos = rs.getInt("activos");
-                }
-            }
-
-            // Total real de personal del sistema con acceso (no pacientes)
-            String sqlTotal = "SELECT COUNT(*) FROM usuario WHERE rol != 'PACIENTE'";
-            try (PreparedStatement ps = conn.prepareStatement(sqlTotal);
-                 ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    totalPersonal = rs.getInt(1);
-                }
-            }
-        } catch (SQLException e) {
-            throw new AgendaException(503,"PERSONAL_NO_DISPONIBLE","No se pudieron consultar los indicadores de personal.");
-        }
-
-        metricas.put("medicosTotal", medicosTotal);
-        metricas.put("medicosActivos", medicosActivos);
-        metricas.put("personalTotal", personalTotal);
-        metricas.put("personalActivos", personalActivos);
-        metricas.put("adminsTotal", adminsTotal);
-        metricas.put("adminsActivos", adminsActivos);
-        metricas.put("totalUsuarios", totalPersonal);
-        return metricas;
-    }
-
-    public pe.edu.utp.clinica.model.Paciente obtenerPacientePorUsuarioId(int usuarioId) {
-        String sql = "SELECT * FROM paciente WHERE id_usuario = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement stmt = conn.prepareStatement(sql)) {
-            stmt.setInt(1, usuarioId);
-            try (ResultSet rs = stmt.executeQuery()) {
-                if (rs.next()) {
-                    java.sql.Date fechaNac = rs.getDate("fecha_nacimiento");
-                    java.time.LocalDate fn = fechaNac != null ? fechaNac.toLocalDate() : null;
-                    String canalAviso = getSafeColumn(rs, "canal_aviso", "WhatsApp");
-                    String sedePref = getSafeColumn(rs, "sede_preferida", "Sede San Borja");
-                    String alergias = getSafeColumn(rs, "alergias", "");
-                    String tipoCob = getSafeColumn(rs, "tipo_cobertura", "EPS");
-
-                    return new pe.edu.utp.clinica.model.Paciente(
-                        rs.getInt("id_paciente"),
-                        rs.getInt("id_usuario"),
-                        rs.getString("dni"),
-                        fn,
-                        rs.getString("telefono"),
-                        rs.getString("direccion"),
-                        canalAviso,
-                        sedePref,
-                        alergias,
-                        tipoCob
-                    );
-                }
-            }
-        } catch (SQLException e) {
-            LOGGER.log(Level.SEVERE, "Error al obtener paciente por usuarioId: " + e.getMessage(), e);
-        }
-        return null;
-    }
-
-    private String getSafeColumn(ResultSet rs, String colName, String defaultVal) {
-        try {
-            String val = rs.getString(colName);
-            return (val != null && !val.trim().isEmpty()) ? val : defaultVal;
-        } catch (SQLException e) {
-            return defaultVal;
-        }
-    }
-
-    public boolean actualizarPerfilCompletoPaciente(pe.edu.utp.clinica.model.PerfilPaciente perfil) {
-        try (Connection conn=abrirConexion()) {
-            return guardarPerfilEnTransaccion(conn,perfil);
-        } catch (SQLException | RuntimeException e) {
-            LOGGER.log(Level.SEVERE,"Error al actualizar el perfil del paciente.",e);
+            LOGGER.log(Level.SEVERE, "Error al comprobar correo.", e);
             return false;
         }
     }
 
-    private boolean guardarPerfilEnTransaccion(Connection conn,pe.edu.utp.clinica.model.PerfilPaciente perfil)throws SQLException {
-        boolean autoCommit=conn.getAutoCommit();
-        conn.setAutoCommit(false);
-        try {
-            guardarPerfil(conn,perfil);
-            conn.commit();
+    public boolean crearCuentaPaciente(Usuario usuario, Paciente paciente) {
+        try (var c = abrirConexion()) {
+            int[] ids =
+                    PersistenciaJpa.transaccion(
+                            c,
+                            () -> {
+                                var repo = new UsuarioRepository(c);
+                                int id = repo.crear(usuario);
+                                return new int[] {id, repo.crearPaciente(id, paciente)};
+                            });
+            usuario.setIdUsuario(ids[0]);
+            paciente.setUsuarioId(ids[0]);
+            paciente.setIdPaciente(ids[1]);
             return true;
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al crear cuenta de paciente.", e);
+            return false;
+        }
+    }
+
+    public List<Usuario> obtenerTodos() {
+        try (var c = abrirConexion()) {
+            return new UsuarioRepository(c).personal();
+        } catch (SQLException e) {
+            throw new AgendaException(
+                    503,
+                    "PERSONAL_NO_DISPONIBLE",
+                    "No se pudo consultar el personal. Inténtalo nuevamente.");
+        }
+    }
+
+    public Map<String, Object> obtenerMetricasPersonal() {
+        try (var c = abrirConexion()) {
+            return new UsuarioRepository(c).metricas();
+        } catch (SQLException e) {
+            throw new AgendaException(
+                    503,
+                    "PERSONAL_NO_DISPONIBLE",
+                    "No se pudieron consultar los indicadores de personal.");
+        }
+    }
+
+    public Paciente obtenerPacientePorUsuarioId(int usuario) {
+        try (var c = abrirConexion()) {
+            return new UsuarioRepository(c).paciente(usuario);
+        } catch (SQLException e) {
+            LOGGER.log(Level.SEVERE, "Error al obtener paciente.", e);
+            return null;
+        }
+    }
+
+    public boolean actualizarPerfilCompletoPaciente(PerfilPaciente perfil) {
+        try (var c = abrirConexion()) {
+            return PersistenciaJpa.transaccion(
+                    c,
+                    () -> {
+                        new UsuarioRepository(c).guardarPerfil(perfil);
+                        return true;
+                    });
         } catch (SQLException | RuntimeException e) {
-            conn.rollback();
-            throw e;
-        } finally {
-            conn.setAutoCommit(autoCommit);
+            LOGGER.log(Level.SEVERE, "Error al actualizar el perfil del paciente.", e);
+            return false;
         }
     }
-
-    private void guardarPerfil(Connection conn,pe.edu.utp.clinica.model.PerfilPaciente perfil)throws SQLException {
-        try (var stmt=conn.prepareStatement("UPDATE paciente SET telefono=?,direccion=? WHERE id_usuario=?")) {
-            stmt.setString(1,perfil.telefono());
-            stmt.setString(2,perfil.direccion());
-            stmt.setInt(3,perfil.idUsuario());
-            stmt.executeUpdate();
-        }
-        try (var stmt=conn.prepareStatement("UPDATE paciente SET canal_aviso=?,sede_preferida=?,alergias=?,tipo_cobertura=? WHERE id_usuario=?")) {
-            stmt.setString(1,"Correo");
-            stmt.setString(2,perfil.sedePreferida()!=null?perfil.sedePreferida():"Sede San Borja");
-            stmt.setString(3,perfil.alergias()!=null?perfil.alergias():"");
-            stmt.setString(4,perfil.tipoCobertura()!=null?perfil.tipoCobertura():"EPS");
-            stmt.setInt(5,perfil.idUsuario());
-            stmt.executeUpdate();
-        }
-    }
-
 }

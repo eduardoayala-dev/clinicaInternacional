@@ -1,20 +1,21 @@
 package pe.edu.utp.clinica.persistence.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
+
+import java.time.LocalDateTime;
 
 @Entity
-@Table(name="correo_cita")
-public class CorreoCitaEntidad {
-    @Id @Column(name="id_cita") private Integer id;
-    @Column(name="estado") private String estado;
-    @Column(name="intentos") private int intentos;
-    @Column(name="disponible_en") private java.time.LocalDateTime disponible;
+@Table(name = "correo_cita")
+@org.hibernate.annotations.DynamicInsert
+public class CorreoCitaEntidad extends ColaCorreoEntidad {
+    @Id
+    @Column(name = "id_cita")
+    private Integer id;
 
     protected CorreoCitaEntidad() {}
-    public CorreoCitaEntidad(int cita, java.time.LocalDateTime disponible) {
-        this.id = cita; this.disponible = disponible; this.estado = "PENDIENTE";
+
+    public CorreoCitaEntidad(int id, LocalDateTime disponible) {
+        super(disponible);
+        this.id = id;
     }
 }

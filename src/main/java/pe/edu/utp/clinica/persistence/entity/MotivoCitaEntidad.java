@@ -7,16 +7,34 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import org.hibernate.annotations.Immutable;
 
 @Entity
-@Table(name="motivo_cita")
-@Immutable
+@Table(name = "motivo_cita")
 public class MotivoCitaEntidad {
-    @Id @Column(name="id_motivo") private Integer id;
-    @ManyToOne(fetch=FetchType.LAZY) @JoinColumn(name="id_especialidad") private EspecialidadEntidad especialidad;
-    @Column(name="descripcion") private String descripcion;
-    @Column(name="estado") private String estado;
+    @Id
+    @jakarta.persistence.GeneratedValue(strategy = jakarta.persistence.GenerationType.IDENTITY)
+    @Column(name = "id_motivo")
+    private Integer id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "id_especialidad")
+    private EspecialidadEntidad especialidad;
+
+    @Column(name = "descripcion")
+    private String descripcion;
+
+    @Column(name = "estado")
+    private String estado;
 
     protected MotivoCitaEntidad() {}
+
+    public MotivoCitaEntidad(EspecialidadEntidad especialidad, String descripcion) {
+        this.especialidad = especialidad;
+        this.descripcion = descripcion;
+        this.estado = "ACTIVO";
+    }
+
+    public int id() {
+        return id;
+    }
 }
