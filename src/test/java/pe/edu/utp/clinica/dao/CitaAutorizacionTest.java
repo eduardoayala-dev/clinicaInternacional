@@ -26,6 +26,9 @@ class CitaAutorizacionTest {
         try(var c=abrir();var s=c.createStatement()){s.execute("UPDATE cita SET fecha_hora='2026-10-28 11:00:00' WHERE id_cita=7");}
         assertTrue(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA","Imprevisto personal"));
         assertFalse(dao.actualizarEstadoCitaPaciente(7,1,"CANCELADA","Motivo diferente"));
+        assertTrue(dao.estaCanceladaPorPaciente(7,1));
+        assertFalse(dao.estaCanceladaPorPaciente(7,999));
+        assertFalse(dao.estaCanceladaPorPaciente(999,1));
         assertEquals(1,count("SELECT COUNT(*) FROM auditoria_seguridad WHERE id_usuario=10 AND evento='CITA_CANCELADA_PACIENTE' AND descripcion='Cita #7; motivo: Imprevisto personal'"));
         assertEquals(1,count("SELECT COUNT(*) FROM auditoria_seguridad"));
     }
@@ -80,7 +83,7 @@ class CitaAutorizacionTest {
             for (String sentencia : clinica.split(";")) {
                 if (sentencia.strip().startsWith("CREATE TABLE")) st.execute(sentencia.replace(") ENGINE=InnoDB", ")"));
             }
-            st.execute("CREATE TABLE auditoria_seguridad(id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
+            st.execute("CREATE TABLE auditoria_seguridad(id_auditoria INT AUTO_INCREMENT PRIMARY KEY,id_usuario INT,evento VARCHAR(80),descripcion VARCHAR(255),sospechoso BOOLEAN)");
             st.execute("CREATE TABLE historial_asistencia(id_historial INT AUTO_INCREMENT PRIMARY KEY,id_paciente INT,id_cita INT,asistio BOOLEAN,observacion VARCHAR(255),fecha_registro DATETIME,FOREIGN KEY(id_cita) REFERENCES cita(id_cita),FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente))");
             st.execute("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_cita_asignada INT,estado VARCHAR(20),FOREIGN KEY(id_cita_asignada) REFERENCES cita(id_cita))");
             st.execute("INSERT INTO usuario(id_usuario,nombres,apellidos,email,rol) VALUES(10,'Paciente','Uno','p@test','PACIENTE'),(20,'Medico','Uno','m@test','MEDICO'),(30,'Medico','Dos','m2@test','MEDICO')");

@@ -20,10 +20,12 @@ class SeguridadCitasServletTest {
         }
         @Override public Map<String,Object> obtenerPerfilPortalMedico(int usuario) { return Map.of("idMedico",8,"nombreMedico","Medico de prueba","especialidad","General","sedeNombre","Central"); }
         boolean allowed;
+        boolean alreadyCancelled;
         int owner;
         int attempts;
         int notifications;
         int offers;
+        @Override public boolean estaCanceladaPorPaciente(int cita, int paciente) { owner = paciente; return alreadyCancelled; }
         @Override public int obtenerIdPacientePorUsuarioId(int id) { return id == 10 ? 5 : -1; }
         @Override public int obtenerIdMedicoPorUsuarioId(int id) { return id == 20 ? 8 : -1; }
         @Override public boolean actualizarEstadoCitaPaciente(int id, int patient, String state, String motivo) {
@@ -68,6 +70,15 @@ class SeguridadCitasServletTest {
         patientServlet(dao).doPost(x.request, x.response);
         assertEquals(1, dao.attempts); assertEquals(1, dao.offers); assertEquals(1, dao.notifications);
         assertEquals("/paciente/historial", x.redirect);
+    }
+
+    @Test void repetirCancelacionPropiaRedirigeSinRepetirAvisosNiOfertas() throws Exception {
+        Dao dao = new Dao(); dao.alreadyCancelled = true; var x = patient();
+        patientServlet(dao).doPost(x.request, x.response);
+        assertEquals(5, dao.owner);
+        assertEquals("/paciente/historial", x.redirect);
+        assertEquals("Esta cita ya está cancelada.", x.session.getAttribute("flashMessage"));
+        assertEquals(0, dao.offers); assertEquals(0, dao.notifications);
     }
 
     @Test void missingOrInvalidIdCannotDefaultToAppointmentOne() throws Exception {

@@ -12,7 +12,32 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 
 class MedicoCatalogoDaoTest {
-    @Test void conteoConSpringConservaLaConexionYLaTransaccionDelLlamador() throws Exception {
+    @Test void catalogosJpaConservanDatosConteosYDetalles() throws Exception {
+        sql("UPDATE especialidad SET nombre='Cardiología' WHERE id_especialidad=1");
+        sql("UPDATE sede SET nombre='San Borja',direccion='Avenida de prueba 123' WHERE id_sede=1");
+        var especialidades = dao.obtenerEspecialidades();
+        assertEquals(1, especialidades.size());
+        assertEquals("Cardiología", especialidades.get(0).get("nombre"));
+        assertEquals(4, especialidades.get(0).get("totalMedicos"));
+        assertEquals(2, dao.obtenerSedes().size());
+        var detalle = dao.obtenerDetallesMedico(42);
+        assertEquals(42, detalle.get("idMedico"));
+        assertEquals("San Borja", detalle.get("sedeNombre"));
+        assertEquals("Cardiología", detalle.get("especialidad"));
+        assertTrue(dao.obtenerDetallesMedico(999).isEmpty());
+        assertEquals(6, dao.obtenerTodosMedicosDetalle().size());
+    }
+
+    @Test void historialJpaNoDuplicaMedicosNiMezclaPacientes() throws Exception {
+        sql("ALTER TABLE cita ADD COLUMN id_paciente INT");
+        sql("INSERT INTO cita(id_medico,id_paciente) VALUES(42,7),(42,7),(43,7),(44,8)");
+        var historial = dao.obtenerMedicosDePaciente(7);
+        assertEquals(2, historial.size());
+        assertEquals(java.util.Set.of(42,43), historial.stream().map(m -> m.get("idMedico")).collect(java.util.stream.Collectors.toSet()));
+        assertTrue(dao.obtenerMedicosDePaciente(99).isEmpty());
+    }
+
+    @Test void conteoConJpaConservaLaConexionYLaTransaccionDelLlamador() throws Exception {
         agenda("2026-10-28", "09:00", "10:00", 30, "PUBLICADO");
         var desde = java.time.LocalDate.of(2026, 10, 28);
         try (var conexion = DriverManager.getConnection(url)) {
@@ -30,7 +55,7 @@ class MedicoCatalogoDaoTest {
         }
     }
 
-    @Test void erroresDeSpringMantienenElContratoDelCatalogo() throws Exception {
+    @Test void erroresDeJpaMantienenElContratoDelCatalogo() throws Exception {
         sql("DROP TABLE disponibilidad");
         var error = assertThrows(CatalogoDatosException.class,
                 () -> dao.disponibilidadSemanal(1, 1, 42, java.time.LocalDate.of(2026, 10, 28)));
@@ -113,8 +138,8 @@ class MedicoCatalogoDaoTest {
         url = "jdbc:h2:mem:" + UUID.randomUUID() + ";MODE=MySQL;DB_CLOSE_DELAY=-1";
         dao = new MedicoDAO(() -> DriverManager.getConnection(url), clock);
         sql("CREATE TABLE usuario(id_usuario INT PRIMARY KEY,nombres VARCHAR,apellidos VARCHAR,activo BOOLEAN,rol VARCHAR DEFAULT 'MEDICO')");
-        sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR)");
-        sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR)");
+        sql("CREATE TABLE especialidad(id_especialidad INT PRIMARY KEY,estado VARCHAR,nombre VARCHAR)");
+        sql("CREATE TABLE sede(id_sede INT PRIMARY KEY,estado VARCHAR,nombre VARCHAR,direccion VARCHAR)");
         sql("CREATE TABLE medico(id_medico INT PRIMARY KEY,id_usuario INT,id_especialidad INT,id_sede INT,cmp VARCHAR,estado VARCHAR)");
         sql("CREATE TABLE disponibilidad(id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,id_medico INT,id_sede INT DEFAULT 1,fecha DATE,hora_inicio TIME,hora_fin TIME,duracion_minutos INT,estado VARCHAR)");
         sql("CREATE TABLE retencion_cupo(id_paciente INT PRIMARY KEY,id_medico INT,inicio DATETIME,duracion_minutos INT,identificador VARCHAR(36),vence DATETIME)");
@@ -123,8 +148,8 @@ class MedicoCatalogoDaoTest {
         sql("CREATE TABLE lista_espera(id_lista_espera INT PRIMARY KEY,id_paciente INT,estado VARCHAR)");
         sql("CREATE TABLE reasignacion_inteligente(id_reasignacion INT AUTO_INCREMENT PRIMARY KEY,id_lista_espera INT,id_cita_original INT,id_disponibilidad INT,fecha_limite_respuesta DATETIME,estado VARCHAR(20))");
         sql("INSERT INTO usuario(id_usuario,nombres,apellidos,activo) VALUES (1,'MÉDICO','PRUEBA',TRUE),(2,'OTRO','MÉDICO',TRUE),(3,'INACTIVO','PRUEBA',FALSE)");
-        sql("INSERT INTO especialidad VALUES(1,'ACTIVO'),(2,'INACTIVO')");
-        sql("INSERT INTO sede VALUES(1,'ACTIVO'),(2,'ACTIVO'),(3,'INACTIVO')");
+        sql("INSERT INTO especialidad(id_especialidad,estado) VALUES(1,'ACTIVO'),(2,'INACTIVO')");
+        sql("INSERT INTO sede(id_sede,estado) VALUES(1,'ACTIVO'),(2,'ACTIVO'),(3,'INACTIVO')");
         sql("INSERT INTO medico VALUES(42,1,1,1,NULL,'ACTIVO'),(43,2,1,2,'CMP-43','ACTIVO'),(44,3,1,1,'44','ACTIVO'),(45,1,2,1,'45','ACTIVO'),(46,1,1,3,'46','ACTIVO'),(47,1,1,1,'47','INACTIVO')");
     }
 

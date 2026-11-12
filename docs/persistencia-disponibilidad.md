@@ -1,90 +1,110 @@
-# Persistencia de disponibilidad con Spring JDBC
+# Persistencia del catálogo y ciclo de citas con JPA
 
-La búsqueda semanal del paciente consulta las agendas publicadas y calcula los cupos
-libres por mañana y tarde. El inicio de admisión reutiliza el mismo cálculo para su
-contador de disponibilidad.
+## Alcance de la migración
 
-## Versiones para revisar
+La rama `feature/persistencia-jpa` reemplaza el enfoque intermedio de Spring JDBC.
+`MedicoDAO` delega la lectura del catálogo de médicos, especialidades y sedes, las
+fechas y los horarios diarios, el calendario semanal y el conteo de cupos a
+repositorios JPA con Hibernate. No contiene SQL manual ni `PreparedStatement`.
+Los motivos de consulta también se leen mediante `MotivoCitaRepository` y Criteria API.
+La migración incluye la retención de cupos, reserva, reprogramación y cancelación
+del paciente, así como las lecturas de Mis citas e historial. `AgendaCitaDAO` y
+`CitaDAO` ya no contienen SQL manual. Sus contratos públicos se conservan.
+Los catálogos administrativos, autenticación, procesamiento de correo, lista de
+espera y otros módulos continúan usando JDBC mientras avanza su migración.
 
-- [Código anterior](https://github.com/eduardoayala-dev/clinicaInternacional/tree/antes-persistencia-disponibilidad), tag sobre `bfee4e6`.
-- La mejora se desarrolla en `feature/persistencia-disponibilidad`.
-- El tag `despues-persistencia-disponibilidad` se publicará al integrar el PR comprobado.
+## Implementación
 
-## Cambios de código
-
-| Archivo | Responsabilidad |
+| Componente | Responsabilidad |
 | --- | --- |
-| `src/main/java/pe/edu/utp/clinica/repository/DisponibilidadRepository.java` | Ejecutar las cinco consultas con `NamedParameterJdbcTemplate` de Spring JDBC y mapear filas a registros tipados. |
-| `src/main/resources/sql/disponibilidad/*.sql` | Definir las consultas completas con parámetros con nombre y sin composición de fragmentos. |
-| `src/main/java/pe/edu/utp/clinica/dao/MedicoDAO.java` | Coordinar la búsqueda y conservar el cálculo de intervalos y cupos. |
-| `pom.xml` | Incorporar Spring JDBC 6.2.19, compatible con Java 17. |
+| `persistence/entity` | Mapear las tablas existentes y sus relaciones para las lecturas del catálogo. |
+| `PersistenciaJpa` | Compartir las fábricas de Hibernate por motor y abrir sesiones sobre la conexión de la operación. |
+| `MotivoCitaRepository` | Filtrar motivos activos de especialidades activas. |
+| `CatalogoMedicoRepository` | Proyectar los datos de médicos, especialidades y sedes mediante Criteria API. |
+| `DisponibilidadRepository` | Aplicar los filtros de agenda, citas, ofertas y retenciones con Criteria API. |
+| `MedicoDAO` | Mantener los contratos del portal y calcular los intervalos disponibles. |
+| `ReservaCitaRepository` | Bloquear paciente y médico, retener cupos y guardar citas, confirmaciones, avisos y auditoría. |
+| `ConsultaCitaRepository` | Consultar citas próximas, históricas, canceladas, detalles e identificadores. |
+| `TransaccionJdbc` | Conservar la interfaz de los DAO existentes y delegar commit/rollback a la unidad de trabajo JPA. |
 
-El recorrido es `ApiHorariosServlet → CatalogoService → MedicoDAO →
-DisponibilidadRepository → MySQL`. Las consultas se cargan desde recursos del
-classpath incluidos en el WAR. Los nombres de recursos proceden de constantes
-internas del repositorio.
+Las consultas se construyen con Criteria API; Hibernate genera el SQL y enlaza los
+valores como parámetros. Se han retirado Spring JDBC y los cinco archivos SQL del
+enfoque anterior. No se usan consultas nativas ni cadenas JPQL en estos repositorios.
 
-El repositorio recibe la conexión de la operación y la adapta con
-`SingleConnectionDataSource(conexion, true)`. Spring administra sentencias y
-resultados. El llamador conserva el control de cierre, commit y rollback de esa
-conexión. Cada instancia del repositorio pertenece a una operación y no se
-comparte entre peticiones.
+La aplicación conserva HikariCP. Las sesiones reciben la conexión de la operación;
+no se crea un segundo pool y el cierre de sesión no cierra esa conexión.
+Las lecturas independientes usan sesiones de solo lectura con flush manual.
+Las escrituras comparten una sesión y transacción JPA por operación. Si falla una
+confirmación, notificación, correo pendiente o auditoría, también se revierte la
+cita. Los eventos en vivo se emiten después de confirmar la transacción.
 
-## Seguridad y comportamiento
+Los bloqueos `PESSIMISTIC_WRITE` preservan la exclusión entre reservas del mismo
+médico y la validación de pertenencia al paciente. El cambio de estado de una cita
+mantiene filtros por propietario, estado previo y fecha futura. Las entidades de
+bloqueo mapean únicamente las columnas que necesitan validar y son inmutables.
+Las entidades de escritura conservan las columnas y claves generadas del esquema.
 
-La consulta anterior ya asignaba los valores mediante `PreparedStatement`. En
-esta mejora los parámetros se expresan como `:especialidad`, `:sede`, `:medico`,
-`:desde`, `:hasta`, `:hoy` y `:ahora`. Spring los enlaza a la sentencia preparada.
-La API valida identificadores y fechas antes de consultar.
+La fábrica se comparte por motor y se cierra al detener la aplicación.
+`hibernate.type.java_time_use_direct_jdbc=true` conserva los valores `java.time`
+sin convertirlos a `java.sql.Timestamp`. Se comprueba con MySQL y una JVM en UTC
+usando una conexión configurada para America/Lima, evitando desplazar horarios y
+vencimientos.
 
-Se conservan las condiciones de médico, usuario, especialidad y sede activos,
-la pertenencia de la disponibilidad a la sede del médico, y el estado publicado.
-Los horarios pasados, citas ocupadas, ofertas pendientes vigentes y retenciones
-vigentes se excluyen con las mismas reglas. Los errores de persistencia mantienen
-el contrato `CatalogoDatosException`.
+`hibernate.hbm2ddl.auto=none` y
+`jakarta.persistence.schema-generation.database.action=none` impiden que Hibernate
+cree, cambie o elimine tablas. No es necesario importar datos ni modificar las
+variables de conexión para desplegar este bloque en Railway.
 
-Esta primera migración comprende las cinco consultas del cálculo agrupado. Las
-consultas individuales y los demás módulos JDBC continúan en sus DAO actuales.
+## Reglas conservadas
 
-## Comprobaciones reproducibles
+- Médico, usuario, sede y especialidad activos en las búsquedas reservables.
+- Disponibilidad publicada y perteneciente a la sede actual del médico.
+- Exclusión de horas pasadas, citas ocupadas, ofertas y retenciones vigentes.
+- Oferta válida únicamente para un paciente activo en una lista ofertada.
+- Filtros por sede y médico aplicados en la base de datos.
+- Agrupación semanal en cinco consultas y conteo de admisión en cuatro, sin una consulta por médico.
+- Compatibilidad con la transacción del llamador y el contrato de errores del catálogo.
+
+## Verificación
 
 ```powershell
-mvn "-Dtest=MedicoCatalogoDaoTest,CatalogosApiServletTest" test
+mvn "-Dtest=MedicoCatalogoDaoTest,CatalogosApiServletTest,DisponibilidadServletTest" test
 mvn test
 mvn -DskipTests package
+py scripts/Probar-MySql.py --solo-catalogos
+py scripts/Probar-MySql.py --solo-ciclo-citas
 ```
 
-La referencia anterior aprueba 24 pruebas de catálogo y API. La versión migrada
-aprueba las mismas comprobaciones y tres casos adicionales, 27 en total. Los
-casos nuevos verifican el control de la conexión y rollback, el contrato ante un
-error de Spring y el rechazo de fragmentos SQL en los identificadores de la API.
+Los casos del catálogo comprueban permisos implícitos por estados activos, separación
+por sede, fechas, cruces de intervalos, ofertas y retenciones. También verifican la
+misma cantidad de consultas y el rollback de una cita insertada sin commit en la
+conexión del llamador. Las pruebas de integración usan una base MySQL temporal
+`clinica_agendas_test_*`, separada de los datos locales de la clínica.
+La primera etapa de catálogo aprobó 1.045 pruebas generales y una suite adicional
+de 120 casos con MySQL. Tras incorporar el ciclo de citas, la suite general
+completó 1.047 pruebas sin fallos y omitió 613 por condiciones de entorno.
+Las pruebas específicas de autorización, reserva, historial y avisos completaron
+135 casos sin fallos. La integración ampliada en MySQL completó 307 pruebas sin fallos ni omisiones,
+incluyendo reservas concurrentes, atención, admisión, correos, ofertas e historial.
+Las tablas temporales de auditoría se ajustaron a la clave primaria real del
+esquema para probar la generación de identificadores JPA.
 
-Los casos existentes comprueban el mismo número de cupos por sede, médico y
-turno, incluyendo ofertas y retenciones. La búsqueda semanal con agendas mantiene
-cinco sentencias preparadas y el conteo agrupado de admisión mantiene cuatro.
-Esta refactorización mejora la separación de responsabilidades. Una nueva cifra
-de latencia requiere repetir el laboratorio de rendimiento.
+## Comparación de código
 
-La suite general ejecutó 1.043 pruebas sin fallos, con otras 613 omitidas por sus
-condiciones de entorno. Las pruebas MySQL requieren `AGENDA_MYSQL_URL`,
-`AGENDA_MYSQL_USER` y `AGENDA_MYSQL_PASSWORD`, con una base temporal de nombre
-`clinica_agendas_test_*`. Los reportes generados permanecen en `target`.
+El punto anterior se conserva en el tag
+[antes-persistencia-disponibilidad](https://github.com/eduardoayala-dev/clinicaInternacional/tree/antes-persistencia-disponibilidad).
+El PR #83 de Spring JDBC no debe presentarse como la migración definitiva a ORM.
+La etiqueta del después se publicará sobre la integración de la versión JPA probada.
+No se atribuye una mejora de latencia a este cambio sin repetir las mediciones.
 
-La ejecución adicional en MySQL aislado completó 113 pruebas, con 112 aprobadas
-y un error en la creación concurrente de códigos de sede, SQLSTATE `40001`.
-Las 76 pruebas de ofertas y el caso del ciclo de citas que consulta la semana
-aprobaron. Al repetir los siete casos de `CicloVidaCitaMySqlTest` con el código
-del tag anterior, se reprodujo el mismo interbloqueo de sedes. Esa incidencia
-previa queda pendiente de una corrección específica de gestión de sedes.
+## Prueba manual
 
-## Prueba desde el portal
+1. Entrar como paciente y consultar sede, especialidad y médico.
+2. Comparar el número de cupos de mañana y tarde con los horarios del día.
+3. Reservar un horario y comprobar que desaparece y que se actualiza el conteo.
+4. Reprogramar la cita y comprobar que se libera el horario anterior y se ocupa el nuevo.
+5. Cancelar con motivo y revisar que el cupo se libera y la cita aparece en Canceladas.
+6. Revisar los avisos y el contador de cupos de admisión para la misma sede.
 
-1. Iniciar la versión de esta rama y entrar como paciente.
-2. Abrir Programar cita, elegir sede y especialidad y consultar una semana con horarios publicados.
-3. Comprobar el conteo de mañana y tarde y filtrar por un médico de esa sede.
-4. Reservar un horario y consultar de nuevo la semana para comprobar la disminución de cupos.
-5. Revisar el contador de cupos del inicio de admisión en la sede correspondiente.
-
-## Referencia técnica
-
-[Spring JDBC y parámetros con nombre](https://docs.spring.io/spring-framework/reference/6.2/data-access/jdbc/core.html).
+Referencias: [Hibernate 6.6 y compatibilidad](https://hibernate.org/orm/releases/6.6/),
+[gestión de conexiones](https://docs.hibernate.org/orm/6.6/javadocs/org/hibernate/SessionBuilder.html).

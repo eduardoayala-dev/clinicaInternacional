@@ -1,16 +1,14 @@
 package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
+import pe.edu.utp.clinica.repository.ReservaCitaRepository;
+import pe.edu.utp.clinica.repository.ConsultaCitaRepository;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Timestamp;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -118,86 +116,42 @@ public class CitaDAO {
 
 
     public List<Map<String, Object>> obtenerProximasCitasPaciente(int idPaciente) {
-        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
-                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
-                     "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
-                     "FROM cita c " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND (c.estado IN ('EN_SALA','EN_ATENCION') OR (c.estado IN ('SOLICITADA','CONFIRMADA') AND c.fecha_hora>=?)) " +
-                     "ORDER BY c.fecha_hora ASC";
-        return ejecutarConsultaCitas(sql, idPaciente,inicioDiaClinico());
+        return consultarCitas(idPaciente, ConsultaCitaRepository.Listado.PROXIMAS);
     }
 
     public List<Map<String, Object>> obtenerHistorialPaciente(int idPaciente) {
-        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
-                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
-                     "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
-                     "FROM cita c " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND (c.estado IN ('ATENDIDA','NO_ASISTIO','NO_ATENDIDA') OR (c.estado IN ('SOLICITADA','CONFIRMADA') AND c.fecha_hora<?)) " +
-                     "ORDER BY c.fecha_hora DESC";
-        List<Map<String, Object>> list = ejecutarConsultaCitas(sql, idPaciente,inicioDiaClinico());
-        for (Map<String, Object> c : list) {
-            boolean pendiente=Set.of(ESTADO_SOLICITADA,ESTADO_CONFIRMADA).contains(c.get(ESTADO));
-            c.put("pendienteCierre",pendiente);
-            c.put("tipo",pendiente?"Cita pasada":"Consulta");
-            if(pendiente)c.put("estadoTexto","Pasada · asistencia por registrar");
+        var citas = consultarCitas(idPaciente, ConsultaCitaRepository.Listado.HISTORIAL);
+        for (var cita : citas) {
+            boolean pendiente = Set.of(ESTADO_SOLICITADA, ESTADO_CONFIRMADA).contains(cita.get(ESTADO));
+            cita.put("pendienteCierre", pendiente);
+            cita.put("tipo", pendiente ? "Cita pasada" : "Consulta");
+            if (pendiente) cita.put("estadoTexto", "Pasada · asistencia por registrar");
         }
-        return list;
+        return citas;
     }
 
     public List<Map<String, Object>> obtenerCitasCanceladasPaciente(int idPaciente) {
-        String sql = "SELECT c.id_cita, c.id_medico, c.fecha_hora, c.estado, c.nivel_urgencia, " +
-                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
-                     "m.cmp, e.nombre AS especialidad, s.nombre AS sede " +
-                     "FROM cita c " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_paciente = ? AND c.estado IN ('CANCELADA', 'REPROGRAMADA') " +
-                     "ORDER BY c.fecha_hora DESC";
-        return ejecutarConsultaCitas(sql, idPaciente);
+        return consultarCitas(idPaciente, ConsultaCitaRepository.Listado.CANCELADAS);
     }
 
-    private List<Map<String, Object>> ejecutarConsultaCitas(String sql, int idPaciente) {
-        return ejecutarConsultaCitas(sql,idPaciente,null);
-    }
-
-    private java.time.LocalDateTime inicioDiaClinico() {
+    private LocalDateTime inicioDiaClinico() {
         return LocalDate.now(relojClinico().withZone(java.time.ZoneId.of(ZONA_CLINICA))).atStartOfDay();
     }
 
-    private List<Map<String, Object>> ejecutarConsultaCitas(String sql, int idPaciente,java.time.LocalDateTime limite) {
-        List<Map<String, Object>> list = new ArrayList<>();
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idPaciente);
-            if(limite!=null)ps.setObject(2,limite);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    list.add(mapearFilaCita(rs));
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return list;
+    private List<Map<String, Object>> consultarCitas(int paciente, ConsultaCitaRepository.Listado listado) {
+        try (var conexion = abrirConexion()) {
+            return new ConsultaCitaRepository(conexion).delPaciente(paciente, listado, inicioDiaClinico())
+                    .stream().map(this::mapearCita).collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        } catch (SQLException error) { throw new CatalogoDatosException(error); }
     }
 
-    private Map<String, Object> mapearFilaCita(ResultSet rs) throws Exception {
+    private Map<String, Object> mapearCita(ConsultaCitaRepository.Cita cita) {
         Map<String, Object> map = new HashMap<>();
-        int idCita = rs.getInt("id_cita");
+        int idCita = cita.id();
         map.put("id", "CIT-" + idCita);
         map.put("idCita", idCita);
-        map.put("idMedico", rs.getInt("id_medico"));
-        LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
+        map.put("idMedico", cita.medico());
+        LocalDateTime ldt = cita.inicio();
         if (ldt != null) {
             map.put("fechaHora", ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
             map.put("fechaFormateada", formatearFechaEspanol(ldt));
@@ -221,14 +175,14 @@ public class CitaDAO {
             map.put("turno", "manana");
             map.put("fechaFormateadaBanner", "Por definir");
         }
-        map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-        map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Medicina General");
-        map.put("cmp", normalizarCmp(rs.getString("cmp")));
-        map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
+        map.put("medico", "Dr. " + cita.nombres() + " " + cita.apellidos());
+        map.put(ESPECIALIDAD, cita.especialidadNombre() != null ? cita.especialidadNombre() : "Medicina General");
+        map.put("cmp", normalizarCmp(cita.cmp()));
+        map.put("sede", cita.sedeNombre() != null ? cita.sedeNombre() : "Sede Central");
         map.put("consultorio", "Sin asignar");
-        map.put("ubicacion", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
+        map.put("ubicacion", cita.sedeNombre() != null ? cita.sedeNombre() : "Sede Central");
         map.put("modalidad", "Presencial");
-        String est = rs.getString(ESTADO);
+        String est = cita.estado();
         map.put(ESTADO, est != null ? est : ESTADO_CONFIRMADA);
         map.put("estadoTexto", switch(est == null ? "" : est) {
             case "EN_ATENCION" -> "En atención";
@@ -244,43 +198,17 @@ public class CitaDAO {
     }
 
     public Map<String, Object> obtenerCitaPorId(int idCita) {
-        String sql = "SELECT c.id_cita, c.id_paciente, c.id_medico, c.id_motivo, c.fecha_hora, c.estado, c.nivel_urgencia, " +
-                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos, " +
-                     "m.cmp, m.id_sede, m.id_especialidad, e.nombre AS especialidad, s.nombre AS sede " +
-                     "FROM cita c " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.id_cita = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idCita);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    Map<String, Object> map = mapearFilaCita(rs);
-                    map.put("idPaciente", rs.getInt("id_paciente"));
-                    map.put("idSede", rs.getInt("id_sede"));
-                    map.put("idEspecialidad", rs.getInt("id_especialidad"));
-                    map.put("idMotivo", rs.getObject("id_motivo"));
-                    map.put("nivelUrgencia", rs.getString("nivel_urgencia"));
-                    
-                    LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
-                    if (ldt != null) {
-                        map.put("fecha", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-                        map.put("fechaSolo", ldt.format(DateTimeFormatter.ofPattern("yyyy-MM-dd")));
-                        map.put("hora", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
-                        map.put("horaSolo", ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
-                        map.put("turno", ldt.getHour() < 13 ? "manana" : "tarde");
-                        map.put("fechaFormateadaBanner", formatearFechaEspanol(ldt) + " · " + ldt.format(DateTimeFormatter.ofPattern("HH:mm")));
-                    }
-                    return map;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+        try (var conexion = abrirConexion()) {
+            var cita = new ConsultaCitaRepository(conexion).detalle(idCita);
+            if (cita == null) return null;
+            var datos = mapearCita(cita);
+            datos.put("idPaciente", cita.paciente() == null ? 0 : cita.paciente());
+            datos.put("idSede", cita.sede() == null ? 0 : cita.sede());
+            datos.put("idEspecialidad", cita.especialidad() == null ? 0 : cita.especialidad());
+            datos.put("idMotivo", cita.motivo());
+            datos.put("nivelUrgencia", cita.prioridad());
+            return datos;
+        } catch (SQLException error) { throw new CatalogoDatosException(error); }
     }
 
     // =========================================================================
@@ -312,20 +240,12 @@ public class CitaDAO {
         };
         if (anterior == null) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : anterior;
-        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND (estado=? OR estado=?)";
         try {
-            return TransaccionJdbc.ejecutar(this::abrirConexion,conn->{
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, nuevoEstado);
-                    ps.setInt(2, idCita);
-                    ps.setString(3, anterior);
-                    ps.setString(4, alternativo);
-                    boolean actualizado = ps.executeUpdate() == 1;
-                    if (actualizado) {
-                        registrarCambio(conn,idCita,nuevoEstado);
-                    }
-                    return actualizado;
-                }
+            return TransaccionJdbc.ejecutar(this::abrirConexion, conn -> {
+                boolean actualizado = new ReservaCitaRepository(conn).estado(idCita, null, nuevoEstado,
+                        List.of(anterior, alternativo), null) == 1;
+                if (actualizado) registrarCambio(conn, idCita, nuevoEstado);
+                return actualizado;
             });
         } catch (AgendaException e) {
             LOGGER.warning("No se pudo actualizar el estado de la cita.");
@@ -344,23 +264,15 @@ public class CitaDAO {
         if (idCita <= 0 || idPaciente <= 0) return false;
         if (!ESTADO_CONFIRMADA.equals(nuevoEstado) && !ESTADO_CANCELADA.equals(nuevoEstado)) return false;
         String alternativo = ESTADO_CANCELADA.equals(nuevoEstado) ? ESTADO_CONFIRMADA : ESTADO_SOLICITADA;
-        String sql = "UPDATE cita SET estado=? WHERE id_cita=? AND id_paciente=? AND (estado=? OR estado=?) AND fecha_hora>?";
         try {
-            return TransaccionJdbc.ejecutar(this::abrirConexion,conn->{
-                try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                    ps.setString(1, nuevoEstado);
-                    ps.setInt(2, idCita);
-                    ps.setInt(3, idPaciente);
-                    ps.setString(4, ESTADO_SOLICITADA);
-                    ps.setString(5, alternativo);
-                    ps.setObject(6,LocalDateTime.now(relojClinico()));
-                    boolean actualizado = ps.executeUpdate() == 1;
-                    if (actualizado) {
-                        if(motivoValidado!=null)auditarCancelacionPaciente(conn,idCita,idPaciente,motivoValidado);
-                        registrarCambio(conn,idCita,nuevoEstado);
-                    }
-                    return actualizado;
+            return TransaccionJdbc.ejecutar(this::abrirConexion, conn -> {
+                boolean actualizado = new ReservaCitaRepository(conn).estado(idCita, idPaciente, nuevoEstado,
+                        List.of(ESTADO_SOLICITADA, alternativo), LocalDateTime.now(relojClinico())) == 1;
+                if (actualizado) {
+                    if (motivoValidado != null) auditarCancelacionPaciente(conn, idCita, idPaciente, motivoValidado);
+                    registrarCambio(conn, idCita, nuevoEstado);
                 }
+                return actualizado;
             });
         } catch (AgendaException e) {
             LOGGER.log(java.util.logging.Level.WARNING, "No se pudo actualizar la cita del paciente", e);
@@ -370,16 +282,19 @@ public class CitaDAO {
 
     private void registrarCambio(Connection conn,int cita,String estado)throws SQLException {
         if(ESTADO_CANCELADA.equals(estado)&&correosActivos()){
-            pe.edu.utp.clinica.correo.CorreosCambiosJdbc.encolar(conn,cita,null,
-                    pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.CANCELADA,relojClinico().instant());
+            new ReservaCitaRepository(conn).correoCambio(cita,null,"CANCELADA",relojClinico().instant());
         }
         avisarCambioCita(conn,cita);
     }
+
+    public boolean estaCanceladaPorPaciente(int cita, int paciente) {
+        if (cita <= 0 || paciente <= 0) return false;
+        try (var conexion = abrirConexion()) {
+            return new ConsultaCitaRepository(conexion).canceladaPropia(cita, paciente);
+        } catch (SQLException error) { throw new CatalogoDatosException(error); }
+    }
     private static void auditarCancelacionPaciente(Connection conn,int cita,int paciente,String motivo)throws SQLException {
-        try(var st=conn.prepareStatement("INSERT INTO auditoria_seguridad(id_usuario,evento,descripcion,sospechoso) SELECT id_usuario,'CITA_CANCELADA_PACIENTE',?,FALSE FROM paciente WHERE id_paciente=?")) {
-            st.setString(1,"Cita #"+cita+"; motivo: "+motivo);st.setInt(2,paciente);
-            if(st.executeUpdate()!=1)throw new SQLException("No se pudo registrar el motivo de cancelación.");
-        }
+        new ReservaCitaRepository(conn).auditarCancelacion(cita, paciente, motivo);
     }
     protected boolean correosActivos(){return Boolean.parseBoolean(System.getenv().getOrDefault("APPOINTMENT_EMAIL_ENABLED","false"));}
     protected java.time.Clock relojClinico() {
@@ -425,41 +340,20 @@ public class CitaDAO {
     // =========================================================================
 
     public List<Map<String, Object>> obtenerCitasConRiesgo() {
-        List<Map<String, Object>> lista = new ArrayList<>();
-        String sql = "SELECT c.id_cita, c.fecha_hora, c.nivel_urgencia, c.riesgo_cancelacion, " +
-                     "u.nombres AS paciente_nombres, u.apellidos AS paciente_apellidos, " +
-                     "um.nombres AS medico_nombres, um.apellidos AS medico_apellidos, " +
-                     "e.nombre AS especialidad, s.nombre AS sede " +
-                     "FROM cita c " +
-                     "JOIN paciente p ON c.id_paciente = p.id_paciente " +
-                     "JOIN usuario u ON p.id_usuario = u.id_usuario " +
-                     "JOIN medico m ON c.id_medico = m.id_medico " +
-                     "JOIN usuario um ON m.id_usuario = um.id_usuario " +
-                     "LEFT JOIN especialidad e ON m.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON m.id_sede = s.id_sede " +
-                     "WHERE c.estado = 'CONFIRMADA' AND c.fecha_hora >= CURRENT_TIMESTAMP() " +
-                     "ORDER BY CASE c.riesgo_cancelacion WHEN 'ALTO' THEN 1 WHEN 'MEDIO' THEN 2 ELSE 3 END, c.fecha_hora ASC " +
-                     "LIMIT 10";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql);
-             ResultSet rs = ps.executeQuery()) {
-            while (rs.next()) {
-                Map<String, Object> map = new HashMap<>();
-                map.put("idCita", rs.getInt("id_cita"));
-                LocalDateTime ldt = extraerFechaHora(rs, "fecha_hora");
-                map.put("fechaHora", ldt != null ? ldt.format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")) : "12/10/2026 15:00");
-                map.put("paciente", rs.getString("paciente_nombres") + " " + rs.getString("paciente_apellidos"));
-                map.put("medico", "Dr. " + rs.getString("medico_nombres") + " " + rs.getString("medico_apellidos"));
-                map.put(ESPECIALIDAD, rs.getString(ESPECIALIDAD) != null ? rs.getString(ESPECIALIDAD) : "Cardiología");
-                map.put("sede", rs.getString("sede") != null ? rs.getString("sede") : "Sede Central");
-                map.put("nivelUrgencia", rs.getString("nivel_urgencia") != null ? rs.getString("nivel_urgencia") : "BAJA");
-                map.put("riesgoCancelacion", rs.getString("riesgo_cancelacion") != null ? rs.getString("riesgo_cancelacion") : "MEDIO");
-                lista.add(map);
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return lista;
+        try (var conexion = abrirConexion()) {
+            return new ConsultaCitaRepository(conexion).riesgos(LocalDateTime.now(relojClinico())).stream().map(cita -> {
+                Map<String, Object> datos = new HashMap<>();
+                datos.put("idCita", cita.id());
+                datos.put("fechaHora", cita.inicio().format(DateTimeFormatter.ofPattern("dd/MM/yyyy HH:mm")));
+                datos.put("paciente", cita.pacienteNombres() + " " + cita.pacienteApellidos());
+                datos.put("medico", "Dr. " + cita.medicoNombres() + " " + cita.medicoApellidos());
+                datos.put(ESPECIALIDAD, java.util.Objects.requireNonNullElse(cita.especialidad(), "Cardiología"));
+                datos.put("sede", java.util.Objects.requireNonNullElse(cita.sede(), "Sede Central"));
+                datos.put("nivelUrgencia", java.util.Objects.requireNonNullElse(cita.prioridad(), "BAJA"));
+                datos.put("riesgoCancelacion", java.util.Objects.requireNonNullElse(cita.riesgo(), "MEDIO"));
+                return datos;
+            }).collect(java.util.stream.Collectors.toCollection(java.util.ArrayList::new));
+        } catch (SQLException error) { throw new CatalogoDatosException(error); }
     }
 
     public String ejecutarReasignacionInteligente(int original) {
@@ -529,81 +423,19 @@ public class CitaDAO {
     // =========================================================================
 
     public int obtenerIdMedicoPorUsuarioId(int usuarioId) {
-        String sql = "SELECT id_medico FROM medico WHERE id_usuario = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, usuarioId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id_medico");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return -1;
+        try (var conexion = abrirConexion()) { return new ConsultaCitaRepository(conexion).medicoPorUsuario(usuarioId); }
+        catch (SQLException error) { LOGGER.warning("No se pudo resolver el identificador del médico."); return -1; }
     }
 
     public int obtenerIdPacientePorUsuarioId(int usuarioId) {
         if (usuarioId <= 0) return -1;
-
-        String sqlSelect = "SELECT id_paciente FROM paciente WHERE id_usuario = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sqlSelect)) {
-            ps.setInt(1, usuarioId);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id_paciente");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        return -1;
+        try (var conexion = abrirConexion()) { return new ConsultaCitaRepository(conexion).pacientePorUsuario(usuarioId); }
+        catch (SQLException error) { LOGGER.warning("No se pudo resolver el identificador del paciente."); return -1; }
     }
 
     public int obtenerIdUsuarioPorPacienteId(int idPaciente) {
-        String sql = "SELECT id_usuario FROM paciente WHERE id_paciente = ?";
-        try (Connection conn = abrirConexion();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idPaciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    return rs.getInt("id_usuario");
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return -1;
-    }
-
-    // =========================================================================
-    // 9. MÉTODOS AUXILIARES PRIVADOS DE FORMATEO Y FECHAS
-    // =========================================================================
-
-    private LocalDateTime extraerFechaHora(ResultSet rs, String columna) {
-        try {
-            String str = rs.getString(columna);
-            if (str != null && !str.trim().isEmpty()) {
-                str = str.trim();
-                if (str.length() >= 19) {
-                    str = str.substring(0, 19).replace('T', ' ');
-                    return LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
-                } else if (str.length() >= 16) {
-                    str = str.substring(0, 16).replace('T', ' ');
-                    return LocalDateTime.parse(str, DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"));
-                }
-            }
-        } catch (Exception ignored) {}
-        try {
-            Timestamp ts = rs.getTimestamp(columna);
-            if (ts != null) {
-                return ts.toLocalDateTime();
-            }
-        } catch (Exception ignored) {}
-        return null;
+        try (var conexion = abrirConexion()) { return new ConsultaCitaRepository(conexion).usuarioPorPaciente(idPaciente); }
+        catch (SQLException error) { LOGGER.warning("No se pudo resolver el identificador del usuario."); return -1; }
     }
 
     private String formatearFechaEspanol(LocalDateTime ldt) {
@@ -633,11 +465,9 @@ public class CitaDAO {
     }
 
     private static void avisarCambioCita(Connection conn, int cita) {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT m.id_sede FROM cita c JOIN medico m ON m.id_medico=c.id_medico WHERE c.id_cita=?")) {
-            ps.setInt(1, cita);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) TransaccionJdbc.avisarSede(rs.getInt(1));
-            }
+        try {
+            Integer sede = new ReservaCitaRepository(conn).sedeCita(cita);
+            if (sede != null) TransaccionJdbc.avisarSede(sede);
         } catch (SQLException e) { LOGGER.warning("La cita se guardó; no se pudo avisar de su actualización."); }
     }
 }

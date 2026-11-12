@@ -114,6 +114,18 @@ public class PacienteHistorialServlet extends HttpServlet {
             return;
         }
         if (!actualizado) {
+            if ("CANCELADA".equals(estado)) {
+                try {
+                    if (citaDAO.estaCanceladaPorPaciente(idCita, idPaciente)) {
+                        session.setAttribute(FLASH_MESSAGE, "Esta cita ya está cancelada.");
+                        pe.edu.utp.clinica.util.TransporteHttp.redirigir(response, request.getContextPath() + "/paciente/historial");
+                        return;
+                    }
+                } catch (CatalogoDatosException error) {
+                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    return;
+                }
+            }
             // Misma respuesta para cita ajena, inexistente o no modificable.
             response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return;

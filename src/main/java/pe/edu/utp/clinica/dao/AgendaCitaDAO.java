@@ -1,14 +1,11 @@
 package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
+import pe.edu.utp.clinica.repository.ReservaCitaRepository;
+import pe.edu.utp.clinica.repository.DisponibilidadRepository;
+import pe.edu.utp.clinica.persistence.entity.DisponibilidadEntidad;
 import java.sql.Connection;
-import java.sql.Date;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
-import java.sql.Time;
-import java.sql.Types;
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -59,39 +56,35 @@ public final class AgendaCitaDAO {
     public record Retencion(String identificador, long segundosRestantes) {}
 
     public Retencion retener(int paciente, int medico, String fecha, String hora) {
-        LocalDateTime inicio=futura(fecha,hora);
+        LocalDateTime inicio = futura(fecha, hora);
         return transaccion(conn -> {
-            paciente(conn,paciente);
-            Medico perfil=medico(conn,medico);
-            Bloque bloque=bloqueReservable(conn,medico,perfil.sede(),inicio);
+            paciente(conn, paciente);
+            Medico perfil = medico(conn, medico);
+            Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
             validarFutura(inicio);
-            LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
-            try(var ps=conn.prepareStatement("SELECT identificador,vence FROM retencion_cupo WHERE id_paciente=? AND id_medico=? AND inicio=? AND vence>?")) {
-                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setObject(4,ahora);
-                try(var rs=ps.executeQuery()) {
-                    if(rs.next())return new Retencion(rs.getString(1),java.time.Duration.between(ahora.atZone(ZoneId.of("America/Lima")),rs.getObject(2,LocalDateTime.class).atZone(ZoneId.of("America/Lima"))).getSeconds());
-                }
-            }
-            try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? OR (id_medico=? AND vence<=?)")) {
-                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,ahora);ps.executeUpdate();
-            }
-            libre(conn,medico,inicio,bloque.minutos(),0);
-            String id=java.util.UUID.randomUUID().toString();
-            LocalDateTime vence=ahora.plusMinutes(5);
-            if(vence.isAfter(inicio))vence=inicio;
-            try(var ps=conn.prepareStatement("INSERT INTO retencion_cupo(id_paciente,id_medico,inicio,duracion_minutos,identificador,vence) VALUES(?,?,?,?,?,?)")) {
-                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setInt(4,bloque.minutos());ps.setString(5,id);ps.setObject(6,vence);ps.executeUpdate();
-            }
-            return new Retencion(id,java.time.Duration.between(ahora.atZone(ZoneId.of("America/Lima")),vence.atZone(ZoneId.of("America/Lima"))).getSeconds());
+            LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
+            var repositorio = new ReservaCitaRepository(conn);
+            var existente = repositorio.retencion(paciente, medico, inicio, ahora);
+            if (existente != null) return new Retencion(existente.identificador(), segundos(ahora, existente.vence()));
+            repositorio.limpiarRetenciones(paciente, medico, ahora);
+            libre(conn, medico, inicio, bloque.minutos(), 0);
+            String id = java.util.UUID.randomUUID().toString();
+            LocalDateTime vence = ahora.plusMinutes(5);
+            if (vence.isAfter(inicio)) vence = inicio;
+            repositorio.retener(paciente, medico, inicio, bloque.minutos(), id, vence);
+            return new Retencion(id, segundos(ahora, vence));
         });
     }
 
-    public boolean liberarRetencion(int paciente,String identificador) {
+    private static long segundos(LocalDateTime desde, LocalDateTime hasta) {
+        var zona = ZoneId.of("America/Lima");
+        return java.time.Duration.between(desde.atZone(zona), hasta.atZone(zona)).getSeconds();
+    }
+
+    public boolean liberarRetencion(int paciente, String identificador) {
         return transaccion(conn -> {
-            paciente(conn,paciente);
-            try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? AND identificador=?")) {
-                ps.setInt(1,paciente);ps.setString(2,identificador);ps.executeUpdate();
-            }
+            paciente(conn, paciente);
+            new ReservaCitaRepository(conn).liberarRetencion(paciente, identificador, null, null, null);
             return true;
         });
     }
@@ -100,9 +93,8 @@ public final class AgendaCitaDAO {
         LocalDateTime inicio=futura(fecha,hora);
         return transaccion(conn -> {
             paciente(conn,paciente);medico(conn,medico);
-            try(var ps=conn.prepareStatement("DELETE FROM retencion_cupo WHERE id_paciente=? AND id_medico=? AND inicio=? AND identificador=? AND vence>?")) {
-                ps.setInt(1,paciente);ps.setInt(2,medico);ps.setObject(3,inicio);ps.setString(4,identificador);ps.setObject(5,LocalDateTime.now(clock));
-                if(ps.executeUpdate()!=1)throw new AgendaException(409,"RETENCION_VENCIDA","El cupo ya no está retenido para este formulario. Selecciona el horario nuevamente.");
+            if (new ReservaCitaRepository(conn).liberarRetencion(paciente, identificador, medico, inicio, LocalDateTime.now(clock)) != 1) {
+                throw new AgendaException(409,"RETENCION_VENCIDA","El cupo ya no está retenido para este formulario. Selecciona el horario nuevamente.");
             }
             return reservarEnConexion(conn,new Reserva(paciente,medico,fecha,hora,"MEDIA",motivo),0);
         });
@@ -116,7 +108,7 @@ public final class AgendaCitaDAO {
         validarPrioridad(reserva.urgencia());
         int usuario = paciente(conn, reserva.paciente());
         Medico perfil = medico(conn, reserva.medico());
-        String prioridad=PrioridadClinicaJdbc.resolver(conn,reserva.paciente(),perfil.especialidad(),inicio.toLocalDate());
+        String prioridad=new ReservaCitaRepository(conn).prioridad(reserva.paciente(),perfil.especialidad(),inicio.toLocalDate());
         verificarMotivo(conn,reserva.motivo(),perfil.especialidad());
         Bloque bloque = bloqueReservable(conn, reserva.medico(), perfil.sede(), inicio);
         libre(conn, reserva.medico(), inicio, bloque.minutos(), oferta);
@@ -143,19 +135,15 @@ public final class AgendaCitaDAO {
             int usuario = paciente(conn, paciente);
             verificarAnterior(conn, anterior, paciente);
             Medico perfil = medico(conn, medico);
-            String prioridad=PrioridadClinicaJdbc.resolver(conn,paciente,perfil.especialidad(),inicio.toLocalDate());
+            String prioridad=new ReservaCitaRepository(conn).prioridad(paciente,perfil.especialidad(),inicio.toLocalDate());
             verificarMotivo(conn, motivo, perfil.especialidad());
             Bloque bloque = bloqueReservable(conn, medico, perfil.sede(), inicio);
             libre(conn, medico, inicio, bloque.minutos(), 0);
             validarFutura(inicio);
-            try (PreparedStatement ps = conn.prepareStatement("UPDATE cita SET estado = 'REPROGRAMADA' WHERE id_cita = ? AND id_paciente = ?")) {
-                ps.setInt(1, anterior);
-                ps.setInt(2, paciente);
-                if (ps.executeUpdate() != 1) throw noDisponible();
-            }
+            if (new ReservaCitaRepository(conn).estado(anterior, paciente, "REPROGRAMADA", null, null) != 1) throw noDisponible();
             int nueva = insertarCita(conn, paciente, medico, bloque.id(), inicio, motivo, prioridad);
             TransaccionJdbc.avisarSede(perfil.sede());
-            if(correosActivos)pe.edu.utp.clinica.correo.CorreosCambiosJdbc.encolar(conn,nueva,anterior,pe.edu.utp.clinica.correo.CorreosCambiosJdbc.Tipo.REPROGRAMADA,clock.instant());
+            if(correosActivos)new ReservaCitaRepository(conn).correoCambio(nueva,anterior,"REPROGRAMADA",clock.instant());
             notificar(conn, usuario, nueva, "Cita reprogramada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".",false);
             return true;
         });
@@ -174,17 +162,7 @@ public final class AgendaCitaDAO {
             validarFutura(desde);
             if (sede != perfil.sede()) throw invalida("La sede debe ser la asignada al médico.");
             sinSolapamiento(conn, medico, desde.toLocalDate(), desde.toLocalTime(), hasta, 0);
-            String sql = "INSERT INTO disponibilidad (id_medico,id_sede,fecha,hora_inicio,hora_fin,duracion_minutos,estado) VALUES (?,?,?,?,?,?,'PUBLICADO')";
-            try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-                ps.setInt(1, medico);
-                ps.setInt(2, sede);
-                ps.setDate(3, Date.valueOf(desde.toLocalDate()));
-                ps.setTime(4, Time.valueOf(desde.toLocalTime()));
-                ps.setTime(5, Time.valueOf(hasta));
-                ps.setInt(6, minutos);
-                ps.executeUpdate();
-                return clave(ps);
-            }
+            return new ReservaCitaRepository(conn).publicar(medico, sede, desde.toLocalDate(), desde.toLocalTime(), hasta, minutos);
     }
 
     public void cambiarEstado(int disponibilidad, String estado) {
@@ -194,41 +172,25 @@ public final class AgendaCitaDAO {
         transaccion(conn -> {
             int medico = medicoDeBloque(conn, disponibilidad);
             Medico perfil = medico(conn, medico);
-            String sql = "SELECT id_sede,fecha,hora_inicio,hora_fin,duracion_minutos FROM disponibilidad WHERE id_disponibilidad = ? FOR UPDATE";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, disponibilidad);
-                try (ResultSet rs = ps.executeQuery()) {
-                    if (!rs.next()) throw noDisponible();
-                    validarCambio(conn, disponibilidad, medico, perfil, rs, estado);
-                }
-            }
-            try (PreparedStatement ps = conn.prepareStatement("UPDATE disponibilidad SET estado = ? WHERE id_disponibilidad = ?")) {
-                ps.setString(1, estado);
-                ps.setInt(2, disponibilidad);
-                if (ps.executeUpdate() != 1) throw noDisponible();
-            }
+            var bloque = new ReservaCitaRepository(conn).bloque(disponibilidad);
+            if (bloque == null) throw noDisponible();
+            validarCambio(conn, disponibilidad, medico, perfil, bloque, estado);
+            bloque.cambiarEstado(estado);
             return true;
         });
     }
 
-    private void validarCambio(Connection conn, int id, int medico, Medico perfil, ResultSet rs, String estado) throws SQLException {
-        LocalDate fecha = rs.getDate("fecha").toLocalDate();
-        LocalTime inicio = rs.getTime("hora_inicio").toLocalTime();
-        LocalTime fin = rs.getTime("hora_fin").toLocalTime();
+    private void validarCambio(Connection conn, int id, int medico, Medico perfil, DisponibilidadEntidad bloque, String estado) throws SQLException {
+        LocalDate fecha = bloque.fecha();
+        LocalTime inicio = bloque.inicio();
+        LocalTime fin = bloque.fin();
         if (PUBLICADO.equals(estado)) {
-            if (perfil.sede() != rs.getInt("id_sede")) throw invalida("La sede del turno no coincide con la del médico.");
+            if (perfil.sede() != bloque.sede()) throw invalida("La sede del turno no coincide con la del médico.");
             validarFutura(LocalDateTime.of(fecha, inicio));
-            validarIntervalo(inicio, fin, rs.getInt("duracion_minutos"));
+            validarIntervalo(inicio, fin, bloque.minutos());
             sinSolapamiento(conn, medico, fecha, inicio, fin, id);
-        } else {
-            String sql = "SELECT id_cita FROM cita WHERE id_disponibilidad = ? AND fecha_hora > ? AND estado NOT IN ('CANCELADA','REPROGRAMADA') LIMIT 1";
-            try (PreparedStatement ps = conn.prepareStatement(sql)) {
-                ps.setInt(1, id);
-                ps.setObject(2, LocalDateTime.now(clock));
-                try (ResultSet citas = ps.executeQuery()) {
-                    if (citas.next()) throw new AgendaException(409, "TURNO_CON_CITAS", "El turno tiene citas activas. Reprograma o cancela esas citas antes de retirarlo.");
-                }
-            }
+        } else if (new ReservaCitaRepository(conn).bloqueConCitas(id, LocalDateTime.now(clock))) {
+            throw new AgendaException(409, "TURNO_CON_CITAS", "El turno tiene citas activas. Reprograma o cancela esas citas antes de retirarlo.");
         }
     }
 
@@ -238,65 +200,31 @@ public final class AgendaCitaDAO {
 
     static int paciente(Connection conn, int id) throws SQLException {
         if (id <= 0) throw invalida("El paciente no es válido.");
-        int usuario;
-        try (PreparedStatement ps = conn.prepareStatement("SELECT id_usuario FROM paciente WHERE id_paciente=? FOR UPDATE")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw invalida("El paciente no está habilitado.");
-                usuario = rs.getInt(1);
-            }
+        var repositorio = new ReservaCitaRepository(conn);
+        var perfil = repositorio.paciente(id);
+        if (perfil == null || perfil.usuario() == null || !repositorio.usuarioActivo(perfil.usuario(), "PACIENTE")) {
+            throw invalida("El paciente no está habilitado.");
         }
-        try (PreparedStatement ps = conn.prepareStatement("SELECT id_usuario FROM usuario WHERE id_usuario=? AND activo=TRUE AND rol='PACIENTE'")) {
-            ps.setInt(1, usuario);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw invalida("El paciente no está habilitado.");
-            }
-        }
-        return usuario;
+        return perfil.usuario();
     }
 
     static void bloquearMedico(Connection conn, int id) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT id_medico FROM medico WHERE id_medico=? FOR UPDATE")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) { if (!rs.next()) throw noDisponible(); }
-        }
+        if (new ReservaCitaRepository(conn).medico(id) == null) throw noDisponible();
     }
 
     static Medico medico(Connection conn, int id) throws SQLException {
         if (id <= 0) throw invalida("El médico no es válido.");
-        String sql = "SELECT id_sede,id_especialidad FROM medico WHERE id_medico=? AND estado='ACTIVO' FOR UPDATE";
-        int sede;
-        int especialidad;
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw noDisponible();
-                sede = rs.getInt(1);
-                especialidad = rs.getInt(2);
-            }
-        }
-        String activo = "SELECT m.id_medico FROM medico m JOIN usuario u ON m.id_usuario=u.id_usuario JOIN sede s ON m.id_sede=s.id_sede JOIN especialidad e ON m.id_especialidad=e.id_especialidad WHERE m.id_medico=? AND u.activo=TRUE AND u.rol='MEDICO' AND s.estado='ACTIVO' AND e.estado='ACTIVO'";
-        try (PreparedStatement ps = conn.prepareStatement(activo)) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw noDisponible();
-            }
-        }
-        return new Medico(sede, especialidad);
+        var repositorio = new ReservaCitaRepository(conn);
+        var perfil = repositorio.medico(id);
+        if (perfil == null || !"ACTIVO".equals(perfil.estado()) || perfil.sede() == null
+                || perfil.especialidad() == null || !repositorio.medicoActivo(id)) throw noDisponible();
+        return new Medico(perfil.sede(), perfil.especialidad());
     }
 
     private static Bloque bloqueReservable(Connection conn, int medico, int sede, LocalDateTime inicio) throws SQLException {
-        String sql = "SELECT id_disponibilidad,hora_inicio,hora_fin,duracion_minutos FROM disponibilidad WHERE id_medico=? AND id_sede=? AND fecha=? AND estado='PUBLICADO' ORDER BY id_disponibilidad FOR UPDATE";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, medico);
-            ps.setInt(2, sede);
-            ps.setDate(3, Date.valueOf(inicio.toLocalDate()));
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    Bloque bloque = new Bloque(rs.getInt(1), rs.getTime(2).toLocalTime(), rs.getTime(3).toLocalTime(), rs.getInt(4));
-                    if (contiene(bloque, inicio.toLocalTime())) return bloque;
-                }
-            }
+        for (var turno : new ReservaCitaRepository(conn).bloques(medico, sede, inicio.toLocalDate())) {
+            var bloque = new Bloque(turno.id(), turno.inicio(), turno.fin(), turno.minutos());
+            if (contiene(bloque, inicio.toLocalTime())) return bloque;
         }
         throw noDisponible();
     }
@@ -311,130 +239,68 @@ public final class AgendaCitaDAO {
     }
 
     private void libre(Connection conn, int medico, LocalDateTime inicio, int minutos, int oferta) throws SQLException {
-        RetencionesJdbc.comprobarLibre(conn,medico,inicio,minutos,LocalDateTime.now(clock));
-        String sql = "SELECT c.fecha_hora,d.duracion_minutos FROM cita c JOIN disponibilidad d ON c.id_disponibilidad=d.id_disponibilidad WHERE c.id_medico=? AND c.fecha_hora>=? AND c.fecha_hora<? AND c.estado NOT IN ('CANCELADA','REPROGRAMADA') "
-                + "UNION ALL SELECT c.fecha_hora,d.duracion_minutos FROM reasignacion_inteligente r JOIN cita c ON r.id_cita_original=c.id_cita JOIN disponibilidad d ON r.id_disponibilidad=d.id_disponibilidad JOIN medico m ON c.id_medico=m.id_medico "
-                + "WHERE c.id_medico=? AND r.estado='PENDIENTE' AND r.fecha_limite_respuesta>? AND c.fecha_hora>? AND c.estado='CANCELADA' AND d.estado='PUBLICADO' AND d.id_sede=m.id_sede AND r.id_reasignacion<>? "
-                + "AND EXISTS(SELECT 1 FROM lista_espera le JOIN paciente p ON le.id_paciente=p.id_paciente JOIN usuario u ON p.id_usuario=u.id_usuario WHERE le.id_lista_espera=r.id_lista_espera AND le.estado='OFERTADA' AND u.activo=TRUE AND u.rol='PACIENTE')";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, medico);
-            ps.setObject(2, inicio.toLocalDate().atStartOfDay());
-            ps.setObject(3, inicio.toLocalDate().plusDays(1).atStartOfDay());
-            ps.setInt(4, medico);
-            ps.setObject(5, LocalDateTime.now(clock));
-            ps.setObject(6, LocalDateTime.now(clock));
-            ps.setInt(7, oferta);
-            try (ResultSet rs = ps.executeQuery()) {
-                while (rs.next()) {
-                    LocalDateTime ocupada = rs.getObject(1, LocalDateTime.class);
-                    int duracion = rs.getInt(2);
-                    if (duracion <= 0 || duracion > 1440) throw noDisponible();
-                    if (inicio.isBefore(ocupada.plusMinutes(duracion)) && ocupada.isBefore(inicio.plusMinutes(minutos))) throw noDisponible();
-                }
+        var repositorio = new DisponibilidadRepository(conn);
+        var ahora = LocalDateTime.now(clock);
+        for (var retencion : repositorio.retencionesMedico(medico, inicio.toLocalDate(), ahora)) {
+            if (inicio.isBefore(retencion.inicio().plusMinutes(retencion.minutos()))
+                    && retencion.inicio().isBefore(inicio.plusMinutes(minutos))) {
+                throw new AgendaException(409,"HORARIO_RETENIDO","Otro paciente está confirmando ese horario. Selecciona otro cupo o inténtalo más tarde.");
             }
+        }
+        for (var ocupada : repositorio.ocupacionesReserva(medico, inicio.toLocalDate(), ahora, oferta)) {
+            int duracion = ocupada.minutos();
+            if (duracion <= 0 || duracion > 1440) throw noDisponible();
+            if (inicio.isBefore(ocupada.inicio().plusMinutes(duracion)) && ocupada.inicio().isBefore(inicio.plusMinutes(minutos))) throw noDisponible();
         }
     }
 
     private void verificarAnterior(Connection conn, int cita, int paciente) throws SQLException {
-        String sql = "SELECT estado,fecha_hora FROM cita WHERE id_cita=? AND id_paciente=? FOR UPDATE";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, cita);
-            ps.setInt(2, paciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw new AgendaException(404, "CITA_NO_ENCONTRADA", "No se encontró una cita propia para reprogramar.");
-                if (!rs.getObject(2, LocalDateTime.class).isAfter(LocalDateTime.now(clock))) throw invalida("No se puede reprogramar una cita pasada.");
-                if (!REPROGRAMABLES.contains(rs.getString(1))) throw new AgendaException(409, "CITA_NO_REPROGRAMABLE", "El estado de la cita no permite reprogramarla.");
-            }
-        }
+        var anterior = new ReservaCitaRepository(conn).anterior(cita, paciente);
+        if (anterior == null) throw new AgendaException(404, "CITA_NO_ENCONTRADA", "No se encontró una cita propia para reprogramar.");
+        if (!anterior.inicio().isAfter(LocalDateTime.now(clock))) throw invalida("No se puede reprogramar una cita pasada.");
+        if (!REPROGRAMABLES.contains(anterior.estado())) throw new AgendaException(409, "CITA_NO_REPROGRAMABLE", "El estado de la cita no permite reprogramarla.");
     }
 
     private static void verificarMotivo(Connection conn, Integer motivo, int especialidad) throws SQLException {
         if (motivo == null) return;
         if (motivo <= 0) throw invalida("El motivo no es válido.");
-        try (PreparedStatement ps = conn.prepareStatement("SELECT id_motivo FROM motivo_cita WHERE id_motivo=? AND id_especialidad=? AND estado='ACTIVO'")) {
-            ps.setInt(1, motivo);
-            ps.setInt(2, especialidad);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw invalida("El motivo no pertenece a la especialidad del médico.");
-            }
+        if (!new ReservaCitaRepository(conn).motivoValido(motivo, especialidad)) {
+            throw invalida("El motivo no pertenece a la especialidad del médico.");
         }
     }
 
     private int insertarCita(Connection conn, int paciente, int medico, int bloque, LocalDateTime inicio, Integer motivo, String urgencia) throws SQLException {
-        String sql = "INSERT INTO cita (id_paciente,id_medico,id_disponibilidad,fecha_hora,id_motivo,estado,nivel_urgencia,riesgo_cancelacion) VALUES (?,?,?,?,?,'CONFIRMADA',?,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS)) {
-            ps.setInt(1, paciente);
-            ps.setInt(2, medico);
-            ps.setInt(3, bloque);
-            ps.setObject(4, inicio);
-            if (motivo == null) ps.setNull(5, Types.INTEGER); else ps.setInt(5, motivo);
-            ps.setString(6, urgencia);
-            ps.setString(7, riesgo(conn, paciente));
-            ps.executeUpdate();
-            int id = clave(ps);
-            LocalDateTime ahora=LocalDateTime.now(clock).withNano(0);
-            int horas=horasAnticipacionConfirmacion==null?ConfiguracionOfertasDAO.leer(conn).confirmacionHoras():horasAnticipacionConfirmacion;
-            LocalDateTime vence=inicio.minusHours(horas);
-            if (!vence.isAfter(ahora)) vence=inicio;
-            try (PreparedStatement confirmacion=conn.prepareStatement("INSERT INTO confirmacion_asistencia(id_cita,creada_en,vence_en) VALUES(?,?,?)")) {
-                confirmacion.setInt(1,id);confirmacion.setObject(2,ahora);confirmacion.setObject(3,vence);confirmacion.executeUpdate();
-            }
-            return id;
-        }
+        var repositorio = new ReservaCitaRepository(conn);
+        int id = repositorio.crearCita(paciente, medico, bloque, inicio, motivo, urgencia, riesgo(conn, paciente));
+        LocalDateTime ahora = LocalDateTime.now(clock).withNano(0);
+        Integer horas = horasAnticipacionConfirmacion == null ? repositorio.horasConfirmacion() : horasAnticipacionConfirmacion;
+        if (horas == null) throw new AgendaException(503,"CONFIGURACION_NO_DISPONIBLE","No se pudo obtener la configuración de ofertas.");
+        LocalDateTime vence = inicio.minusHours(horas);
+        if (!vence.isAfter(ahora)) vence = inicio;
+        repositorio.confirmar(id, ahora, vence);
+        return id;
     }
 
     private static String riesgo(Connection conn, int paciente) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT COUNT(*) FROM cita WHERE id_paciente=? AND estado='CANCELADA'")) {
-            ps.setInt(1, paciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                rs.next();
-                int canceladas = rs.getInt(1);
-                if (canceladas >= 3) return "ALTO";
-                return canceladas > 0 ? "MEDIO" : "BAJO";
-            }
-        }
+        long canceladas = new ReservaCitaRepository(conn).canceladas(paciente);
+        return canceladas >= 3 ? "ALTO" : canceladas > 0 ? "MEDIO" : "BAJO";
     }
 
-    private void notificar(Connection conn, int usuario, int cita, String mensaje,boolean reservaInicial) throws SQLException {
-        if(correosActivos && reservaInicial)pe.edu.utp.clinica.correo.CorreosCitaJdbc.encolar(conn,cita,clock.instant());
-        String sql = "INSERT INTO notificacion (id_usuario,id_cita,tipo,canal,mensaje,estado_envio,leida,fecha_envio) VALUES (?,?,'Citas','PLATAFORMA',?,'ENVIADA',0,?)";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, usuario);
-            ps.setInt(2, cita);
-            ps.setString(3, mensaje);
-            ps.setObject(4, LocalDateTime.now(clock));
-            ps.executeUpdate();
-        }
-    }
-
-    private static int clave(PreparedStatement ps) throws SQLException {
-        try (ResultSet rs = ps.getGeneratedKeys()) {
-            if (!rs.next()) throw new SQLException("No se obtuvo la clave generada");
-            return rs.getInt(1);
-        }
+    private void notificar(Connection conn, int usuario, int cita, String mensaje, boolean reservaInicial) throws SQLException {
+        var repositorio = new ReservaCitaRepository(conn);
+        if (correosActivos && reservaInicial) repositorio.correoReserva(cita, clock.instant());
+        repositorio.notificar(usuario, cita, mensaje, LocalDateTime.now(clock));
     }
 
     private static int medicoDeBloque(Connection conn, int id) throws SQLException {
-        try (PreparedStatement ps = conn.prepareStatement("SELECT id_medico FROM disponibilidad WHERE id_disponibilidad=?")) {
-            ps.setInt(1, id);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (!rs.next()) throw noDisponible();
-                return rs.getInt(1);
-            }
-        }
+        Integer medico = new ReservaCitaRepository(conn).medicoDeBloque(id);
+        if (medico == null) throw noDisponible();
+        return medico;
     }
 
     private static void sinSolapamiento(Connection conn, int medico, LocalDate fecha, LocalTime inicio, LocalTime fin, int excluir) throws SQLException {
-        String sql = "SELECT id_disponibilidad FROM disponibilidad WHERE id_medico=? AND fecha=? AND estado='PUBLICADO' AND hora_inicio<? AND hora_fin>? AND id_disponibilidad<>? FOR UPDATE";
-        try (PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, medico);
-            ps.setDate(2, Date.valueOf(fecha));
-            ps.setTime(3, Time.valueOf(fin));
-            ps.setTime(4, Time.valueOf(inicio));
-            ps.setInt(5, excluir);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) throw new AgendaException(409, "TURNOS_SUPERPUESTOS", "Ya existe un turno publicado que se cruza con ese horario.");
-            }
+        if (new ReservaCitaRepository(conn).solapamiento(medico, fecha, inicio, fin, excluir)) {
+            throw new AgendaException(409, "TURNOS_SUPERPUESTOS", "Ya existe un turno publicado que se cruza con ese horario.");
         }
     }
 
