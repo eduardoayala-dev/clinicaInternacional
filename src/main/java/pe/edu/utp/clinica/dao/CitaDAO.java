@@ -227,6 +227,10 @@ public class CitaDAO {
         return new AgendaCitaDAO(this::abrirConexion).reprogramar(anterior, paciente, medico, fecha, hora, motivo, urgencia);
     }
 
+    public int reprogramarCitaConId(int anterior, int paciente, int medico, String fecha, String hora, int motivo) {
+        return new AgendaCitaDAO(this::abrirConexion).reprogramarConId(anterior, paciente, medico, fecha, hora, motivo, "MEDIA");
+    }
+
     // =========================================================================
     // 5. ATENCIÓN MÉDICA Y AGENDA DE MÉDICOS
     // =========================================================================

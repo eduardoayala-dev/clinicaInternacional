@@ -122,8 +122,13 @@ Los contratos y las pruebas de médicos y horarios están en
 
 El equipo de desarrollo sigue una estrategia basada en GitFlow:
 
-- `main`: Entorno de producción. Únicamente código estable.
-- `develop`: Entorno de integración.
-- `feature/*`: Desarrollo de nuevas historias de usuario o módulos.
+- `main`: Rama exclusiva de despliegue en Railway. Recibe versiones validadas mediante un PR desde `develop`.
+- `develop`: Rama de integración y pruebas. Es la base y el destino de los PR de funcionalidades y correcciones.
+- `feature/*`: Una rama por funcionalidad completa. Por ejemplo, `feature/gestion-citas` puede reunir reserva, reprogramación y cancelación. Los pasos de implementación se registran como commits en la misma rama y se revisan en un único PR.
+- `fix/*`: Una rama por fallo concreto de una funcionalidad existente. La corrección y sus pruebas van en el mismo PR hacia `develop`.
 
 Todo commit debe seguir el formato semántico convencional en español. Ej: `feat: implementar módulo de reservas` o `fix: corregir error en conexión a base de datos`.
+
+## API propias
+
+Consulta el [contrato de gestión de citas](docs/api-citas.md) para encontrar las rutas, los roles, la colección Postman y el plan de comparación de carga.
