@@ -1,0 +1,6 @@
+services:
+  app:
+    environment:
+      GEMINI_ORIENTATION_ENABLED: ${GEMINI_ORIENTATION_ENABLED:-false}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GEMINI_MODEL: ${GEMINI_MODEL:-}

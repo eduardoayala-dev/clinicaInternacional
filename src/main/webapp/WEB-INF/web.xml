@@ -6,15 +6,50 @@
 
     <display-name>Clinica Internacional</display-name>
 
+    <filter>
+        <filter-name>AutenticacionJwtFilter</filter-name>
+        <filter-class>pe.edu.utp.clinica.filter.AutenticacionJwtFilter</filter-class>
+        <async-supported>true</async-supported>
+    </filter>
+    <filter-mapping>
+        <filter-name>AutenticacionJwtFilter</filter-name><url-pattern>/*</url-pattern><dispatcher>REQUEST</dispatcher>
+    </filter-mapping>
+
+    <filter>
+        <filter-name>CsrfFilter</filter-name>
+        <filter-class>pe.edu.utp.clinica.filter.CsrfFilter</filter-class>
+        <async-supported>true</async-supported>
+    </filter>
+    <filter-mapping>
+        <filter-name>CsrfFilter</filter-name>
+        <url-pattern>/*</url-pattern>
+        <dispatcher>REQUEST</dispatcher>
+    </filter-mapping>
+
+    <session-config>
+        <session-timeout>30</session-timeout>
+        <cookie-config>
+            <http-only>true</http-only>
+        </cookie-config>
+        <tracking-mode>COOKIE</tracking-mode>
+    </session-config>
+
     <!-- Configuración para evitar bloqueo de archivos estáticos en Windows con Jetty -->
     <servlet>
         <servlet-name>default</servlet-name>
+        <init-param>
+            <param-name>precompressed</param-name>
+            <param-value>gzip=.gz</param-value>
+        </init-param>
         <init-param>
             <param-name>useFileMappedBuffer</param-name>
             <param-value>false</param-value>
         </init-param>
     </servlet>
 
+    <error-page>
+        <error-code>503</error-code><location>/WEB-INF/views/error.jsp</location>
+    </error-page>
     <!-- Error Pages -->
     <error-page>
         <error-code>404</error-code>

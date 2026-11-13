@@ -1,6 +1,7 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ taglib prefix="c" uri="jakarta.tags.core" %>
 <%
+    request.setAttribute("portalPersonal", false);
     boolean showRegister = false;
     if ("register".equals(request.getParameter("action")) || session.getAttribute("registerError") != null) {
         showRegister = true;
@@ -10,65 +11,33 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
+    <%@ include file="/WEB-INF/jspf/disponibilidad-head.jspf" %>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Clínica Internacional - Portal del Paciente</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <meta name="description" content="Portal de pacientes de Clínica Internacional. Inicia sesión para gestionar tus citas, revisar tus avisos y actualizar tus datos de contacto.">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/login-paciente.css">
-</head>
-<body>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/acceso-tema.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/registro-pasos.css">
+    <script defer src="${pageContext.request.contextPath}/assets/js/acceso.js"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-contenido.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/recuperacion-inline.css">
+    <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion.js"></script>
+    <script defer src="${pageContext.request.contextPath}/assets/js/recuperacion-inline.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<body class="portal-paciente">
 
 <div class="login-container ${showRegister ? 'is-registering' : ''}" id="mainContainer">
 
-    <!-- ==================== LADO IZQUIERDO: HERO ==================== -->
-    <aside class="hero-pane">
-        <!-- Logo y Sistema -->
-        <div class="hero-brand">
-            <div class="brand-icon-box">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Logo" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Sistema de citas</span>
-            </div>
-        </div>
+    <%@ include file="/WEB-INF/jspf/acceso-marca.jspf" %>
 
-        <!-- Mensaje Principal -->
-        <div class="hero-body">
-            <h1 class="hero-title">
-                Tu salud, gestionada<br>
-                con precisión
-            </h1>
-            <p class="hero-desc">
-                Reserva, reprograma o cancela tus citas, y recibe la oferta de un cupo liberado si estás en la lista de espera.
-            </p>
-
-            <ul class="hero-features">
-                <li><span class="bullet"></span> Pacientes</li>
-                <li><span class="bullet"></span> Médicos</li>
-                <li><span class="bullet"></span> Personal administrativo</li>
-                <li><span class="bullet"></span> Administradores</li>
-            </ul>
-        </div>
-
-        <!-- Footer Izquierdo: Acceso Personal -->
-        <div class="hero-footer">
-            <span>Portal de Pacientes</span>
-            <a href="${pageContext.request.contextPath}/login/personal">
-                Acceso Médicos y Admisión &rarr;
-            </a>
-        </div>
-    </aside>
-
-    <!-- ==================== LADO DERECHO: FORMULARIOS ==================== -->
     <main class="form-pane" id="formPane">
         <div class="form-inner-box">
             
-            <!-- VISTA 1: INICIAR SESIÓN -->
-            <section id="view-login" class="auth-view ${not showRegister ? 'active' : ''}">
+            <section id="view-login" data-acceso-login class="auth-view ${not showRegister ? 'active' : ''}">
                 <div class="auth-header">
                     <h2 class="auth-title">Iniciar sesión</h2>
                     <p class="auth-subtitle">Ingresa con tu documento de identidad registrado.</p>
@@ -95,95 +64,50 @@
                     </div>
                 </c:if>
 
-                <form action="${pageContext.request.contextPath}/login/paciente" method="POST" autocomplete="off">
+                <form action="${pageContext.request.contextPath}/login/paciente" method="POST" autocomplete="off" data-comprobar-disponibilidad>
                     <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}" />
 
-                    <!-- Documento -->
                     <div class="form-group">
                         <label class="form-label" for="identificador">N° de documento (DNI o Carné de Extranjería) *</label>
                         <div class="input-box">
-                            <input type="text" id="identificador" name="identificador" class="form-input" required maxlength="15" pattern="[A-Za-z0-9]+" placeholder="Ej. 45879632 o 001234567">
+                            <input type="text" id="identificador" name="identificador" class="form-input" inputmode="numeric" autocomplete="username" required maxlength="15" pattern="[A-Za-z0-9]+" placeholder="Ej. 45879632 o 001234567">
                         </div>
                     </div>
 
-                    <!-- Contraseña -->
                     <div class="form-group" style="margin-bottom: 8px;">
                         <label class="form-label" for="password">Contraseña *</label>
                         <div class="input-box has-right-icon">
                             <input type="password" id="password" name="password" class="form-input" required placeholder="Ingresa tu contraseña">
-                            <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('password', this)" title="Mostrar/ocultar contraseña">
-                                <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                            <button type="button" class="btn-toggle-eye" data-password-toggle="password" aria-pressed="false" title="Mostrar/ocultar contraseña">
+                                <img width="18" height="18" src="${pageContext.request.contextPath}/assets/images/seguridad/ojo.svg" alt="">
                             </button>
                         </div>
                     </div>
 
-                    <!-- Olvidó contraseña -->
                     <div class="forgot-pwd-row">
-                        <a href="javascript:void(0)" onclick="toggleView('view-recovery')" class="forgot-pwd-link">
+                        <a href="${pageContext.request.contextPath}/recuperar" class="forgot-pwd-link" data-abrir-recuperacion>
                             ¿Olvidó su contraseña?
                         </a>
                     </div>
 
-                    <!-- Botón Ingresar -->
                     <button type="submit" class="btn-submit-primary">
                         Ingresar
                     </button>
 
-                    <!-- Separador -->
                     <div class="auth-divider">
                         <span>¿Paciente nuevo?</span>
                     </div>
 
-                    <!-- Botón Crear Cuenta Nueva -->
                     <button type="button" class="btn-create-account" onclick="toggleView('view-register')">
                         Crear cuenta nueva
                     </button>
                 </form>
 
-                <!-- Footer de ayuda -->
                 <div class="auth-help-footer">
                     ¿Necesita ayuda? Contactar call center citas
                 </div>
             </section>
 
-            <!-- VISTA 3: RECUPERAR CONTRASEÑA -->
-            <section id="view-recovery" class="auth-view">
-                <div class="auth-header">
-                    <h2 class="auth-title">Recuperar contraseña</h2>
-                    <p class="auth-subtitle">Ingresa el correo con el que creaste tu cuenta.</p>
-                </div>
-
-                <div id="recoverySuccessAlert" class="alert-success" style="display: none;"></div>
-
-                <form id="recoveryForm" onsubmit="handleRecoverySubmit(event)">
-                    <div class="form-group">
-                        <label class="form-label" for="recoveryEmail">Correo electrónico registrado *</label>
-                        <div class="input-box has-right-icon">
-                            <input type="email" id="recoveryEmail" name="recoveryEmail" class="form-input" required placeholder="correo@ejemplo.com">
-                            <span class="btn-toggle-eye" style="pointer-events: none;">
-                                <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
-                            </span>
-                        </div>
-                    </div>
-
-                    <button type="submit" class="btn-submit-primary">
-                        Enviar enlace de recuperación
-                    </button>
-
-                    <div class="recovery-info-card">
-                        <i data-lucide="mail" style="width: 18px; height: 18px;"></i>
-                        <span>Si el correo está registrado, te enviaremos un enlace para crear una nueva contraseña.</span>
-                    </div>
-
-                    <div style="margin-top: 16px;">
-                        <a href="javascript:void(0)" onclick="toggleView('view-login')" class="btn-back-link">
-                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Volver a iniciar sesión
-                        </a>
-                    </div>
-                </form>
-            </section>
-
-            <!-- VISTA 2: CREAR CUENTA DE PACIENTE -->
             <section id="view-register" class="auth-view ${showRegister ? 'active' : ''}">
                 <div class="reg-header-row">
                     <h2 class="reg-title">Crear cuenta de paciente</h2>
@@ -198,166 +122,147 @@
                     <c:remove var="registerError" scope="session" />
                 </c:if>
 
-                <div id="dniSubmitError" class="alert-error" style="display:none;">
-                    <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                    <span>Por seguridad, la contraseña no debe contener tu número de documento.</span>
+                <div class="registro-progreso" aria-live="polite" aria-atomic="true">
+                    <div class="registro-progreso-texto"><p id="registroPasoTitulo">Paso 1 de 4 · Datos personales</p><span id="registroPasoDetalle">Identificación</span></div>
+                    <progress id="registroProgreso" class="solo-lectores" aria-label="Progreso del registro" max="4" value="1"></progress>
+                    <div class="registro-progreso-barras" aria-hidden="true"><span></span><span></span><span></span><span></span></div>
                 </div>
-
-                <div id="pwdMismatchError" class="alert-error" style="display:none;">
-                    <i data-lucide="alert-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                    <span>Las contraseñas no coinciden. Por favor verifícalas.</span>
-                </div>
+                <p id="registroError" class="alert-error" role="alert" hidden></p>
 
                 <form id="registerForm" action="${pageContext.request.contextPath}/registro" method="POST" autocomplete="off">
-                    <input type="hidden" name="terminos" value="on">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
 
-                    <!-- SECCIÓN 01: DATOS PERSONALES -->
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">01</span>
-                            <span class="reg-card-title">Datos personales</span>
-                            <span class="reg-card-subtitle">· Identificación</span>
-                        </div>
+
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 1: Datos personales</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Nombres completos *</label>
-                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena">
-                            </div>
-                            <div class="form-group">
-                                <label class="form-label">Apellidos *</label>
-                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez">
-                            </div>
-                        </div>
-
-                        <div class="form-grid-2">
-                            <div class="form-group">
-                                <label class="form-label">Tipo de documento *</label>
+                                <label class="form-label" for="regTipoDoc">Tipo de documento *</label>
                                 <select name="tipoDocumento" id="regTipoDoc" class="form-select" required>
                                     <option value="DNI" selected>DNI</option>
                                     <option value="CE">Carnet de Extranjería</option>
                                 </select>
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Número de documento *</label>
-                                <input type="text" name="dni" id="regDni" class="form-input" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+">
+                                <label class="form-label" for="regDni">Número de documento *</label>
+                                <input type="text" name="dni" id="regDni" class="form-input" inputmode="numeric" required placeholder="Ej. 45879632" pattern="[A-Za-z0-9]+" maxlength="15" aria-describedby="dniLookupStatus" data-endpoint="${pageContext.request.contextPath}/api/v1/documentos/dni/consulta">
+                                <output id="dniLookupStatus" class="dni-lookup-status" for="regDni" aria-live="polite"></output>
                             </div>
                         </div>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Fecha de nacimiento *</label>
-                                <input type="date" name="fechaNacimiento" class="form-input" required>
+                                <label class="form-label" for="regNombres">Nombres completos *</label>
+                                <input type="text" name="nombres" class="form-input" required placeholder="Ej. María Elena" id="regNombres">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Sexo / género *</label>
-                                <select name="genero" class="form-select" required>
-                                    <option value="" disabled selected>Seleccionar</option>
+                                <label class="form-label" for="regApellidos">Apellidos *</label>
+                                <input type="text" name="apellidos" class="form-input" required placeholder="Ej. Pérez Gómez" id="regApellidos">
+                            </div>
+                        </div>
+
+                        <div class="form-grid-2">
+                            <div class="form-group">
+                                <label class="form-label" for="regFechaNacimiento">Fecha de nacimiento *</label>
+                                <input type="date" name="fechaNacimiento" class="form-input" required id="regFechaNacimiento">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="regGenero">Sexo / género *</label>
+                                <select name="genero" class="form-select" required id="regGenero">
+                                    <option value="" disabled selected hidden>Selecciona una opción</option>
                                     <option value="F">Femenino</option>
                                     <option value="M">Masculino</option>
                                     <option value="O">Otro</option>
                                 </select>
                             </div>
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <!-- SECCIÓN 02: DATOS DE CONTACTO Y UBICACIÓN -->
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">02</span>
-                            <span class="reg-card-title">Datos de contacto y ubicación</span>
-                            <span class="reg-card-subtitle">· Notificaciones y citas</span>
-                        </div>
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 2: Contacto y ubicación</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Teléfono / celular *</label>
-                                <input type="text" name="telefono" class="form-input" required placeholder="Ej. 987 654 321">
+                                <label class="form-label" for="regTelefono">Teléfono / celular *</label>
+                                <input type="text" name="telefono" class="form-input" required placeholder="Ej. 987 654 321" id="regTelefono">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Correo electrónico *</label>
-                                <input type="email" name="email" class="form-input" required placeholder="nombre@correo.com">
+                                <label class="form-label" for="regEmail">Correo electrónico *</label>
+                                <input type="email" name="email" class="form-input" required placeholder="nombre@correo.com" id="regEmail">
                             </div>
                         </div>
 
                         <div class="form-group">
                             <label class="form-label">Canal preferido de aviso *</label>
                             <div class="channel-options">
-                                <label class="channel-pill" onclick="selectChannel(this)">
-                                    <input type="radio" name="canalAviso" value="SMS">
+                                <label class="channel-pill canal-no-disponible" title="SMS todavía no está disponible">
+                                    <input type="radio" name="canalAviso" value="SMS" disabled>
                                     <span class="radio-circle"></span>
                                     <span>SMS</span>
                                 </label>
-                                <label class="channel-pill active" onclick="selectChannel(this)">
-                                    <input type="radio" name="canalAviso" value="WhatsApp" checked>
+                                <label class="channel-pill canal-no-disponible" title="WhatsApp todavía no está disponible">
+                                    <input type="radio" name="canalAviso" value="WhatsApp" disabled>
                                     <span class="radio-circle"></span>
                                     <span>WhatsApp</span>
                                 </label>
-                                <label class="channel-pill" onclick="selectChannel(this)">
-                                    <input type="radio" name="canalAviso" value="Correo">
+                                <label class="channel-pill active">
+                                    <input type="radio" name="canalAviso" value="Correo" checked>
                                     <span class="radio-circle"></span>
                                     <span>Correo</span>
                                 </label>
                             </div>
+                            <p class="registro-ayuda">Por ahora los avisos se envían por correo. SMS y WhatsApp no están disponibles.</p>
                         </div>
 
                         <div class="form-group" style="margin-bottom: 6px;">
-                            <label class="form-label">Dirección / zona de residencia *</label>
-                            <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. San Borja Norte, San Borja">
+                            <label class="form-label" for="regDireccion">Dirección / zona de residencia *</label>
+                            <input type="text" name="direccion" class="form-input" required placeholder="Ej. Av. San Borja Norte, San Borja" id="regDireccion">
                         </div>
-                    </div>
+                    </fieldset>
 
-                    <!-- SECCIÓN 03: CREDENCIALES DE ACCESO -->
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">03</span>
-                            <span class="reg-card-title">Credenciales de acceso</span>
-                            <span class="reg-card-subtitle">· Portal del paciente</span>
-                        </div>
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 3: Credenciales de acceso</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Crear contraseña *</label>
+                                <label class="form-label" for="regPwd">Crear contraseña *</label>
                                 <div class="input-box has-right-icon">
-                                    <input type="password" name="password" id="regPwd" class="form-input" required placeholder="••••••••">
-                                    <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwd', this)" title="Mostrar/ocultar contraseña">
-                                        <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                                    <input type="password" name="password" id="regPwd" class="form-input" required minlength="12" autocomplete="new-password" aria-describedby="registroPasswordAyuda" placeholder="Crea una contraseña">
+                                    <button type="button" class="btn-toggle-eye" data-password-toggle="regPwd" aria-pressed="false" title="Mostrar contraseña">
+                                        <img src="${pageContext.request.contextPath}/assets/images/seguridad/registro-ojo.svg" alt="">
                                     </button>
                                 </div>
                             </div>
 
                             <div class="form-group">
-                                <label class="form-label">Confirmar contraseña *</label>
+                                <label class="form-label" for="regPwdConfirm">Confirmar contraseña *</label>
                                 <div class="input-box has-right-icon">
-                                    <input type="password" name="confirmPassword" id="regPwdConfirm" class="form-input" required placeholder="••••••••">
-                                    <button type="button" class="btn-toggle-eye" onclick="togglePwdVisibility('regPwdConfirm', this)" title="Mostrar/ocultar contraseña">
-                                        <i data-lucide="eye" style="width: 18px; height: 18px;"></i>
+                                    <input type="password" name="confirmPassword" id="regPwdConfirm" class="form-input" required autocomplete="new-password" placeholder="Repite tu contraseña">
+                                    <button type="button" class="btn-toggle-eye" data-password-toggle="regPwdConfirm" aria-pressed="false" title="Mostrar contraseña">
+                                        <img src="${pageContext.request.contextPath}/assets/images/seguridad/registro-ojo.svg" alt="">
                                     </button>
                                 </div>
                                 <div class="pwd-match-indicator" id="pwdMatchMsg" style="display: none;">
-                                    <i data-lucide="check" style="width: 14px; height: 14px;"></i> Las contraseñas coinciden
+                                    <img src="${pageContext.request.contextPath}/assets/images/seguridad/coincide.svg" alt=""> <span>Las contraseñas coinciden</span>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                        <p class="registro-ayuda" id="registroPasswordAyuda">Usa al menos 12 caracteres, con mayúscula, minúscula, número y un símbolo. Máximo 72 bytes UTF-8. No incluyas tu documento.</p>
+                    </fieldset>
 
-                    <!-- SECCIÓN 04: DATOS DE SALUD Y COBERTURA -->
-                    <div class="reg-card">
-                        <div class="reg-card-header">
-                            <span class="reg-badge">04</span>
-                            <span class="reg-card-title">Datos de salud y cobertura</span>
-                            <span class="reg-card-subtitle">· Información del paciente</span>
-                        </div>
+                    <fieldset class="registro-paso">
+                        <legend class="solo-lectores">Paso 4: Salud y cobertura</legend>
 
                         <div class="form-grid-2">
                             <div class="form-group">
-                                <label class="form-label">Alergias conocidas (opcional)</label>
-                                <input type="text" name="alergias" class="form-input" placeholder="Ej. Penicilina">
+                                <label class="form-label" for="regAlergias">Alergias conocidas (opcional)</label>
+                                <input type="text" name="alergias" class="form-input" placeholder="Ej. Penicilina" id="regAlergias">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Tipo de cobertura *</label>
-                                <select name="cobertura" class="form-select">
-                                    <option value="Particular / EPS" selected>EPS / seguro privado / particular</option>
+                                <label class="form-label" for="regCobertura">Tipo de cobertura *</label>
+                                <select name="cobertura" class="form-select" id="regCobertura" required>
+                                    <option value="" disabled selected hidden>Selecciona tu cobertura</option>
                                     <option value="Particular">Particular</option>
                                     <option value="EPS Rimac">EPS Rímac</option>
                                     <option value="EPS Pacifico">EPS Pacífico</option>
@@ -365,26 +270,21 @@
                                 </select>
                             </div>
                         </div>
-                    </div>
+                        <label class="registro-consentimiento"><input type="checkbox" name="terminos" required> <span>Autorizo el tratamiento de mis datos para gestionar mi cuenta y mis citas.</span></label>
+                    </fieldset>
 
-                    <!-- BARRA DE ACCIONES INFERIOR -->
-                    <div class="reg-footer-bar">
-                        <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-cancel-link">
-                            <i data-lucide="chevron-left" style="width: 16px; height: 16px;"></i> Cancelar y volver
-                        </a>
-                        <div class="reg-footer-right">
-                            <a href="javascript:void(0)" onclick="toggleView('view-login')" class="reg-login-link">
-                                Ya tengo cuenta, iniciar sesión
-                            </a>
-                            <button type="submit" id="btnSubmitReg" class="btn-register-action">
-                                <span>Registrarme</span>
-                                <i data-lucide="check" style="width: 16px; height: 16px;"></i>
-                            </button>
-                        </div>
+                    <p class="req-note">* Campos obligatorios</p>
+                    <div class="registro-navegacion">
+                        <button type="button" id="registroCancelar" class="reg-cancel-link" onclick="toggleView('view-login')"><img src="${pageContext.request.contextPath}/assets/images/seguridad/atras.svg" alt="">Cancelar y volver</button>
+                        <button type="button" id="registroAtras" class="registro-atras" hidden><img src="${pageContext.request.contextPath}/assets/images/seguridad/atras.svg" alt="">Atrás</button>
+                        <button type="button" id="registroContinuar" class="btn-register-action"><span>Continuar</span><img src="${pageContext.request.contextPath}/assets/images/seguridad/continuar.svg" alt=""></button>
+                        <button type="submit" id="btnSubmitReg" class="btn-register-action" hidden><span>Registrarme</span><img src="${pageContext.request.contextPath}/assets/images/seguridad/registrar.svg" alt=""></button>
                     </div>
+                    <div class="registro-volver"><button type="button" onclick="toggleView('view-login')" class="reg-login-link">Ya tengo cuenta, iniciar sesión</button></div>
                 </form>
             </section>
 
+            <section class="acceso-recuperacion" data-recuperacion-inline hidden></section>
         </div>
     </main>
 
@@ -393,18 +293,6 @@
 <script>
     lucide.createIcons();
 
-    function togglePwdVisibility(inputId, btnEl) {
-        const input = document.getElementById(inputId);
-        if (input.type === 'password') {
-            input.type = 'text';
-            btnEl.innerHTML = '<i data-lucide="eye-off" style="width: 18px; height: 18px;"></i>';
-        } else {
-            input.type = 'password';
-            btnEl.innerHTML = '<i data-lucide="eye" style="width: 18px; height: 18px;"></i>';
-        }
-        lucide.createIcons({root: btnEl});
-    }
-
     function toggleView(targetId) {
         const currentView = document.querySelector('.auth-view.active');
         const targetView = document.getElementById(targetId);
@@ -412,7 +300,6 @@
 
         if (!targetView || currentView === targetView) return;
 
-        // Transición de salida suave (fade out y leve elevación)
         if (currentView) {
             currentView.style.transition = 'opacity 0.16s ease-out, transform 0.16s ease-out';
             currentView.style.opacity = '0';
@@ -433,15 +320,12 @@
                 container.classList.remove('is-registering');
             }
 
-            // Preparar target para entrada suave
             targetView.style.opacity = '0';
             targetView.style.transform = 'translateY(12px)';
             targetView.classList.add('active');
 
-            // Forzar reflow del DOM
             void targetView.offsetHeight;
 
-            // Transición de entrada suave (fade in y descenso sutil a posición normal)
             targetView.style.transition = 'opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1), transform 0.28s cubic-bezier(0.16, 1, 0.3, 1)';
             targetView.style.opacity = '1';
             targetView.style.transform = 'translateY(0)';
@@ -457,84 +341,9 @@
         }, 160);
     }
 
-    function handleRecoverySubmit(e) {
-        e.preventDefault();
-        const email = document.getElementById('recoveryEmail').value;
-        const alertBox = document.getElementById('recoverySuccessAlert');
-        if (alertBox) {
-            alertBox.style.display = 'flex';
-            alertBox.innerHTML = '<i data-lucide="check-circle" style="width: 18px; height: 18px; flex-shrink: 0;"></i> <span>Hemos enviado un correo a <strong>' + email + '</strong> con las instrucciones para restablecer su contraseña.</span>';
-            lucide.createIcons({root: alertBox});
-        }
-    }
-
-    function selectChannel(pillEl) {
-        document.querySelectorAll('.channel-pill').forEach(p => p.classList.remove('active'));
-        pillEl.classList.add('active');
-        const radio = pillEl.querySelector('input[type="radio"]');
-        if (radio) radio.checked = true;
-    }
-
-    // Validación de coincidencia de contraseñas
-    const pwd = document.getElementById('regPwd');
-    const pwdConfirm = document.getElementById('regPwdConfirm');
-    const pwdMatchMsg = document.getElementById('pwdMatchMsg');
-    const dniInput = document.getElementById('regDni');
-    const registerForm = document.getElementById('registerForm');
-    const dniSubmitError = document.getElementById('dniSubmitError');
-    const pwdMismatchError = document.getElementById('pwdMismatchError');
-
-    function checkPasswordMatch() {
-        if (!pwd || !pwdConfirm || !pwdMatchMsg) return;
-        const val1 = pwd.value;
-        const val2 = pwdConfirm.value;
-
-        if (val1 && val2 && val1 === val2) {
-            pwdMatchMsg.style.display = 'flex';
-            pwdMatchMsg.classList.remove('mismatch');
-            pwdMatchMsg.innerHTML = '<i data-lucide="check" style="width: 14px; height: 14px;"></i> Las contraseñas coinciden';
-            lucide.createIcons({root: pwdMatchMsg});
-        } else if (val1 && val2 && val1 !== val2) {
-            pwdMatchMsg.style.display = 'flex';
-            pwdMatchMsg.classList.add('mismatch');
-            pwdMatchMsg.innerHTML = '<i data-lucide="alert-circle" style="width: 14px; height: 14px;"></i> Las contraseñas no coinciden';
-            lucide.createIcons({root: pwdMatchMsg});
-        } else {
-            pwdMatchMsg.style.display = 'none';
-        }
-    }
-
-    if (pwd) pwd.addEventListener('input', checkPasswordMatch);
-    if (pwdConfirm) pwdConfirm.addEventListener('input', checkPasswordMatch);
-
-    if (registerForm) {
-        registerForm.addEventListener('submit', function(e) {
-            const val = pwd.value;
-            const val2 = pwdConfirm.value;
-            const dniVal = dniInput.value;
-
-            if (val !== val2) {
-                e.preventDefault();
-                pwdMismatchError.style.display = 'flex';
-                pwdConfirm.focus();
-                document.getElementById('formPane').scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            } else {
-                pwdMismatchError.style.display = 'none';
-            }
-
-            if (dniVal.length > 0 && val.includes(dniVal)) {
-                e.preventDefault();
-                dniSubmitError.style.display = 'flex';
-                pwd.focus();
-                document.getElementById('formPane').scrollTo({ top: 0, behavior: 'smooth' });
-                return;
-            } else {
-                dniSubmitError.style.display = 'none';
-            }
-        });
-    }
 </script>
 
+<script src="${pageContext.request.contextPath}/assets/js/consulta-dni.js" defer></script>
+<script src="${pageContext.request.contextPath}/assets/js/registro-pasos.js" defer></script>
 </body>
 </html>

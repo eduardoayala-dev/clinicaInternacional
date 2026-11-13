@@ -1,0 +1,26 @@
+<%@ page pageEncoding="UTF-8" %>
+<%
+    var admNavUsuario=(pe.edu.utp.clinica.model.Usuario)session.getAttribute("usuarioLogueado");
+    String admNavNombre=admNavUsuario==null?"Personal de admisión":admNavUsuario.getNombres()+" "+admNavUsuario.getApellidos();
+    String[] admNavPartes=admNavNombre.trim().split(" +");
+    String admNavIniciales=admNavNombre.isBlank()?"A":(admNavPartes[0].substring(0,1)+(admNavPartes.length>1?admNavPartes[admNavPartes.length-1].substring(0,1):" ")).strip().toUpperCase(java.util.Locale.ROOT);
+    Object admNavOriginal=request.getAttribute("jakarta.servlet.forward.request_uri");
+    String admNavRuta=admNavOriginal instanceof String ? (String)admNavOriginal : request.getRequestURI();
+    if(admNavRuta.startsWith(request.getContextPath()))admNavRuta=admNavRuta.substring(request.getContextPath().length());
+    if(admNavRuta.startsWith("/admin/medicos/"))admNavRuta="/admin/medicos";
+    if(admNavRuta.startsWith("/admin/motivos"))admNavRuta="/admin/medicos";
+    if(admNavRuta.startsWith("/admin/horarios"))admNavRuta="/admin/medicos";
+    if(admNavRuta.startsWith("/admin/seguimiento-ia"))admNavRuta="/admin/seguimiento-confirmaciones";
+%>
+<aside class="adm-sidebar" aria-label="Navegación de admisión">
+<a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand"><div class="adm-brand-logo-wrap"><img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" class="adm-brand-logo-img" alt=""></div><div><div class="adm-brand-name">Clínica Internacional</div><div class="adm-brand-sub">Portal administrativo</div></div></a>
+<nav class="adm-nav" aria-label="Secciones de admisión"><a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item <%= "/admin/dashboard".equals(admNavRuta)?"active":"" %>"<%= "/admin/dashboard".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/inicio.svg" class="adm-nav-icon" alt=""><span>Inicio</span></a>
+<a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item <%= "/admin/medicos".equals(admNavRuta)?"active":"" %>"<%= "/admin/medicos".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/atencion.svg" class="adm-nav-icon" alt=""><span>Médicos y especialidades</span></a>
+<a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item <%= "/admin/pacientes".equals(admNavRuta)?"active":"" %>"<%= "/admin/pacientes".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/pacientes.svg" class="adm-nav-icon" alt=""><span>Pacientes</span></a>
+<a href="${pageContext.request.contextPath}/admin/seguimiento-confirmaciones" class="adm-nav-item <%= "/admin/seguimiento-confirmaciones".equals(admNavRuta)?"active":"" %>"<%= "/admin/seguimiento-confirmaciones".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/confirmar.svg" class="adm-nav-icon" alt=""><span>Confirmaciones y seguimiento</span></a>
+<a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item <%= "/admin/reasignaciones".equals(admNavRuta)?"active":"" %>"<%= "/admin/reasignaciones".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/agenda.svg" class="adm-nav-icon" alt=""><span>Reasignaciones y excepciones</span></a>
+<a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item <%= "/admin/dashboard-operativo".equals(admNavRuta)?"active":"" %>"<%= "/admin/dashboard-operativo".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/agenda-indicador.svg" class="adm-nav-icon" alt=""><span>Dashboard operativo</span></a>
+<a href="${pageContext.request.contextPath}/cuenta/seguridad" class="adm-nav-item <%= "/cuenta/seguridad".equals(admNavRuta)?"active":"" %>"<%= "/cuenta/seguridad".equals(admNavRuta)?" aria-current='page'":"" %>><img src="${pageContext.request.contextPath}/assets/images/medico/guardar.svg" class="adm-nav-icon" alt=""><span>Seguridad de cuenta</span></a></nav>
+<div class="adm-user-footer"><div class="adm-user-info-link"><div class="adm-avatar"><%= Html.texto(admNavIniciales) %></div><div class="adm-user-text"><div class="adm-user-name" title="<%= Html.texto(admNavNombre) %>"><%= Html.texto(admNavNombre) %></div><div class="adm-user-role">Personal administrativo</div></div></div>
+<form method="POST" action="${pageContext.request.contextPath}/logout"><input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><button type="submit" class="adm-logout-btn" aria-label="Cerrar sesión" title="Cerrar sesión"><img src="${pageContext.request.contextPath}/assets/images/medico/salir.svg" alt=""></button></form></div>
+</aside>

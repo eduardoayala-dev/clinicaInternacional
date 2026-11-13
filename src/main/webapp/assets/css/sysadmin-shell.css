@@ -1,0 +1,72 @@
+:root {
+    --primary: #0f172a;
+    --primary-hover: #1e293b;
+    --primary-light: #eaf2fa;
+    --bg-body: #f1f5f9;
+    --bg-page: #f1f5f9;
+    --text-main: #0f172a;
+    --text-dark: #0f172a;
+    --border-light: #dce5f0;
+    --sidebar-width: 240px;
+}
+body.sysadmin-portal { background: var(--bg-page); width: 100%; }
+body.sysadmin-portal { font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; font-size: 14px; }
+.sysadmin-portal .adm-sidebar * { font-family: Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+.sysadmin-portal .adm-brand { min-height: 40px; margin-bottom: 28px; }
+.sysadmin-portal .adm-brand-name { font-size: 14px; line-height: 1.2; }
+.sysadmin-portal .adm-brand-sub { font-size: 11px; line-height: 1.4; }
+.sysadmin-portal .adm-nav-item { font-size: 13.5px; padding: 10px 14px; }
+.sysadmin-portal .adm-topbar { height: 64px; min-height: 64px; }
+.sysadmin-portal .filters-card { grid-template-columns: minmax(200px,1.5fr) repeat(3,minmax(140px,1fr)); }
+.sysadmin-portal .search-input-wrapper { position: relative; }
+.sysadmin-portal .search-input-wrapper > .lucide { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); width: 18px; height: 18px; pointer-events: none; }
+.sysadmin-portal .adm-sidebar { min-width: 240px; }
+.sysadmin-portal .adm-nav-item span { white-space: normal; line-height: 1.35; }
+.sysadmin-portal .adm-nav-icon { width: 18px; height: 18px; flex-shrink: 0; }
+.sysadmin-portal .adm-nav-item.active { border-left-color: transparent; }
+.sysadmin-portal .adm-user-footer form { margin: 0; flex-shrink: 0; }
+.sysadmin-portal .main-content { min-width: 0; flex: 1; background: var(--bg-page); }
+.sysadmin-portal .sysadmin-simple { display: block; overflow: auto; padding: 0 40px 40px; }
+.sysadmin-simple > .breadcrumb-trail { min-height: 64px; display: flex; align-items: center; margin: 0 -40px 28px; padding: 0 40px; background: #fff; border-bottom: 1px solid var(--border-light); font-size: 13px; color: #64748b; }
+.sysadmin-portal .dash-top-header { height: 64px; min-height: 64px; border-bottom: 1px solid var(--border-light); }
+.sysadmin-portal .dash-scroll-container { min-width: 0; padding: 28px 40px 40px; }
+.sysadmin-portal h1, .sysadmin-portal .page-title, .sysadmin-portal .page-title-serif { font-family: 'Playfair Display', Georgia, serif; font-size: 30px; line-height: 1.25; letter-spacing: -.4px; color: #0f172a; }
+.sysadmin-portal .page-subtitle { line-height: 1.55; color: #64748b; max-width: 80ch; }
+.sysadmin-portal .panel, .sysadmin-portal .metric-card, .sysadmin-portal .stat-card, .sysadmin-portal .config-card { border-color: var(--border-light); border-radius: 12px; box-shadow: none; }
+.sysadmin-portal .metric-title, .sysadmin-portal .stat-label { color: #64748b; }
+.sysadmin-portal input:not([type=checkbox]):not([type=radio]):not([type=range]):not([type=hidden]), .sysadmin-portal select { min-height: 42px; border-radius: 8px; }
+.sysadmin-portal button, .sysadmin-portal input, .sysadmin-portal select { font: inherit; }
+.sysadmin-portal :is(.btn-primary-action,.btn-modal-submit,.btn-save,.adm-btn-primary) { background: #0f172a; border-color: #0f172a; color: #fff; border-radius: 8px; }
+.sysadmin-portal :is(.btn-primary-action,.btn-modal-submit,.btn-save,.adm-btn-primary):hover:not(:disabled) { background: #1e293b; border-color: #1e293b; }
+.sysadmin-portal button:disabled { cursor: not-allowed; opacity: .55; }
+.sysadmin-portal table { width: 100%; }
+.sysadmin-portal th { background: #f8fafc; color: #64748b; font-size: 11px; font-weight: 600; }
+.sysadmin-portal td { font-size: 13px; }
+.sysadmin-portal .table-wrapper, .sysadmin-portal .table-container { overflow-x: auto; }
+.sysadmin-portal .page-header > a { display: inline-flex; align-items: center; padding: 8px 12px; border: 1px solid var(--border-light); background: #fff; border-radius: 8px; color: #1668b8; text-decoration: none; font-size: 13px; margin-bottom: 12px; }
+.sysadmin-portal :is(button,a,input,select,textarea):focus-visible { outline: 3px solid #1668b8; outline-offset: 2px; }
+.sysadmin-portal .modal-overlay { padding: 24px; overflow-y: auto; }
+.sysadmin-portal .modal-content, .sysadmin-portal .modal-box { max-height: calc(100dvh - 48px); overflow-y: auto; }
+@media (max-width: 1100px) {
+    .sysadmin-portal .filters-card { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .sysadmin-portal .metrics-grid, .sysadmin-portal .metrics-row { grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .sysadmin-portal .grid-2col { grid-template-columns: minmax(0,1fr); }
+}
+@media (max-width: 760px) {
+    body.sysadmin-portal { display: block; height: auto; overflow: auto; }
+    .sysadmin-portal .adm-sidebar { width: 100%; min-width: 0; height: auto; max-height: none; padding: 16px; }
+    .sysadmin-portal .adm-brand { margin-bottom: 16px; }
+    .sysadmin-portal .adm-brand > div:last-child, .sysadmin-portal .adm-user-info-link { display: flex; }
+    .sysadmin-portal .adm-nav { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); }
+    .sysadmin-portal .adm-nav-item { justify-content: flex-start; }
+    .sysadmin-portal .adm-nav-item span { position: static; width: auto; height: auto; margin: 0; overflow: visible; clip: auto; }
+    .sysadmin-portal .adm-user-footer { margin-top: 16px; }
+    .sysadmin-portal .main-content, .sysadmin-portal .adm-main-wrapper { width: 100%; height: auto; min-height: 65vh; margin-left: 0; }
+    .sysadmin-portal .sysadmin-simple { padding: 0 20px 24px; }
+    .sysadmin-simple > .breadcrumb-trail { margin: 0 -20px 24px; padding: 0 20px; }
+    .sysadmin-portal .dash-scroll-container, .sysadmin-portal .adm-content-scroll { padding: 24px 20px; overflow: visible; }
+    .sysadmin-portal .dash-top-header { padding: 0 20px; }
+    .sysadmin-portal .metrics-grid, .sysadmin-portal .metrics-row { grid-template-columns: minmax(0,1fr); }
+    .sysadmin-portal h1 { font-size: 26px; }
+    .sysadmin-portal .filters-card { grid-template-columns: minmax(0,1fr); }
+}

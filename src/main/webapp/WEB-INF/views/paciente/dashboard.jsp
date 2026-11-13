@@ -31,69 +31,22 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Inicio - Portal del Paciente | Clínica Internacional</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/dashboard-paciente.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-responsive.css?v=20261104-1">
 </head>
 <body>
 
     <!-- SIDEBAR -->
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del paciente</span>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item active">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-                <span>Buscar cita</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-                <span>Mis citas</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                <span>Lista de espera</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                <span>Notificaciones</span>
-                <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-                <span>Perfil</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
-            <div class="user-info">
-                <span class="user-name"><c:out value="${nombrePaciente}" /></span>
-                <span class="user-role">Paciente</span>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
-                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </a>
-        </div>
-    </aside>
+    <% String seccionPaciente = "inicio"; %>
+    <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
 
     <!-- CONTENIDO PRINCIPAL -->
     <main class="main-content">
@@ -165,7 +118,7 @@
                         <h2 class="summary-card-title">Próxima cita</h2>
                         <c:choose>
                             <c:when test="${not empty proximaCita}">
-                                <span class="status-badge-confirmed">Confirmada · Web</span>
+                                <span class="status-badge-confirmed">Cita programada</span>
                             </c:when>
                             <c:otherwise>
                                 <span class="status-badge-confirmed" style="background:#f1f5f9;color:#64748b;">Sin citas</span>

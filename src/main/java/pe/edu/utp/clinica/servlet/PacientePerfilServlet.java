@@ -82,7 +82,7 @@ public class PacientePerfilServlet extends HttpServlet {
     protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
-            response.sendRedirect(request.getContextPath() + "/login/paciente");
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/login/paciente");
             return;
         }
 
@@ -95,26 +95,30 @@ public class PacientePerfilServlet extends HttpServlet {
             }
         }
 
-        String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
-        String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));
-        String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
-        String fechaNacimiento = SecurityUtil.sanitizeInput(request.getParameter("fechaNacimiento"));
+        String nombres = usuario.getNombres();
+        String apellidos = usuario.getApellidos();
+        String email = correoPerfil(request,usuario);
+        String fechaNacimiento = null;
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
-        String canalAviso = SecurityUtil.sanitizeInput(request.getParameter("canalAviso"));
+        String canalAviso = "Correo";
         String sedePreferida = SecurityUtil.sanitizeInput(request.getParameter("sedePreferida"));
         String alergias = SecurityUtil.sanitizeInput(request.getParameter("alergias"));
         String tipoCobertura = SecurityUtil.sanitizeInput(request.getParameter("tipoCobertura"));
 
         if (nombres == null || nombres.trim().isEmpty()) nombres = usuario.getNombres();
         if (apellidos == null || apellidos.trim().isEmpty()) apellidos = usuario.getApellidos();
-        if (email == null || email.trim().isEmpty()) email = usuario.getEmail();
 
-        boolean exito = usuarioDAO.actualizarPerfilCompletoPaciente(
+        if (!usuario.getEmail().equalsIgnoreCase(email)) {
+            session.setAttribute("mensajeError", "Utiliza Seguridad de cuenta para verificar el cambio de correo.");
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/paciente/perfil");
+            return;
+        }
+
+        boolean exito = usuarioDAO.actualizarPerfilCompletoPaciente(new pe.edu.utp.clinica.model.PerfilPaciente(
             usuario.getIdUsuario(),
             nombres,
             apellidos,
-            email,
             fechaNacimiento,
             telefono,
             direccion,
@@ -122,19 +126,22 @@ public class PacientePerfilServlet extends HttpServlet {
             sedePreferida,
             alergias,
             tipoCobertura
-        );
+        ));
 
         if (exito) {
             usuario.setNombres(nombres);
             usuario.setApellidos(apellidos);
-            usuario.setEmail(email);
             session.setAttribute("usuarioLogueado", usuario);
             session.setAttribute("mensajeExito", "Los cambios en tu perfil fueron guardados correctamente.");
         } else {
             session.setAttribute("mensajeError", "No se pudieron actualizar los datos del perfil.");
         }
 
-        response.sendRedirect(request.getContextPath() + "/paciente/perfil");
+        pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + "/paciente/perfil");
+    }
+    private static String correoPerfil(HttpServletRequest request,Usuario usuario) {
+        String email=request.getParameter("email");
+        return email==null || email.isBlank()?usuario.getEmail():email.trim();
     }
 }
 

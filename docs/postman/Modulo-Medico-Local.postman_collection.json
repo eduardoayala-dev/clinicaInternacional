@@ -1,0 +1,1738 @@
+{
+  "info": {
+    "name": "Clínica - Flujo de atención local",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo local con citas y cuentas sintéticas nuevas. Modifica Completa, Segunda, SinAtencion e Inasistencia; conserva Manual para el usuario. Requiere V003 y V004. Ejecutar una sola vez con cookies activas y redirecciones desactivadas. No consulta proveedores de DNI."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "correoAdmision",
+      "value": ""
+    },
+    {
+      "key": "claveAdmision",
+      "value": ""
+    },
+    {
+      "key": "correoMedico",
+      "value": ""
+    },
+    {
+      "key": "claveMedico",
+      "value": ""
+    },
+    {
+      "key": "clavePaciente",
+      "value": ""
+    },
+    {
+      "key": "dniSinAtencion",
+      "value": ""
+    },
+    {
+      "key": "fechaAgenda",
+      "value": ""
+    },
+    {
+      "key": "fechaSeguimiento",
+      "value": ""
+    },
+    {
+      "key": "idCitaCompleta",
+      "value": ""
+    },
+    {
+      "key": "idCitaSegunda",
+      "value": ""
+    },
+    {
+      "key": "idCitaSinAtencion",
+      "value": ""
+    },
+    {
+      "key": "idCitaInasistencia",
+      "value": ""
+    },
+    {
+      "key": "idCitaManual",
+      "value": ""
+    },
+    {
+      "key": "idCitaAjena",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Formulario de admisión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const t=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF de sesión\",()=>pm.expect(t).not.to.eql(null));if(t)pm.collectionVariables.set(\"csrfToken\",t[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Iniciar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "identificador",
+              "value": "{{correoAdmision}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{claveAdmision}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Sesión de admisión",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/admin/dashboard",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const t=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF de sesión\",()=>pm.expect(t).not.to.eql(null));if(t)pm.collectionVariables.set(\"csrfToken\",t[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Ausencia antes del horario rechazada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaManual}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_asistio",
+              "type": "text"
+            },
+            {
+              "key": "motivo",
+              "value": "Ausencia verificada",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Admisión verifica ausencia real",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaInasistencia}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_asistio",
+              "type": "text"
+            },
+            {
+              "key": "motivo",
+              "value": "Ausencia verificada en admisión y sala.",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "pm.test(\"Ausencia registrada\",()=>pm.expect(pm.response.json().code).to.eql(\"INASISTENCIA_REGISTRADA\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Llegada de idCitaCompleta",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "07 - Llegada de idCitaSegunda",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSegunda}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "08 - Llegada de idCitaSinAtencion",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSinAtencion}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "09 - Paciente presente no puede declararse ausente",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_asistio",
+              "type": "text"
+            },
+            {
+              "key": "motivo",
+              "value": "Ausencia verificada",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "10 - Salir de admisión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "11 - Formulario médico",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const t=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF de sesión\",()=>pm.expect(t).not.to.eql(null));if(t)pm.collectionVariables.set(\"csrfToken\",t[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "12 - Iniciar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "identificador",
+              "value": "{{correoMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{claveMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "13 - Actualizar sesión del médico",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/perfil",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const t=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF de sesión\",()=>pm.expect(t).not.to.eql(null));if(t)pm.collectionVariables.set(\"csrfToken\",t[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "14 - Consultar ficha no inicia atención",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaCompleta}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const c=pm.response.json().data;pm.test(\"Solo lectura antes de iniciar\",()=>{pm.expect(c.estado).to.eql(\"EN_SALA\");pm.expect(c.editable).to.eql(false);pm.expect(c.puedeIniciar).to.eql(true);pm.expect(c.fechaInicio).to.eql(\"\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "15 - GET no permite iniciar",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?accion=iniciar&idCita={{idCitaCompleta}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 405\",()=>pm.response.to.have.status(405));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "16 - Sin CSRF no hay inicio",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "17 - Sin inicio no puede finalizar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Control de prueba",
+              "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "18 - Iniciar atención adelantada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idMedico",
+              "value": "999",
+              "type": "text"
+            },
+            {
+              "key": "idPaciente",
+              "value": "999",
+              "type": "text"
+            },
+            {
+              "key": "fechaInicio",
+              "value": "2000-01-01T00:00",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "19 - Retomar consulta activa sin id",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const c=pm.response.json().data;pm.test(\"Consulta activa propia con hora del servidor\",()=>{pm.expect(c.idCita).to.eql(Number(pm.collectionVariables.get(\"idCitaCompleta\")));pm.expect(c.estado).to.eql(\"EN_ATENCION\");pm.expect(c.editable).to.eql(true);pm.expect(c.fechaInicio).not.to.include(\"2000-01-01\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "20 - No se inicia otra consulta simultánea",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSegunda}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "21 - No se inicia cita sin llegada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaManual}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "22 - No se puede iniciar cita ajena",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaAjena}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 404\",()=>pm.response.to.have.status(404));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "23 - Médico no declara inasistencia",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_asistio",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "24 - Indicación vacía no permite cerrar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "MEDIA",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "   ",
+              "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "25 - Finalizar atención con seguimiento",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "ALTA",
+              "type": "text"
+            },
+            {
+              "key": "fechaProxima",
+              "value": "{{fechaSeguimiento}}",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "Revisión del niño & seguimiento de prueba.",
+              "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "26 - Cierre conserva horas e indicaciones",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaCompleta}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const c=pm.response.json().data;pm.test(\"Cierre persistido e inmutable\",()=>{pm.expect(c.estado).to.eql(\"ATENDIDA\");pm.expect(c.editable).to.eql(false);pm.expect(c.fechaFin).not.to.eql(\"\");pm.expect(c.duracionMinutos).to.be.at.least(0);pm.expect(c.fechaRecomendadaProxima).to.eql(pm.collectionVariables.get(\"fechaSeguimiento\"));pm.expect(c.indicaciones).to.include(\"niño &\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "27 - Cierre repetido rechazado",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCompleta}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "guardar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "prioridad",
+              "value": "BAJA",
+              "type": "text"
+            },
+            {
+              "key": "indicaciones",
+              "value": "No debe reemplazar el registro",
+              "type": "text"
+            },
+            {
+              "key": "motivoClinico",
+              "value": "Consulta de prueba autorizada",
+              "type": "text"
+            },
+            {
+              "key": "antecedentes",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "hallazgos",
+              "value": "",
+              "type": "text"
+            },
+            {
+              "key": "evaluacion",
+              "value": "Evaluación documentada de prueba",
+              "type": "text"
+            },
+            {
+              "key": "diagnostico",
+              "value": "Impresión diagnóstica de prueba",
+              "type": "text"
+            },
+            {
+              "key": "plan",
+              "value": "Plan de seguimiento de prueba",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "28 - Médico queda libre para otra consulta",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSegunda}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "29 - Cerrar consulta incompleta con motivo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSegunda}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_atender",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "motivo",
+              "value": "Derivación a otro servicio durante la evaluación.",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "30 - No atendida antes de iniciar exige motivo",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSinAtencion}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_atender",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "motivo",
+              "value": "",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "31 - Paciente se retira antes de iniciar",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSinAtencion}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "no_atender",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "motivo",
+              "value": "Paciente solicita retirarse antes de la consulta.",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "32 - No atendida sin inventar inicio",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/atencion?idCita={{idCitaSinAtencion}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const c=pm.response.json().data;pm.test(\"Motivo y tiempos correctos\",()=>{pm.expect(c.estado).to.eql(\"NO_ATENDIDA\");pm.expect(c.fechaInicio).to.eql(\"\");pm.expect(c.duracionMinutos).to.eql(null);pm.expect(c.motivoNoAtencion).to.include(\"retirarse\");pm.expect(c.urgencia).to.eql(\"MEDIA\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "33 - No se reabre cita cerrada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSinAtencion}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "34 - Métricas reales",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/inicio",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const d=pm.response.json().data;pm.test(\"Métricas de registros reales\",()=>{pm.expect(d.atendidos).to.eql(1);pm.expect(d.inasistencias).to.eql(1);pm.expect(d.enAtencion).to.eql(0);pm.expect(d.duracionPromedioMinutos).to.be.a(\"number\");pm.expect(d.esperaPromedioMinutos).to.be.a(\"number\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "35 - Exportar estados propios",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/export?format=csv&fecha={{fechaAgenda}}",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "36 - Salir del médico",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "37 - Formulario paciente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const t=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF de sesión\",()=>pm.expect(t).not.to.eql(null));if(t)pm.collectionVariables.set(\"csrfToken\",t[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "38 - Iniciar sesión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/paciente",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "identificador",
+              "value": "{{dniSinAtencion}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{clavePaciente}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "39 - Historial con resultado real",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/paciente/historial",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const t=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token CSRF de sesión\",()=>pm.expect(t).not.to.eql(null));if(t)pm.collectionVariables.set(\"csrfToken\",t[1]);",
+              "pm.test(\"No se presenta como atendida\",()=>pm.expect(pm.response.text()).to.include(\"No atendida\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "40 - Paciente no puede iniciar consultas",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/medico/atencion",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaSinAtencion}}",
+              "type": "text"
+            },
+            {
+              "key": "accion",
+              "value": "iniciar",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "41 - Salir del paciente",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if(!/^http:\\/\\/(localhost|127\\.0\\.0\\.1)(:\\d+)?$/.test(pm.collectionVariables.get(\"baseUrl\")))throw new Error(\"Esta colección solo permite un servidor local.\");"
+        ]
+      }
+    }
+  ]
+}

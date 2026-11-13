@@ -10,11 +10,11 @@
         nombrePaciente = usuario.getNombreCompleto();
     }
     if (nombrePaciente == null) {
-        nombrePaciente = "María Pérez";
+        nombrePaciente = "Paciente";
     }
 
-    String primerNombre = "María";
-    String inicialesPaciente = "MP";
+    String primerNombre = "Paciente";
+    String inicialesPaciente = "P";
     if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         primerNombre = partes[0];
@@ -31,75 +31,28 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Lista de Espera - Portal del Paciente | Clínica Internacional</title>
 
     <!-- Google Fonts: Inter & Playfair Display -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
 
     <!-- Lucide Icons -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
 
     <!-- Estilos Base y Específicos -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/lista-espera.css?v=20261030-5">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-responsive.css?v=20261104-1">
 </head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del paciente</span>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-                <span>Buscar cita</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-                <span>Mis citas</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item active">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                <span>Lista de espera</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                <span>Notificaciones</span>
-                <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-                <span>Perfil</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombrePaciente %></span>
-                <span class="user-role">Paciente</span>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
-                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </a>
-        </div>
-    </aside>
+    <% String seccionPaciente = "espera"; %>
+    <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
 
     <!-- ÁREA PRINCIPAL -->
     <main class="main-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f8fafc;">
@@ -123,6 +76,9 @@
 
         <!-- CONTENEDOR CON SCROLL -->
         <div class="espera-scroll-container">
+            <c:if test="${not empty toastMsg}">
+                <p role="alert"><c:out value="${toastMsg}"/></p>
+            </c:if>
 
             <!-- ENCABEZADO -->
             <div class="page-title-section">
@@ -138,6 +94,7 @@
                     <h2 class="form-card-title">Formulario de inscripción</h2>
 
                     <form id="formInscripcionEspera" method="POST" action="${pageContext.request.contextPath}/paciente/lista-espera">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                         <input type="hidden" name="action" value="inscribir">
 
                         <!-- FILA 1: ESPECIALIDAD Y MÉDICO PREFERIDO -->
@@ -162,7 +119,7 @@
                                     <select id="selectMedicoEspera" name="medicoId" class="espera-select-control">
                                         <option value="">Cualquier especialista disponible</option>
                                         <c:forEach var="med" items="${listaMedicos}">
-                                            <option value="${med.idMedico}" data-esp="${med.idEspecialidad}">
+                                            <option value="${med.idMedico}" data-esp="${med.idEspecialidad}" data-sede="${med.idSede}">
                                                 <c:out value="${med.nombre}" />
                                             </option>
                                         </c:forEach>
@@ -175,20 +132,16 @@
                         <!-- FILA 2: SEDE PREFERIDA -->
                         <div class="form-group" style="margin-top: 20px;">
                             <label class="field-label">3. Sede preferida *</label>
-                            <input type="hidden" name="sede" id="inputSedeEspera" value="san_borja">
+                            <input type="hidden" name="sede" id="inputSedeEspera" value="cualquiera">
                             <div class="pills-group-sedes">
-                                <button type="button" class="btn-pill-sede active" data-sede="san_borja" onclick="seleccionarSede(this, 'san_borja')">
-                                    <i data-lucide="check" class="pill-check-icon"></i>
-                                    <span>Sede San Borja</span>
-                                </button>
-                                <button type="button" class="btn-pill-sede" data-sede="lima" onclick="seleccionarSede(this, 'lima')">
-                                    <i data-lucide="check" class="pill-check-icon"></i>
-                                    <span>Sede Lima</span>
-                                </button>
-                                <button type="button" class="btn-pill-sede" data-sede="cualquiera" onclick="seleccionarSede(this, 'cualquiera')">
-                                    <i data-lucide="check" class="pill-check-icon"></i>
+                                <button type="button" class="btn-pill-sede active" data-sede="cualquiera" onclick="seleccionarSede(this, 'cualquiera')">
                                     <span>Cualquier sede</span>
                                 </button>
+                                <c:forEach var="sede" items="${listaSedes}">
+                                    <button type="button" class="btn-pill-sede" data-sede="${sede.id}" onclick="seleccionarSede(this, this.dataset.sede)">
+                                        <span><c:out value="${sede.nombre}"/></span>
+                                    </button>
+                                </c:forEach>
                             </div>
                         </div>
 
@@ -239,26 +192,19 @@
 
                         <!-- FILA 4: CANAL DE NOTIFICACIÓN -->
                         <div class="form-group" style="margin-top: 20px;">
-                            <label class="field-label">6. Canal de notificación para la oferta de cupo *</label>
-                            <div class="checkboxes-row-group">
-                                <label class="canal-card active" id="labelCanalWhatsapp">
-                                    <input type="checkbox" name="canales" value="whatsapp" checked onchange="toggleCheckboxCard(this, 'labelCanalWhatsapp')">
-                                    <span class="custom-checkbox">
-                                        <i data-lucide="check" style="width: 13px; height: 13px;"></i>
-                                    </span>
-                                    <i data-lucide="smartphone" class="canal-device-icon"></i>
-                                    <span class="card-item-label">SMS / WhatsApp</span>
-                                </label>
+                            <span class="field-label" id="preferenciaContacto">6. Preferencia de contacto *</span>
+                            <p class="espera-contact-help">Recibirás las ofertas en este portal. El canal de contacto disponible es el correo electrónico.</p>
+                            <fieldset class="checkboxes-row-group" aria-labelledby="preferenciaContacto" style="border:0;padding:0;margin:0;min-width:0;">
 
-                                <label class="canal-card" id="labelCanalEmail">
-                                    <input type="checkbox" name="canales" value="email" onchange="toggleCheckboxCard(this, 'labelCanalEmail')">
+                                <label class="canal-card active" id="labelCanalEmail">
+                                    <input type="checkbox" name="canales" value="email" checked onclick="return false" aria-readonly="true">
                                     <span class="custom-checkbox">
                                         <i data-lucide="check" style="width: 13px; height: 13px;"></i>
                                     </span>
                                     <i data-lucide="mail" class="canal-device-icon"></i>
                                     <span class="card-item-label">Correo electrónico</span>
                                 </label>
-                            </div>
+                            </fieldset>
                         </div>
 
                         <!-- FILA DE BOTONES DE ACCIÓN -->
@@ -328,7 +274,11 @@
                                         <strong class="detalle-activo-val"><c:out value="${estadoListaEspera.preferencias}" /></strong>
                                     </div>
                                     <div class="detalle-activo-row" style="align-items: center;">
-                                        <span class="detalle-activo-label">Estado</span>
+                                        <span class="detalle-activo-label">Asignación de ofertas</span>
+                                        <span class="detalle-activo-val">Según valoración médica, compatibilidad y antigüedad</span>
+                                    </div>
+                                    <div class="detalle-activo-row" style="align-items: center;">
+                                          <span class="detalle-activo-label">Estado</span>
                                         <span class="badge-status-oferta ${estadoListaEspera.estadoCodigo == 'OFERTADA' ? 'pendiente' : 'activa'}">
                                             <c:out value="${estadoListaEspera.estado}" />
                                         </span>
@@ -336,6 +286,7 @@
                                 </div>
 
                                 <form method="POST" action="${pageContext.request.contextPath}/paciente/lista-espera" style="margin-top: 18px;" onsubmit="return confirm('¿Estás seguro de que deseas retirarte de la lista de espera?');">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                                     <input type="hidden" name="action" value="retirar">
                                     <input type="hidden" name="idListaEspera" value="${estadoListaEspera.idListaEspera}">
                                     <button type="submit" class="btn-retirarme-outline">Retirarme de la lista de espera</button>
@@ -371,6 +322,7 @@
             document.querySelectorAll('.btn-pill-sede').forEach(b => b.classList.remove('active'));
             btn.classList.add('active');
             document.getElementById('inputSedeEspera').value = valor;
+            filtrarMedicosPorEspecialidad();
         }
 
         // 2. Toggle de cards tipo checkbox (horarios y canales)
@@ -405,21 +357,17 @@
             if (!selEsp || !selMed) return;
 
             const espId = selEsp.value;
+            const sede = document.getElementById('inputSedeEspera').value;
             const options = selMed.querySelectorAll('option');
 
             options.forEach(opt => {
-                if (!opt.value) {
-                    opt.style.display = 'block'; // "Cualquier especialista disponible"
-                } else if (opt.dataset.esp === espId) {
-                    opt.style.display = 'block';
-                } else {
-                    opt.style.display = 'none';
-                }
+                const compatible = !opt.value || (opt.dataset.esp === espId && (sede === 'cualquiera' || opt.dataset.sede === sede));
+                opt.hidden = !compatible;
+                opt.disabled = !compatible;
             });
 
-            // Si el médico actualmente seleccionado no corresponde, reiniciar a cualquiera
             const currentSelected = selMed.options[selMed.selectedIndex];
-            if (currentSelected && currentSelected.value && currentSelected.dataset.esp !== espId) {
+            if (currentSelected && currentSelected.disabled) {
                 selMed.value = "";
             }
         }

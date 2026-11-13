@@ -10,10 +10,10 @@
         nombrePaciente = usuario.getNombreCompleto();
     }
     if (nombrePaciente == null) {
-        nombrePaciente = "María Pérez";
+        nombrePaciente = "Paciente";
     }
 
-    String inicialesPaciente = "MP";
+    String inicialesPaciente = "P";
     if (nombrePaciente != null && !nombrePaciente.trim().isEmpty()) {
         String[] partes = nombrePaciente.trim().split("\\s+");
         if (partes.length >= 2) {
@@ -29,69 +29,22 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Notificaciones y Ofertas - Clínica Internacional</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/notificaciones.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/notificaciones.css?v=20261031-2">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-responsive.css?v=20261104-1">
 </head>
 <body style="display: flex; height: 100vh; overflow: hidden; background: #f8fafc; font-family: 'Inter', sans-serif;">
 
     <!-- SIDEBAR INSTITUCIONAL -->
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del paciente</span>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-                <span>Buscar cita</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-                <span>Mis citas</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                <span>Lista de espera</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item active">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                <span>Notificaciones</span>
-                <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-                <span>Perfil</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombrePaciente %></span>
-                <span class="user-role">Paciente</span>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
-                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </a>
-        </div>
-    </aside>
+    <% String seccionPaciente = "notificaciones"; %>
+    <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
 
     <!-- ÁREA PRINCIPAL -->
     <main class="main-content" style="flex: 1; display: flex; flex-direction: column; overflow: hidden; background: #f8fafc;">
@@ -180,17 +133,18 @@
 
                     <!-- BOTONES DE ACCIÓN -->
                     <form method="post" action="${pageContext.request.contextPath}/paciente/notificaciones" style="margin: 0;">
-                        <input type="hidden" name="idListaEspera" value="${ofertaCupo.idListaEspera}">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                        <input type="hidden" name="idOferta" value="${ofertaCupo.idOferta}">
                         <div class="oferta-actions-row">
                             <button type="submit" name="accion" value="rechazar" class="btn-rechazar-oferta">
-                                Rechazar oferta (mantener mi posición en lista de espera)
+                                Rechazar oferta (mantener mi inscripción en lista de espera)
                             </button>
                             <div class="oferta-right-cta">
                                 <button type="submit" name="accion" value="aceptar" class="btn-aceptar-oferta">
                                     <i data-lucide="check" style="width: 16px; height: 16px;"></i> Aceptar oferta y reservar este cupo
                                 </button>
                                 <div class="oferta-legal-note">
-                                    Al aceptar, tu registro en la lista de espera se cierra y tu asistencia queda confirmada.
+                                    Al aceptar, tu registro en la lista de espera se cierra y la cita queda reservada. Podrás confirmar tu asistencia desde Mis citas.
                                 </div>
                             </div>
                         </div>
@@ -213,11 +167,11 @@
                         </div>
                     </div>
                     <p class="expirada-desc-text">
-                        No respondiste dentro del tiempo límite. El cupo se ofreció a otro paciente.
+                        El plazo de la oferta terminó. El cupo ya no está reservado para ti.
                     </p>
                     <div class="expirada-info-box">
                         <i data-lucide="info" style="width: 18px; height: 18px; flex-shrink: 0;"></i>
-                        <span>Sigues en la lista de espera con tu misma posición.</span>
+                        <span>Conservas tu inscripción y antigüedad en la lista de espera.</span>
                     </div>
                     <div>
                         <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-ver-espera-link">
@@ -261,6 +215,12 @@
                                         </td>
                                         <td>
                                             <div class="td-detalle"><c:out value="${n.detalle}" /></div>
+                                            <c:if test="${not empty n.estadoAsistencia}">
+                                                <div class="notif-asistencia"><c:out value="${n.estadoAsistencia}" /></div>
+                                            </c:if>
+                                            <c:if test="${not empty n.venceConfirmacion}">
+                                                <div class="td-hora">Confirma antes del <c:out value="${n.venceConfirmacion}" /></div>
+                                            </c:if>
                                         </td>
                                         <td style="text-align: center;">
                                             <span class="badge-estado ${n.estado == 'Pendiente' ? 'pendiente' : 'leido'}">
@@ -268,18 +228,20 @@
                                             </span>
                                         </td>
                                         <td style="text-align: center;">
-                                            <c:choose>
-                                                <c:when test="${n.accion == 'Confirmar'}">
-                                                    <a href="${pageContext.request.contextPath}/paciente/notificaciones?action=confirmar&id=${n.idNotificacion}" class="btn-tb-confirmar" title="Confirmar asistencia">
-                                                        Confirmar
-                                                    </a>
-                                                </c:when>
-                                                <c:otherwise>
-                                                    <button type="button" class="btn-tb-ver" onclick="abrirModalDetalle('${n.idNotificacion}', '${n.categoria}', '${n.detalle}', '${n.fecha} ${n.hora}')" title="Ver detalle">
+                                            <div class="notif-actions">
+                                                <c:if test="${n.accion == 'Confirmar'}">
+                                                    <form method="POST" action="${pageContext.request.contextPath}/paciente/notificaciones" style="margin:0;">
+<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<input type="hidden" name="action" value="confirmar">
+<input type="hidden" name="id" value="${n.idNotificacion}">
+<button type="submit" class="btn-tb-confirmar" title="Confirmar asistencia">
+                                                        Confirmar asistencia
+                                                    </button></form>
+                                                </c:if>
+                                                    <button type="button" class="btn-tb-ver" data-notificacion="${n.idNotificacion}" data-categoria="<c:out value='${n.categoria}'/>" data-detalle="<c:out value='${n.detalle}'/>" data-fecha="<c:out value='${n.fechaEnvio}'/>" title="Ver detalle">
                                                         Ver
                                                     </button>
-                                                </c:otherwise>
-                                            </c:choose>
+                                            </div>
                                         </td>
                                     </tr>
                                 </c:forEach>
@@ -320,40 +282,28 @@
                 <button type="button" onclick="cerrarModalDetalle()" style="background: #ffffff; border: 1px solid #cbd5e1; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; color: #475569;">
                     Cerrar
                 </button>
-                <a id="modalNotifMarcarLeidaBtn" href="#" style="background: #0284c7; color: #ffffff; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-block;">
+                <form method="POST" action="${pageContext.request.contextPath}/paciente/notificaciones">
+<input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+<input type="hidden" name="action" value="marcarLeida">
+<input type="hidden" name="id" id="modalNotifId">
+<button type="submit" id="modalNotifMarcarLeidaBtn" style="background: #0284c7; color: #ffffff; padding: 8px 18px; border-radius: 6px; font-size: 13px; font-weight: 600; text-decoration: none; display: inline-block;">
                     Marcar como leído
-                </a>
+                </button></form>
             </div>
         </div>
     </div>
 
     <!-- SCRIPTS DE INTERACCIÓN -->
+    <script src="${pageContext.request.contextPath}/assets/js/ofertas-timer.js"></script>
     <script>
         lucide.createIcons();
+        document.querySelectorAll('[data-notificacion]').forEach(button => {
+            button.addEventListener('click', () => abrirModalDetalle(button.dataset.notificacion,
+                button.dataset.categoria, button.dataset.detalle, button.dataset.fecha));
+        });
 
-        // 1. TEMPORIZADOR REGRESIVO INTERACTIVO
-        (function initCountdownTimer() {
-            var timerEl = document.getElementById('countdownTimerDigits');
-            if (!timerEl) return;
-
-            var totalSeconds = ${not empty ofertaCupo.tiempoRestanteSegundos ? ofertaCupo.tiempoRestanteSegundos : 872};
-
-            function updateDisplay() {
-                if (totalSeconds <= 0) {
-                    timerEl.textContent = '00:00 min';
-                    // Redirigir a estado expirado
-                    window.location.href = '${pageContext.request.contextPath}/paciente/notificaciones?estado=expirada';
-                    return;
-                }
-                var m = Math.floor(totalSeconds / 60);
-                var s = totalSeconds % 60;
-                timerEl.textContent = (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s + ' min';
-                totalSeconds--;
-            }
-
-            updateDisplay();
-            var interval = setInterval(updateDisplay, 1000);
-        })();
+        ClinicaOfertas.iniciar(${not empty ofertaCupo.tiempoRestanteSegundos ? ofertaCupo.tiempoRestanteSegundos : 0},
+            '${pageContext.request.contextPath}/paciente/notificaciones');
 
         // 2. PAGINACIÓN DEL HISTORIAL (CLIENT-SIDE)
         (function initPagination() {
@@ -404,7 +354,7 @@
             document.getElementById('modalNotifCat').textContent = cat || 'Detalle de notificación';
             document.getElementById('modalNotifFecha').textContent = fecha || '';
             document.getElementById('modalNotifMensaje').textContent = msg || '';
-            document.getElementById('modalNotifMarcarLeidaBtn').href = '${pageContext.request.contextPath}/paciente/notificaciones?action=marcarLeida&id=' + encodeURIComponent(id);
+            document.getElementById('modalNotifId').value = id;
             document.getElementById('modalDetalleNotif').style.display = 'flex';
         }
 

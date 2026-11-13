@@ -492,3 +492,13 @@
         padding: 16px;
     }
 }
+.perfil-identity-note { font-size: 12px; line-height: 1.6; color: #557ca6; margin: -6px 0 20px; }
+.perfil-security { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-top: 20px; }
+.perfil-security .perfil-card-title { margin-bottom: 8px; }
+.perfil-security p { font-size: 13px; line-height: 1.6; color: #557ca6; }
+.perfil-security-link, .perfil-security-link:visited { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 16px; min-height: 44px; color: #196cbd; border: 1px solid #d9e8f7; border-radius: 8px; background: #f7fbff; text-decoration: none; font-size: 13px; font-weight: 600; flex-shrink: 0; }
+.perfil-security-link:hover { background: #eaf4ff; border-color: #196cbd; }
+.perfil-security-link svg { width: 18px; height: 18px; flex-shrink: 0; }
+@media (max-width: 600px) { .perfil-security { flex-direction: column; align-items: stretch; gap: 16px; } }
+.perfil-contact-fields { grid-template-columns: minmax(0, 1fr); }
+.perfil-email-display { display: flex; align-items: center; width: 100%; min-height: 44px; height: auto; padding: 10px 14px; white-space: normal; overflow-wrap: anywhere; line-height: 1.5; }

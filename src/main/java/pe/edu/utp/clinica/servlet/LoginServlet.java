@@ -11,10 +11,11 @@ import pe.edu.utp.clinica.service.AuthService;
 import pe.edu.utp.clinica.util.SecurityUtil;
 
 import java.io.IOException;
-import java.util.UUID;
+import pe.edu.utp.clinica.util.CsrfToken;
 
 @WebServlet(name = "LoginServlet", urlPatterns = {"/login", "/login/paciente", "/login/personal", "/logout"})
 public class LoginServlet extends HttpServlet {
+    private static final String ERROR_MESSAGE="errorMessage";
 
     private AuthService authService;
 
@@ -28,11 +29,8 @@ public class LoginServlet extends HttpServlet {
         String path = request.getServletPath();
 
         if ("/logout".equals(path)) {
-            HttpSession session = request.getSession(false);
-            if (session != null) {
-                session.invalidate();
-            }
-            response.sendRedirect(request.getContextPath() + "/login?msg=sesion_cerrada");
+            response.setHeader("Allow", "POST");
+            response.sendError(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
             return;
         }
 
@@ -55,8 +53,13 @@ public class LoginServlet extends HttpServlet {
         }
 
         HttpSession session = request.getSession(true);
-        if (session.getAttribute("csrfToken") == null) {
-            session.setAttribute("csrfToken", UUID.randomUUID().toString());
+        CsrfToken.getOrCreate(session);
+        if ("acceso_temporal".equals(request.getParameter("error"))) {
+            request.setAttribute(ERROR_MESSAGE,"Tu cuenta se creó. Inicia sesión para continuar.");
+        }
+        if ("sesion_formulario".equals(request.getParameter("error"))) {
+            request.setAttribute(ERROR_MESSAGE,
+                    "La sesión del formulario venció o cambió. Por seguridad, vuelve a ingresar tus datos.");
         }
 
         if ("/login/personal".equals(path)) {
@@ -73,21 +76,17 @@ public class LoginServlet extends HttpServlet {
         HttpSession session = request.getSession(false);
         String path = request.getServletPath();
 
-        String requestCsrfToken = request.getParameter("csrfToken");
-        String sessionCsrfToken = (session != null) ? (String) session.getAttribute("csrfToken") : null;
-
-        if (session == null || requestCsrfToken == null || !requestCsrfToken.equals(sessionCsrfToken)) {
-            HttpSession freshSession = request.getSession(true);
-            freshSession.setAttribute("csrfToken", UUID.randomUUID().toString());
-            request.setAttribute("errorMessage", "Tu sesión previa expiró por inactividad. Por favor, ingresa tus credenciales nuevamente.");
-
-            if ("/login/personal".equals(path)) {
-                request.setAttribute("tipoPortal", "PERSONAL");
-                request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
-            } else {
-                request.setAttribute("tipoPortal", "PACIENTE");
-                request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
+        // El filtro valida CSRF también para login, registro y cierre de sesión.
+        if ("/logout".equals(path)) {
+            String login=pe.edu.utp.clinica.util.PortalAcceso.login(request);
+            try {
+                var gestor=pe.edu.utp.clinica.auth.GestorAutenticacion.obtener(request);
+                if (gestor!=null) gestor.cerrar(request,response);
+                else if (session!=null) session.invalidate();
+            } catch (java.sql.SQLException e) {
+                response.setHeader("Retry-After","3"); pe.edu.utp.clinica.util.TransporteHttp.error(response,503); return;
             }
+            pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + login + "?msg=sesion_cerrada");
             return;
         }
 
@@ -100,34 +99,32 @@ public class LoginServlet extends HttpServlet {
 
         if (usuario != null) {
             boolean esPortalPersonal = "/login/personal".equals(path);
-            boolean esRolPersonal = "MEDICO".equals(usuario.getRol()) || "PERSONAL_ADMINISTRATIVO".equals(usuario.getRol()) || "ADMINISTRADOR".equals(usuario.getRol());
+            boolean esRolPersonal = pe.edu.utp.clinica.util.PortalAcceso.esPersonal(usuario.getRol());
 
             if (esPortalPersonal && !esRolPersonal) {
-                request.setAttribute("errorMessage", "Acceso denegado: Esta cuenta de Paciente debe ingresar por el Portal de Pacientes.");
+                request.setAttribute(ERROR_MESSAGE, "Acceso denegado: Esta cuenta de Paciente debe ingresar por el Portal de Pacientes.");
                 request.setAttribute("tipoPortal", "PERSONAL");
                 request.getRequestDispatcher("/WEB-INF/views/login-personal.jsp").forward(request, response);
                 return;
             }
 
             if (!esPortalPersonal && esRolPersonal) {
-                request.setAttribute("errorMessage", "Acceso denegado: El personal médico y administrativo debe ingresar por el Portal Institucional.");
+                request.setAttribute(ERROR_MESSAGE, "Acceso denegado: El personal médico y administrativo debe ingresar por el Portal Institucional.");
                 request.setAttribute("tipoPortal", "PACIENTE");
                 request.getRequestDispatcher("/WEB-INF/views/login-paciente.jsp").forward(request, response);
                 return;
             }
 
-            if (session != null) {
-                session.invalidate();
+            String retornoCita=pe.edu.utp.clinica.util.EnlaceCita.consumir(request.getSession(false),java.time.Clock.systemUTC());
+            try {
+                pe.edu.utp.clinica.auth.InicioSesion.iniciar(request,response,usuario);
+            } catch (java.sql.SQLException e) {
+                response.setHeader("Retry-After","3"); pe.edu.utp.clinica.util.TransporteHttp.error(response,503); return;
             }
-            HttpSession newSession = request.getSession(true);
-            newSession.setAttribute("usuarioLogueado", usuario);
-            newSession.setAttribute("rol", usuario.getRol());
-            newSession.setAttribute("nombreUsuario", usuario.getNombreCompleto());
-            newSession.setMaxInactiveInterval(30 * 60);
 
             switch (usuario.getRol()) {
                 case "PACIENTE":
-                    response.sendRedirect(request.getContextPath() + "/paciente/dashboard");
+                    pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath() + (retornoCita==null?"/paciente/dashboard":retornoCita));
                     break;
                 case "MEDICO":
                     response.sendRedirect(request.getContextPath() + "/medico/agenda");
@@ -143,8 +140,8 @@ public class LoginServlet extends HttpServlet {
             }
         } else {
             String errorMsg = authService.getLockoutMessage(identificador);
-            request.setAttribute("errorMessage", errorMsg);
-            request.getSession(true).setAttribute("csrfToken", UUID.randomUUID().toString());
+            request.setAttribute(ERROR_MESSAGE, errorMsg);
+            CsrfToken.getOrCreate(request.getSession(true));
             
             if ("/login/personal".equals(path)) {
                 request.setAttribute("tipoPortal", "PERSONAL");

@@ -1,0 +1,9 @@
+{
+  "humo": {"usuarios": 1, "minutos": 1, "perfil": "fixed"},
+  "carga-5": {"usuarios": 5, "minutos": 5, "perfil": "fixed"},
+  "carga-10": {"usuarios": 10, "minutos": 5, "perfil": "fixed"},
+  "carga-20": {"usuarios": 20, "minutos": 5, "perfil": "fixed"},
+  "pico": {"usuarios": 20, "base": 5, "minutos": 5, "perfil": "peak", "segmentos": "1m,10s,30s,10s"},
+  "estres": {"usuarios": 50, "base": 5, "minutos": 10, "perfil": "ramp-up", "segmentos": "1m,7m"},
+  "duracion-inicial": {"usuarios": 10, "minutos": 10, "perfil": "fixed"}
+}

@@ -1,0 +1,1 @@
+ALTER TABLE auditoria_seguridad MODIFY COLUMN ip_origen VARCHAR(45) NULL DEFAULT NULL;

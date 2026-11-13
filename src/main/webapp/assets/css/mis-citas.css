@@ -199,6 +199,39 @@
     font-weight: 600;
 }
 
+.citas-flash {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0 0 20px;
+    padding: 13px 16px;
+    color: #075985;
+    background: #eff8ff;
+    border: 1px solid #bfdbfe;
+    border-radius: 12px;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.citas-flash svg { width: 18px; height: 18px; flex: 0 0 auto; color: var(--primary, #0077c8); }
+.asistencia-confirmada { color: #047857; font-weight: 600; }
+.asistencia-vencida { color: #b45309; max-width: 190px; }
+.form-confirmar-asistencia { margin-top: 8px; }
+.btn-confirmar-asistencia {
+    min-height: 34px;
+    padding: 7px 12px;
+    color: #fff;
+    background: var(--primary, #0077c8);
+    border: 1px solid var(--primary, #0077c8);
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color .18s ease, transform .18s ease;
+}
+.btn-confirmar-asistencia:hover { background: var(--primary-hover, #005a9c); transform: translateY(-1px); }
+.btn-confirmar-asistencia:disabled { opacity: .65; cursor: wait; transform: none; }
+
 .badge-status.confirmada {
     background: #dcfce7;
     color: #166534;
@@ -217,23 +250,6 @@
 .badge-status.completada {
     background: #f1f5f9;
     color: #475569;
-}
-
-.btn-confirmar-asistencia {
-    display: inline-block;
-    background: #0284c7;
-    color: #ffffff;
-    font-size: 12px;
-    font-weight: 600;
-    padding: 6px 14px;
-    border-radius: 6px;
-    text-decoration: none;
-    margin-top: 6px;
-    transition: background-color 0.2s ease;
-}
-
-.btn-confirmar-asistencia:hover {
-    background: #0369a1;
 }
 
 /* ENLACES DE ACCIÓN */
@@ -621,3 +637,8 @@
     border-color: #dc2626;
 }
 
+
+@media (prefers-reduced-motion: reduce) {
+    .btn-confirmar-asistencia { transition: none; }
+    .btn-confirmar-asistencia:hover { transform: none; }
+}

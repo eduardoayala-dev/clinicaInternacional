@@ -1,0 +1,3 @@
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/disponibilidad.css">
+    <script src="${pageContext.request.contextPath}/assets/js/disponibilidad.js"
+            data-ready-url="${pageContext.request.contextPath}/health/ready" defer></script>

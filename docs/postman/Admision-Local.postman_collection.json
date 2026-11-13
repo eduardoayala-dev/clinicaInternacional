@@ -1,0 +1,541 @@
+{
+  "info": {
+    "name": "Clínica - Llegada en admisión",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+    "description": "Solo local con cuentas y citas sintéticas. Registrar llegada modifica idCitaPrueba una sola vez; usar una cita confirmada de hoy sin llegada previa. Cookies activas y redirecciones desactivadas. idCitaManual queda para revisión del usuario. No consultar DNI externo."
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "correoAdmision",
+      "value": ""
+    },
+    {
+      "key": "claveAdmision",
+      "value": ""
+    },
+    {
+      "key": "correoMedico",
+      "value": ""
+    },
+    {
+      "key": "claveMedico",
+      "value": ""
+    },
+    {
+      "key": "fechaAgenda",
+      "value": ""
+    },
+    {
+      "key": "idCitaPrueba",
+      "value": ""
+    },
+    {
+      "key": "idCitaCancelada",
+      "value": ""
+    },
+    {
+      "key": "idCitaManual",
+      "value": ""
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "02 - Formulario del personal",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token de sesión\",()=>pm.expect(m).to.not.eql(null));if(m)pm.collectionVariables.set(\"csrfToken\",m[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Ingresar como médico sintético",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{correoAdmision}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{claveAdmision}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Ruta de médico\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/admin/dashboard\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Actualizar token de la sesión autenticada",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/admin/dashboard",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token de sesión\",()=>pm.expect(m).to.not.eql(null));if(m)pm.collectionVariables.set(\"csrfToken\",m[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET no registra llegadas",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/admin/admision?idCita={{idCitaPrueba}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 405\",()=>pm.response.to.have.status(405));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST sin CSRF",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPrueba}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Identificador inválido",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "7 OR 1=1",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 400\",()=>pm.response.to.have.status(400));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "No admitir cita cancelada",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaCancelada}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Registrar llegada sintética",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPrueba}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "idUsuario",
+              "value": "999",
+              "type": "text"
+            },
+            {
+              "key": "fechaLlegada",
+              "value": "2000-01-01T00:00",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const r=pm.response.json();pm.test(\"Contrato y datos del servidor\",()=>{pm.expect(r.code).to.eql(\"LLEGADA_REGISTRADA\");pm.expect(r.data.idCita).to.eql(Number(pm.collectionVariables.get(\"idCitaPrueba\")));pm.expect(r.data.fechaLlegada).not.to.include(\"2000-01-01\");pm.expect(r.data.llegoTarde).to.be.a(\"boolean\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Repetir llegada devuelve conflicto",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaPrueba}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 409\",()=>pm.response.to.have.status(409));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Cerrar sesión de admisión",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/logout",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Formulario del personal",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/login/personal",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token de sesión\",()=>pm.expect(m).to.not.eql(null));if(m)pm.collectionVariables.set(\"csrfToken\",m[1]);"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Ingresar como médico sintético",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/login/personal",
+        "header": [],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            },
+            {
+              "key": "identificador",
+              "value": "{{correoMedico}}",
+              "type": "text"
+            },
+            {
+              "key": "password",
+              "value": "{{claveMedico}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 302\",()=>pm.response.to.have.status(302));",
+              "pm.test(\"Ruta de médico\",()=>pm.expect(pm.response.headers.get(\"Location\")).to.include(\"/medico/agenda\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Perfil con hoja de estilos consistente",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/perfil",
+        "header": []
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const m=pm.response.text().match(/name=\"csrfToken\"\\s+value=\"([^\"]+)\"/);pm.test(\"Token de sesión\",()=>pm.expect(m).to.not.eql(null));if(m)pm.collectionVariables.set(\"csrfToken\",m[1]);",
+              "pm.test(\"Estilos del portal\",()=>pm.expect(pm.response.text()).to.include(\"assets/css/portal-medico.css\"));",
+              "pm.test(\"Sin perfil ficticio\",()=>pm.expect(pm.response.text()).to.not.include(\"Dr. Carlos Mendoza\"));"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Agenda médica con llegada real",
+      "request": {
+        "method": "GET",
+        "url": "{{baseUrl}}/medico/agenda?fecha={{fechaAgenda}}",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ]
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 200\",()=>pm.response.to.have.status(200));",
+              "const citas=pm.response.json().data.citas;const c=citas.find(x=>x.idCita===Number(pm.collectionVariables.get(\"idCitaPrueba\")));pm.test(\"Llegada visible al médico asignado\",()=>{pm.expect(c).to.be.an(\"object\");pm.expect(c.estado).to.eql(\"EN_SALA\");pm.expect(c.llegadaRegistrada).to.eql(true);pm.expect(c.fechaLlegada).not.to.eql(\"\");});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "Médico no puede admitir",
+      "request": {
+        "method": "POST",
+        "url": "{{baseUrl}}/admin/admision",
+        "header": [
+          {
+            "key": "Accept",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "urlencoded",
+          "urlencoded": [
+            {
+              "key": "idCita",
+              "value": "{{idCitaManual}}",
+              "type": "text"
+            },
+            {
+              "key": "csrfToken",
+              "value": "{{csrfToken}}",
+              "type": "text"
+            }
+          ]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "type": "text/javascript",
+            "exec": [
+              "pm.test(\"HTTP 403\",()=>pm.response.to.have.status(403));"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

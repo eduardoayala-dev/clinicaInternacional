@@ -24,13 +24,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Catálogo de sedes - Portal del Administrador | Clínica Internacional</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-layout.css">
     <style>
         /* ======================================================== */
@@ -581,57 +580,13 @@
             .btn-pill-primary { margin-left: 0; }
         }
     </style>
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<body class="sysadmin-portal">
 
     <!-- ======================================================== -->
     <!-- PANEL DE LA IZQUIERDA (SIDEBAR INSTITUCIONAL - 260px)   -->
     <!-- ======================================================== -->
-    <aside class="sidebar">
-        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
-                 alt="Logo" class="brand-logo-img"
-                 onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del administrador</span>
-            </div>
-        </a>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item">
-                <i data-lucide="home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item">
-                <i data-lucide="shield"></i>
-                <span>Usuarios y roles</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-item active">
-                <i data-lucide="building"></i>
-                <span>Sedes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-item">
-                <i data-lucide="sliders"></i>
-                <span>Configuración de priorización</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-item">
-                <i data-lucide="trending-up"></i>
-                <span>Indicadores y analítica</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesAdmin %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombreAdmin %></span>
-                <span class="user-role">Administrador</span>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
-                <i data-lucide="log-out"></i>
-            </a>
-        </div>
-    </aside>
+    <%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 
     <!-- ======================================================== -->
     <!-- ÁREA PRINCIPAL CON HEADER SUPERIOR DISTINGUIDO          -->
@@ -902,6 +857,7 @@
                 </button>
             </div>
             <form action="${pageContext.request.contextPath}/sysadmin/sedes" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="crearSede">
                 <div class="modal-box-body">
                     <div class="modal-input-group">
@@ -947,6 +903,7 @@
                 </button>
             </div>
             <form action="${pageContext.request.contextPath}/sysadmin/sedes" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="editarSede">
                 <input type="hidden" name="idSede" id="editIdSede">
                 <div class="modal-box-body">

@@ -37,77 +37,38 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Programar Cita - Portal del Paciente | Clínica Internacional</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <title>Programar cita - Portal del Paciente | Clínica Internacional</title>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-layout.css">
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/buscar-cita.css?v=20261102-3">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/catalogos-api.css">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/orientacion-catalogo.css?v=20261102-2">
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2">
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/paciente-responsive.css?v=20261104-1">
 </head>
 <body>
 
     <!-- SIDEBAR INSTITUCIONAL -->
-    <aside class="sidebar">
-        <div class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del paciente</span>
-            </div>
-        </div>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/paciente/dashboard" class="nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px;"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/citas" class="nav-item active">
-                <i data-lucide="search" style="width: 18px; height: 18px;"></i>
-                <span>Buscar cita</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/historial" class="nav-item">
-                <i data-lucide="calendar" style="width: 18px; height: 18px;"></i>
-                <span>Mis citas</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="nav-item">
-                <i data-lucide="clock" style="width: 18px; height: 18px;"></i>
-                <span>Lista de espera</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="nav-item">
-                <i data-lucide="bell" style="width: 18px; height: 18px;"></i>
-                <span>Notificaciones</span>
-                <% if (numNotifSinLeer > 0) { %>
-                    <span class="badge-count"><%= numNotifSinLeer %></span>
-                <% } %>
-            </a>
-            <a href="${pageContext.request.contextPath}/paciente/perfil" class="nav-item">
-                <i data-lucide="user" style="width: 18px; height: 18px;"></i>
-                <span>Perfil</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= inicialesPaciente %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombrePaciente %></span>
-                <span class="user-role">Paciente</span>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
-                <i data-lucide="log-out" style="width: 18px; height: 18px;"></i>
-            </a>
-        </div>
-    </aside>
+    <% String seccionPaciente = "citas"; %>
+    <%@ include file="/WEB-INF/jspf/paciente-sidebar.jspf" %>
 
     <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
+    <main class="main-content patient-booking">
+        <c:if test="${not empty sessionScope.agendaError}">
+            <p role="alert" class="catalogo-estado"><c:out value="${sessionScope.agendaError}"/></p>
+            <c:remove var="agendaError" scope="session"/>
+        </c:if>
+
 
         <!-- HEADER INSTITUCIONAL -->
         <header class="dash-top-header">
             <nav class="breadcrumb-trail">
-                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Buscar cita</strong>
+                <span>Paciente</span> <span class="bc-sep">/</span> <strong>Programar cita</strong>
+                <span id="aiRutaOrientacion" hidden> / Orientación por síntomas</span>
             </nav>
 
             <a href="${pageContext.request.contextPath}/paciente/notificaciones" class="btn-avisos-pill">
@@ -122,11 +83,12 @@
         <!-- CONTENEDOR CON SCROLL -->
         <div class="citas-scroll-container">
             <div class="buscar-wrapper">
+                <button type="button" id="aiVolverOpciones" class="orientation-back-link" onclick="volverASeleccionModos()" hidden><i data-lucide="arrow-left" aria-hidden="true"></i>Volver a opciones</button>
 
                 <!-- CABECERA DE PÁGINA (TÍTULO, SUBTÍTULO Y BOTÓN VOLVER) -->
                 <div class="page-title-row-with-back" id="pageTitleRow">
                     <div>
-                        <h1 class="page-main-title" id="pageMainTitle">Programar Cita</h1>
+                        <h1 class="page-main-title" id="pageMainTitle">Programar cita</h1>
                         <p class="page-main-subtitle" id="pageMainSubtitle">Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.</p>
                     </div>
                     <button type="button" id="btnVolverModos" class="btn-back-pill" onclick="volverASeleccionModos()" style="display: none;">
@@ -141,33 +103,31 @@
                 <div id="viewModeSelector">
                     <div class="mode-selection-grid">
                         
-                        <!-- TARJETA 1: ORIENTACIÓN MÉDICA POR IA -->
-                        <div class="mode-card" onclick="iniciarModoIA()">
+                        <!-- TARJETA 1: ORIENTACIÓN POR ESPECIALIDAD -->
+                        <div class="mode-card">
                             <div>
                                 <div class="mode-card-top-row">
-                                    <div class="mode-card-icon">
-                                        <i data-lucide="bot" style="width: 26px; height: 26px;"></i>
+                                    <div class="mode-card-icon mode-card-icon-ai">
+                                        <span class="mode-ai-mark" aria-hidden="true">IA</span>
                                     </div>
                                     <span class="mode-badge-pill badge-pill-mint">
-                                        Nuevo · Asistido por IA
+                                        Asistido por IA
                                     </span>
                                 </div>
-
-                                <div class="mode-kicker">ORIENTACIÓN MÉDICA POR IA</div>
                                 <h2 class="mode-card-title">No sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
-                                    Describe lo que sientes. Nuestra IA analizará tus síntomas para sugerirte el especialista adecuado según disponibilidad, con validación de nuestro equipo médico si es necesario.
+                                    Selecciona las molestias del caso para encontrar una especialidad del catálogo. La orientación no es un diagnóstico.
                                 </p>
                             </div>
 
-                            <button type="button" class="btn-card-action">
+                            <button type="button" class="btn-card-action" onclick="iniciarModoIA()">
                                 <span>Describir síntomas</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
 
                         <!-- TARJETA 2: RESERVA DIRECTA POR ESPECIALIDAD -->
-                        <div class="mode-card" onclick="iniciarModoDirecto()">
+                        <div class="mode-card">
                             <div>
                                 <div class="mode-card-top-row">
                                     <div class="mode-card-icon">
@@ -177,16 +137,14 @@
                                         Reserva directa
                                     </span>
                                 </div>
-
-                                <div class="mode-kicker">RESERVA DIRECTA POR ESPECIALIDAD</div>
                                 <h2 class="mode-card-title">Ya sé qué especialidad necesito</h2>
                                 <p class="mode-card-desc">
                                     Elige directamente la especialidad, el médico de tu preferencia y el horario que mejor se acomode a ti.
                                 </p>
                             </div>
 
-                            <button type="button" class="btn-card-action">
-                                <span>Ver especialidades</span>
+                            <button type="button" class="btn-card-action" onclick="iniciarModoDirecto()">
+                                <span>Buscar cita</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
                         </div>
@@ -195,7 +153,6 @@
 
                     <!-- DISCLAIMER INFERIOR -->
                     <div class="disclaimer-banner">
-                        <i data-lucide="info" style="width: 20px; height: 20px;"></i>
                         <span>La orientación por IA no reemplaza una evaluación médica. Si presentas una emergencia, acude al centro de salud más cercano.</span>
                     </div>
                 </div>
@@ -204,80 +161,49 @@
                 <!-- PANEL ASISTENTE DE SÍNTOMAS IA                          -->
                 <!-- ======================================================= -->
                 <div id="aiTriagePanel" class="ai-triage-box">
-                    <div class="ai-triage-header">
-                        <div class="ai-triage-header-info">
-                            <div class="ai-badge-robot">
-                                <i data-lucide="bot" style="width: 24px; height: 24px;"></i>
-                            </div>
-                            <div>
-                                <h3 style="font-size: 17px; font-weight: 700; color: #1e3a8a;">Asistente de Orientación Clínica por IA</h3>
-                                <p style="font-size: 13px; color: #64748b;">Describe tus síntomas para orientarte con la especialidad médica más adecuada.</p>
-                            </div>
-                        </div>
-                        <button type="button" onclick="cerrarPanelIA()" style="background: none; border: none; cursor: pointer; color: #64748b;" title="Cerrar">
-                            <i data-lucide="x" style="width: 20px; height: 20px;"></i>
-                        </button>
-                    </div>
-
-                    <div style="margin-bottom: 12px;">
-                        <label for="aiSintomasInput" style="font-size: 13px; font-weight: 600; color: var(--text-dark); display: block; margin-bottom: 6px;">
-                            ¿Qué síntomas o molestias presentas?
-                        </label>
-                        <textarea id="aiSintomasInput" class="ai-symptom-textarea" placeholder="Ej: Tengo dolor de cabeza punzante desde hace 2 días, mareos ligeros al levantarme y molestia con la luz..."></textarea>
-                    </div>
-
-                    <div class="quick-symptoms-label">O selecciona síntomas frecuentes:</div>
-                    <div class="quick-chips-wrapper">
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor de cabeza y mareos')">🤕 Dolor de cabeza y mareos</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Opresión en el pecho y palpitaciones')">❤️ Molestia en el pecho</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor articular o lesión en rodilla/espalda')">🦴 Articulaciones o columna</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Erupción o manchas en la piel')">🧴 Alergia o piel</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Dolor estomacal y acidez')">🍏 Estómago o digestivo</button>
-                        <button type="button" class="symptom-chip" onclick="agregarSintoma(this, 'Fiebre persistente y malestar general')">🌡️ Fiebre y malestar</button>
-                    </div>
-
-                    <div style="display: flex; gap: 12px; align-items: center;">
-                        <button type="button" id="btnAnalizarIA" class="btn-card-action btn-card-royal" onclick="ejecutarAnalisisIA()">
-                            <i data-lucide="sparkles" style="width: 16px; height: 16px;"></i>
-                            <span>Analizar síntomas con IA</span>
-                        </button>
-                        <button type="button" class="btn-secondary-flat" onclick="cerrarPanelIA()">Volver</button>
-                    </div>
-
+<div id="aiFormulario">
+<h2 class="orientation-question">Selecciona los síntomas</h2><p class="orientation-help">Selecciona todos los que apliquen.</p>
+<div class="quick-chips-wrapper"><button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de cabeza')">Dolor de cabeza</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Fiebre')">Fiebre</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor de pecho')">Dolor de pecho</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Malestar digestivo')">Malestar digestivo</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Dolor muscular')">Dolor muscular</button>
+<button type="button" class="symptom-chip" aria-pressed="false" onclick="agregarSintoma(this, 'Cansancio')">Cansancio</button></div>
+<p id="aiUrgenciaAviso" class="ai-demo-error" role="alert" hidden>Si se trata de una situación real con dolor de pecho intenso o dificultad para respirar, busca atención de emergencia; no esperes una cita.</p>
+<label for="aiSintomasInput" class="orientation-question">Describe las molestias (opcional)</label>
+<textarea maxlength="1200" oninput="invalidarOrientacion()" id="aiSintomasInput" class="ai-symptom-textarea" writingsuggestions="false" autocomplete="off" placeholder="Por ejemplo: dolor de cabeza desde hace tres días…"></textarea>
+<p id="aiAvisoDemo" class="orientation-help">Esta orientación solo sugiere una especialidad; no es un diagnóstico.</p>
+<label class="ai-demo-confirmacion"><input type="checkbox" id="aiCasoFicticio" onchange="invalidarOrientacion()"> Usaré un caso ficticio, sin datos personales.</label>
+<button type="button" id="btnAnalizarIA" class="btn-card-action" onclick="ejecutarAnalisisIA()" disabled><span>Analizar síntomas</span><i data-lucide="chevron-right" aria-hidden="true"></i></button>
+</div>
+<output class="ai-demo-status" id="aiEstadoOrientacion" aria-live="polite"></output><div id="aiElegirManual" hidden><button type="button" class="btn-back-pill" onclick="iniciarModoDirecto()">Elegir una especialidad</button></div><p class="ai-demo-error" id="aiErrorOrientacion" role="alert" hidden></p>
                     <!-- RESULTADO DEL ANÁLISIS DE IA -->
                     <div id="aiResultadoBox" class="ai-response-result">
                         <div style="display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; margin-bottom: 12px;">
                             <div>
-                                <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 6px;">
-                                    <span class="mode-badge-pill badge-pill-mint" style="margin-bottom: 0;">
-                                        <i data-lucide="sparkles" style="width: 12px; height: 12px;"></i>
-                                        Especialidad sugerida: <strong id="aiEspecialidadNombre" style="margin-left: 4px;">Neurología</strong>
-                                    </span>
-                                    <span id="aiPrioridadBadge" class="mode-badge-pill" style="background: #fef3c7; color: #b45309; border: 1px solid #fde68a;">
-                                        Prioridad: Moderada
-                                    </span>
-                                </div>
-                                <h4 style="font-size: 15.5px; font-weight: 700; color: var(--text-dark); margin-bottom: 4px;">Orientación preliminar</h4>
-                                <p id="aiExplicacionTexto" style="font-size: 13.5px; color: #334155; line-height: 1.5;">
-                                    Los síntomas ingresados coinciden con el área de Neurología para evaluar posibles cuadros de cefalea o migraña.
-                                </p>
+                                <span class="orientation-success-icon" aria-hidden="true"><i data-lucide="check"></i></span>
+                                <p class="orientation-success-label">Orientación completada</p>
+                                <h2 class="orientation-result-title">Te sugerimos <span id="aiEspecialidadNombre"></span></h2>
+                                <p id="aiExplicacionTexto" class="orientation-result-description"></p>
+                                <p id="aiMotivoResultado" class="orientation-result-description" hidden></p>
                             </div>
                         </div>
 
-                        <div style="padding-top: 14px; border-top: 1px solid #dcfce7; display: flex; gap: 12px; align-items: center;">
-                            <button type="button" class="btn-primary-search" onclick="aplicarRecomendacionIA()">
-                                <span>Continuar con esta especialidad</span>
+                        <p class="orientation-result-note">Esta sugerencia orientativa no es un diagnóstico ni asigna prioridad clínica.</p><div class="ai-demo-actions ai-demo-actions-result">
+                            <button type="button" id="aiAplicarSugerencia" class="btn-card-action btn-card-royal" onclick="aplicarRecomendacionIA()">
+                                <span id="aiBuscarHorariosTexto">Buscar horarios</span>
                                 <i data-lucide="chevron-right" style="width: 16px; height: 16px;"></i>
                             </button>
-                            <button type="button" class="btn-secondary-flat" onclick="iniciarModoDirecto()">Elegir otra manualmente</button>
+                            <button type="button" class="btn-back-pill" onclick="editarSintomas()">Editar síntomas</button>
                         </div>
+                        <button type="button" class="orientation-other-specialty" onclick="iniciarModoDirecto()">Prefiero elegir otra especialidad →</button>
                     </div>
                 </div>
 
                 <!-- ======================================================= -->
                 <!-- WIZARD STEPPER Y FLUJO DE BÚSQUEDA                     -->
                 <!-- ======================================================= -->
-                <div id="wizardFlowSection" style="display: none;">
+                <div id="wizardFlowSection" style="display: none;"><div id="aiSugerenciaBuscador" class="orientation-search-note" hidden><span id="aiSugerenciaTexto"></span><button type="button" onclick="iniciarModoIA()">Volver a la orientación</button></div>
 
                     <!-- STEPPER (Alineado a la izquierda según diseño institucional) -->
                     <div class="wizard-stepper-container">
@@ -344,13 +270,12 @@
                             <div class="filter-row-full">
                                 <div class="filter-field">
                                     <div class="motivo-label-row">
-                                        <label for="selectMotivo">Motivo de consulta (opcional)</label>
-                                        <span class="motivo-hint-tag">Opcional · orientativo</span>
+                                        <label for="selectMotivo">Motivo de consulta *</label>
                                     </div>
-                                    <select id="selectMotivo" class="filter-control">
+                                    <select id="selectMotivo" class="filter-control" required onchange="actualizarMotivoElegido()">
                                         <option value="">Selecciona un motivo</option>
                                     </select>
-                                    <div class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
+                                    <div id="motivoOrientacionAyuda" class="motivo-footer-hint">Los motivos se filtran según la especialidad elegida.</div>
                                 </div>
                             </div>
 
@@ -455,7 +380,7 @@
                                 </div>
                                 <div>
                                     <div class="waitlist-callout-title">No encontramos más citas disponibles para los criterios seleccionados</div>
-                                    <div class="waitlist-callout-sub">Sin costo adicional · confirmación vía SMS / email</div>
+                                    <div class="waitlist-callout-sub">Avisos por correo electrónico</div>
                                 </div>
                             </div>
                             <a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-waitlist-action">
@@ -484,73 +409,21 @@
                         </div>
 
                         <!-- FORMULARIO DE ENVÍO POST -->
+                        <input type="hidden" name="retencion" id="finalRetencion" form="formReservaFinal">
                         <form id="formReservaFinal" action="${pageContext.request.contextPath}/paciente/reservar" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                             <input type="hidden" name="idMedico" id="finalIdMedico" value="">
                             <input type="hidden" name="fecha" id="finalFecha" value="">
                             <input type="hidden" name="hora" id="finalHora" value="">
                             <input type="hidden" name="urgencia" id="finalUrgencia" value="MEDIA">
 
-                            <!-- GRID DE DOS TARJETAS -->
-                            <div class="finalizar-reserva-grid">
-                                
-                                <!-- TARJETA IZQUIERDA: RESUMEN DE LA CITA -->
-                                <div class="finalizar-card">
-                                    <h3 class="finalizar-card-title">Resumen de la cita</h3>
-                                    <div class="resumen-filas-list">
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Especialidad</span>
-                                            <span class="resumen-row-val" id="resumenEspecialidad">Cardiología</span>
-                                        </div>
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Médico / CMP</span>
-                                            <span class="resumen-row-val" id="resumenMedicoCMP">Dr. Fernando Solís · 045218</span>
-                                        </div>
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Sede y consultorio</span>
-                                            <span class="resumen-row-val" id="resumenSedeConsultorio">Sede San Borja · Consultorio 304</span>
-                                        </div>
-                                        <div class="resumen-row-item">
-                                            <span class="resumen-row-label">Fecha y hora</span>
-                                            <span class="resumen-row-val" id="resumenFechaHoraFormateada">Jueves 15 oct 2026 · 09:00</span>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- TARJETA DERECHA: DATOS DE LA RESERVA -->
-                                <div class="finalizar-card">
-                                    <h3 class="finalizar-card-title">Datos de la reserva</h3>
-                                    
-                                    <div class="form-group-motivo">
-                                        <label for="selectMotivoPaso3" class="finalizar-field-label">Motivo de consulta *</label>
-                                        <div class="select-with-icon-wrap">
-                                            <select id="selectMotivoPaso3" name="motivo" class="finalizar-select-control" required>
-                                                <option value="" disabled selected>Selecciona un motivo</option>
-                                            </select>
-                                            <i data-lucide="chevron-down" class="select-chevron-icon"></i>
-                                        </div>
-                                        <div class="motivo-field-footnote">Solo se muestran los motivos de la especialidad elegida.</div>
-                                    </div>
-
-                                    <div class="notif-channels-section">
-                                        <label class="finalizar-field-label">Recibir los avisos de esta cita por:</label>
-                                        <div class="notif-channels-group">
-                                            <label class="notif-channel-card active" id="labelNotifSms">
-                                                <input type="checkbox" name="notifSms" id="checkNotifSms" checked onchange="toggleNotifChannel('sms')">
-                                                <i data-lucide="smartphone" class="notif-icon"></i>
-                                                <span class="notif-text">SMS / WhatsApp</span>
-                                            </label>
-                                            <label class="notif-channel-card" id="labelNotifEmail">
-                                                <input type="checkbox" name="notifEmail" id="checkNotifEmail" onchange="toggleNotifChannel('email')">
-                                                <i data-lucide="mail" class="notif-icon"></i>
-                                                <span class="notif-text">Correo electrónico</span>
-                                            </label>
-                                        </div>
-                                    </div>
-
-                                </div>
-
-                            </div>
-
+<div class="finalizar-card booking-summary"><h3 class="finalizar-card-title">Resumen de la cita</h3><div class="resumen-filas-list"><div class="resumen-row-item"><span class="resumen-row-label">Especialidad</span><span class="resumen-row-val" id="resumenEspecialidad">—</span></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Médico / CMP</span><span class="resumen-row-val" id="resumenMedicoCMP">—</span></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Sede y consultorio</span><span class="resumen-row-val" id="resumenSedeConsultorio">—</span></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Fecha y hora</span><span class="resumen-row-val" id="resumenFechaHoraFormateada">—</span></div>
+<div class="resumen-row-item"><label class="resumen-row-label" for="selectMotivoPaso3">Motivo de consulta</label><select id="selectMotivoPaso3" name="idMotivo" class="finalizar-select-control booking-reason" required><option value="" disabled selected>Selecciona un motivo</option></select></div>
+<div class="resumen-row-item"><span class="resumen-row-label">Recordatorios y confirmación por</span><span class="resumen-row-val booking-email">Correo electrónico · <%= Html.texto(usuario != null ? usuario.getEmail() : "") %></span></div>
+</div></div>
                             <!-- ACCIONES INFERIORES: VOLVER A RESULTADOS / FINALIZAR RESERVA -->
                             <div class="finalizar-actions-bar">
                                 <button type="button" class="btn-volver-resultados" onclick="volverAPaso2()">
@@ -580,7 +453,7 @@
 
                                 <div class="success-code-pill">
                                     <span>Código de cita:</span>
-                                    <strong id="successCodigoCita">CI-2026-004821</strong>
+                                    <strong id="successCodigoCita">—</strong>
                                 </div>
 
                                 <div class="success-details-list">
@@ -590,7 +463,7 @@
                                     </div>
                                     <div class="success-row-item">
                                         <span class="success-row-label">Médico / CMP</span>
-                                        <span class="success-row-val" id="successMedicoCMP">Dr. Fernando Solís · 045218</span>
+                                        <span class="success-row-val" id="successMedicoCMP">—</span>
                                     </div>
                                     <div class="success-row-item">
                                         <span class="success-row-label">Sede y consultorio</span>
@@ -607,11 +480,11 @@
                                 </div>
 
                                 <div class="success-whatsapp-banner">
-                                    <i data-lucide="smartphone" class="success-whatsapp-icon"></i>
+                                    <i data-lucide="mail" class="success-whatsapp-icon"></i>
                                     <div>
                                         <div class="success-whatsapp-title">Reserva registrada</div>
                                         <div class="success-whatsapp-desc">
-                                            Enviamos el detalle a +51 987 ••• 482 (WhatsApp). 48 h antes te pediremos confirmar tu asistencia.
+                                            Correo registrado: <%= Html.texto(usuario != null ? usuario.getEmail() : "") %>. Puedes revisar los detalles y confirmar tu asistencia en Mis citas.
                                         </div>
                                     </div>
                                 </div>
@@ -639,7 +512,13 @@
     </main>
 
     <!-- SCRIPTS Y LÓGICA DE CONTROL -->
+    <script src="${pageContext.request.contextPath}/assets/js/catalogos-api.js?v=20261104-cupos"></script>
+    <script src="${pageContext.request.contextPath}/assets/js/reservas-api.js?v=20261102-1"></script>
+    <c:if test="${not empty errorCatalogoMotivos}"><p class="alert alert-danger" role="alert"><c:out value="${errorCatalogoMotivos}" /></p></c:if>
+    <script type="application/json" id="catalogoMotivos"><%= pe.edu.utp.clinica.util.Html.json(request.getAttribute("catalogoMotivos")) %></script>
+    <script src="${pageContext.request.contextPath}/assets/js/motivos-cita.js?v=20261102-3"></script>
     <script>
+        const catalogoMotivos=JSON.parse(document.getElementById("catalogoMotivos").textContent)||[];
         document.addEventListener('DOMContentLoaded', function() {
             lucide.createIcons();
 
@@ -665,15 +544,6 @@
                 actualizarEspecialidadYMotivos();
             }
 
-            // Detectar si la página fue redirigida tras reserva exitosa
-            const urlParams = new URLSearchParams(window.location.search);
-            if (urlParams.get('reserva') === 'ok') {
-                const cod = urlParams.get('codigo') || 'CI-2026-004821';
-                iniciarModoDirecto();
-                mostrarPantallaExito(cod);
-                return;
-            }
-
             // Listener para motivo en Paso 3
             const selMotP3 = document.getElementById('selectMotivoPaso3');
             if (selMotP3) {
@@ -695,40 +565,29 @@
                     }
 
                     const btnSubmit = document.getElementById('btnConfirmarReserva');
+                    if (btnSubmit?.disabled) return false;
+                    let params;
+                    try {
+                        params = ClinicaReservas.preparar({medico:state.medicoId, motivo:selMotP3?.value,
+                            fecha:state.fecha, hora:state.hora, retencion:retencionActual?.identificador});
+                    } catch (error) {
+                        alert(error.message);
+                        return false;
+                    }
                     if (btnSubmit) {
                         btnSubmit.disabled = true;
                         btnSubmit.innerHTML = '<span>Procesando reserva...</span>';
                     }
 
-                    const formData = new FormData(formFinal);
-                    const params = new URLSearchParams(formData);
-
-                    fetch(formFinal.action, {
-                        method: 'POST',
-                        body: params,
-                        headers: {
-                            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'Accept': 'application/json'
+                    ClinicaReservas.reservar(formFinal.action, params,
+                        document.querySelector('meta[name="csrf-token"]').content)
+                    .then(data => mostrarPantallaExito(data.codigoCita))
+                    .catch(error => {
+                        alert(error.message);
+                        if (btnSubmit) {
+                            btnSubmit.disabled = false;
+                            btnSubmit.textContent = 'Finalizar reserva';
                         }
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data && data.success) {
-                            mostrarPantallaExito(data.codigoCita || ('CI-2026-' + String(data.idCita || 4821).padStart(6, '0')));
-                        } else {
-                            alert(data.error || 'No se pudo procesar la reserva. Por favor intenta nuevamente.');
-                            if (btnSubmit) {
-                                btnSubmit.disabled = false;
-                                btnSubmit.innerHTML = '<span>Finalizar reserva</span> <i data-lucide="check" style="width: 18px; height: 18px;"></i>';
-                                lucide.createIcons();
-                            }
-                        }
-                    })
-                    .catch(err => {
-                        console.error('Error al reservar:', err);
-                        const codFallback = 'CI-2026-00' + Math.floor(1000 + Math.random() * 9000);
-                        mostrarPantallaExito(codFallback);
                     });
                 });
             }
@@ -747,32 +606,44 @@
             fecha: '',
             hora: '',
             urgencia: 'MEDIA',
-            turno: 'TODOS',
+            turno: 'MANANA',
             motivo: ''
         };
 
         // --- NAVEGACIÓN DE MODOS ---
         function iniciarModoIA() {
+            document.getElementById('aiVolverOpciones').hidden = false;
+            document.getElementById('aiRutaOrientacion').hidden = false;
+            document.getElementById('aiFormulario').hidden = false;
             state.modo = 'IA';
-            document.getElementById('pageMainTitle').textContent = 'Orientación médica por IA';
-            document.getElementById('pageMainSubtitle').textContent = 'Describe tus síntomas para orientarte con la especialidad médica más adecuada.';
+            state.pasoActual = 1;
+            document.getElementById('pageMainTitle').textContent = 'Orientación por síntomas';
+            document.getElementById('pageMainSubtitle').textContent = 'Selecciona las molestias para encontrar una especialidad.';
             document.getElementById('viewModeSelector').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'block';
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiResultadoBox').style.display = 'none';
             const btnVolver = document.getElementById('btnVolverModos');
-            if (btnVolver) btnVolver.style.display = 'inline-flex';
+            if (btnVolver) btnVolver.style.display = 'none';
             document.getElementById('aiSintomasInput').focus();
             lucide.createIcons();
         }
 
         function cerrarPanelIA() {
+            invalidarOrientacion();
             document.getElementById('aiTriagePanel').style.display = 'none';
             volverASeleccionModos();
         }
 
-        function iniciarModoDirecto() {
-            state.modo = 'DIRECTO';
+        function iniciarModoDirecto(origen = 'DIRECTO') {
+            document.getElementById('aiVolverOpciones').hidden = true;
+            document.getElementById('aiRutaOrientacion').hidden = true;
+            if (origen !== 'IA') invalidarOrientacion();
+            document.getElementById('aiSugerenciaBuscador').hidden = origen !== 'IA';
+            if (origen === 'IA' && sugerenciaOrientacion) {
+                document.getElementById('aiSugerenciaTexto').textContent = 'Especialidad sugerida: ' + sugerenciaOrientacion.especialidad + '. Elige la sede, la fecha y el turno que prefieras.';
+            }
+            state.modo = origen;
             document.getElementById('pageMainTitle').textContent = 'Buscar cita';
             document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
             document.getElementById('viewModeSelector').style.display = 'none';
@@ -786,6 +657,9 @@
         }
 
         function volverASeleccionModos() {
+            document.getElementById('aiVolverOpciones').hidden = true;
+            document.getElementById('aiRutaOrientacion').hidden = true;
+            invalidarOrientacion();
             if (state.pasoActual === 2) {
                 volverAPaso1();
                 return;
@@ -794,8 +668,12 @@
                 volverAPaso2();
                 return;
             }
+            if (state.modo === 'IA' && document.getElementById('wizardFlowSection').style.display !== 'none') {
+                iniciarModoIA();
+                return;
+            }
             state.modo = 'NINGUNO';
-            document.getElementById('pageMainTitle').textContent = 'Programar Cita';
+            document.getElementById('pageMainTitle').textContent = 'Programar cita';
             document.getElementById('pageMainSubtitle').textContent = 'Te ayudamos a encontrar la atención adecuada o puedes reservar directamente con la especialidad que necesitas.';
             document.getElementById('wizardFlowSection').style.display = 'none';
             document.getElementById('aiTriagePanel').style.display = 'none';
@@ -805,137 +683,109 @@
             lucide.createIcons();
         }
 
-        // --- ASISTENTE IA DE SÍNTOMAS ---
-        function agregarSintoma(btn, texto) {
-            const textarea = document.getElementById('aiSintomasInput');
-            if (textarea.value.trim() === '') {
-                textarea.value = texto;
-            } else if (!textarea.value.includes(texto)) {
-                textarea.value += ', ' + texto;
-            }
-            btn.classList.add('selected');
+        let sugerenciaOrientacion = null;
+        let peticionOrientacion = null;
+
+        function invalidarOrientacion() {
+            peticionOrientacion?.abort();
+            peticionOrientacion = null;
+            sugerenciaOrientacion = null;
+            document.getElementById('aiResultadoBox').style.display = 'none';
+            document.getElementById('aiEstadoOrientacion').textContent = '';
+            document.getElementById('aiErrorOrientacion').hidden = true;
+            document.getElementById('btnAnalizarIA').setAttribute('aria-busy', 'false');
+            document.getElementById('aiElegirManual').hidden = true;
+            const boton = document.getElementById('btnAnalizarIA');
+            boton.disabled = !document.getElementById('aiCasoFicticio').checked || textoOrientacion().length < 12;
+            boton.querySelector('span').textContent = 'Analizar síntomas';
         }
 
-        function ejecutarAnalisisIA() {
-            const texto = document.getElementById('aiSintomasInput').value.trim().toLowerCase();
-            if (!texto) {
-                alert('Por favor escribe tus síntomas o selecciona alguno de los sugeridos.');
-                document.getElementById('aiSintomasInput').focus();
+        const sintomasElegidos = new Set();
+        function textoOrientacion() { return [sintomasElegidos.size ? 'Caso ficticio: ' + [...sintomasElegidos].join(', ') : '', document.getElementById('aiSintomasInput').value.trim()].filter(Boolean).join('. '); }
+        function editarSintomas() { document.getElementById('aiFormulario').hidden = false; invalidarOrientacion(); }
+        function agregarSintoma(boton, texto) {
+            if (sintomasElegidos.has(texto)) sintomasElegidos.delete(texto); else sintomasElegidos.add(texto);
+            boton.setAttribute('aria-pressed', String(sintomasElegidos.has(texto)));
+            document.getElementById('aiUrgenciaAviso').hidden = !sintomasElegidos.has('Dolor de pecho');
+            invalidarOrientacion();
+        }
+        async function ejecutarAnalisisIA() {
+            const boton = document.getElementById('btnAnalizarIA');
+            if (boton.disabled) return;
+            invalidarOrientacion();
+            const error = document.getElementById('aiErrorOrientacion');
+            const estado = document.getElementById('aiEstadoOrientacion');
+            if (!document.getElementById('aiCasoFicticio').checked) {
+                error.textContent = 'Confirma que estás usando un caso ficticio, sin datos personales.';
+                error.hidden = false;
                 return;
             }
-
-            const btn = document.getElementById('btnAnalizarIA');
-            btn.innerHTML = '<i data-lucide="loader" style="width: 16px; height: 16px; animation: spin 1s linear infinite;"></i> <span>Analizando con IA...</span>';
-            btn.disabled = true;
-
-            setTimeout(() => {
-                let recomendacion = clasificarSintomasIA(texto);
-
-                document.getElementById('aiEspecialidadNombre').textContent = recomendacion.especialidad;
-                document.getElementById('aiExplicacionTexto').textContent = recomendacion.explicacion;
-                
-                const badgePrioridad = document.getElementById('aiPrioridadBadge');
-                badgePrioridad.textContent = 'Prioridad: ' + recomendacion.prioridad;
-                if (recomendacion.prioridad === 'Alta') {
-                    badgePrioridad.style.background = '#fee2e2';
-                    badgePrioridad.style.color = '#b91c1c';
-                    badgePrioridad.style.borderColor = '#fca5a5';
-                } else if (recomendacion.prioridad === 'Media' || recomendacion.prioridad === 'Moderada') {
-                    badgePrioridad.style.background = '#fef3c7';
-                    badgePrioridad.style.color = '#b45309';
-                    badgePrioridad.style.borderColor = '#fde68a';
-                } else {
-                    badgePrioridad.style.background = '#dcfce7';
-                    badgePrioridad.style.color = '#15803d';
-                    badgePrioridad.style.borderColor = '#86efac';
-                }
-
-                state.especialidadNombre = recomendacion.especialidad;
-                state.especialidadId = recomendacion.idEsp;
-                state.urgencia = recomendacion.prioridad.toUpperCase();
-
+            const texto = textoOrientacion();
+            if (texto.length < 12 || texto.length > 1200) {
+                error.textContent = 'Escribe un caso ficticio de entre 12 y 1200 caracteres.';
+                error.hidden = false;
+                return;
+            }
+            const controller = new AbortController();
+            peticionOrientacion = controller;
+            const timeout = setTimeout(() => controller.abort(), 25000);
+            boton.disabled = true;
+            boton.querySelector('span').textContent = 'Consultando…';
+            estado.textContent = 'Consultando el catálogo de especialidades…';
+            boton.setAttribute('aria-busy', 'true');
+            let analisisFallido = false;
+            try {
+                const respuesta = await fetch('${pageContext.request.contextPath}/paciente/orientacion', {
+                    method: 'POST', credentials: 'same-origin', signal: controller.signal,
+                    headers: {Accept: 'application/json', 'Content-Type': 'application/x-www-form-urlencoded'},
+                    body: new URLSearchParams({relato: texto, casoFicticio: 'true', csrfToken: document.querySelector('meta[name="csrf-token"]').content})
+                });
+                const contenido = await respuesta.json();
+                if (peticionOrientacion !== controller) return;
+                if (!respuesta.ok) throw new Error(contenido.message || 'No se pudo obtener la sugerencia.');
+                const resultado = contenido.data;
+                if (resultado.tipo === 'ACLARAR') { estado.textContent = resultado.explicacion; document.getElementById('aiElegirManual').hidden = false; return; }
+                const opciones = [...document.getElementById('selectEspecialidad').options];
+                if (resultado.tipo !== 'SUGERENCIA' || !opciones.some(o => o.value === String(resultado.idEspecialidad))) throw new Error('La especialidad no está disponible en este catálogo. Elige manualmente.');
+                sugerenciaOrientacion = resultado;
+                document.getElementById('aiEspecialidadNombre').textContent = resultado.especialidad;
+                document.getElementById('aiExplicacionTexto').textContent = resultado.explicacion;
+                document.getElementById('aiBuscarHorariosTexto').textContent = 'Buscar horarios de ' + resultado.especialidad;
+                const motivoResultado = document.getElementById('aiMotivoResultado');
+                motivoResultado.hidden = !resultado.motivoConsulta;
+                motivoResultado.textContent = resultado.motivoConsulta ? 'Motivo sugerido: ' + resultado.motivoConsulta : '';
+                estado.textContent = resultado.proveedor === 'EJEMPLO_LOCAL' ? 'Ejemplo local predefinido; Gemini no fue consultado.' : 'Especialidad sugerida con IA.';
                 document.getElementById('aiResultadoBox').style.display = 'block';
-                btn.innerHTML = '<i data-lucide="sparkles" style="width: 16px; height: 16px;"></i> <span>Analizar síntomas con IA</span>';
-                btn.disabled = false;
-                lucide.createIcons();
-            }, 550);
-        }
-
-        function clasificarSintomasIA(texto) {
-            if (texto.includes('pecho') || texto.includes('cardio') || texto.includes('presion') || texto.includes('palpitacion') || texto.includes('corazon')) {
-                return {
-                    especialidad: 'Cardiología',
-                    idEsp: '1',
-                    prioridad: 'Alta',
-                    explicacion: 'Se reportan síntomas de molestia torácica o palpitaciones. Recomendamos evaluación especializada con Cardiología.'
-                };
-            } else if (texto.includes('cabeza') || texto.includes('mareo') || texto.includes('migra') || texto.includes('vertigo') || texto.includes('neurol')) {
-                return {
-                    especialidad: 'Neurología',
-                    idEsp: '2',
-                    prioridad: 'Media',
-                    explicacion: 'Los episodios de cefalea y mareos corresponden al área de Neurología para un diagnóstico certero.'
-                };
-            } else if (texto.includes('rodilla') || texto.includes('hueso') || texto.includes('fractura') || texto.includes('espalda') || texto.includes('lumbar') || texto.includes('articular')) {
-                return {
-                    especialidad: 'Traumatología',
-                    idEsp: '4',
-                    prioridad: 'Media',
-                    explicacion: 'Las molestias osteoarticulares deben ser valoradas por Traumatología para determinar tratamiento o exámenes auxiliares.'
-                };
-            } else if (texto.includes('piel') || texto.includes('roncha') || texto.includes('mancha') || texto.includes('picaz') || texto.includes('acne')) {
-                return {
-                    especialidad: 'Dermatología',
-                    idEsp: '5',
-                    prioridad: 'Baja',
-                    explicacion: 'Las manifestaciones cutáneas sugieren consulta dermatológica para indicación de terapia tópica.'
-                };
-            } else if (texto.includes('estomago') || texto.includes('gast') || texto.includes('ardor') || texto.includes('reflujo') || texto.includes('vomito')) {
-                return {
-                    especialidad: 'Gastroenterología',
-                    idEsp: '6',
-                    prioridad: 'Media',
-                    explicacion: 'Los síntomas gástricos corresponden a Gastroenterología para evaluar reflujo o mucosa estomacal.'
-                };
-            } else {
-                return {
-                    especialidad: 'Medicina General',
-                    idEsp: '3',
-                    prioridad: 'Media',
-                    explicacion: 'Para evaluación médica inicial y descarte, Medicina General brindará un diagnóstico y plan de atención.'
-                };
+                document.getElementById('aiFormulario').hidden = true;
+            } catch (fallo) {
+                if (peticionOrientacion !== controller) return;
+                error.textContent = fallo instanceof Error && fallo.name === 'Error' ? fallo.message : 'No se pudo completar la consulta. Puedes elegir la especialidad manualmente.';
+                error.hidden = false;
+                estado.textContent = '';
+                analisisFallido = true;
+                document.getElementById('aiElegirManual').hidden = false;
+            } finally {
+                clearTimeout(timeout);
+                if (peticionOrientacion === controller) {
+                    peticionOrientacion = null;
+                    boton.disabled = false;
+                    boton.setAttribute('aria-busy', 'false');
+                    boton.querySelector('span').textContent = analisisFallido ? 'Reintentar análisis' : 'Analizar síntomas';
+                }
             }
         }
 
         function aplicarRecomendacionIA() {
-            document.getElementById('aiTriagePanel').style.display = 'none';
-            document.getElementById('wizardFlowSection').style.display = 'block';
-            document.getElementById('pageMainTitle').textContent = 'Buscar cita';
-            document.getElementById('pageMainSubtitle').textContent = 'Busca los horarios disponibles según tus preferencias';
-            const btnVolver = document.getElementById('btnVolverModos');
-            if (btnVolver) btnVolver.style.display = 'inline-flex';
-            
-            const selectEsp = document.getElementById('selectEspecialidad');
-            if (selectEsp) {
-                let found = false;
-                for (let i = 0; i < selectEsp.options.length; i++) {
-                    const opt = selectEsp.options[i];
-                    if (opt.text.toLowerCase().includes(state.especialidadNombre.toLowerCase())) {
-                        selectEsp.selectedIndex = i;
-                        state.especialidadId = opt.value;
-                        found = true;
-                        break;
-                    }
-                }
-                if (!found && selectEsp.options.length > 1) {
-                    selectEsp.selectedIndex = 1;
-                    state.especialidadId = selectEsp.value;
-                }
-            }
-
-            actualizarMedicosPorEspecialidad();
-            mostrarPaso(1);
-            lucide.createIcons();
+            if (!sugerenciaOrientacion) return;
+            const select = document.getElementById('selectEspecialidad');
+            const opcion = [...select.options].find(o => o.value === String(sugerenciaOrientacion.idEspecialidad));
+            if (!opcion) { invalidarOrientacion(); return; }
+            select.value = opcion.value;
+            state.especialidadId = opcion.value;
+            state.especialidadNombre = opcion.textContent;
+            const motivo = ClinicaMotivos.sugerido(catalogoMotivos, opcion.value, sugerenciaOrientacion.idMotivo);
+            state.motivo = motivo ? String(motivo.idMotivo) : '';
+            iniciarModoDirecto('IA');
         }
 
         // --- CONTROL DEL STEPPER Y PANTALLAS ---
@@ -972,18 +822,14 @@
                 const pillSede = document.getElementById('pillSede');
                 if (pillSede) pillSede.textContent = state.sedeNombre || 'Sede San Borja';
                 const pillEsp = document.getElementById('pillEspecialidad');
-                if (pillEsp) pillEsp.textContent = state.especialidadNombre || 'Cardiología';
+                if (pillEsp) pillEsp.textContent = state.especialidadNombre || 'Especialidad por confirmar';
                 const pillTurno = document.getElementById('pillTurno');
                 if (pillTurno) {
                     pillTurno.textContent = state.turno === 'MANANA' ? 'Turno mañana' : (state.turno === 'TARDE' ? 'Turno tarde' : 'Indiferente');
                 }
 
-                const cupos = renderizarSemana();
-                if (cupos === 0) {
-                    renderizarSinCupos();
-                } else {
-                    cargarGrillaHorarios();
-                }
+                renderizarSemana();
+                void cargarGrillaHorarios();
             } else if (num === 3) {
                 if (titleEl) titleEl.textContent = 'Finalizar reserva';
                 if (subEl) subEl.textContent = 'Revisa los datos y finaliza antes de que termine el tiempo';
@@ -1020,6 +866,7 @@
         }
 
         function volverAPaso2() {
+            liberarRetencionActual();
             mostrarPaso(2);
         }
 
@@ -1054,7 +901,6 @@
             document.getElementById('inputFecha').value = today;
             const firstPill = document.querySelector('.turno-pill');
             if (firstPill) seleccionarTurno(firstPill, 'MANANA');
-            cachedMedicos = null;
         }
 
         function actualizarEspecialidadYMotivos() {
@@ -1066,144 +912,69 @@
             selMotivo.innerHTML = '<option value="">Selecciona un motivo</option>';
 
             const espVal = selEsp.value;
+            if (state.modo === 'IA' && sugerenciaOrientacion && String(sugerenciaOrientacion.idEspecialidad) !== espVal) {
+                state.modo = 'DIRECTO';
+                document.getElementById('aiSugerenciaBuscador').hidden = true;
+            }
+            state.especialidadId = espVal;
             if (!espVal) {
+                state.motivo = '';
+                actualizarMotivoElegido();
                 if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
                 return;
             }
 
-            const espNombre = selEsp.options[selEsp.selectedIndex] ? selEsp.options[selEsp.selectedIndex].text.toLowerCase() : '';
-
-            let motivos = [];
-            if (espNombre.includes('cardio')) {
-                motivos = [
-                    'Dolor o presión en el pecho',
-                    'Control de hipertensión arterial',
-                    'Palpitaciones o arritmias',
-                    'Evaluación de riesgo quirúrgico',
-                    'Chequeo preventivo cardiológico'
-                ];
-            } else if (espNombre.includes('neuro')) {
-                motivos = [
-                    'Dolores de cabeza o migraña recurrente',
-                    'Episodios de mareo o vértigo',
-                    'Trastornos del sueño o insomnio',
-                    'Control de neuralgia o ciática'
-                ];
-            } else if (espNombre.includes('trauma')) {
-                motivos = [
-                    'Dolor lumbar o en la columna',
-                    'Lesión en rodilla o meniscos',
-                    'Dolor en hombro o articulaciones',
-                    'Evaluación de fractura o esguince'
-                ];
-            } else if (espNombre.includes('derma')) {
-                motivos = [
-                    'Alergia, urticaria o picazón en la piel',
-                    'Revisión de lunares o manchas',
-                    'Acné o rosácea',
-                    'Caída de cabello o alopecia'
-                ];
-            } else if (espNombre.includes('gastro')) {
-                motivos = [
-                    'Dolor abdominal o cólicos',
-                    'Gastritis, acidez o reflujo',
-                    'Digestión pesada o náuseas',
-                    'Evaluación para endoscopía'
-                ];
-            } else {
-                motivos = [
-                    'Consulta médica general',
-                    'Chequeo médico preventivo anual',
-                    'Revisión de análisis de laboratorio',
-                    'Evaluación de fiebre o malestar general'
-                ];
-            }
-
-            motivos.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m;
-                opt.textContent = m;
-                selMotivo.appendChild(opt);
-            });
+            ClinicaMotivos.poblar(selMotivo,catalogoMotivos,espVal,state.motivo);
+            state.motivo=selMotivo.value;
+            actualizarMotivoElegido();
 
             actualizarMedicosPorEspecialidad();
         }
 
-        function normalizarNombreMedico(rawNombre) {
-            if (!rawNombre) return 'Dr. Médico Especialista';
-            let n = rawNombre.trim();
-            if (n.startsWith('Dr.') || n.startsWith('Dra.')) return n;
-            const nLower = n.toLowerCase();
-            const esDra = nLower.startsWith('elena') || nLower.startsWith('andrea') || 
-                          nLower.startsWith('mariana') || nLower.startsWith('marina') || 
-                          nLower.startsWith('maria') || nLower.startsWith('valeria') || 
-                          nLower.startsWith('claudia') || nLower.startsWith('rosa') || 
-                          nLower.startsWith('patricia') || nLower.startsWith('beatriz') ||
-                          nLower.startsWith('sofia') || nLower.startsWith('lucia') ||
-                          nLower.startsWith('carmen');
-            return (esDra ? 'Dra. ' : 'Dr. ') + n;
+        function actualizarMotivoElegido() {
+            const seleccionado = document.getElementById('selectMotivo');
+            state.motivo = seleccionado?.value || '';
+            const sugerido = state.modo === 'IA' && sugerenciaOrientacion && String(sugerenciaOrientacion.idMotivo) === state.motivo;
+            document.getElementById('motivoOrientacionAyuda').textContent = sugerido
+                ? 'Sugerido por la orientación. Puedes cambiarlo.'
+                : 'Elige el motivo de la especialidad que mejor describa la consulta.';
         }
 
-        function actualizarMedicosPorEspecialidad(preIdMed) {
-            const selEsp = document.getElementById('selectEspecialidad');
-            const espId = selEsp ? selEsp.value : '';
-            const selSede = document.getElementById('selectSede') ? document.getElementById('selectSede').value : '';
-            const selMed = document.getElementById('selectMedico');
+        let medicosRequest = 0;
 
-            if (!espId) {
-                if (selMed) selMed.innerHTML = '<option value="0">Cualquier médico</option>';
+        async function actualizarMedicosPorEspecialidad(preIdMed) {
+            const version = ++medicosRequest;
+            const espId = document.getElementById('selectEspecialidad')?.value;
+            const sedeId = document.getElementById('selectSede')?.value;
+            const select = document.getElementById('selectMedico');
+            if (!select) return;
+            llenarOpcionesMedicos(select, [], null, 'Consultando médicos…');
+            if (!espId || espId === '0') {
+                llenarOpcionesMedicos(select, [], null, 'Selecciona una especialidad');
                 return;
             }
-
-            let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId;
-            if (selSede && selSede !== '0') {
-                url += '&idSede=' + selSede;
+            try {
+                const medicos = await ClinicaCatalogos.medicos('${pageContext.request.contextPath}', espId, sedeId);
+                if (version !== medicosRequest) return;
+                llenarOpcionesMedicos(select, medicos, preIdMed);
+            } catch (error) {
+                if (version === medicosRequest) llenarOpcionesMedicos(select, [], null, error.message);
             }
-
-            fetch(url + '&_t=' + Date.now())
-                .then(res => res.json())
-                .then(data => {
-                    if (selMed) {
-                        if (!data || data.length === 0) {
-                            fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + espId + '&_t=' + Date.now())
-                                .then(r => r.json())
-                                .then(fallbackData => {
-                                    llenarOpcionesMedicos(selMed, fallbackData, preIdMed);
-                                })
-                                .catch(() => {
-                                    llenarOpcionesMedicos(selMed, [], preIdMed);
-                                });
-                        } else {
-                            llenarOpcionesMedicos(selMed, data, preIdMed);
-                        }
-                    }
-                })
-                .catch(err => {
-                    console.log('Carga de médicos local', err);
-                    if (selMed) {
-                        llenarOpcionesMedicos(selMed, [], preIdMed);
-                    }
-                });
         }
 
-        function llenarOpcionesMedicos(selMed, data, preIdMed) {
-            selMed.innerHTML = '<option value="0">Cualquier médico</option>';
-            if (!data || data.length === 0) {
-                data = [
-                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís" },
-                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales" },
-                    { idMedico: 3, nombreCompleto: "Dr. Carlos Mendoza Valdivia" }
-                ];
-            }
-            data.forEach(m => {
-                const opt = document.createElement('option');
-                opt.value = m.idMedico || m.id;
-                const nombre = m.nombreCompleto || m.nombres || '';
-                opt.textContent = normalizarNombreMedico(nombre);
-                if (preIdMed && String(opt.value) === String(preIdMed)) {
-                    opt.selected = true;
-                }
-                selMed.appendChild(opt);
+        function llenarOpcionesMedicos(select, medicos, preIdMed, message) {
+            select.replaceChildren();
+            const placeholder = document.createElement('option');
+            placeholder.value = '0';
+            placeholder.textContent = message || (medicos.length ? 'Cualquier médico' : 'Sin médicos para estos filtros');
+            select.appendChild(placeholder);
+            select.disabled = medicos.length === 0;
+            medicos.forEach(medico => {
+                const option = document.createElement('option');
+                option.value = medico.idMedico;
+                option.textContent = medico.nombreCompleto || 'Nombre no registrado';
+                option.selected = String(medico.idMedico) === String(preIdMed);
+                select.appendChild(option);
             });
         }
 
@@ -1237,8 +1008,11 @@
             state.fecha = (fechaInput && fechaInput.value) ? fechaInput.value : new Date().toISOString().split('T')[0];
             const selMotivo = document.getElementById('selectMotivo');
             state.motivo = selMotivo ? selMotivo.value : '';
+            if (!state.motivo) {
+                selMotivo?.reportValidity();
+                return;
+            }
 
-            cachedMedicos = null;
             mostrarPaso(2);
         }
 
@@ -1288,122 +1062,70 @@
         function renderizarSemana() {
             const grid = document.getElementById('weekDaysGrid');
             const label = document.getElementById('weekRangeLabel');
-            if (!grid || !label) return 0;
-
-            grid.innerHTML = '';
-
-            let baseDate = parsearFechaLocal(state.fecha);
-            // Sincronizar state.fecha al formato canónico ISO
-            state.fecha = formatearIsoDate(baseDate);
-
-            let dayOfWeek = baseDate.getDay();
-            let diffToMonday = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-            
-            let monday = new Date(baseDate.getFullYear(), baseDate.getMonth(), baseDate.getDate() + diffToMonday, 12, 0, 0);
-            let sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 12, 0, 0);
-
-            const meses = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
-            const mesNombre = meses[sunday.getMonth()];
-            label.textContent = 'Semana del ' + monday.getDate() + ' al ' + sunday.getDate() + ' de ' + mesNombre + ' de ' + sunday.getFullYear();
-
-            const nombresDias = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
-            const cuposSimulados = [4, 0, 3, 6, 1, 2, 0];
-
-            let cuposSeleccionados = 0;
-
-            for (let i = 0; i < 7; i++) {
-                let d = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + i, 12, 0, 0);
-                const isoDate = formatearIsoDate(d);
-
-                const esActivo = isoDate === state.fecha;
-                const esDomingo = i === 6;
-                const cupos = esDomingo ? 0 : cuposSimulados[i];
-
-                if (esActivo) {
-                    cuposSeleccionados = cupos;
-                }
-
-                let cuposTexto = cupos + ' cupos';
-                let cuposClass = 'day-cupos';
-                if (esDomingo) {
-                    cuposTexto = 'No atención';
-                    cuposClass = 'day-cupos none';
-                } else if (cupos === 0) {
-                    cuposTexto = 'Sin cupos';
-                    cuposClass = 'day-cupos none';
-                } else if (cupos === 1) {
-                    cuposTexto = '1 cupo';
-                }
-
+            if (!grid || !label) return;
+            grid.replaceChildren();
+            const date = parsearFechaLocal(state.fecha);
+            state.fecha = formatearIsoDate(date);
+            const offset = date.getDay() === 0 ? -6 : 1 - date.getDay();
+            const monday = new Date(date.getFullYear(), date.getMonth(), date.getDate() + offset, 12);
+            const sunday = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 6, 12);
+            label.textContent = 'Semana del ' + monday.getDate() + ' al '
+                + sunday.toLocaleDateString('es-PE', {day: 'numeric', month: 'long', year: 'numeric'});
+            const labels = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'];
+            labels.forEach((name, index) => {
+                const day = new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + index, 12);
+                const iso = formatearIsoDate(day);
                 const card = document.createElement('div');
-                card.className = 'day-card-item' + (esActivo ? ' active' : '') + (esDomingo ? ' disabled' : '');
-                card.innerHTML = 
-                    '<div class="day-name">' + nombresDias[i] + '</div>' +
-                    '<div class="day-number">' + d.getDate() + '</div>' +
-                    '<div class="' + cuposClass + '">' + cuposTexto + '</div>';
-
-                if (!esDomingo) {
-                    card.onclick = function() {
-                        seleccionarDiaSemana(isoDate, cupos);
-                    };
-                }
-
+                card.className = 'day-card-item' + (iso === state.fecha ? ' active' : '');
+                const title = document.createElement('div');
+                title.className = 'day-name';
+                title.textContent = name;
+                const number = document.createElement('div');
+                number.className = 'day-number';
+                number.textContent = day.getDate();
+                const count = document.createElement('div');
+                count.className = 'day-cupos';
+                count.textContent = 'Consultando…';
+                count.dataset.fecha=iso;
+                card.append(title, number, count);
+                card.onclick = () => seleccionarDiaSemana(iso);
                 grid.appendChild(card);
-            }
-
-            return cuposSeleccionados;
+            });
+            void actualizarCuposSemana(formatearIsoDate(monday));
         }
 
-        function seleccionarDiaSemana(fechaIso, cupos) {
+        let consultaSemana;
+        async function actualizarCuposSemana(desde){
+            consultaSemana?.abort();
+            const solicitud=new AbortController();consultaSemana=solicitud;
+            const turno=state.turno;
+            try{
+                const dias=await ClinicaCatalogos.semana('${pageContext.request.contextPath}',state.especialidadId,state.sedeId,state.medicoId,desde,solicitud.signal);
+                if(consultaSemana!==solicitud)return;
+                const porFecha=new Map(dias.map(d=>[d.fecha,d]));
+                document.querySelectorAll('#weekDaysGrid .day-cupos').forEach(badge=>{
+                    const dia=porFecha.get(badge.dataset.fecha);
+                    if(!dia){badge.textContent='Sin verificar';return;}
+                    const total=turno==='MANANA'?dia.manana:(turno==='TARDE'?dia.tarde:dia.manana+dia.tarde);
+                    badge.textContent=total+(total===1?' cupo':' cupos');
+                });
+            }catch(error){
+                if(consultaSemana!==solicitud||error.name==='AbortError')return;
+                document.querySelectorAll('#weekDaysGrid .day-cupos').forEach(badge=>{badge.textContent='Sin verificar';});
+            }
+        }
+
+        function seleccionarDiaSemana(fechaIso) {
             state.fecha = fechaIso;
             state.hora = '';
-            state.medicoId = '0';
             renderizarSemana();
-            if (cupos === 0) {
-                renderizarSinCupos();
-            } else {
-                cargarGrillaHorarios();
-            }
+            void cargarGrillaHorarios();
         }
 
         function navegarSemana(delta) {
-            let cur = parsearFechaLocal(state.fecha);
-            cur.setDate(cur.getDate() + (delta * 7));
-            state.fecha = formatearIsoDate(cur);
-            state.hora = '';
-            state.medicoId = '0';
-            const cupos = renderizarSemana();
-            if (cupos === 0) {
-                renderizarSinCupos();
-            } else {
-                cargarGrillaHorarios();
-            }
-        }
-
-        function renderizarSinCupos() {
-            const container = document.getElementById('doctorResultsContainer');
-            if (!container) return;
-
-            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
-            state.hora = '';
-            state.medicoId = '0';
-
-            container.innerHTML = 
-                '<div style="background: #ffffff; border: 1.5px dashed #cbd5e1; border-radius: 16px; padding: 48px 24px; text-align: center; margin-bottom: 16px; box-shadow: 0 2px 10px rgba(0,0,0,0.02);">' +
-                    '<div style="width: 58px; height: 58px; border-radius: 50%; background: #fef2f2; color: #ef4444; display: inline-flex; align-items: center; justify-content: center; margin-bottom: 16px;">' +
-                        '<i data-lucide="calendar-x" style="width: 30px; height: 30px;"></i>' +
-                    '</div>' +
-                    '<h3 style="font-size: 18px; font-weight: 700; color: #0f172a; margin-bottom: 8px;">No hay citas disponibles para este día</h3>' +
-                    '<p style="font-size: 14px; color: #64748b; max-width: 520px; margin: 0 auto 20px auto; line-height: 1.5;">' +
-                        'Para el <strong>' + headerTurnoTexto + '</strong> no quedan cupos de atención médica libres. Por favor selecciona otro día con cupos en el calendario semanal o únete a la lista de espera para avisarte si se libera una cita.' +
-                    '</p>' +
-                    '<a href="${pageContext.request.contextPath}/paciente/lista-espera" class="btn-waitlist-action" style="display: inline-flex; justify-content: center; margin: 0 auto;">' +
-                        '<i data-lucide="clock" style="width: 16px; height: 16px; margin-right: 8px;"></i>' +
-                        'Registrarme en lista de espera' +
-                    '</a>' +
-                '</div>';
-            
-            lucide.createIcons();
+            const day = parsearFechaLocal(state.fecha);
+            day.setDate(day.getDate() + delta * 7);
+            seleccionarDiaSemana(formatearIsoDate(day));
         }
 
         function formatearCabeceraTurno(fechaIso, turno) {
@@ -1418,205 +1140,124 @@
         }
 
         // --- CARGA Y RENDERIZADO DE MÉDICOS Y HORARIOS ---
-        let cachedMedicos = null;
+        let grillaRequest = 0;
 
-        function generarHorariosDoctor(idMed, fechaIso, turno) {
-            if (turno === 'TARDE') {
-                return (idMed % 2 === 0) 
-                    ? ["14:00", "14:40", "15:20", "16:00", "16:40"]
-                    : ["14:20", "15:00", "15:40", "16:20", "17:00"];
-            } else if (turno === 'MANANA') {
-                return (idMed % 2 === 0)
-                    ? ["08:00", "08:40", "09:20", "10:00", "10:40"]
-                    : ["08:30", "09:00", "09:40", "10:20", "11:00"];
-            } else {
-                // Indiferente
-                return (idMed % 2 === 0)
-                    ? ["08:00", "08:40", "09:20", "14:00", "14:40", "15:20"]
-                    : ["08:30", "09:10", "10:00", "14:20", "15:00", "16:00"];
-            }
-        }
-
-        function actualizarHorariosInPlace(medicos) {
-            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
-            state.hora = '';
-            state.medicoId = '0';
-
-            medicos.forEach(med => {
-                const idMed = med.idMedico || med.id;
-                const card = document.getElementById('docScheduleCard_' + idMed);
-                if (!card) return;
-
-                // Actualizar texto del turno sin saltos de altura ni recarga del contenedor
-                const kicker = card.querySelector('.doc-turn-kicker');
-                if (kicker) kicker.textContent = headerTurnoTexto;
-
-                // Desactivar botón de reserva
-                const btnRes = document.getElementById('btnReservar_' + idMed);
-                if (btnRes) btnRes.classList.remove('active-card');
-
-                // Actualizar chips de horarios directamente sin parpadeos
-                const wrap = document.getElementById('slotsWrap_' + idMed);
-                if (wrap) {
-                    const rawName = med.nombreCompleto || med.nombres || '';
-                    const nombreMed = normalizarNombreMedico(rawName);
-                    const horas = generarHorariosDoctor(idMed, state.fecha, state.turno);
-
-                    wrap.innerHTML = '';
-                    horas.forEach(h => {
-                        const btn = document.createElement('button');
-                        btn.type = 'button';
-                        btn.className = 'slot-pill-btn';
-                        btn.textContent = h;
-                        btn.setAttribute('data-med', idMed);
-                        btn.setAttribute('data-hora', h);
-                        btn.onclick = function() {
-                            seleccionarSlot(btn, idMed, nombreMed, h);
-                        };
-                        wrap.appendChild(btn);
-                    });
-                }
-            });
-        }
-
-        function cargarGrillaHorarios() {
+        async function cargarGrillaHorarios() {
             const container = document.getElementById('doctorResultsContainer');
             if (!container) return;
-
-            // Si ya existen tarjetas en el DOM y tenemos la lista de médicos en caché, actualizar in-place
-            const existingCards = container.querySelectorAll('.doctor-schedule-card');
-            if (existingCards.length > 0 && cachedMedicos && cachedMedicos.length > 0) {
-                actualizarHorariosInPlace(cachedMedicos);
-                return;
-            }
-
-            // Si ya tenemos los médicos en memoria (ej. al volver de un día 'Sin cupos')
-            if (cachedMedicos && cachedMedicos.length > 0) {
-                renderizarMedicosConHorarios(cachedMedicos);
-                return;
-            }
-
-            // Carga inicial para la especialidad / sede
-            container.innerHTML = '<p style="text-align: center; color: var(--text-gray); padding: 32px;">Consultando disponibilidad de médicos y turnos...</p>';
-
-            let url = '${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId;
-            if (state.sedeId && state.sedeId !== '0') {
-                url += '&idSede=' + state.sedeId;
-            }
-
-            fetch(url + '&_t=' + Date.now())
-                .then(res => res.json())
-                .then(medicos => {
-                    if (!medicos || medicos.length === 0) {
-                        fetch('${pageContext.request.contextPath}/api/medicos?idEspecialidad=' + state.especialidadId + '&_t=' + Date.now())
-                            .then(r => r.json())
-                            .then(fallbackMedicos => {
-                                cachedMedicos = (fallbackMedicos && fallbackMedicos.length > 0) ? fallbackMedicos : [
-                                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                                ];
-                                renderizarMedicosConHorarios(cachedMedicos);
-                            })
-                            .catch(() => {
-                                cachedMedicos = [
-                                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                                ];
-                                renderizarMedicosConHorarios(cachedMedicos);
-                            });
-                    } else {
-                        cachedMedicos = medicos;
-                        renderizarMedicosConHorarios(cachedMedicos);
-                    }
-                })
-                .catch(() => {
-                    cachedMedicos = [
-                        { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                        { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                    ];
-                    renderizarMedicosConHorarios(cachedMedicos);
-                });
-        }
-
-        function renderizarMedicosConHorarios(medicos) {
-            const container = document.getElementById('doctorResultsContainer');
-            container.innerHTML = '';
-
-            // Limpiar selección previa
+            const version = ++grillaRequest;
+            const fecha = state.fecha;
+            const turno = state.turno;
+            const elegido = state.medicoId;
             state.hora = '';
-
-            if (!medicos || medicos.length === 0) {
-                medicos = [
-                    { idMedico: 1, nombreCompleto: "Dr. Fernando Solís", cmp: "CMP 045218", consultorio: "Consultorio 304" },
-                    { idMedico: 2, nombreCompleto: "Dra. Andrea Morales", cmp: "CMP 051367", consultorio: "Consultorio 306" }
-                ];
-            }
-
-            if (state.medicoId && state.medicoId !== '0') {
-                const filtrados = medicos.filter(m => String(m.idMedico || m.id) === String(state.medicoId));
-                if (filtrados.length > 0) medicos = filtrados;
-            }
-
-            const headerTurnoTexto = formatearCabeceraTurno(state.fecha, state.turno);
-
-            medicos.forEach((med, idx) => {
-                const idMed = med.idMedico || med.id || (idx + 1);
-                const rawName = med.nombreCompleto || med.nombres || 'Dr. Médico Especialista';
-                const nombreMed = normalizarNombreMedico(rawName);
-                const cmp = med.cmp || med.CMP || ('CMP 0' + (45000 + idx * 614));
-                const consultorio = med.consultorio || ('Consultorio ' + (302 + idx * 2));
-                const sedeNombre = state.sedeNombre && state.sedeNombre !== '0' ? state.sedeNombre : 'Sede San Borja';
-
-                // Iniciales limpias
-                const nombreLimpio = nombreMed.replace(/^Dr\.\s*|Dra\.\s*/i, '').trim();
-                const partes = nombreLimpio.split(/\s+/);
-                const initials = (partes.length >= 2 ? partes[0][0] + partes[1][0] : partes[0].substring(0, 2)).toUpperCase();
-
-                // Horarios generados sincrónicamente (sin saltos visuales ni flashes)
-                const horas = generarHorariosDoctor(idMed, state.fecha, state.turno);
-
-                const card = document.createElement('div');
-                card.className = 'doctor-schedule-card';
-                card.id = 'docScheduleCard_' + idMed;
-                card.setAttribute('data-cmp', cmp);
-                card.setAttribute('data-consultorio', consultorio);
-
-                let slotsHtml = '';
-                horas.forEach((h) => {
-                    slotsHtml += '<button type="button" class="slot-pill-btn" ' +
-                                 'data-med="' + idMed + '" data-hora="' + h + '" ' +
-                                 'onclick="seleccionarSlot(this, ' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\', \'' + h + '\')">' +
-                                 h +
-                                 '</button>';
+            const currentBadge = document.querySelector('#weekDaysGrid .day-card-item.active .day-cupos');
+            if (currentBadge) currentBadge.textContent = 'Consultando…';
+            mostrarEstadoCatalogo(container, 'Consultando médicos y horarios publicados…');
+            try {
+                const medicos = await ClinicaCatalogos.medicos('${pageContext.request.contextPath}',
+                    state.especialidadId, state.sedeId);
+                const seleccionados = medicos.filter(medico => !elegido || elegido === '0' || String(medico.idMedico) === String(elegido));
+                const agendas = await Promise.all(seleccionados.map(async medico => ({
+                    medico, horas: await ClinicaCatalogos.horarios('${pageContext.request.contextPath}', medico.idMedico, fecha)
+                })));
+                if (version !== grillaRequest) return;
+                container.replaceChildren();
+                let total = 0;
+                const disponibles = agendas.map(agenda => ({
+                    medico: agenda.medico,
+                    horas: agenda.horas.filter(hora => coincideTurno(hora, turno)).sort()
+                })).filter(agenda => agenda.horas.length);
+                disponibles.sort((a, b) => a.horas[0].localeCompare(b.horas[0])
+                    || Number(a.medico.idMedico) - Number(b.medico.idMedico));
+                disponibles.forEach(agenda => {
+                    const horas = agenda.horas;
+                    if (horas.length) {
+                        total += horas.length;
+                        container.appendChild(tarjetaMedico(agenda.medico, horas, fecha, turno));
+                    }
                 });
-
-                card.innerHTML = 
-                    '<div class="doc-card-profile-col">' +
-                        '<div class="doc-avatar-circle">' + initials + '</div>' +
-                        '<div class="doc-meta-info">' +
-                            '<h4 class="doc-name">' + nombreMed + '</h4>' +
-                            '<div class="doc-spec-cmp">' + cmp + ' · ' + (state.especialidadNombre || 'Cardiología') + '</div>' +
-                            '<div class="doc-location">' +
-                                '<i data-lucide="map-pin" style="width: 13px; height: 13px;"></i>' +
-                                '<span>' + sedeNombre + ' · ' + consultorio + '</span>' +
-                            '</div>' +
-                        '</div>' +
-                    '</div>' +
-                    '<div class="doc-card-slots-col">' +
-                        '<div class="doc-turn-kicker">' + headerTurnoTexto + '</div>' +
-                        '<div class="doc-slots-wrap" id="slotsWrap_' + idMed + '">' + slotsHtml + '</div>' +
-                    '</div>' +
-                    '<div class="doc-card-action-col">' +
-                        '<button type="button" class="btn-reservar-slot" id="btnReservar_' + idMed + '" onclick="reservarConDoctor(' + idMed + ', \'' + nombreMed.replace(/'/g, "\\'") + '\')">' +
-                            'Reservar cita' +
-                        '</button>' +
-                    '</div>';
-
-                container.appendChild(card);
-            });
-
-            lucide.createIcons();
+                const badge = document.querySelector('#weekDaysGrid .day-card-item.active .day-cupos');
+                if (badge) badge.textContent = total + (total === 1 ? ' cupo' : ' cupos');
+                if (!total) mostrarEstadoCatalogo(container, 'No hay horarios publicados disponibles para estos filtros y fecha.', true);
+                lucide.createIcons();
+            } catch (error) {
+                if (version === grillaRequest) {
+                    if (currentBadge) currentBadge.textContent = 'Sin verificar';
+                    mostrarEstadoCatalogo(container, error.message);
+                }
+            }
         }
+
+        function coincideTurno(hora, turno) {
+            const hour = Number(hora.split(':')[0]);
+            if (turno === 'MANANA') return hour < 13;
+            if (turno === 'TARDE') return hour >= 13;
+            return true;
+        }
+
+        function mostrarEstadoCatalogo(container, message, empty = false) {
+            container.replaceChildren();
+            const text = document.createElement('p');
+            text.className = 'catalogo-estado';
+            text.setAttribute('role', 'alert');
+            text.textContent = message;
+            container.appendChild(text);
+            if (empty) {
+                const waiting = document.createElement('a');
+                waiting.href = '${pageContext.request.contextPath}/paciente/lista-espera';
+                waiting.className = 'btn-waitlist-action';
+                waiting.textContent = 'Registrarme en lista de espera';
+                container.appendChild(waiting);
+            }
+        }
+
+        function catalogoElemento(tag, className, text) {
+            const element = document.createElement(tag);
+            element.className = className;
+            if (text !== undefined) element.textContent = text;
+            return element;
+        }
+
+        function tarjetaMedico(medico, horas, fecha, turno) {
+            const id = medico.idMedico;
+            const nombre = medico.nombreCompleto || 'Nombre no registrado';
+            const cmp = medico.cmp || 'CMP no registrado';
+            const card = catalogoElemento('div', 'doctor-schedule-card');
+            card.id = 'docScheduleCard_' + id;
+            card.setAttribute('data-cmp', cmp);
+            card.setAttribute('data-consultorio', 'Consultorio por confirmar');
+            const profile = catalogoElemento('div', 'doc-card-profile-col');
+            const initials = nombre.split(/\s+/).slice(0, 2).map(part => part[0] || '').join('').toUpperCase();
+            profile.appendChild(catalogoElemento('div', 'doc-avatar-circle', initials));
+            const info = catalogoElemento('div', 'doc-meta-info');
+            info.append(catalogoElemento('h4', 'doc-name', nombre),
+                catalogoElemento('div', 'doc-spec-cmp', cmp + ' · ' + state.especialidadNombre),
+                catalogoElemento('div', 'doc-location', state.sedeNombre || 'Sede seleccionada'));
+            profile.appendChild(info);
+            const slots = catalogoElemento('div', 'doc-card-slots-col');
+            slots.appendChild(catalogoElemento('div', 'doc-turn-kicker', formatearCabeceraTurno(fecha, turno)));
+            const wrapper = catalogoElemento('div', 'doc-slots-wrap');
+            wrapper.id = 'slotsWrap_' + id;
+            horas.forEach(hora => {
+                const button = catalogoElemento('button', 'slot-pill-btn', hora);
+                button.type = 'button';
+                button.setAttribute('data-med', id);
+                button.setAttribute('data-hora', hora);
+                button.onclick = () => seleccionarSlot(button, id, nombre, hora);
+                wrapper.appendChild(button);
+            });
+            slots.appendChild(wrapper);
+            const actions = catalogoElemento('div', 'doc-card-action-col');
+            const reserve = catalogoElemento('button', 'btn-reservar-slot', 'Reservar cita');
+            reserve.id = 'btnReservar_' + id;
+            reserve.type = 'button';
+            reserve.onclick = () => reservarConDoctor(id, nombre);
+            actions.appendChild(reserve);
+            card.append(profile, slots, actions);
+            return card;
+        }
+
+
 
         function seleccionarSlot(btn, idMed, nombreMed, hora) {
             // Deseleccionar todos los chips de todos los médicos
@@ -1641,7 +1282,10 @@
             }
         }
 
-        function reservarConDoctor(idMed, nombreMed) {
+        let reteniendoCupo = false;
+        let retencionActual = null;
+        async function reservarConDoctor(idMed, nombreMed) {
+            if(reteniendoCupo)return;
             const card = document.getElementById('docScheduleCard_' + idMed);
             let slotSeleccionado = card ? card.querySelector('.slot-pill-btn.selected') : null;
 
@@ -1668,7 +1312,18 @@
                 state.consultorio = card.getAttribute('data-consultorio') || '';
             }
 
-            avanzarAPaso3();
+            reteniendoCupo=true;
+            const boton=card?.querySelector('.btn-reservar-slot');
+            if(boton){boton.disabled=true;boton.textContent='Reservando cupo…';}
+            try {
+                const params=new URLSearchParams({idMedico:state.medicoId,fecha:state.fecha,hora:state.hora});
+                retencionActual=await ClinicaReservas.retencion('${pageContext.request.contextPath}/paciente/retencion',params,
+                    document.querySelector('meta[name="csrf-token"]').content);
+                retencionActual.limite=Date.now()+retencionActual.segundosRestantes*1000;
+                document.getElementById('finalRetencion').value=retencionActual.identificador;
+                avanzarAPaso3();
+            } catch(error) {alert(error.message || 'No se pudo retener el cupo. Inténtalo nuevamente.');}
+            finally {reteniendoCupo=false;if(boton){boton.disabled=false;boton.textContent='Reservar cita';}}
         }
 
         function formatearFechaHoraResumen(fechaIso, hora) {
@@ -1689,83 +1344,8 @@
 
             selPaso3.innerHTML = '<option value="" disabled selected>Selecciona un motivo</option>';
 
-            const selMotivoPaso1 = document.getElementById('selectMotivo');
-            if (selMotivoPaso1 && selMotivoPaso1.options.length > 1) {
-                for (let i = 1; i < selMotivoPaso1.options.length; i++) {
-                    const opt = document.createElement('option');
-                    opt.value = selMotivoPaso1.options[i].value;
-                    opt.textContent = selMotivoPaso1.options[i].text;
-                    selPaso3.appendChild(opt);
-                }
-            } else {
-                const esp = (state.especialidadNombre || '').toLowerCase();
-                let motivos = [];
-                if (esp.includes('cardio')) {
-                    motivos = [
-                        'Dolor o presión en el pecho',
-                        'Control de hipertensión arterial',
-                        'Palpitaciones o arritmias',
-                        'Evaluación de riesgo quirúrgico',
-                        'Chequeo preventivo cardiológico'
-                    ];
-                } else if (esp.includes('neuro')) {
-                    motivos = [
-                        'Dolores de cabeza o migraña recurrente',
-                        'Episodios de mareo o vértigo',
-                        'Trastornos del sueño o insomnio',
-                        'Control de neuralgia o ciática'
-                    ];
-                } else if (esp.includes('trauma')) {
-                    motivos = [
-                        'Dolor lumbar o en la columna',
-                        'Lesión en rodilla o meniscos',
-                        'Dolor en hombro o articulaciones',
-                        'Evaluación de fractura o esguince'
-                    ];
-                } else if (esp.includes('derma')) {
-                    motivos = [
-                        'Alergia, urticaria o picazón en la piel',
-                        'Revisión de lunares o manchas',
-                        'Acné o rosácea',
-                        'Caída de cabello o alopecia'
-                    ];
-                } else if (esp.includes('gastro')) {
-                    motivos = [
-                        'Dolor abdominal o cólicos',
-                        'Gastritis, acidez o reflujo',
-                        'Digestión pesada o náuseas',
-                        'Evaluación para endoscopía'
-                    ];
-                } else {
-                    motivos = [
-                        'Consulta médica general',
-                        'Chequeo médico preventivo anual',
-                        'Revisión de análisis de laboratorio',
-                        'Evaluación de fiebre o malestar general'
-                    ];
-                }
-                motivos.forEach(m => {
-                    const opt = document.createElement('option');
-                    opt.value = m;
-                    opt.textContent = m;
-                    selPaso3.appendChild(opt);
-                });
-            }
-
-            if (state.motivo) {
-                selPaso3.value = state.motivo;
-            }
-        }
-
-        function toggleNotifChannel(tipo) {
-            const chk = document.getElementById(tipo === 'sms' ? 'checkNotifSms' : 'checkNotifEmail');
-            const lbl = document.getElementById(tipo === 'sms' ? 'labelNotifSms' : 'labelNotifEmail');
-            if (!chk || !lbl) return;
-            if (chk.checked) {
-                lbl.classList.add('active');
-            } else {
-                lbl.classList.remove('active');
-            }
+            ClinicaMotivos.poblar(selPaso3,catalogoMotivos,state.especialidadId,state.motivo);
+            state.motivo=selPaso3.value;
         }
 
         let countdownInterval = null;
@@ -1773,10 +1353,10 @@
 
         function iniciarCountdownReserva() {
             detenerCountdownReserva();
-            countdownRemainingSeconds = 300;
+            countdownRemainingSeconds = retencionActual ? Math.max(0,Math.ceil((retencionActual.limite-Date.now())/1000)) : 0;
             actualizarTextoCountdown();
             countdownInterval = setInterval(() => {
-                countdownRemainingSeconds--;
+                countdownRemainingSeconds = retencionActual ? Math.max(0,Math.ceil((retencionActual.limite-Date.now())/1000)) : 0;
                 if (countdownRemainingSeconds <= 0) {
                     detenerCountdownReserva();
                     alert('El tiempo límite para completar la reserva (5 minutos) ha expirado. El cupo ha sido liberado.');
@@ -1785,6 +1365,16 @@
                     actualizarTextoCountdown();
                 }
             }, 1000);
+        }
+
+        function liberarRetencionActual() {
+            if(!retencionActual)return;
+            const id=retencionActual.identificador;
+            retencionActual=null;
+            document.getElementById('finalRetencion').value='';
+            ClinicaReservas.retencion('${pageContext.request.contextPath}/paciente/retencion',
+                new URLSearchParams({accion:'liberar',retencion:id}),document.querySelector('meta[name="csrf-token"]').content)
+                .catch(() => {});
         }
 
         function detenerCountdownReserva() {
@@ -1809,19 +1399,19 @@
             }
 
             const elEsp = document.getElementById('resumenEspecialidad');
-            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Cardiología';
+            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Especialidad por confirmar';
 
             const elMed = document.getElementById('resumenMedicoCMP');
             if (elMed) {
-                const rawCmp = state.medicoCmp || '045218';
+                const rawCmp = state.medicoCmp || '';
                 const cmpNum = rawCmp.replace(/CMP[-:\s]*/i, '').trim();
-                elMed.textContent = state.medicoNombre + ' · ' + cmpNum;
+                elMed.textContent = state.medicoNombre + (cmpNum ? ' · ' + cmpNum : '');
             }
 
             const elSede = document.getElementById('resumenSedeConsultorio');
             if (elSede) {
                 const sedeNom = (state.sedeNombre && state.sedeNombre !== '0' && state.sedeNombre !== 'Todas las sedes') ? state.sedeNombre : 'Sede San Borja';
-                const consNom = state.consultorio || 'Consultorio 304';
+                const consNom = state.consultorio || 'Consultorio por confirmar';
                 elSede.textContent = sedeNom + ' · ' + consNom;
             }
 
@@ -1845,6 +1435,7 @@
         }
 
         function mostrarPantallaExito(codigoCita) {
+            retencionActual=null;
             detenerCountdownReserva();
 
             // Ocultar cabeceras y stepper para dejar ÚNICAMENTE la tarjeta centrada
@@ -1873,14 +1464,14 @@
 
             // Llenar datos en el comprobante
             const elCod = document.getElementById('successCodigoCita');
-            if (elCod) elCod.textContent = codigoCita || 'CI-2026-004821';
+            if (elCod) elCod.textContent = codigoCita;
 
             const elEsp = document.getElementById('successEspecialidad');
-            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Cardiología';
+            if (elEsp) elEsp.textContent = state.especialidadNombre || 'Especialidad por confirmar';
 
             const elMed = document.getElementById('successMedicoCMP');
             const resMed = document.getElementById('resumenMedicoCMP');
-            if (elMed) elMed.textContent = resMed ? resMed.textContent : (state.medicoNombre + ' · 045218');
+            if (elMed) elMed.textContent = resMed ? resMed.textContent : state.medicoNombre;
 
             const elSede = document.getElementById('successSedeConsultorio');
             const resSede = document.getElementById('resumenSedeConsultorio');

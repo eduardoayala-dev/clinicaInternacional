@@ -1,0 +1,149 @@
+package pe.edu.utp.clinica.servlet;
+
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import pe.edu.utp.clinica.api.ApiJson;
+import pe.edu.utp.clinica.api.ApiResponse;
+import pe.edu.utp.clinica.dao.AgendaException;
+import pe.edu.utp.clinica.dao.CatalogoDatosException;
+import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.model.Usuario;
+import java.io.IOException;
+import java.time.Clock;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.Map;
+
+abstract class MedicoPortalServlet extends HttpServlet {
+    protected transient CitaDAO citas;
+    protected record Contexto(Usuario usuario,int medico,Map<String,Object> perfil){}
+    protected CitaDAO crearCitaDAO(){return new CitaDAO();}
+    protected Clock reloj(){return Clock.system(ZoneId.of("America/Lima"));}
+    protected String metodosPermitidos(){return "GET";}
+    @Override public void init(){citas=crearCitaDAO();}
+    protected abstract void mostrar(HttpServletRequest request,HttpServletResponse response,Contexto contexto)throws IOException,ServletException;
+    protected void ejecutar(HttpServletRequest request,HttpServletResponse response,Contexto contexto)throws IOException{
+        throw new AgendaException(405,"METODO_NO_PERMITIDO","Esta pantalla solo permite consultas.");
+    }
+    @Override protected final void doGet(HttpServletRequest request,HttpServletResponse response){atender(request,response,false);}
+    @Override protected final void doPost(HttpServletRequest request,HttpServletResponse response){atender(request,response,true);}
+    private void atender(HttpServletRequest request,HttpServletResponse response,boolean escritura){
+        try{
+            var session=request.getSession(false);
+            Usuario usuario=session==null?null:(Usuario)session.getAttribute("usuarioLogueado");
+            if(usuario==null || !"MEDICO".equals(usuario.getRol())) throw new AgendaException(403,"ACCESO_DENEGADO","Acceso exclusivo para médicos.");
+            var perfil=citas.obtenerPerfilPortalMedico(usuario.getIdUsuario());
+            Contexto contexto=new Contexto(usuario,(Integer)perfil.get("idMedico"),perfil);
+            request.setAttribute("usuario",usuario);request.setAttribute("detallesMedico",perfil);
+            request.setAttribute("nombreMedico",perfil.get("nombreMedico"));
+            request.setAttribute("especialidadMedico",perfil.get("especialidad"));request.setAttribute("sedeMedico",perfil.get("sedeNombre"));
+            if(!escritura && (request.getParameter("accion")!=null || request.getParameter("action")!=null)) throw new AgendaException(405,"METODO_NO_PERMITIDO","Utiliza POST para modificar una cita.");
+            if(escritura) ejecutar(request,response,contexto);else mostrar(request,response,contexto);
+        }catch(AgendaException e){error(request,response,e.status(),e.code(),e.getMessage());}
+        catch(CatalogoDatosException e){error(request,response,503,"DATOS_NO_DISPONIBLES","No se pudieron consultar los datos. Inténtalo más tarde.");}
+        catch(IOException e){if(!response.isCommitted()) response.setStatus(500);}
+        catch(ServletException|RuntimeException e){
+            java.util.logging.Logger.getLogger(getClass().getName()).warning("No se pudo completar la operación del portal médico: "+e.getClass().getSimpleName());
+            error(request,response,500,"ERROR_INTERNO","No se pudo completar la operación.");
+        }
+    }
+    protected static boolean json(HttpServletRequest request){String accept=request.getHeader("Accept");return accept!=null && accept.contains("application/json");}
+    private void error(HttpServletRequest request,HttpServletResponse response,int status,String code,String message){
+        if(response.isCommitted()) return;
+        try{
+            if(status==405) response.setHeader("Allow",metodosPermitidos());
+            if("PERFIL_MEDICO_PENDIENTE".equals(code)&&!json(request)) {
+                response.setStatus(200);
+                try{request.getRequestDispatcher("/WEB-INF/views/medico/perfil-pendiente.jsp").forward(request,response);}
+                catch(ServletException e){response.setStatus(500);}
+                return;
+            }
+            if(json(request)) ApiJson.write(response,status,new ApiResponse<>(code,message,null));
+            else{response.setStatus(status);response.setContentType("text/plain;charset=UTF-8");response.getWriter().write(message);}
+        }catch(IOException e){if(!response.isCommitted()) response.setStatus(500);}
+    }
+    protected LocalDate fecha(HttpServletRequest request){
+        String value=request.getParameter("fecha");
+        if(value==null) return LocalDate.now(reloj());
+        try{
+            if(!value.matches("\\d{4}-\\d{2}-\\d{2}")) throw new java.time.DateTimeException("Formato de fecha");
+            LocalDate date=LocalDate.parse(value);
+            if(date.getYear()<1900 || date.getYear()>9999) throw new java.time.DateTimeException("Rango de fecha");
+            return date;
+        }catch(java.time.DateTimeException e){throw new AgendaException(400,"FECHA_INVALIDA","Selecciona una fecha válida.");}
+    }
+    protected static int positivo(String value){
+        try{
+            if(value==null || !value.matches("\\d+")) throw new NumberFormatException();
+            int id=Integer.parseInt(value);
+            if(id<=0) throw new NumberFormatException();
+            return id;
+        }catch(NumberFormatException e){throw new AgendaException(400,"IDENTIFICADOR_INVALIDO","El identificador de la cita no es válido.");}
+    }
+    protected void agenda(HttpServletRequest request,Contexto contexto,LocalDate fecha){
+        resumirAgenda(request,fecha,citas.obtenerAgendaMedico(contexto.medico(),fecha));
+    }
+    protected void agenda(HttpServletRequest request,Contexto contexto,Periodo periodo){
+        var filas="dia".equals(periodo.vista()) ? citas.obtenerAgendaMedico(contexto.medico(),periodo.desde())
+                : citas.obtenerAgendaMedico(contexto.medico(),periodo.desde(),periodo.hasta());
+        resumirAgenda(request,periodo.fecha(),filas);
+        request.setAttribute("vista",periodo.vista());
+        request.setAttribute("periodoDesde",periodo.desde().toString());
+        request.setAttribute("periodoHasta",periodo.hasta().minusDays(1).toString());
+    }
+    protected record Periodo(String vista,LocalDate fecha,LocalDate desde,LocalDate hasta){}
+    protected Periodo periodo(HttpServletRequest request){
+        var fecha=fecha(request);
+        String vista=request.getParameter("vista");
+        if(vista==null) vista="dia";
+        LocalDate desde;
+        LocalDate hasta;
+        switch(vista){
+            case "dia": desde=fecha;hasta=fecha.plusDays(1);break;
+            case "semana": desde=fecha.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));hasta=desde.plusWeeks(1);break;
+            case "mes": desde=fecha.withDayOfMonth(1);hasta=desde.plusMonths(1);break;
+            default: throw new AgendaException(400,"VISTA_INVALIDA","Selecciona Día, Semana o Mes.");
+        }
+        return new Periodo(vista,fecha,desde,hasta);
+    }
+    private void resumirAgenda(HttpServletRequest request,LocalDate fecha,java.util.List<Map<String,Object>> agenda){
+        int atendidos=0;
+        int enSala=0;
+        int pendientes=0;
+        int inasistencias=0;
+        int enAtencion=0;
+        var espera=new java.util.LongSummaryStatistics();
+        var duracion=new java.util.LongSummaryStatistics();
+        Map<String,Object> pacienteEnSala=null;
+        for(var cita:agenda){
+            String estado=String.valueOf(cita.get("estado"));
+            acumular(espera,cita.get("esperaMinutos"));
+            acumular(duracion,cita.get("duracionMinutos"));
+            if("ATENDIDA".equals(estado)) atendidos++;
+            else if("EN_ATENCION".equals(estado)) enAtencion++;
+            else if("EN_SALA".equals(estado)){
+                enSala++;
+                if(pacienteEnSala==null) pacienteEnSala=cita;
+            }else if("CONFIRMADA".equals(estado) || "SOLICITADA".equals(estado)) pendientes++;
+            else if("NO_ASISTIO".equals(estado)) inasistencias++;
+        }
+        request.setAttribute("agenda",agenda);request.setAttribute("fechaSeleccionada",fecha.toString());
+        request.setAttribute("fechaActual",fecha.toString());request.setAttribute("fechaHoyStr",fecha.toString());
+        request.setAttribute("totalCitas",agenda.size());request.setAttribute("totalAsignados",agenda.size());
+        request.setAttribute("atendidos",atendidos);request.setAttribute("enEspera",enSala);request.setAttribute("pendientes",pendientes);
+        request.setAttribute("pendientesRestantes",pendientes+enSala+enAtencion);request.setAttribute("inasistencias",inasistencias);
+        request.setAttribute("pacienteEnSala",pacienteEnSala);
+        request.setAttribute("enAtencion",enAtencion);
+        request.setAttribute("esperaPromedioMinutos",promedio(espera));
+        request.setAttribute("duracionPromedioMinutos",promedio(duracion));
+    }
+    private static void acumular(java.util.LongSummaryStatistics estadistica,Object valor){
+        if(valor instanceof Number minutos) estadistica.accept(minutos.longValue());
+    }
+    private static Double promedio(java.util.LongSummaryStatistics estadistica){
+        return estadistica.getCount()==0?null:Math.round(10.0*estadistica.getSum()/estadistica.getCount())/10.0;
+    }
+
+}

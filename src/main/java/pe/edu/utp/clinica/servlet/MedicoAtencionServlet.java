@@ -1,95 +1,42 @@
 package pe.edu.utp.clinica.servlet;
-
 import jakarta.servlet.ServletException;
 import jakarta.servlet.annotation.WebServlet;
-import jakarta.servlet.http.HttpServlet;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
-import pe.edu.utp.clinica.dao.CitaDAO;
-import pe.edu.utp.clinica.model.Usuario;
-import pe.edu.utp.clinica.util.SecurityUtil;
-
+import pe.edu.utp.clinica.api.ApiJson;
+import pe.edu.utp.clinica.api.ApiResponse;
+import pe.edu.utp.clinica.dao.AgendaException;
 import java.io.IOException;
-import java.util.List;
 import java.util.Map;
+import pe.edu.utp.clinica.model.medico.ConsultaClinica;
 
-@WebServlet(name = "MedicoAtencionServlet", urlPatterns = {"/medico/atencion"})
-public class MedicoAtencionServlet extends HttpServlet {
-
-    private CitaDAO citaDAO;
-
-    @Override
-    public void init() throws ServletException {
-        this.citaDAO = new CitaDAO();
+@WebServlet(name="MedicoAtencionServlet",urlPatterns={"/medico/atencion"})
+public class MedicoAtencionServlet extends MedicoPortalServlet {
+    private static final String ID_CITA = "idCita";
+    @Override protected String metodosPermitidos(){return "GET, POST";}
+    @Override protected void mostrar(HttpServletRequest request,HttpServletResponse response,Contexto contexto)throws IOException,ServletException{
+        String valor=request.getParameter(ID_CITA);
+        Map<String,Object> detalle=Map.of();
+        int id=-1;
+        id=valor==null?citas.obtenerAtencionActivaMedico(contexto.medico()):positivo(valor);
+        if(id>0){detalle=citas.obtenerDetalleCitaMedico(id,contexto.medico());if(detalle.isEmpty()) throw inexistente();}
+        if(json(request)){ApiJson.write(response,200,new ApiResponse<>("ATENCION_MEDICA_OBTENIDA","Consulta completada.",detalle.isEmpty()?null:detalle));return;}
+        request.setAttribute(ID_CITA,id);request.setAttribute("cita",detalle);
+        request.getRequestDispatcher("/WEB-INF/views/medico/atencion.jsp").forward(request,response);
     }
-
-    @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("usuarioLogueado") == null) {
-            response.sendRedirect(request.getContextPath() + "/login/personal");
-            return;
-        }
-
-        Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
-        if (!"MEDICO".equals(usuario.getRol())) {
-            response.sendRedirect(request.getContextPath() + "/login/personal?error=rol_invalido");
-            return;
-        }
-
-        int idMedico = citaDAO.obtenerIdMedicoPorUsuarioId(usuario.getIdUsuario());
-        String idCitaStr = request.getParameter("idCita");
-        int idCita = -1;
-        if (idCitaStr != null && !idCitaStr.trim().isEmpty()) {
-            try {
-                idCita = Integer.parseInt(idCitaStr);
-            } catch (NumberFormatException ignored) {}
-        }
-
-        Map<String, Object> citaDetalle = null;
-        if (idCita > 0) {
-            citaDetalle = citaDAO.obtenerDetalleCitaMedico(idCita);
-        }
-
-        request.setAttribute("usuario", usuario);
-        request.setAttribute("nombreMedico", usuario.getNombres() + " " + usuario.getApellidos());
-        request.setAttribute("idCita", idCita);
-        request.setAttribute("cita", citaDetalle);
-
-        request.getRequestDispatcher("/WEB-INF/views/medico/atencion.jsp").forward(request, response);
+    @Override protected void ejecutar(HttpServletRequest request,HttpServletResponse response,Contexto contexto)throws IOException{
+        int id=positivo(request.getParameter(ID_CITA));
+        String accion=request.getParameter("accion");
+        boolean ok=switch(accion==null?"":accion){
+            case "iniciar" -> citas.iniciarAtencionMedica(id,contexto.medico());
+            case "guardar" -> citas.finalizarConsultaClinica(id,contexto.medico(),request.getParameter("prioridad"),request.getParameter("fechaProxima"),request.getParameter("indicaciones"),new ConsultaClinica(request.getParameter("motivoClinico"),request.getParameter("antecedentes"),request.getParameter("hallazgos"),request.getParameter("evaluacion"),request.getParameter("diagnostico"),request.getParameter("plan")));
+            case "no_atender" -> citas.registrarNoAtencionMedica(id,contexto.medico(),request.getParameter("motivo"));
+            case "no_asistio" -> throw new AgendaException(403,"ACCION_NO_PERMITIDA","La inasistencia corresponde a admisión. Para un paciente que llegó, registra No atendida con un motivo.");
+            default -> throw new AgendaException(400,"ACCION_INVALIDA","La acción no es válida.");
+        };
+        if(!ok) throw inexistente();
+        if(json(request)) ApiJson.write(response,200,new ApiResponse<>("ATENCION_REGISTRADA","El registro se guardó correctamente.",Map.of(ID_CITA,id)));
+        else response.sendRedirect(request.getContextPath()+"/medico/atencion?idCita="+id);
     }
-
-    @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-        HttpSession session = request.getSession(false);
-        if (session == null || session.getAttribute("usuarioLogueado") == null) {
-            response.sendRedirect(request.getContextPath() + "/login/personal");
-            return;
-        }
-
-        String idCitaStr = request.getParameter("idCita");
-        String accion = SecurityUtil.sanitizeInput(request.getParameter("accion"));
-        String prioridad = SecurityUtil.sanitizeInput(request.getParameter("prioridad"));
-        String fechaProxima = SecurityUtil.sanitizeInput(request.getParameter("fechaProxima"));
-        String indicaciones = SecurityUtil.sanitizeInput(request.getParameter("indicaciones"));
-
-        int idCita = 1;
-        if (idCitaStr != null && !idCitaStr.isEmpty()) {
-            try {
-                idCita = Integer.parseInt(idCitaStr);
-            } catch (NumberFormatException ignored) {}
-        }
-
-        if ("no_asistio".equalsIgnoreCase(accion)) {
-            citaDAO.actualizarAtencionMedica(idCita, "NO_ASISTIO", "BAJA", null, "Paciente no se presentó al llamado en consultorio.");
-            request.setAttribute("mensajeExito", "Estado actualizado: Marcado como 'No se presentó al llamado'.");
-        } else {
-            String nuevoEstado = "ATENDIDA";
-            citaDAO.actualizarAtencionMedica(idCita, nuevoEstado, prioridad != null ? prioridad : "MEDIA", fechaProxima, indicaciones);
-            request.setAttribute("mensajeExito", "¡Registro de atención guardado con éxito! Cita finalizada y plan de seguimiento registrado.");
-        }
-
-        doGet(request, response);
-    }
+    private static AgendaException inexistente(){return new AgendaException(404,"CITA_NO_ENCONTRADA","No se encontró una cita asignada a este médico.");}
 }

@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import pe.edu.utp.clinica.model.Paciente;
 import pe.edu.utp.clinica.model.Usuario;
 import pe.edu.utp.clinica.service.AuthService;
+import pe.edu.utp.clinica.service.dni.DniConsultaSesion;
 import pe.edu.utp.clinica.util.SecurityUtil;
 
 import java.io.IOException;
@@ -35,11 +36,15 @@ public class RegistroPacienteServlet extends HttpServlet {
         String nombres = SecurityUtil.sanitizeInput(request.getParameter("nombres"));
         String apellidos = SecurityUtil.sanitizeInput(request.getParameter("apellidos"));
         String dni = SecurityUtil.sanitizeInput(request.getParameter("dni"));
+        var consultados = DniConsultaSesion.obtener(request.getSession(false), dni);
+        if (consultados != null) {
+            nombres = SecurityUtil.sanitizeInput(consultados.nombres());
+            apellidos = SecurityUtil.sanitizeInput((consultados.apellidoPaterno() + " " + consultados.apellidoMaterno()).trim());
+        }
         String fechaNacimiento = SecurityUtil.sanitizeInput(request.getParameter("fechaNacimiento"));
         String telefono = SecurityUtil.sanitizeInput(request.getParameter("telefono"));
         String email = SecurityUtil.sanitizeInput(request.getParameter("email"));
         String direccion = SecurityUtil.sanitizeInput(request.getParameter("direccion"));
-        String canalAviso = SecurityUtil.sanitizeInput(request.getParameter("canalAviso"));
         String alergias = SecurityUtil.sanitizeInput(request.getParameter("alergias"));
         String cobertura = SecurityUtil.sanitizeInput(request.getParameter("cobertura"));
         String password = request.getParameter("password");
@@ -51,23 +56,9 @@ public class RegistroPacienteServlet extends HttpServlet {
             return;
         }
 
-        if (password == null || password.length() < 8) {
-            request.getSession().setAttribute("registerError", "La contraseña debe tener al menos 8 caracteres.");
-            response.sendRedirect(request.getContextPath() + "/login?action=register");
-            return;
-        }
-
-        if (dni != null && !dni.isEmpty() && password.contains(dni)) {
-            request.getSession().setAttribute("registerError", "Por razones de seguridad, la contraseña no debe contener su número de documento.");
-            response.sendRedirect(request.getContextPath() + "/login?action=register");
-            return;
-        }
-
-        // Validate password complexity
-        String pattern = "^(?=.*[0-9])(?=.*[a-z])(?=.*[A-Z])(?=.*[@#$%^&+=!_\\-]).{8,}$";
-        if (!password.matches(pattern)) {
-            request.getSession().setAttribute("registerError", "La contraseña debe tener al menos una mayúscula, una minúscula, un número y un símbolo.");
-            response.sendRedirect(request.getContextPath() + "/login?action=register");
+        if (!pe.edu.utp.clinica.auth.PoliticaCredenciales.valida(password) || (dni!=null && !dni.isEmpty() && password.contains(dni))) {
+            request.getSession().setAttribute("registerError", "Usa al menos 12 caracteres con mayúscula, minúscula, número y símbolo, sin incluir tu documento. Máximo 72 bytes UTF-8.");
+            response.sendRedirect(request.getContextPath() + "/login/paciente?action=register");
             return;
         }
 
@@ -90,7 +81,7 @@ public class RegistroPacienteServlet extends HttpServlet {
         }
         p.setTelefono(telefono);
         p.setDireccion(direccion);
-        p.setCanalAviso((canalAviso != null && !canalAviso.trim().isEmpty()) ? canalAviso : "WhatsApp");
+        p.setCanalAviso("Correo");
         p.setSedePreferida("Sede San Borja");
         p.setAlergias(alergias != null ? alergias.trim() : "");
         p.setTipoCobertura((cobertura != null && !cobertura.trim().isEmpty()) ? cobertura : "EPS");
@@ -98,7 +89,6 @@ public class RegistroPacienteServlet extends HttpServlet {
         boolean exito = authService.registrarPaciente(u, p);
 
         if (exito) {
-            // Asegurar que el objeto Usuario en sesión tenga el ID asignado
             if (u.getIdUsuario() <= 0) {
                 Usuario uPersistido = new pe.edu.utp.clinica.dao.UsuarioDAO().buscarPorEmailODni(u.getEmail());
                 if (uPersistido != null) {
@@ -106,15 +96,13 @@ public class RegistroPacienteServlet extends HttpServlet {
                 }
             }
 
-            jakarta.servlet.http.HttpSession oldSession = request.getSession(false);
-            if (oldSession != null) {
-                oldSession.invalidate();
+            jakarta.servlet.http.HttpSession newSession;
+            try {
+                newSession=pe.edu.utp.clinica.auth.InicioSesion.iniciar(request,response,u);
+            } catch (java.sql.SQLException e) {
+                pe.edu.utp.clinica.util.TransporteHttp.redirigir(response,request.getContextPath()+"/login/paciente?error=acceso_temporal");
+                return;
             }
-            jakarta.servlet.http.HttpSession newSession = request.getSession(true);
-            newSession.setAttribute("usuarioLogueado", u);
-            newSession.setAttribute("rol", "PACIENTE");
-            newSession.setAttribute("nombreUsuario", u.getNombreCompleto());
-            
             newSession.setAttribute("canalPreferido", p.getCanalAviso());
             newSession.setMaxInactiveInterval(30 * 60);
 

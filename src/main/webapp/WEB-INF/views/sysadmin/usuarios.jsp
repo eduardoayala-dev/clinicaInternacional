@@ -2,7 +2,10 @@
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%
+    Map<Integer,String> estadosInvitacion=(Map<Integer,String>)request.getAttribute("estadosInvitacion");
+    if(estadosInvitacion==null)estadosInvitacion=Map.of();
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreAdmin = (String) request.getAttribute("nombreAdmin");
     if (nombreAdmin == null && usuario != null) {
@@ -37,70 +40,25 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Usuarios y roles - Clínica Internacional</title>
     <!-- Tipografía Institucional: Playfair Display + Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Playfair+Display:ital,wght@0,600;0,700;1,600&display=swap" rel="stylesheet">
-    
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+
     <!-- CSS del Layout Institucional y Estilos de Usuarios -->
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-layout.css">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-usuarios.css">
-    
-    <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body>
+
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<body class="sysadmin-portal">
 
     <!-- ==========================================================================
          PANEL IZQUIERDO INSTITUCIONAL (260px)
          ========================================================================== -->
-    <aside class="sidebar">
-        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="brand-container">
-            <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
-                 alt="Logo Clínica Internacional" class="brand-logo-img"
-                 onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            <div class="brand-text">
-                <span class="brand-title">Clínica Internacional</span>
-                <span class="brand-subtitle">Portal del administrador</span>
-            </div>
-        </a>
-
-        <nav class="nav-menu">
-            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-item">
-                <i data-lucide="home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-item active">
-                <i data-lucide="shield"></i>
-                <span>Usuarios y roles</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-item">
-                <i data-lucide="building"></i>
-                <span>Sedes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-item">
-                <i data-lucide="sliders"></i>
-                <span>Configuración de priorización</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-item">
-                <i data-lucide="trending-up"></i>
-                <span>Indicadores y analítica</span>
-            </a>
-        </nav>
-
-        <div class="user-profile">
-            <div class="avatar"><%= nombreAdmin != null && !nombreAdmin.trim().isEmpty() ? ("" + nombreAdmin.charAt(0) + (nombreAdmin.contains(" ") ? ("" + nombreAdmin.charAt(nombreAdmin.indexOf(" ") + 1)) : "")).toUpperCase() : "JV" %></div>
-            <div class="user-info">
-                <span class="user-name"><%= nombreAdmin %></span>
-                <span class="user-role">Administrador</span>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="btn-logout" title="Cerrar sesión">
-                <i data-lucide="log-out"></i>
-            </a>
-        </div>
-    </aside>
+    <%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 
     <!-- ==========================================================================
          CONTENEDOR PRINCIPAL CON HEADER SUPERIOR BLANCO
@@ -126,18 +84,18 @@
             <% if (flashMessage != null) { %>
                 <div class="flash-alert">
                     <i data-lucide="check-circle" style="width: 18px; color: #166534;"></i>
-                    <span><%= flashMessage %></span>
+                    <span><%= Html.texto(flashMessage) %></span>
                 </div>
             <% } %>
 
             <% if (flashError != null) { %>
                 <div class="flash-alert" style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca;">
                     <i data-lucide="alert-circle" style="width: 18px; color: #dc2626;"></i>
-                    <span><%= flashError %></span>
+                    <span><%= Html.texto(flashError) %></span>
                 </div>
             <% } %>
 
-            <!-- 1. TARJETAS DE MÉTRICAS (3 COLUMNAS) -->
+            <p class="page-subtitle">Los totales y la tabla se actualizan con los filtros seleccionados.</p>
             <div class="metrics-row">
                 <div class="stat-card">
                     <div class="stat-header">
@@ -146,8 +104,8 @@
                             <i data-lucide="stethoscope"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= medicosTotal %></div>
-                    <div class="stat-subtext">Activos: <%= medicosActivos %></div>
+                    <div class="stat-number" id="medicosTotal"><%= Html.texto(medicosTotal) %></div>
+                    <div class="stat-subtext">Activos: <span id="medicosActivos"><%= Html.texto(medicosActivos) %></span></div>
                 </div>
 
                 <div class="stat-card">
@@ -157,8 +115,8 @@
                             <i data-lucide="users"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= personalTotal %></div>
-                    <div class="stat-subtext">Activos: <%= personalActivos %></div>
+                    <div class="stat-number" id="personalTotal"><%= Html.texto(personalTotal) %></div>
+                    <div class="stat-subtext">Activos: <span id="personalActivos"><%= Html.texto(personalActivos) %></span></div>
                 </div>
 
                 <div class="stat-card">
@@ -168,8 +126,8 @@
                             <i data-lucide="shield"></i>
                         </div>
                     </div>
-                    <div class="stat-number"><%= adminsTotal %></div>
-                    <div class="stat-subtext">Activos: <%= adminsActivos %></div>
+                    <div class="stat-number" id="adminsTotal"><%= Html.texto(adminsTotal) %></div>
+                    <div class="stat-subtext">Activos: <span id="adminsActivos"><%= Html.texto(adminsActivos) %></span></div>
                 </div>
             </div>
 
@@ -178,14 +136,14 @@
                 <div class="filter-group">
                     <label for="inputBuscar">Buscar</label>
                     <div class="search-input-wrapper">
-                        <input type="text" id="inputBuscar" placeholder="Nombre o correo" oninput="filtrarUsuarios()">
+                        <input type="text" id="inputBuscar" placeholder="Nombre o correo" oninput="filtrarUsuarios(true)">
                         <i data-lucide="search"></i>
                     </div>
                 </div>
 
                 <div class="filter-group">
                     <label for="selectRol">Rol</label>
-                    <select id="selectRol" class="filter-select" onchange="filtrarUsuarios()">
+                    <select id="selectRol" class="filter-select" onchange="filtrarUsuarios(true)">
                         <option value="">Todos los roles</option>
                         <option value="Médico">Médico</option>
                         <option value="Personal administrativo">Personal administrativo</option>
@@ -194,8 +152,15 @@
                 </div>
 
                 <div class="filter-group">
+                    <label for="selectSede">Sede</label>
+                    <select id="selectSede" class="filter-select" onchange="filtrarUsuarios(true)">
+                        <option value="">Todas las sedes</option>
+                        <% if(sedes!=null){for(Map<String,Object> sede:sedes){ %><option value="<%= Html.texto(sede.get("id")) %>"><%= Html.texto(sede.get("nombre")) %></option><% }} %>
+                        <option value="multisede">Multisede</option><option value="sin-sede">Sin sede asignada</option>
+                    </select>
+                </div>                <div class="filter-group">
                     <label for="selectEstado">Estado</label>
-                    <select id="selectEstado" class="filter-select" onchange="filtrarUsuarios()">
+                    <select id="selectEstado" class="filter-select" onchange="filtrarUsuarios(true)">
                         <option value="">Todos (activo, inactivo, suspendido)</option>
                         <option value="Activo">Activo</option>
                         <option value="Inactivo">Inactivo</option>
@@ -213,7 +178,7 @@
                     </button>
                     <button class="btn-secondary-action" onclick="exportarExcel()">
                         <i data-lucide="download"></i>
-                        <span>Exportar Excel</span>
+                        <span>Exportar CSV</span>
                     </button>
                 </div>
                 <button class="btn-reset-filters" onclick="reiniciarFiltros()">Reiniciar filtros</button>
@@ -234,44 +199,56 @@
                         </tr>
                     </thead>
                     <tbody id="tbodyUsuarios">
-                        <% if (listaUsuarios != null && !listaUsuarios.isEmpty()) { 
-                            for (Usuario u : listaUsuarios) { 
+                        <% if (listaUsuarios != null && !listaUsuarios.isEmpty()) {
+                            for (Usuario u : listaUsuarios) {
                                 String estadoClass = u.getEstadoDetallado().toLowerCase();
                         %>
-                        <tr class="user-row" 
-                            data-nombre="<%= u.getNombreMostrar().toLowerCase() %>" 
-                            data-correo="<%= u.getEmail() != null ? u.getEmail().toLowerCase() : "" %>"
-                            data-rol="<%= u.getRolEtiqueta() %>"
-                            data-estado="<%= u.getEstadoDetallado() %>"
-                            data-id="<%= u.getIdUsuario() %>"
-                            data-nombres="<%= u.getNombres() != null ? u.getNombres().replace("\"", "&quot;") : "" %>"
-                            data-apellidos="<%= u.getApellidos() != null ? u.getApellidos().replace("\"", "&quot;") : "" %>"
-                            data-email="<%= u.getEmail() != null ? u.getEmail() : "" %>"
-                            data-rol-code="<%= u.getRol() %>"
-                            data-sede-id="<%= u.getIdSede() != null ? u.getIdSede() : "" %>"
-                            data-cmp="<%= u.getCmp() != null ? u.getCmp() : "" %>"
-                            data-esp-id="<%= u.getIdEspecialidad() != null ? u.getIdEspecialidad() : "" %>"
-                            data-cargo="<%= u.getCargo() != null ? u.getCargo() : "" %>">
+                        <tr class="user-row"
+                            data-nombre="<%= Html.texto(u.getNombreMostrar().toLowerCase()) %>"
+                            data-correo="<%= Html.texto(u.getEmail() != null ? u.getEmail().toLowerCase() : "") %>"
+                            data-rol="<%= Html.texto(u.getRolEtiqueta()) %>"
+                            data-estado="<%= Html.texto(u.getEstadoDetallado().toUpperCase(java.util.Locale.ROOT)) %>" data-activacion-pendiente="<%= estadosInvitacion.containsKey(u.getIdUsuario()) %>"
+                            data-id="<%= Html.texto(u.getIdUsuario()) %>"
+                            data-nombres="<%= Html.texto(u.getNombres() != null ? u.getNombres() : "") %>"
+                            data-apellidos="<%= Html.texto(u.getApellidos() != null ? u.getApellidos() : "") %>"
+                            data-email="<%= Html.texto(u.getEmail() != null ? u.getEmail() : "") %>"
+                            data-rol-code="<%= Html.texto(u.getRol()) %>"
+                            data-sede-id="<%= Html.texto(u.getIdSede() != null ? u.getIdSede() : "") %>"
+                            data-cmp="<%= Html.texto(u.getCmp() != null ? u.getCmp() : "") %>"
+                            data-esp-id="<%= Html.texto(u.getIdEspecialidad() != null ? u.getIdEspecialidad() : "") %>"
+                            data-cargo="<%= Html.texto(u.getCargo() != null ? u.getCargo() : "") %>">
                             <td>
                                 <div class="user-cell-name">
-                                    <span class="user-name-title"><%= u.getNombreMostrar() %></span>
+                                    <span class="user-name-title"><%= Html.texto(u.getNombreMostrar()) %></span>
                                     <% if (u.getMotivoEstado() != null && !u.getMotivoEstado().isEmpty()) { %>
-                                        <span class="user-name-note"><%= u.getMotivoEstado() %></span>
+                                        <span class="user-name-note"><%= Html.texto(u.getMotivoEstado()) %></span>
                                     <% } %>
                                 </div>
                             </td>
-                            <td><%= u.getEmail() %></td>
-                            <td><%= u.getRolEtiqueta() %></td>
-                            <td><%= u.getNombreSede() %></td>
+                            <td><%= Html.texto(u.getEmail()) %></td>
+                            <td><%= Html.texto(u.getRolEtiqueta()) %></td>
+                            <td><%= Html.texto(u.getNombreSede()) %></td>
                             <td>
-                                <span class="status-pill <%= estadoClass %>"><%= u.getEstadoDetallado() %></span>
+                                <span class="status-pill <%= Html.texto(estadoClass) %>"><%= Html.texto(estadosInvitacion.getOrDefault(u.getIdUsuario(),u.getEstadoDetallado())) %></span>
                             </td>
-                            <td><%= u.getFechaRegistroFormateada() %></td>
+                            <td><%= Html.texto(u.getFechaRegistroFormateada()) %></td>
                             <td>
                                 <button type="button" class="btn-table-edit" onclick="abrirModalEditarDesdeFila(this)">Editar</button>
+                                <% if(estadosInvitacion.containsKey(u.getIdUsuario())) { %>
+                                <form method="post" action="<%= Html.texto(request.getContextPath()) %>/sysadmin/personal">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><input type="hidden" name="action" value="reinvitar"><input type="hidden" name="idUsuario" value="<%= Html.texto(u.getIdUsuario()) %>">
+                                    <button class="btn-table-edit" type="submit">Reenviar invitación</button>
+                                </form>
+                                <% if(!"Invitación revocada".equals(estadosInvitacion.get(u.getIdUsuario()))) { %>
+                                <form method="post" action="<%= Html.texto(request.getContextPath()) %>/sysadmin/personal" onsubmit="return confirm('El enlace dejará de permitir la activación. ¿Revocar la invitación?')">
+                                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}"><input type="hidden" name="action" value="cambiarEstado"><input type="hidden" name="estado" value="false"><input type="hidden" name="idUsuario" value="<%= Html.texto(u.getIdUsuario()) %>">
+                                    <button class="btn-table-edit" type="submit">Revocar invitación</button>
+                                </form>
+                                <% } %>
+                                <% } %>
                             </td>
                         </tr>
-                        <%  } 
+                        <%  }
                            } %>
                     </tbody>
                 </table>
@@ -279,7 +256,7 @@
 
             <!-- 5. BARRA DE PAGINACIÓN -->
             <div class="pagination-bar">
-                <span class="pagination-info" id="paginationInfo">Mostrando 5 de <%= totalUsuariosGeneral %> usuarios</span>
+                <span class="pagination-info" id="paginationInfo">Mostrando 5 de <%= Html.texto(totalUsuariosGeneral) %> usuarios</span>
                 <div class="pagination-controls">
                     <button class="btn-pagination" id="btnPrevPage" onclick="cambiarPagina(-1)">&lt; Anterior</button>
                     <span class="pagination-page-label" id="paginationPage">Página 1 de 27</span>
@@ -293,15 +270,16 @@
          MODAL CREAR / EDITAR USUARIO
          ========================================================================== -->
     <div class="modal-backdrop" id="modalUsuarioBackdrop" onclick="cerrarModalFondo(event)">
-        <div class="modal-window">
+        <div class="modal-window" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
             <div class="modal-header-row">
                 <h3 class="modal-header-title" id="modalTitulo">Nuevo usuario</h3>
-                <button type="button" class="btn-modal-close" onclick="cerrarModal()">&times;</button>
+                <button type="button" class="btn-modal-close" aria-label="Cerrar formulario" onclick="cerrarModal()">&times;</button>
             </div>
 
             <form action="${pageContext.request.contextPath}/sysadmin/usuarios" method="POST" id="formUsuario">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" id="formAction" value="registrar">
-                <input type="hidden" name="idUsuario" id="formIdUsuario" value="">
+                <input type="hidden" name="idUsuario" id="formIdUsuario" value=""><input type="hidden" name="rol" id="formRolFijo" disabled>
 
                 <div class="form-grid-modal">
                     <div class="form-field">
@@ -330,21 +308,22 @@
 
                     <div class="form-field">
                         <label for="formEstado">Estado de la cuenta</label>
-                        <select id="formEstado" name="estado" required>
+                        <input type="hidden" name="estado" id="formEstadoFijo" value="INACTIVO" disabled><select id="formEstado" name="estado" required>
                             <option value="ACTIVO">Activo</option>
                             <option value="INACTIVO">Inactivo</option>
                             <option value="SUSPENDIDO">Suspendido</option>
                         </select>
                     </div>
 
+                    <p id="estadoInvitacionAviso" class="form-help full" hidden>La cuenta se activará cuando la persona cree su contraseña desde el enlace enviado a su correo.</p>
                     <div class="form-field full" id="groupSede">
                         <label for="formSede">Sede asignada</label>
                         <select id="formSede" name="id_sede" required>
                             <option value="" disabled selected>Seleccione la sede asignada...</option>
-                            <% if (sedes != null) { 
-                                for (Map<String, Object> s : sedes) { %>
-                                    <option value="<%= s.get("id") %>"><%= s.get("nombre") %></option>
-                            <%  } 
+                            <% if (sedes != null) {
+                                for (Map<String, Object> s : sedes) { if(!"ACTIVO".equals(s.get("estado")))continue; %>
+                                    <option value="<%= Html.texto(s.get("id")) %>"><%= Html.texto(s.get("nombre")) %></option>
+                            <%  }
                                } %>
                         </select>
                     </div>
@@ -361,10 +340,10 @@
                                 <label for="formEspecialidad">Especialidad médica</label>
                                 <select id="formEspecialidad" name="id_especialidad">
                                     <option value="">Seleccione especialidad...</option>
-                                    <% if (especialidades != null) { 
+                                    <% if (especialidades != null) {
                                         for (Map<String, Object> esp : especialidades) { %>
-                                            <option value="<%= esp.get("id") %>"><%= esp.get("nombre") %></option>
-                                    <%  } 
+                                            <option value="<%= Html.texto(esp.get("id")) %>"><%= Html.texto(esp.get("nombre")) %></option>
+                                    <%  }
                                        } %>
                                 </select>
                             </div>
@@ -381,8 +360,7 @@
                     </div>
 
                     <div class="form-field full" id="groupPassword">
-                        <label for="formPassword">Contraseña de acceso</label>
-                        <input type="password" id="formPassword" name="password" placeholder="Por defecto: Password123!">
+                        <p>La cuenta permanecerá pendiente. Enviaremos un enlace de un solo uso al correo registrado para que la persona cree su contraseña.</p>
                     </div>
                 </div>
 
@@ -410,10 +388,12 @@
         });
 
         // Filtrado en vivo de la tabla por Nombre/Correo, Rol y Estado
-        function filtrarUsuarios() {
+        function filtrarUsuarios(reiniciar = false) {
+            if(reiniciar) paginaActual=1;
             const texto = document.getElementById("inputBuscar").value.toLowerCase().trim();
             const rolSeleccionado = document.getElementById("selectRol").value;
-            const estadoSeleccionado = document.getElementById("selectEstado").value;
+            const estadoSeleccionado = document.getElementById("selectEstado").value.toUpperCase();
+            const sedeSeleccionada = document.getElementById("selectSede").value;
 
             const filas = document.querySelectorAll("#tbodyUsuarios .user-row");
             let visibles = [];
@@ -428,13 +408,21 @@
                 const coincideRol = !rolSeleccionado || rol === rolSeleccionado;
                 const coincideEstado = !estadoSeleccionado || estado === estadoSeleccionado;
 
-                if (coincideTexto && coincideRol && coincideEstado) {
+                const sedeFila=rol === "Administrador" ? "multisede" : (fila.dataset.sedeId && fila.dataset.sedeId !== "0" ? fila.dataset.sedeId : "sin-sede");
+                const coincideSede=!sedeSeleccionada || sedeFila===sedeSeleccionada;
+                fila.dataset.coincide=String(coincideTexto && coincideRol && coincideEstado && coincideSede);
+                if (fila.dataset.coincide === "true") {
                     visibles.push(fila);
                 } else {
                     fila.style.display = "none";
                 }
             });
 
+            for(const [clave,rol] of [['medicos','Médico'],['personal','Personal administrativo'],['admins','Administrador']]){
+                const grupo=visibles.filter(f=>f.getAttribute('data-rol')===rol);
+                document.getElementById(clave+'Total').textContent=grupo.length;
+                document.getElementById(clave+'Activos').textContent=grupo.filter(f=>f.getAttribute('data-estado')==='ACTIVO').length;
+            }
             // Paginación visual
             const totalVisibles = visibles.length;
             const totalPaginas = Math.max(1, Math.ceil(totalVisibles / filasPorPagina));
@@ -453,8 +441,8 @@
 
             // Actualizar etiquetas
             const mostrandoHasta = Math.min(fin, totalVisibles);
-            const infoTexto = totalVisibles === 0 
-                ? "Mostrando 0 de 0 usuarios" 
+            const infoTexto = totalVisibles === 0
+                ? "Mostrando 0 de 0 usuarios"
                 : "Mostrando " + (inicio + 1) + " - " + mostrandoHasta + " de " + totalVisibles + " usuarios";
             document.getElementById("paginationInfo").innerText = infoTexto;
             document.getElementById("paginationPage").innerText = "Página " + paginaActual + " de " + totalPaginas;
@@ -472,41 +460,24 @@
             document.getElementById("inputBuscar").value = "";
             document.getElementById("selectRol").value = "";
             document.getElementById("selectEstado").value = "";
+            document.getElementById("selectSede").value = "";
             paginaActual = 1;
             filtrarUsuarios();
         }
 
         // Exportar tabla a Excel / CSV en tiempo real sin recargar página
         function exportarExcel() {
-            const filas = document.querySelectorAll("#tbodyUsuarios .user-row");
-            let csv = "\uFEFF"; // BOM UTF-8 para apertura directa en Microsoft Excel
-            csv += "NOMBRE Y APELLIDOS;CORREO / IDENTIFICADOR;ROL ASIGNADO;SEDE PRINCIPAL;ESTADO;FECHA DE REGISTRO\r\n";
-
-            filas.forEach(f => {
-                const cols = f.querySelectorAll("td");
-                if (cols.length >= 6) {
-                    const nombre = cols[0].querySelector(".user-name-title") ? cols[0].querySelector(".user-name-title").innerText.trim() : cols[0].innerText.trim();
-                    const correo = cols[1].innerText.trim();
-                    const rol = cols[2].innerText.trim();
-                    const sede = cols[3].innerText.trim();
-                    const estado = cols[4].innerText.trim();
-                    const fecha = cols[5].innerText.trim();
-
-                    csv += '"' + nombre + '";"' + correo + '";"' + rol + '";"' + sede + '";"' + estado + '";"' + fecha + '"\r\n';
-                }
-            });
-
-            const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = "usuarios_clinica_internacional.csv";
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
+            const proteger=valor=>{
+                let texto=String(valor).replace(/\s+/g,' ').trim();
+                if(/^[=+@-]/.test(texto))texto="'"+texto;
+                return '"'+texto.replaceAll('"','""')+'"';
+            };
+            const filas=Array.from(document.querySelectorAll('#tbodyUsuarios .user-row')).filter(f=>f.dataset.coincide==='true');
+            const datos=[['Nombre y apellidos','Correo','Rol','Sede','Estado','Fecha de registro'],...filas.map(f=>Array.from(f.cells).slice(0,6).map(c=>c.textContent))];
+            const csv='\uFEFF'+datos.map(f=>f.map(proteger).join(';')).join('\r\n');
+            const url=URL.createObjectURL(new Blob([csv],{type:'text/csv;charset=utf-8'}));
+            const enlace=document.createElement('a');enlace.href=url;enlace.download='personal-filtrado.csv';enlace.click();URL.revokeObjectURL(url);
         }
-
         // Gestión de Modales
         function abrirModalNuevo() {
             document.getElementById("modalTitulo").innerText = "Nuevo usuario";
@@ -515,14 +486,20 @@
             document.getElementById("formNombres").value = "";
             document.getElementById("formApellidos").value = "";
             document.getElementById("formEmail").value = "";
+            document.getElementById("formEmail").readOnly = false;
             document.getElementById("formRol").value = "MEDICO";
-            document.getElementById("formEstado").value = "ACTIVO";
-            document.getElementById("formSede").value = "3"; // Sede San Borja por defecto
+            document.getElementById("formRol").disabled = false;
+            document.getElementById("formRolFijo").disabled = true;
+            document.getElementById("formEstado").value = "INACTIVO";
+            document.getElementById("formEstado").disabled = true;
+            document.getElementById("formSede").value = "";
+            document.getElementById("formEstadoFijo").disabled=false;
+            document.getElementById("estadoInvitacionAviso").hidden=false;
             document.getElementById("formCmp").value = "";
             document.getElementById("formEspecialidad").value = "";
             document.getElementById("formCargo").value = "";
             document.getElementById("groupPassword").style.display = "flex";
-            document.getElementById("btnSubmitModal").innerText = "Guardar usuario";
+            document.getElementById("btnSubmitModal").innerText = "Enviar invitación";
 
             actualizarCamposCondicionales();
             document.getElementById("modalUsuarioBackdrop").style.display = "flex";
@@ -539,12 +516,20 @@
             document.getElementById("formNombres").value = fila.getAttribute("data-nombres") || "";
             document.getElementById("formApellidos").value = fila.getAttribute("data-apellidos") || "";
             document.getElementById("formEmail").value = fila.getAttribute("data-email") || "";
-            
+            document.getElementById("formEmail").readOnly = true;
+
             const rolCode = fila.getAttribute("data-rol-code") || "MEDICO";
             document.getElementById("formRol").value = rolCode;
+            document.getElementById("formRol").disabled = true;
+            document.getElementById("formRolFijo").value = rolCode;
+            document.getElementById("formRolFijo").disabled = false;
 
             const estado = fila.getAttribute("data-estado") || "Activo";
             document.getElementById("formEstado").value = estado.toUpperCase();
+            const pendiente=fila.dataset.activacionPendiente === "true";
+            document.getElementById("formEstado").disabled = pendiente;
+            document.getElementById("formEstadoFijo").disabled = !pendiente;
+            document.getElementById("estadoInvitacionAviso").hidden = !pendiente;
 
             document.getElementById("formSede").value = fila.getAttribute("data-sede-id") || "";
             document.getElementById("formCmp").value = fila.getAttribute("data-cmp") || "";
@@ -575,14 +560,16 @@
             const groupSede = document.getElementById("groupSede");
             const formSede = document.getElementById("formSede");
 
+            formSede.disabled=false;
             if (rol === "MEDICO") {
-                boxMedico.style.display = "block";
-                boxPersonal.style.display = "none";
-                if (groupSede) {
-                    groupSede.style.display = "flex";
-                    formSede.required = true;
-                }
-            } else if (rol === "PERSONAL_ADMINISTRATIVO") {
+                groupSede.style.display="flex";
+                const perfilCompleto=document.getElementById('formAction').value==='editar'&&Boolean(document.getElementById('formCmp').value.trim());
+                formSede.disabled=perfilCompleto;
+                formSede.required=!perfilCompleto;
+                document.getElementById('formCmp').disabled=true;
+                document.getElementById('formEspecialidad').disabled=true;
+                boxMedico.style.display="none";
+                boxPersonal.style.display="none";            } else if (rol === "PERSONAL_ADMINISTRATIVO") {
                 boxMedico.style.display = "none";
                 boxPersonal.style.display = "block";
                 if (groupSede) {

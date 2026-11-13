@@ -7,19 +7,21 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.servlet.http.HttpSession;
 import pe.edu.utp.clinica.dao.CitaDAO;
+import pe.edu.utp.clinica.dao.AgendaException;
 import pe.edu.utp.clinica.model.Usuario;
 
 import java.io.IOException;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.util.logging.Logger;
+import java.util.logging.Level;
 import java.util.List;
 import java.util.Map;
 
 @WebServlet(name = "PacienteReprogramarServlet", urlPatterns = {"/paciente/reprogramar"})
 public class PacienteReprogramarServlet extends HttpServlet {
+    private static final Logger LOGGER = Logger.getLogger(PacienteReprogramarServlet.class.getName());
 
-    private CitaDAO citaDAO;
+    private static final String AGENDA_ERROR = "agendaError";
+    private transient CitaDAO citaDAO;
 
     @Override
     public void init() throws ServletException {
@@ -65,7 +67,7 @@ public class PacienteReprogramarServlet extends HttpServlet {
 
             // Validar estado no reprogramable
             String estado = (String) cita.get("estado");
-            if ("CANCELADA".equalsIgnoreCase(estado) || "ATENDIDA".equalsIgnoreCase(estado) || "REPROGRAMADA".equalsIgnoreCase(estado)) {
+            if (!"SOLICITADA".equals(estado) && !"CONFIRMADA".equals(estado)) {
                 response.sendRedirect(request.getContextPath() + "/paciente/historial?error=estado_invalido");
                 return;
             }
@@ -76,10 +78,10 @@ public class PacienteReprogramarServlet extends HttpServlet {
             List<Map<String, Object>> listaSedes = citaDAO.obtenerSedes();
             List<Map<String, Object>> listaEspecialidades = citaDAO.obtenerEspecialidades();
             List<Map<String, Object>> listaMedicos = citaDAO.obtenerMedicosDisponibles(idEspecialidad, idSede);
-            if (listaMedicos.isEmpty()) {
-                listaMedicos = citaDAO.obtenerMedicosPorEspecialidad(idEspecialidad);
-            }
-            List<Map<String, Object>> listaMotivos = citaDAO.obtenerMotivosPorEspecialidad(idEspecialidad);
+            List<Map<String,Object>> catalogoMotivos;
+            try {catalogoMotivos=new pe.edu.utp.clinica.dao.MotivoCitaDAO().listarActivos();}
+            catch(AgendaException e){response.setStatus(e.status());catalogoMotivos=java.util.List.of();request.setAttribute("errorCatalogoMotivos",e.getMessage());}
+            List<Map<String,Object>> listaMotivos=catalogoMotivos.stream().filter(m->Integer.valueOf(idEspecialidad).equals(m.get("idEspecialidad"))).toList();
             int numNotifSinLeer = citaDAO.contarNotificacionesSinLeer(usuario.getIdUsuario());
 
             String nombrePaciente = usuario.getNombres() + " " + usuario.getApellidos();
@@ -90,6 +92,7 @@ public class PacienteReprogramarServlet extends HttpServlet {
             request.setAttribute("listaEspecialidades", listaEspecialidades);
             request.setAttribute("listaMedicos", listaMedicos);
             request.setAttribute("listaMotivos", listaMotivos);
+            request.setAttribute("catalogoMotivos",catalogoMotivos);
             request.setAttribute("numNotifSinLeer", numNotifSinLeer);
 
             request.getRequestDispatcher("/WEB-INF/views/paciente/reprogramar_cita.jsp").forward(request, response);
@@ -100,7 +103,16 @@ public class PacienteReprogramarServlet extends HttpServlet {
     }
 
     @Override
-    protected void doPost(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+    protected void doPost(HttpServletRequest request, HttpServletResponse response) {
+        try {
+            procesarReprogramacion(request, response);
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "No se pudo entregar la respuesta de la operación de cita.", e);
+            if (!response.isCommitted()) response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    private void procesarReprogramacion(HttpServletRequest request, HttpServletResponse response) throws IOException {
         HttpSession session = request.getSession(false);
         if (session == null || session.getAttribute("usuarioLogueado") == null) {
             response.sendRedirect(request.getContextPath() + "/login?error=sesion_requerida");
@@ -120,36 +132,22 @@ public class PacienteReprogramarServlet extends HttpServlet {
             String hora = request.getParameter("hora");   // HH:mm
             String idMotivoStr = request.getParameter("idMotivo");
             Integer idMotivo = (idMotivoStr != null && !idMotivoStr.trim().isEmpty()) ? Integer.parseInt(idMotivoStr) : null;
-            String nivelUrgencia = request.getParameter("urgencia");
+            String nivelUrgencia = "MEDIA";
 
             int idPaciente = citaDAO.obtenerIdPacientePorUsuarioId(usuario.getIdUsuario());
 
-            // Validación de fecha y hora futura obligatoria en el flujo clínico
-            LocalDate fechaParsed = LocalDate.parse(fecha);
-            LocalTime horaParsed = LocalTime.parse(hora);
-            LocalDateTime nuevaFechaHora = LocalDateTime.of(fechaParsed, horaParsed);
+            citaDAO.reprogramarCitaValidada(idCita, idPaciente, idMedico, fecha, hora, idMotivo, nivelUrgencia);
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?reprogramada=ok");
 
-            if (nuevaFechaHora.isBefore(LocalDateTime.now())) {
-                response.sendRedirect(request.getContextPath() + "/paciente/reprogramar?idCita=" + idCita + "&error=fecha_pasada");
-                return;
-            }
-
-            boolean exito = citaDAO.reprogramarCita(idCita, idPaciente, idMedico, fecha, hora, idMotivo, nivelUrgencia);
-
-            if (exito) {
-                response.sendRedirect(request.getContextPath() + "/paciente/historial?reprogramada=ok");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/reprogramar?idCita=" + idCita + "&error=fallo_transaccion");
-            }
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            String idCitaParam = request.getParameter("idCita");
-            if (idCitaParam != null) {
-                response.sendRedirect(request.getContextPath() + "/paciente/reprogramar?idCita=" + idCitaParam + "&error=datos_invalidos");
-            } else {
-                response.sendRedirect(request.getContextPath() + "/paciente/historial?error=error_inesperado");
-            }
+        } catch (AgendaException e) {
+            request.getSession().setAttribute(AGENDA_ERROR, e.getMessage());
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?error=" + e.code());
+        } catch (NumberFormatException e) {
+            request.getSession().setAttribute(AGENDA_ERROR, "Los datos de la cita no son válidos.");
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?error=DATOS_INVALIDOS");
+        } catch (RuntimeException e) {
+            request.getSession().setAttribute(AGENDA_ERROR, "No se pudo completar la reprogramación.");
+            response.sendRedirect(request.getContextPath() + "/paciente/historial?error=ERROR_INTERNO");
         }
     }
 }

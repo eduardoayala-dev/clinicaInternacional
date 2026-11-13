@@ -1,186 +1,269 @@
 package pe.edu.utp.clinica.dao;
 
 import pe.edu.utp.clinica.config.DatabaseConfig;
+import pe.edu.utp.clinica.repository.ListaEsperaRepository;
 
 import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.util.HashMap;
+import java.sql.SQLException;
+import java.time.Clock;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
 
-/**
- * DAO para gestión de la lista de espera ambulatoria y ofertas de cupos recuperados.
- */
 public class ListaEsperaDAO {
+    private final AgendaCitaDAO.ConnectionSource connections;
+    private final Clock clock;
+    private final OfertasDAO ofertas;
 
-    private final NotificacionDAO notificacionDAO = new NotificacionDAO();
+    public record Preferencias(
+            int especialidad,
+            Integer sede,
+            String horario,
+            String urgencia,
+            String canales,
+            int anticipacion,
+            Integer medico) {}
 
-    public boolean inscribirListaEspera(int idPaciente, int idEspecialidad, Integer idSede, String rangoHorario, String urgenciaDisponibilidad, String canalesNotificacion) {
-        String sqlCancelar = "UPDATE lista_espera SET estado = 'CANCELADA' WHERE id_paciente = ? AND estado IN ('ACTIVA', 'OFERTADA')";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement psCanc = conn.prepareStatement(sqlCancelar)) {
-            psCanc.setInt(1, idPaciente);
-            psCanc.executeUpdate();
-        } catch (Exception ignored) {}
+    public ListaEsperaDAO() {
+        this(DatabaseConfig::getConnection, Clock.system(ZoneId.of("America/Lima")));
+    }
 
-        int sedeIdFinal = (idSede != null && idSede > 0) ? idSede : 1;
-        String sqlInsert = "INSERT INTO lista_espera (id_paciente, id_especialidad, id_sede, nivel_urgencia, rango_horario, canal_notificacion, estado, posicion) " +
-                           "VALUES (?, ?, ?, ?, ?, ?, 'ACTIVA', 1)";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlInsert)) {
-            ps.setInt(1, idPaciente);
-            ps.setInt(2, idEspecialidad);
-            ps.setInt(3, sedeIdFinal);
-            ps.setString(4, urgenciaDisponibilidad != null && !urgenciaDisponibilidad.trim().isEmpty() ? urgenciaDisponibilidad : "MEDIA");
-            ps.setString(5, rangoHorario != null && !rangoHorario.trim().isEmpty() ? rangoHorario : "MANANA");
-            ps.setString(6, canalesNotificacion != null && !canalesNotificacion.trim().isEmpty() ? canalesNotificacion : "WHATSAPP");
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+    ListaEsperaDAO(AgendaCitaDAO.ConnectionSource connections, Clock clock) {
+        this.connections = connections;
+        this.clock = clock;
+        ofertas = new OfertasDAO(connections, clock);
+    }
+
+    public boolean inscribirListaEspera(
+            int paciente,
+            int especialidad,
+            Integer sede,
+            String horario,
+            String urgencia,
+            String canales) {
+        registrar(paciente, especialidad, sede, horario, urgencia, canales);
+        return true;
+    }
+
+    public int registrar(
+            int paciente,
+            int especialidad,
+            Integer sede,
+            String horario,
+            String urgencia,
+            String canales) {
+        return registrar(paciente, especialidad, sede, horario, urgencia, canales, 180);
+    }
+
+    public int registrar(
+            int paciente,
+            int especialidad,
+            Integer sede,
+            String horario,
+            String urgencia,
+            String canales,
+            int anticipacion) {
+        return registrar(
+                paciente,
+                new Preferencias(
+                        especialidad, sede, horario, urgencia, canales, anticipacion, null));
+    }
+
+    public int registrar(int paciente, Preferencias solicitud) {
+        if (solicitud == null) throw invalida("Indica las preferencias de la inscripción.");
+        Preferencias recibidas =
+                preferencias(
+                        solicitud.especialidad(),
+                        solicitud.sede(),
+                        solicitud.horario(),
+                        solicitud.urgencia(),
+                        solicitud.canales(),
+                        solicitud.anticipacion(),
+                        solicitud.medico());
+        return TransaccionJdbc.ejecutar(
+                connections,
+                conn -> {
+                    AgendaCitaDAO.paciente(conn, paciente);
+                    var prefs =
+                            new Preferencias(
+                                    recibidas.especialidad(),
+                                    recibidas.sede(),
+                                    recibidas.horario(),
+                                    PrioridadClinicaJdbc.resolver(
+                                            conn,
+                                            paciente,
+                                            recibidas.especialidad(),
+                                            java.time.LocalDate.now(clock)),
+                                    recibidas.canales(),
+                                    recibidas.anticipacion(),
+                                    recibidas.medico());
+                    validarCatalogos(conn, prefs);
+                    int existente = actualIgual(conn, paciente, prefs);
+                    if (existente > 0) return existente;
+                    cancelarInscripciones(conn, paciente);
+                    int id =
+                            new ListaEsperaRepository(conn)
+                                    .crear(paciente, prefs, LocalDateTime.now(clock));
+                    OfertasDAO.avisoLista(
+                            conn,
+                            id,
+                            "Inscripción confirmada. Consulta en este portal las ofertas"
+                                + " compatibles con tus preferencias.");
+                    return id;
+                });
+    }
+
+    public boolean retirarListaEspera(int lista, int paciente) {
+        if (lista <= 0 || paciente <= 0) throw invalida("La inscripción no es válida.");
+        return TransaccionJdbc.ejecutar(
+                connections,
+                conn -> {
+                    AgendaCitaDAO.paciente(conn, paciente);
+                    String estado = new ListaEsperaRepository(conn).bloquearPropia(lista, paciente);
+                    if (estado == null)
+                        throw new AgendaException(
+                                404,
+                                "INSCRIPCION_NO_ENCONTRADA",
+                                "No se encontró una inscripción propia.");
+                    if ("CANCELADA".equals(estado)) return true;
+                    if ("ATENDIDA".equals(estado))
+                        throw new AgendaException(
+                                409, "INSCRIPCION_ATENDIDA", "Esta inscripción ya fue atendida.");
+                    cancelarOfertas(conn, lista);
+                    OfertasDAO.cambiarLista(conn, lista, "CANCELADA");
+                    OfertasDAO.avisoLista(
+                            conn,
+                            lista,
+                            "Te retiraste de la lista de espera. No se canceló ninguna cita"
+                                + " confirmada.");
+                    return true;
+                });
+    }
+
+    public Map<String, Object> obtenerEstadoListaEspera(int paciente) {
+        if (paciente <= 0) return Map.of();
+        try (var conn = connections.open()) {
+            var estado = new ListaEsperaRepository(conn).estado(paciente, LocalDateTime.now(clock));
+            if (estado == null) return Map.of();
+            String prioridad =
+                    new pe.edu.utp.clinica.repository.ReservaCitaRepository(conn)
+                            .prioridadEvaluada(
+                                    paciente,
+                                    estado.especialidadId(),
+                                    java.time.LocalDate.now(clock));
+            return presentar(estado, prioridad);
+        } catch (SQLException e) {
+            throw new CatalogoDatosException(e);
         }
     }
 
-    public boolean retirarListaEspera(int idListaEspera, int idPaciente) {
-        String sql = "UPDATE lista_espera SET estado = 'CANCELADA' WHERE id_lista_espera = ? AND id_paciente = ?";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idListaEspera);
-            ps.setInt(2, idPaciente);
-            return ps.executeUpdate() > 0;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    public Map<String, Object> obtenerOfertaCupoAnticipado(int paciente) {
+        return ofertas.obtenerParaPaciente(paciente);
     }
 
-    public Map<String, Object> obtenerEstadoListaEspera(int idPaciente) {
-        String sql = "SELECT le.id_lista_espera, le.estado, le.rango_horario, le.canal_notificacion, " +
-                     "e.nombre AS especialidad, s.nombre AS sede " +
-                     "FROM lista_espera le " +
-                     "JOIN especialidad e ON le.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON le.id_sede = s.id_sede " +
-                     "WHERE le.id_paciente = ? AND le.estado IN ('ACTIVA', 'OFERTADA') " +
-                     "ORDER BY le.fecha_registro DESC LIMIT 1";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idPaciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("idListaEspera", rs.getInt("id_lista_espera"));
-                    String estado = rs.getString("estado");
-                    map.put("estadoCodigo", estado != null ? estado.toUpperCase() : "ACTIVA");
-                    map.put("estado", "OFERTADA".equalsIgnoreCase(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
-                    map.put("especialidad", rs.getString("especialidad"));
-                    String sede = rs.getString("sede");
-                    map.put("sede", (sede != null && !sede.trim().isEmpty()) ? sede : "Sede San Borja");
-                    String rango = rs.getString("rango_horario");
-                    String canal = rs.getString("canal_notificacion");
-
-                    String rangoStr = "Mañana";
-                    if (rango != null) {
-                        String rLow = rango.toLowerCase();
-                        if (rLow.contains("tarde") && (rLow.contains("manana") || rLow.contains("mañana"))) {
-                            rangoStr = "Mañana / Tarde";
-                        } else if (rLow.contains("tarde")) {
-                            rangoStr = "Tarde";
-                        } else if (rLow.contains("manana") || rLow.contains("mañana")) {
-                            rangoStr = "Mañana";
-                        }
-                    }
-
-                    String canalStr = "SMS / WhatsApp";
-                    if (canal != null) {
-                        String cUp = canal.toUpperCase();
-                        if (cUp.contains("CORREO") && (cUp.contains("SMS") || cUp.contains("WHATSAPP"))) {
-                            canalStr = "SMS / WhatsApp · Correo";
-                        } else if (cUp.contains("CORREO")) {
-                            canalStr = "Correo electrónico";
-                        } else {
-                            canalStr = "SMS / WhatsApp";
-                        }
-                    }
-
-                    map.put("preferencias", rangoStr + " · " + canalStr);
-                    return map;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public boolean aceptarOfertaCupo(int paciente, int oferta) {
+        ofertas.aceptar(paciente, oferta);
+        return true;
     }
 
-    public Map<String, Object> obtenerOfertaCupoAnticipado(int idPaciente) {
-        String sql = "SELECT le.id_lista_espera, e.nombre AS especialidad, s.nombre AS sede, " +
-                     "u.nombres AS medico_nombres, u.apellidos AS medico_apellidos " +
-                     "FROM lista_espera le " +
-                     "JOIN especialidad e ON le.id_especialidad = e.id_especialidad " +
-                     "LEFT JOIN sede s ON le.id_sede = s.id_sede " +
-                     "LEFT JOIN medico m ON le.id_especialidad = m.id_especialidad " +
-                     "LEFT JOIN usuario u ON m.id_usuario = u.id_usuario " +
-                     "WHERE le.id_paciente = ? AND le.estado = 'OFERTADA' " +
-                     "ORDER BY le.fecha_registro DESC LIMIT 1";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sql)) {
-            ps.setInt(1, idPaciente);
-            try (ResultSet rs = ps.executeQuery()) {
-                if (rs.next()) {
-                    Map<String, Object> map = new HashMap<>();
-                    map.put("idListaEspera", rs.getInt("id_lista_espera"));
-                    String esp = rs.getString("especialidad");
-                    map.put("especialidad", esp != null ? esp : "Dermatología");
-                    String medNom = rs.getString("medico_nombres");
-                    String medApe = rs.getString("medico_apellidos");
-                    map.put("medico", (medNom != null ? "Dr. " + medNom + " " + (medApe != null ? medApe : "") : "Dr. Jorge Ríos"));
-                    String sede = rs.getString("sede");
-                    String sedeStr = (sede != null && !sede.trim().isEmpty()) ? sede : "Sede San Borja";
-                    map.put("sede", sedeStr + " · Consultorio 215");
-                    map.put("fechaOfrecida", "Mar 13 oct 2026 · 10:20");
-                    map.put("tiempoRestante", "14:32 min");
-                    map.put("tiempoRestanteSegundos", 872);
-                    map.put("origen", "Origen: cupo liberado por cancelación de otro paciente.");
-                    return map;
-                }
-            }
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
+    public boolean rechazarOfertaCupo(int paciente, int oferta) {
+        return ofertas.rechazar(paciente, oferta);
     }
 
-    public boolean aceptarOfertaCupo(int idPaciente, int idListaEspera, int idUsuario) {
-        String sqlWaitlist = "UPDATE lista_espera SET estado = 'ATENDIDA' WHERE id_paciente = ? AND (id_lista_espera = ? OR ? <= 0) AND estado = 'OFERTADA'";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlWaitlist)) {
-            ps.setInt(1, idPaciente);
-            ps.setInt(2, idListaEspera);
-            ps.setInt(3, idListaEspera);
-            ps.executeUpdate();
-
-            notificacionDAO.crearNotificacion(idUsuario, null, "Reserva registrada", "Oferta aceptada: Cita de Dermatología para el Mar 13 oct 2026 · 10:20 confirmada por cupo recuperado.");
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
-        }
+    private static Map<String, Object> presentar(
+            ListaEsperaRepository.Estado rs, String prioridad) {
+        Map<String, Object> data = new LinkedHashMap<>();
+        String estado = rs.estado();
+        data.put("idListaEspera", rs.id());
+        data.put("estadoCodigo", estado);
+        data.put(
+                "estado",
+                "OFERTADA".equals(estado) ? "Oferta pendiente de respuesta" : "En fila activa");
+        data.put("especialidad", rs.especialidad());
+        data.put("sede", rs.sede() == null ? "Cualquier sede" : rs.sede());
+        data.put("posicion", (int) rs.posicion());
+        data.put(
+                "prioridad",
+                prioridad == null ? "Sin prioridad de seguimiento vigente" : prioridad);
+        String horario =
+                switch (rs.horario()) {
+                    case "MANANA" -> "Mañana";
+                    case "TARDE" -> "Tarde";
+                    case "NOCHE" -> "Noche";
+                    default -> "Cualquier horario";
+                };
+        data.put(
+                "preferencias",
+                horario + " · aviso con " + rs.anticipacion() / 60 + " h · " + rs.canales());
+        return data;
     }
 
-    public boolean rechazarOfertaCupo(int idPaciente, int idListaEspera, int idUsuario) {
-        String sqlWaitlist = "UPDATE lista_espera SET estado = 'ACTIVA' WHERE id_paciente = ? AND (id_lista_espera = ? OR ? <= 0) AND estado = 'OFERTADA'";
-        try (Connection conn = DatabaseConfig.getConnection();
-             PreparedStatement ps = conn.prepareStatement(sqlWaitlist)) {
-            ps.setInt(1, idPaciente);
-            ps.setInt(2, idListaEspera);
-            ps.setInt(3, idListaEspera);
-            ps.executeUpdate();
+    private static Preferencias preferencias(
+            int especialidad,
+            Integer sede,
+            String horario,
+            String urgencia,
+            String canales,
+            int anticipacion,
+            Integer medico) {
+        if (medico != null && medico <= 0) throw invalida("El médico preferido no es válido.");
+        if (!Set.of(180, 720).contains(anticipacion))
+            throw invalida("Selecciona al menos 3 o 12 horas de anticipación.");
+        if (especialidad <= 0 || (sede != null && sede <= 0))
+            throw invalida("La especialidad y la sede deben ser válidas.");
+        if (!Set.of("MANANA", "TARDE", "NOCHE", "INDIFERENTE")
+                .contains(horario == null ? "" : horario))
+            throw invalida("Selecciona un horario válido.");
+        if (!Set.of("ALTA", "MEDIA", "BAJA").contains(urgencia == null ? "" : urgencia))
+            throw invalida("La prioridad no es válida.");
+        if (canales == null || canales.isBlank())
+            throw invalida("Selecciona una preferencia de contacto.");
+        Set<String> elegidos = new TreeSet<>(Arrays.asList(canales.split(",", -1)));
+        if (!Set.of("WHATSAPP", "CORREO", "SMS").containsAll(elegidos))
+            throw invalida("La preferencia de contacto no es válida.");
+        return new Preferencias(
+                especialidad,
+                sede,
+                horario,
+                urgencia,
+                String.join(",", elegidos),
+                anticipacion,
+                medico);
+    }
 
-            notificacionDAO.crearNotificacion(idUsuario, null, "Lista de espera", "Has rechazado la oferta de cupo recuperado. Sigues en la lista de espera con tu misma posición.");
-            return true;
-        } catch (Exception e) {
-            e.printStackTrace();
-            return false;
+    private static void validarCatalogos(Connection conn, Preferencias prefs) throws SQLException {
+        if (prefs.medico() != null) {
+            AgendaCitaDAO.Medico perfil = AgendaCitaDAO.medico(conn, prefs.medico());
+            if (perfil.especialidad() != prefs.especialidad()
+                    || (prefs.sede() != null && perfil.sede() != prefs.sede()))
+                throw invalida(
+                        "El médico preferido debe pertenecer a la especialidad y sede elegidas.");
         }
+        var repo = new ListaEsperaRepository(conn);
+        if (!repo.catalogoActivo(prefs.especialidad(), false))
+            throw invalida("La especialidad no está habilitada.");
+        if (prefs.sede() != null && !repo.catalogoActivo(prefs.sede(), true))
+            throw invalida("La sede no está habilitada.");
+    }
+
+    private static int actualIgual(Connection conn, int paciente, Preferencias prefs)
+            throws SQLException {
+        return new ListaEsperaRepository(conn).actualIgual(paciente, prefs);
+    }
+
+    private static void cancelarInscripciones(Connection conn, int paciente) throws SQLException {
+        new ListaEsperaRepository(conn).cancelarInscripciones(paciente);
+    }
+
+    private static void cancelarOfertas(Connection conn, int lista) throws SQLException {
+        new ListaEsperaRepository(conn).cancelarOfertas(lista);
+    }
+
+    private static AgendaException invalida(String mensaje) {
+        return new AgendaException(400, "DATOS_INVALIDOS", mensaje);
     }
 }

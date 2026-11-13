@@ -1,12 +1,16 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="pe.edu.utp.clinica.dao.ConfiguracionOfertasDAO,pe.edu.utp.clinica.util.Html" %>
 <%
+    var parametros=(ConfiguracionOfertasDAO.Parametros)request.getAttribute("configuracionOfertas");
+    String flashError=(String)session.getAttribute("flashError");
+    session.removeAttribute("flashError");
     Usuario usuario = (Usuario) session.getAttribute("usuarioLogueado");
     String nombreAdmin = (String) request.getAttribute("nombreAdmin");
     if (nombreAdmin == null && usuario != null) {
         nombreAdmin = usuario.getNombres() + " " + usuario.getApellidos();
     }
-    if (nombreAdmin == null) nombreAdmin = "Roberto Vargas";
+    if (nombreAdmin == null) nombreAdmin = "Administrador";
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
@@ -16,13 +20,12 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Configuración de Priorización - Clínica Internacional</title>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
     <style>
         :root {
             --primary: #0284c7;
@@ -42,39 +45,6 @@
         body { display: flex; height: 100vh; width: 100vw; background-color: var(--bg-body); overflow: hidden; color: var(--text-main); }
 
         /* PANEL IZQUIERDO ESTÁNDAR */
-        .sidebar {
-            width: 250px; min-width: 250px; height: 100vh; background-color: #ffffff;
-            border-right: 1px solid var(--border-light); display: flex; flex-direction: column;
-            padding: 24px 16px; flex-shrink: 0; z-index: 20;
-        }
-        .sidebar-brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 24px 8px; text-decoration: none; }
-        .brand-icon-wrapper { width: 38px; height: 38px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-        .brand-icon-img { width: 36px; height: 36px; object-fit: contain; }
-        .brand-text-block { display: flex; flex-direction: column; }
-        .brand-name { font-size: 14.5px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
-        .brand-subtext { font-size: 11.5px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
-
-        .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 8px; flex: 1; }
-        .nav-link {
-            display: flex; align-items: center; gap: 12px; padding: 11px 16px; border-radius: 12px;
-            color: #475569; text-decoration: none; font-size: 13.5px; font-weight: 500; transition: all 0.15s ease;
-        }
-        .nav-link i { width: 19px; height: 19px; color: #94a3b8; stroke-width: 2; transition: color 0.15s ease; }
-        .nav-link:hover { background-color: #f8fafc; color: var(--text-main); }
-        .nav-link:hover i { color: #64748b; }
-        .nav-link.active { background-color: var(--primary-light); color: var(--primary); font-weight: 600; }
-        .nav-link.active i { color: var(--primary); }
-
-        .sidebar-footer { margin-top: auto; padding-top: 16px; }
-        .user-capsule { background-color: #edf2f7; border-radius: 14px; padding: 10px 14px; display: flex; align-items: center; gap: 12px; }
-        .user-avatar-circle { width: 36px; height: 36px; border-radius: 50%; background-color: var(--primary); color: #ffffff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 13px; flex-shrink: 0; }
-        .user-info-text { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-        .user-full-name { font-size: 13px; font-weight: 700; color: var(--text-main); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.2; }
-        .user-role-desc { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
-        .btn-sidebar-logout { background: none; border: none; color: var(--text-muted); cursor: pointer; padding: 4px; border-radius: 6px; display: flex; align-items: center; justify-content: center; text-decoration: none; }
-        .btn-sidebar-logout:hover { color: #dc2626; background-color: #fee2e2; }
-        .btn-sidebar-logout i { width: 18px; height: 18px; }
-
         .main-content { flex: 1; height: 100vh; overflow-y: auto; padding: 28px 48px 40px 48px; }
         .breadcrumb-trail { font-size: 12.5px; color: var(--text-muted); margin-bottom: 20px; font-weight: 500; }
         .page-header { margin-bottom: 24px; }
@@ -130,83 +100,39 @@
         .btn-save:hover { background: #1d4ed8; }
 
         @media(max-width:1024px) { body { flex-direction: column; overflow-y: auto; } .sidebar { width:100%; } .main-content { padding:24px 16px; } .grid-2col, .form-row { grid-template-columns: 1fr; } }
-    </style>
-</head>
-<body>
+    .catalogo-acceso{display:inline-flex;float:right;padding:10px 14px;background:#fff;border:1px solid #cbd5e1;border-radius:8px;color:#1668b8;text-decoration:none;font-size:13px;font-weight:600}.catalogo-acceso:hover{background:#eff6ff}.catalogo-acceso:focus-visible{outline:3px solid #1668b8;outline-offset:3px}@media(max-width:700px){.catalogo-acceso{float:none;margin-bottom:16px}}</style>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261104-admin"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/sysadmin-shell.css?v=20261104-admin2"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<body class="sysadmin-portal">
 
     <!-- PANEL DE LA IZQUIERDA ESTÁNDAR -->
-    <aside class="sidebar">
-        <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="sidebar-brand">
-            <div class="brand-icon-wrapper">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" 
-                     alt="Logo" class="brand-icon-img"
-                     onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div class="brand-text-block">
-                <span class="brand-name">Clínica Internacional</span>
-                <span class="brand-subtext">Portal del administrador</span>
-            </div>
-        </a>
+    <%@ include file="/WEB-INF/jspf/sysadmin-sidebar.jspf" %>
 
-        <nav class="sidebar-nav">
-            <a href="${pageContext.request.contextPath}/sysadmin/dashboard" class="nav-link">
-                <i data-lucide="home"></i>
-                <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/usuarios" class="nav-link">
-                <i data-lucide="shield"></i>
-                <span>Usuarios y roles</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/sedes" class="nav-link">
-                <i data-lucide="building"></i>
-                <span>Sedes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/priorizacion" class="nav-link active">
-                <i data-lucide="sliders"></i>
-                <span>Configuración de priorización</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/sysadmin/analitica" class="nav-link">
-                <i data-lucide="trending-up"></i>
-                <span>Indicadores y analítica</span>
-            </a>
-        </nav>
-
-        <div class="sidebar-footer">
-            <div class="user-capsule">
-                <div class="user-avatar-circle"><%= nombreAdmin != null && !nombreAdmin.isEmpty() ? ("" + nombreAdmin.charAt(0)).toUpperCase() : "JV" %></div>
-                <div class="user-info-text">
-                    <span class="user-full-name"><%= nombreAdmin %></span>
-                    <span class="user-role-desc">Administrador</span>
-                </div>
-                <a href="${pageContext.request.contextPath}/logout" class="btn-sidebar-logout" title="Cerrar sesión">
-                    <i data-lucide="log-out"></i>
-                </a>
-            </div>
-        </div>
-    </aside>
-
-    <main class="main-content">
+    <main class="main-content sysadmin-simple priority-settings">
         <div class="breadcrumb-trail">Administrador / <span>Configuración de priorización</span></div>
-        <div class="page-header">
-            <h1 class="page-title">Configuración de Priorización y Reasignación</h1>
+        <div class="page-header"><a class="catalogo-acceso" href="${pageContext.request.contextPath}/sysadmin/motivos">Gestionar motivos de consulta →</a>
+            <h1 class="page-title">Priorización y reasignación</h1>
+            <a href="${pageContext.request.contextPath}/sysadmin/ia/inasistencia">Abrir simulador de IA de inasistencias (experimental)</a>
             <p class="page-subtitle">Parámetros que rigen la cola algorítmica y los tiempos de oferta automática para cupos recuperados.</p>
         </div>
 
             <% if (flashMessage != null) { %>
                 <div class="flash-alert">
                     <i data-lucide="check-circle" style="width: 18px;"></i>
-                    <%= flashMessage %>
+                    <%= Html.texto(flashMessage) %>
                 </div>
             <% } %>
 
-            <form action="${pageContext.request.contextPath}/sysadmin/priorizacion" method="POST">
+            <% if(flashError!=null){ %><div class="flash-alert" style="background:#fef2f2;color:#b91c1c;border-color:#fecaca"><%= Html.texto(flashError) %></div><% } %>
+            <form action="${pageContext.request.contextPath}/sysadmin/configuracion-ofertas" method="POST">
+                <input type="hidden" name="version" value="<%= parametros.version() %>">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="guardarPriorizacion">
 
                 <!-- SECCIÓN 1 -->
                 <div class="panel">
                     <div class="panel-title">
-                        <span>Criterios Principales de Asignación Algorítmica</span>
-                        <span class="panel-tag">ORDEN DE PRELACIÓN OBLIGATORIO</span>
+                        <span>Criterios de asignación</span>
+
                     </div>
                     <div class="step-list">
                         <div class="step-item">
@@ -215,7 +141,7 @@
                                 <div class="step-name">Especialidad Requerida</div>
                                 <div class="step-desc">Coincidencia exacta con la especialidad médica del cupo liberado. Requisito obligatorio para el emparejamiento.</div>
                             </div>
-                            <span class="step-tag">OBLIGATORIO</span>
+
                         </div>
 
                         <div class="step-item">
@@ -224,16 +150,16 @@
                                 <div class="step-name">Sede Clínica</div>
                                 <div class="step-desc">Coincidencia con la sede clínica declarada por el paciente o preferencia de campus.</div>
                             </div>
-                            <span class="step-tag">TERRITORIAL</span>
+
                         </div>
 
                         <div class="step-item">
                             <div class="step-badge">3</div>
                             <div class="step-content">
                                 <div class="step-name">Prioridad Clínica</div>
-                                <div class="step-desc">Nivel de urgencia registrado por triaje o médico tratante (Alta > Media > Baja).</div>
+                                <div class="step-desc">Prioridad registrada por el médico tratante (Alta > Media > Baja).</div>
                             </div>
-                            <span class="step-tag">TRIAJE</span>
+
                         </div>
 
                         <div class="step-item">
@@ -242,71 +168,76 @@
                                 <div class="step-name">Tiempo de Espera en Lista</div>
                                 <div class="step-desc">Antigüedad cronológica (FIFO) de inscripción en lista de espera.</div>
                             </div>
-                            <span class="step-tag">COLA FIFO</span>
+
                         </div>
 
                         <div class="step-item">
                             <div class="step-badge">5</div>
                             <div class="step-content">
-                                <div class="step-name">Proximidad Geográfica</div>
-                                <div class="step-desc">Cercanía de la zona de residencia del paciente a la sede del cupo disponible.</div>
+                                <div class="step-name">Preferencias del paciente</div>
+                                <div class="step-desc">Se respeta el médico preferido, el turno y la anticipación indicada por el paciente.</div>
                             </div>
-                            <span class="step-tag">UBICACIÓN</span>
+
                         </div>
                     </div>
                 </div>
 
-                <!-- SECCIÓN 2 -->
-                <div class="panel">
-                    <div class="panel-title">
-                        <span>Criterios Complementarios de Desempate</span>
-                        <span class="panel-tag">REGLAS CONDICIONALES</span>
-                    </div>
-                    <div class="grid-2col">
-                        <div class="complementary-card">
-                            <div class="comp-title">
-                                <span>Disponibilidad Horaria</span>
-                                <span class="step-tag">DISPONIBILIDAD</span>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Preferencia horaria e historial de respuesta rápida informada por el paciente en la aplicación.</p>
-                            <span style="font-size: 11px; color: #166534; font-weight: 700;">ESTADO: ACTIVO</span>
-                        </div>
-
-                        <div class="complementary-card">
-                            <div class="comp-title">
-                                <span>Historial de Asistencia</span>
-                                <span class="step-tag">CUMPLIMIENTO</span>
-                            </div>
-                            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Registro previo de cumplimiento y baja tasa de cancelación tardía o ausentismo.</p>
-                            <span style="font-size: 11px; color: #166534; font-weight: 700;">ESTADO: ACTIVO</span>
-                        </div>
-                    </div>
-                </div>
+                <div class="panel"><h2 class="panel-title">Una oferta exclusiva por cupo</h2><p>El siguiente candidato recibe la oferta cuando el anterior rechaza o deja vencer su plazo. El sistema conserva la prioridad clínica y la antigüedad en la lista.</p></div>
 
                 <!-- SECCIÓN 3 -->
                 <div class="panel">
                     <div class="panel-title">
-                        <span>Parámetros Operativos de Oferta Temporal</span>
-                        <span class="panel-tag">TIEMPOS DE RESPUESTA</span>
+                        <span>Plazos de las ofertas</span>
+
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Tiempo límite de respuesta a la oferta (minutos): *</label>
-                            <input type="number" name="tiempoLimite" value="15" min="5" max="60" required>
+                            <label for="tiempoLimite">Tiempo límite de respuesta a la oferta (minutos): *</label>
+                            <input type="number" id="tiempoLimite" name="tiempoLimite" value="<%= parametros.minutosRespuesta() %>" min="5" max="60" required>
                             <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Ventana de bloqueo temporal del cupo antes de notificar al siguiente candidato.</span>
                         </div>
 
                         <div class="form-group">
-                            <label>Candidatos notificados en simultáneo: *</label>
-                            <input type="number" name="numCandidatos" value="1" min="1" max="5" required>
-                            <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Número de usuarios calificados que reciben la notificación de cupo disponible.</span>
+                            <label for="anticipacionMinima">Anticipación mínima global (minutos): *</label>
+                            <input type="number" id="anticipacionMinima" name="anticipacionMinima" value="<%= parametros.anticipacionMinima() %>" min="0" max="10080" required>
+                            <span style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Se respeta también la anticipación elegida por cada paciente; se aplica la más exigente.</span>
                         </div>
                     </div>
                 </div>
 
+                <div class="panel">
+                    <div class="panel-title"><span>Confirmación y llegada</span></div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="confirmacionHoras">Límite para confirmar (horas antes de la cita): *</label>
+                            <input type="number" id="confirmacionHoras" name="confirmacionHoras" min="1" max="168" required value="<%= parametros.confirmacionHoras() %>">
+                            <span style="font-size:12px;color:var(--text-muted)">Solo cambia las nuevas reservas y reprogramaciones. Si se reserva dentro de este margen, se puede confirmar hasta la hora de la cita.</span>
+                        </div>
+                        <div class="form-group">
+                            <label for="toleranciaLlegada">Tolerancia de llegada (minutos): *</label>
+                            <input type="number" id="toleranciaLlegada" name="toleranciaLlegada" min="0" max="120" required value="<%= parametros.toleranciaLlegada() %>">
+                            <span style="font-size:12px;color:var(--text-muted)">Se aplica al registrar llegadas y comprobar ausencias. No modifica las llegadas ya registradas.</span>
+                        </div>
+                    </div>
+                </div>
+                    <div class="panel">
+                        <div class="panel-title"><span>Recordatorios y contactos</span></div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="recordatorioHoras">Recordar la cita (horas antes): *</label>
+                                <input type="number" id="recordatorioHoras" name="recordatorioHoras" min="1" max="168" required value="<%= parametros.recordatorioHoras() %>">
+                                <span style="font-size:12px;color:var(--text-muted)">Se consulta en cada ciclo si el envío automático está habilitado. No repite recordatorios ya procesados.</span>
+                            </div>
+                            <div class="form-group">
+                                <label for="intentosConfirmacion">Contactos mínimos para cancelar por falta de confirmación: *</label>
+                                <input type="number" id="intentosConfirmacion" name="intentosConfirmacion" min="1" max="10" required value="<%= parametros.intentosConfirmacion() %>">
+                                <span style="font-size:12px;color:var(--text-muted)">Solo contactos realizados por admisión. Además debe vencer el plazo; la cancelación siempre es manual.</span>
+                            </div>
+                        </div>
+                    </div>
                 <div class="actions-row">
-                    <button type="button" class="btn-reset">Restablecer Valores</button>
-                    <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar Configuración</button>
+                    <button type="reset" class="btn-reset">Descartar cambios</button>
+                    <button type="submit" class="btn-save"><i data-lucide="save" style="width: 16px; vertical-align: middle; margin-right: 6px;"></i> Guardar cambios</button>
                 </div>
             </form>
         </main>

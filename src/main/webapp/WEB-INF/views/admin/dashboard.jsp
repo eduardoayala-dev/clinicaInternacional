@@ -1,5 +1,6 @@
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%@ page import="java.util.List" %>
 <%@ page import="java.util.Map" %>
 <%@ page import="java.time.LocalDateTime" %>
@@ -12,10 +13,10 @@
         nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
     }
     if (nombrePersonal == null || nombrePersonal.trim().isEmpty()) {
-        nombrePersonal = "Lucía Ramírez";
+        nombrePersonal = "Personal de admisión";
     }
 
-    String inicialesPersonal = "LR";
+    String inicialesPersonal = "A";
     if (nombrePersonal != null && !nombrePersonal.trim().isEmpty()) {
         String cleanNom = nombrePersonal.replaceAll("(?i)\\b(Lic\\.|Ing\\.|Sr\\.|Sra\\.)\\b", "").trim();
         String[] partes = cleanNom.split("\\s+");
@@ -31,16 +32,16 @@
     List<Map<String, String>> ultimasOperaciones = (List<Map<String, String>>) request.getAttribute("ultimasOperaciones");
 
     Integer totalCitas = (Integer) request.getAttribute("totalCitas");
-    if (totalCitas == null) totalCitas = 126;
+    if (totalCitas == null) totalCitas = 0;
 
     Integer cancelaciones = (Integer) request.getAttribute("cancelaciones");
-    if (cancelaciones == null) cancelaciones = 38;
+    if (cancelaciones == null) cancelaciones = 0;
 
     Integer cuposLibres = (Integer) request.getAttribute("cuposLibres");
-    if (cuposLibres == null) cuposLibres = 74;
+    if (cuposLibres == null) cuposLibres = 0;
 
     Integer reasignacionesPendientes = (Integer) request.getAttribute("reasignacionesPendientes");
-    if (reasignacionesPendientes == null) reasignacionesPendientes = 12;
+    if (reasignacionesPendientes == null) reasignacionesPendientes = 0;
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
@@ -52,7 +53,7 @@
         session.removeAttribute("flashError");
     }
 
-    LocalDateTime ahora = LocalDateTime.now();
+    LocalDateTime ahora = LocalDateTime.now(java.time.ZoneId.of("America/Lima"));
     DateTimeFormatter dtfDia = DateTimeFormatter.ofPattern("EEE dd MMM yyyy", new Locale("es", "PE"));
     DateTimeFormatter dtfHora = DateTimeFormatter.ofPattern("HH:mm");
     String fechaHoyFormateada = ahora.format(dtfDia);
@@ -62,108 +63,62 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tablero de Control Operativo Diario — Clínica Internacional</title>
-    <!-- TIPOGRAFÍAS INSTITUCIONALES: Inter + Playfair Display -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <!-- ICONOS LUCIDE -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ESTILOS INSTITUCIONALES DEL PORTAL Y DEL TABLERO -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-tablero.css">
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/cancelacion-cita.css?v=20261104-1"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<body class="portal-admision">
 
-    <!-- ==========================================================================
-         PANEL LATERAL INSTITUCIONAL (PORTAL ADMINISTRATIVO)
-         ========================================================================== -->
-    <aside class="adm-sidebar">
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <div class="adm-brand-logo-wrap">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div>
-                <div class="adm-brand-name">Clínica Internacional</div>
-                <div class="adm-brand-sub">Portal administrativo</div>
-            </div>
-        </a>
 
-        <nav class="adm-nav">
-            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item active">
-                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item">
-                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item">
-                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
-            </a>
-        </nav>
+    <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 
-        <div class="adm-user-footer">
-            <div class="adm-user-info-link">
-                <div class="adm-avatar"><%= inicialesPersonal %></div>
-                <div class="adm-user-text">
-                    <div class="adm-user-name" title="<%= nombrePersonal %>"><%= nombrePersonal %></div>
-                    <div class="adm-user-role">Personal administrativo</div>
-                </div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
-                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </a>
-        </div>
-    </aside>
 
-    <!-- ==========================================================================
-         ÁREA DE CONTENIDO Y TOPBAR
-         ========================================================================== -->
     <div class="adm-main-wrapper">
-        <!-- TOPBAR CON BREADCRUMB -->
+
         <header class="adm-topbar">
             <div class="adm-breadcrumb">
                 Personal administrativo / <span>Inicio</span>
             </div>
         </header>
 
-        <!-- CONTENEDOR CON SCROLL -->
+
         <main class="adm-content-scroll">
 
-            <!-- MENSAJES FLASH -->
+
             <% if (flashMessage != null) { %>
-                <div style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+                <div class="flash-alert" role="status">
                     <i data-lucide="check-circle" style="width: 18px; color: #16a34a;"></i>
-                    <span><%= flashMessage %></span>
+                    <span><%= Html.texto(flashMessage) %></span>
                 </div>
             <% } %>
 
             <% if (flashError != null) { %>
-                <div style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
+                <div class="flash-alert" role="alert">
                     <i data-lucide="alert-circle" style="width: 18px; color: #dc2626;"></i>
-                    <span><%= flashError %></span>
+                    <span><%= Html.texto(flashError) %></span>
                 </div>
             <% } %>
 
-            <!-- 1. CABECERA DEL TABLERO Y BOTONES DE ACCIÓN -->
+
             <div id="contenedorBannerAlerta"></div>
 
             <div class="tablero-header-row">
                 <div class="tablero-title-block">
                     <h1 class="tablero-page-title">Tablero de control operativo diario</h1>
                     <div class="tablero-page-subtitle" style="display: flex; align-items: center; flex-wrap: wrap; gap: 8px;">
-                        <span><%= fechaHoyFormateada %> · Sede San Borja</span>
+                        <span><%= Html.texto(fechaHoyFormateada) %> · <%= Html.texto(request.getAttribute("nombreSedeActual")) %></span>
                         <span>•</span>
                         <div class="widget-actualizacion-adm" id="widgetActualizacion">
                             <span id="txtActualizadoHace">Actualizado hace <span id="numMinutos">0</span> min</span>
-                            <button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(this)">
+                            <button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(false)">
                                 <i data-lucide="refresh-cw" id="iconoRefreshBtn" style="width: 13px; height: 13px;"></i> Actualizar
                             </button>
                         </div>
@@ -179,16 +134,16 @@
                         <i data-lucide="download"></i>
                         <span>Exportar CSV</span>
                     </button>
-                    <button type="button" class="tablero-btn-primary" id="btnActualizarAhora" onclick="actualizarEnVivo(this)">
+                    <button type="button" class="tablero-btn-primary" id="btnActualizarAhora" onclick="actualizarEnVivo(false)">
                         <i data-lucide="refresh-cw"></i>
                         <span>Actualizar ahora</span>
                     </button>
                 </div>
             </div>
 
-            <!-- 2. TARJETAS DE MÉTRICAS (4 COLUMNAS) -->
-            <div class="tablero-metrics-grid">
-                <!-- Citas del día -->
+
+            <p id="ultimaActualizacionOperativa" role="status">Actualizado: <%= Html.texto(request.getAttribute("actualizadoOperativo")) %></p><div class="tablero-metrics-grid" id="indicadoresInicio">
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Citas del día</span>
@@ -196,11 +151,11 @@
                             <i data-lucide="calendar"></i>
                         </div>
                     </div>
-                    <div class="tablero-stat-number"><%= totalCitas %></div>
-                    <div class="tablero-stat-subtext">En las sedes de la red</div>
+                    <div class="tablero-stat-number"><%= Html.texto(totalCitas) %></div>
+                    <div class="tablero-stat-subtext">En tu sede, para hoy</div>
                 </div>
 
-                <!-- Cancelaciones registradas -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Cancelaciones registradas</span>
@@ -208,23 +163,23 @@
                             <i data-lucide="x"></i>
                         </div>
                     </div>
-                    <div class="tablero-stat-number"><%= cancelaciones %></div>
-                    <div class="tablero-stat-subtext">Hoy, en la red</div>
+                    <div class="tablero-stat-number"><%= Html.texto(cancelaciones) %></div>
+                    <div class="tablero-stat-subtext">Citas de hoy canceladas en tu sede</div>
                 </div>
 
-                <!-- Cupos disponibles en red -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
-                        <span class="tablero-stat-label">Cupos disponibles en red</span>
+                        <span class="tablero-stat-label">Cupos disponibles en tu sede</span>
                         <div class="tablero-stat-icon-wrap">
                             <i data-lucide="calendar"></i>
                         </div>
                     </div>
-                    <div class="tablero-stat-number"><%= cuposLibres %></div>
+                    <div class="tablero-stat-number"><%= Html.texto(cuposLibres) %></div>
                     <div class="tablero-stat-subtext">Para los próximos 7 días</div>
                 </div>
 
-                <!-- Reasignaciones pendientes -->
+
                 <div class="tablero-stat-card">
                     <div class="tablero-stat-top">
                         <span class="tablero-stat-label">Reasignaciones pendientes</span>
@@ -232,49 +187,44 @@
                             <i data-lucide="refresh-cw"></i>
                         </div>
                     </div>
-                    <div class="tablero-stat-number"><%= reasignacionesPendientes %></div>
+                    <div class="tablero-stat-number"><%= Html.texto(reasignacionesPendientes) %></div>
                     <span class="badge-ofertas-curso">Ofertas en curso</span>
                 </div>
             </div>
 
-            <!-- 3. SECCIÓN PRINCIPAL: CITAS DEL DÍA EN SALA DE ESPERA -->
+
             <div class="tablero-main-card">
                 <div class="tablero-card-head">
                     <h2 class="tablero-card-title">Citas del día en sala de espera</h2>
 
                     <div class="tablero-filters-bar">
-                        <!-- Buscador en tiempo real -->
+
                         <div class="tablero-search-wrap">
                             <input type="text" id="filtroTexto" class="tablero-search-input" placeholder="Buscar paciente, DNI o médico" oninput="filtrarCitas()">
                             <i data-lucide="search" class="tablero-search-icon"></i>
                         </div>
 
-                        <!-- Filtro Sedes -->
-                        <select id="filtroSede" class="tablero-select" onchange="filtrarCitas()">
-                            <option value="">Todas las sedes</option>
-                            <% if (sedes != null) {
-                                for (Map<String, Object> s : sedes) { %>
-                                    <option value="<%= s.get("nombre") %>"><%= s.get("nombre") %></option>
-                            <%  }
-                               } else { %>
-                                <option value="Sede San Borja">Sede San Borja</option>
-                                <option value="Sede Lima">Sede Lima</option>
-                                <option value="Sede La Molina">Sede La Molina</option>
-                            <% } %>
-                        </select>
 
-                        <!-- Filtro Estado -->
-                        <select id="filtroEstado" class="tablero-select" onchange="filtrarCitas()">
-                            <option value="">Filtro: en sala</option>
+<select id="filtroSede" class="tablero-select" disabled aria-label="Sede asignada"><option value=""><%= Html.texto(request.getAttribute("nombreSedeActual")) %></option></select>
+
+
+                        <select id="filtroEstado" class="tablero-select" aria-label="Filtrar citas por estado" onchange="filtrarCitas()">
+                            <option value="">Todos los estados</option>
                             <option value="En sala">En sala</option>
                             <option value="Llegó tarde">Llegó tarde</option>
-                            <option value="Confirmada - Web">Confirmada - Web</option>
+                            <option value="Confirmada">Confirmada</option>
                             <option value="Sin confirmar">Sin confirmar</option>
+                            <option value="Atendida">Atendida</option>
+                            <option value="En atención">En atención</option>
+                            <option value="No atendida">No atendida</option>
+                            <option value="No asistió">No asistió</option>
+                            <option value="Reprogramada">Reprogramada</option>
+                            <option value="Cancelada">Cancelada</option>
                         </select>
                     </div>
                 </div>
 
-                <!-- Tabla de Citas -->
+
                 <div class="tablero-table-wrap">
                     <table class="tablero-table" id="tablaCitas">
                         <thead>
@@ -288,8 +238,9 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyCitas">
-                            <% if (listaCitas != null && !listaCitas.isEmpty()) { 
-                                for (Map<String, Object> c : listaCitas) { 
+                            <% int indiceCitaInicial = 0;
+                               if (listaCitas != null && !listaCitas.isEmpty()) {
+                                for (Map<String, Object> c : listaCitas) {
                                     String hora = (String) c.get("hora");
                                     String pacienteNom = (String) c.get("pacienteNombre");
                                     String dni = (String) c.get("pacienteDni");
@@ -307,97 +258,101 @@
                                     else if ("Confirmada - Web".equalsIgnoreCase(estado) || "Confirmada".equalsIgnoreCase(estado)) pillClass = "pill-confirmada";
                                     else if ("Sin confirmar".equalsIgnoreCase(estado) || "Cancelada".equalsIgnoreCase(estado)) pillClass = "pill-sinconfirmar";
                             %>
-                            <tr class="cita-fila fila-interactiva"
-                                data-paciente="<%= pacienteNom != null ? pacienteNom.toLowerCase() : "" %>"
-                                data-dni="<%= dni != null ? dni : "" %>"
-                                data-medico="<%= medicoNom != null ? medicoNom.toLowerCase() : "" %>"
-                                data-sede="<%= sedeNom != null ? sedeNom : "" %>"
-                                data-estado="<%= estado != null ? estado : "" %>">
+                            <tr class="cita-fila fila-interactiva" style="<%= indiceCitaInicial++ >= 4 ? "display:none" : "" %>"
+                                data-paciente="<%= Html.texto(pacienteNom != null ? pacienteNom.toLowerCase() : "") %>"
+                                data-dni="<%= Html.texto(dni != null ? dni : "") %>"
+                                data-medico="<%= Html.texto(medicoNom != null ? medicoNom.toLowerCase() : "") %>"
+                                data-sede="<%= Html.texto(sedeNom != null ? sedeNom : "") %>"
+                                data-estado="<%= Html.texto(estado != null ? estado : "") %>">
                                 <td>
-                                    <span class="tablero-td-hora"><%= hora %></span>
+                                    <span class="tablero-td-hora"><%= Html.texto(hora) %></span>
                                 </td>
                                 <td>
                                     <div class="tablero-paciente-box">
-                                        <span class="tablero-paciente-name"><%= pacienteNom %></span>
-                                        <span class="tablero-paciente-sub">DNI <%= dni %> · <%= tel %></span>
+                                        <span class="tablero-paciente-name"><%= Html.texto(pacienteNom) %></span>
+                                        <span class="tablero-paciente-sub">DNI <%= Html.texto(dni) %> · <%= Html.texto(tel) %></span>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="tablero-sede-box">
-                                        <span class="tablero-sede-name"><%= sedeNom %></span>
-                                        <span class="tablero-sede-cons"><%= consultorio %></span>
+                                        <span class="tablero-sede-name"><%= Html.texto(sedeNom) %></span>
+                                        <span class="tablero-sede-cons"><%= Html.texto(consultorio) %></span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="tablero-medico-name"><%= medicoNom %></span>
+                                    <span class="tablero-medico-name"><%= Html.texto(medicoNom) %></span>
                                 </td>
                                 <td>
-                                    <span class="pill-status <%= pillClass %>"><%= estado %></span>
+                                    <span class="pill-status <%= Html.texto(pillClass) %>"><%= Html.texto(estado) %></span>
                                 </td>
                                 <td style="white-space: nowrap;">
-                                    <% if (accionTexto != null && !accionTexto.trim().isEmpty()) { %>
-                                        <span class="tablero-action-done"><%= accionTexto %></span>
+                                    <% if (Boolean.TRUE.equals(c.get("puedeAdmitir"))) { %>
+                                        <button type="button" class="btn-action-admitir" data-id="<%= Html.texto(idCita) %>" onclick="admitirCita(this.dataset.id)">Registrar llegada</button>
                                     <% } else { %>
-                                        <button type="button" class="btn-action-admitir" onclick="admitirCita(<%= idCita %>, '<%= pacienteNom != null ? pacienteNom.replace("'", "\\'") : "" %>')">Admitir</button>
-                                        <button type="button" class="btn-action-cancelar" onclick="abrirModalAnularCita(<%= idCita %>, '<%= pacienteNom != null ? pacienteNom.replace("'", "\\'") : "" %>', '<%= hora %>', '<%= medicoNom != null ? medicoNom.replace("'", "\\'") : "" %>')">Anular cita</button>
+                                        <span class="tablero-action-done"><%= Html.texto(accionTexto) %></span>
+                                    <% } %>
+                                    <% if (Boolean.TRUE.equals(c.get("puedeMarcarAusencia"))) { %>
+                                        <details class="adm-inasistencia">
+                                            <summary>Registrar inasistencia</summary>
+                                            <form action="${pageContext.request.contextPath}/admin/admision" method="POST" onsubmit="return confirm('¿Confirmar que verificaste que el paciente no llegó?')">
+                                                <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                                                <input type="hidden" name="idCita" value="<%= Html.texto(idCita) %>">
+                                                <input type="hidden" name="accion" value="no_asistio">
+                                                <label>Motivo de verificación <textarea required minlength="3" maxlength="200" name="motivo"></textarea></label>
+                                                <button type="submit" class="btn-action-cancelar">Confirmar inasistencia</button>
+                                            </form>
+                                        </details>
+                                    <% } %>
+                                    <% if (Boolean.TRUE.equals(c.get("puedeAnular"))) { %>
+                                        <button type="button" class="btn-action-cancelar" data-id="<%= Html.texto(idCita) %>" data-nombre="<%= Html.texto(pacienteNom) %>" data-hora="<%= Html.texto(hora) %>" data-medico="<%= Html.texto(medicoNom) %>" onclick="abrirModalAnularCita(this.dataset.id, this.dataset.nombre, this.dataset.hora, this.dataset.medico)">Anular cita</button>
                                     <% } %>
                                 </td>
                             </tr>
-                            <%  } 
+                            <%  }
                                } %>
+                            <tr id="sinCitasSala" hidden><td colspan="6">No hay citas que coincidan con los filtros para hoy en tu sede.</td></tr>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Paginación de la Tabla -->
+
                 <div class="tablero-footer-bar">
-                    <span id="tableroPaginationInfo">Mostrando 4 de 18 citas en sala</span>
+                    <span id="tableroPaginationInfo">Mostrando 0 de 0 citas en sala</span>
                     <div class="tablero-pagination-ctrls">
                         <button type="button" class="btn-tablero-page" id="btnPrevPage" onclick="cambiarPagina(-1)">&lt; Anterior</button>
-                        <span id="tableroPageNum" style="font-weight: 500; color: #334155; padding: 0 4px;">Página 1 de 3</span>
+                        <span id="tableroPageNum" style="font-weight: 500; color: #334155; padding: 0 4px;">Página 1 de 1</span>
                         <button type="button" class="btn-tablero-page btn-tablero-page-next" id="btnNextPage" onclick="cambiarPagina(1)">Siguiente &gt;</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. GRILLA INFERIOR: ÚLTIMAS OPERACIONES + ACCIONES RÁPIDAS -->
+
             <div class="tablero-bottom-grid">
-                <!-- Últimas Operaciones Registradas -->
+
                 <div class="tablero-feed-card">
                     <div class="tablero-feed-head">
-                        <h3 class="tablero-feed-title">Últimas operaciones registradas</h3>
+                        <h3 class="tablero-feed-title">Actividad reciente de citas</h3>
                         <div class="tablero-live-badge">
                             <span class="tablero-live-dot"></span>
-                            <span>En vivo</span>
+                            <span id="estadoEventosInicio">Conectando…</span>
                         </div>
                     </div>
 
+                    <p class="admision-nota">Últimas notificaciones registradas para pacientes de tu sede.</p>
                     <div class="tablero-feed-list" id="feedOperaciones">
-                        <% if (ultimasOperaciones != null && !ultimasOperaciones.isEmpty()) { 
+                        <% if (ultimasOperaciones != null && !ultimasOperaciones.isEmpty()) {
                             for (Map<String, String> op : ultimasOperaciones) { %>
                             <div class="tablero-feed-item">
-                                <span class="tablero-feed-time"><%= op.get("hora") %></span>
-                                <span><%= op.get("texto") %></span>
+                                <span class="tablero-feed-time"><%= Html.texto(op.get("hora")) %></span>
+                                <span><%= Html.texto(op.get("texto")) %></span>
                             </div>
-                        <%  } 
+                        <%  }
                            } else { %>
-                            <div class="tablero-feed-item">
-                                <span class="tablero-feed-time">08:53</span>
-                                <span>Admisión: Rosa Díaz Paredes llegó tarde (cita 08:40) - Consultorio 102</span>
-                            </div>
-                            <div class="tablero-feed-item">
-                                <span class="tablero-feed-time">08:47</span>
-                                <span>Cancelación: cita de Cardiología de las 12:40 - cupo ofertado a la lista de espera</span>
-                            </div>
-                            <div class="tablero-feed-item">
-                                <span class="tablero-feed-time">08:41</span>
-                                <span>Confirmación: Raúl Chávez Pinto confirmó por WhatsApp (cita 12:00)</span>
-                            </div>
-                        <% } %>
+                            <p class="tablero-feed-empty">No hay notificaciones de citas registradas en tu sede.</p>                        <% } %>
                     </div>
                 </div>
 
-                <!-- Acciones Rápidas -->
+
                 <div class="tablero-quick-card">
                     <div class="tablero-quick-head">
                         <i data-lucide="zap"></i>
@@ -414,23 +369,14 @@
         </main>
     </div>
 
-    <!-- ==========================================================================
-         FORMULARIOS OCULTOS PARA ACCIONES OPERATIVAS DIRECTAS
-         ========================================================================== -->
+
     <form id="formAdmitir" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
         <input type="hidden" name="action" value="admitir_cita">
         <input type="hidden" name="idCita" id="formAdmitirIdCita" value="">
     </form>
 
-    <form id="formCancelar" action="${pageContext.request.contextPath}/admin/dashboard" method="POST" style="display: none;">
-        <input type="hidden" name="action" value="cancelar_cita">
-        <input type="hidden" name="idCita" id="formCancelarIdCita" value="">
-    </form>
-
-    <!-- ==========================================================================
-         MODAL: REGISTRO RÁPIDO DE PACIENTE EN PADRÓN
-         ========================================================================== -->
-    <div class="tablero-modal-overlay" id="modalRegistrarPaciente" onclick="cerrarModalFondo(event)">
+<div class="tablero-modal-overlay" id="modalRegistrarPaciente" onclick="cerrarModalFondo(event)">
         <div class="tablero-modal-card">
             <div class="tablero-modal-head">
                 <h3 class="tablero-modal-title">Registrar nuevo paciente en padrón</h3>
@@ -438,6 +384,7 @@
             </div>
 
             <form action="${pageContext.request.contextPath}/admin/dashboard" method="POST" id="formNuevoPaciente">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="registrar_paciente">
 
                 <div class="tablero-form-grid">
@@ -473,12 +420,7 @@
 
                     <div class="tablero-form-group full">
                         <label for="paciSede">Sede de preferencia</label>
-                        <select id="paciSede" name="sede_preferida" class="tablero-form-select">
-                            <option value="Sede San Borja">Sede San Borja</option>
-                            <option value="Sede Lima Norte">Sede Lima Norte</option>
-                            <option value="Sede Central Garcilaso">Sede Central Garcilaso</option>
-                            <option value="Sede Lima Principal">Sede Lima Principal</option>
-                        </select>
+                        <select id="paciSede" name="sede_preferida" class="tablero-form-select"><option value="<%= Html.texto(request.getAttribute("nombreSedeActual")) %>"><%= Html.texto(request.getAttribute("nombreSedeActual")) %></option></select>
                     </div>
                 </div>
 
@@ -490,7 +432,7 @@
         </div>
     </div>
 
-    <!-- MODAL DE CONFIRMACIÓN: ACCIÓN CRÍTICA ANULAR CITA -->
+
     <div class="adm-modal-overlay" id="modalConfirmarAnularCita" style="display: none;">
         <div class="adm-modal-box" style="max-width: 480px; width: 90%; padding: 26px; text-align: left;">
             <div style="display: flex; align-items: flex-start; gap: 14px; margin-bottom: 16px;">
@@ -513,9 +455,12 @@
             </div>
 
             <form id="formConfirmarAnular" action="${pageContext.request.contextPath}/admin/dashboard" method="POST">
-                <input type="hidden" name="action" value="cambiar_estado">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
+                <input type="hidden" name="action" value="cancelar_cita">
                 <input type="hidden" id="modalAnularIdCita" name="idCita" value="">
                 <input type="hidden" name="nuevoEstado" value="CANCELADA">
+                <label class="cancelacion-label" for="motivoAnulacion">Motivo de cancelación *</label>
+                <input type="text" id="motivoAnulacion" name="motivo" class="cancelacion-motivo" required minlength="5" maxlength="160" placeholder="Indica el motivo, sin datos clínicos sensibles.">
 
                 <div style="display: flex; justify-content: flex-end; gap: 10px;">
                     <button type="button" class="btn-secundario" onclick="cerrarModalAnularCita()">Volver / Conservar cita</button>
@@ -525,9 +470,7 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-         LÓGICA JAVASCRIPT DEL TABLERO (FILTRADO EN VIVO, ACCIONES, EXPORTACIONES)
-         ========================================================================== -->
+
     <script>
         let paginaActual = 1;
         const filasPorPagina = 4;
@@ -539,13 +482,32 @@
             }
             filtrarCitas();
 
+            let canalInicio;
+            const cerrarCanalInicio = () => { canalInicio?.close(); canalInicio = null; };
+            const abrirCanalInicio = () => {
+                if (document.hidden || canalInicio || !window.EventSource) return;
+                canalInicio = new EventSource("${pageContext.request.contextPath}/admin/eventos-confirmaciones");
+                canalInicio.addEventListener("open",()=>{document.getElementById("estadoEventosInicio").textContent="En vivo";});
+                canalInicio.addEventListener("error",()=>{document.getElementById("estadoEventosInicio").textContent="Reconectando…";});
+                const actualizar = () => { if (!document.hidden) void actualizarEnVivo(true); };
+                canalInicio.addEventListener("sincronizar", actualizar);
+                canalInicio.addEventListener("cambio", actualizar);
+            };
+            document.addEventListener("visibilitychange", () => {
+                if (document.hidden) cerrarCanalInicio();
+                else abrirCanalInicio();
+            });
+            window.addEventListener("pagehide", cerrarCanalInicio);
+            window.addEventListener("pageshow", abrirCanalInicio);
+            abrirCanalInicio();
+
             // Selección visual de filas al hacer click (como especifica el diseño)
-            document.querySelectorAll("#tbodyCitas .cita-fila").forEach(fila => {
-                fila.addEventListener("click", function (e) {
+            document.getElementById("tbodyCitas").addEventListener("click", function (e) {
+                    const fila = e.target.closest(".cita-fila");
+                    if (!fila) return;
                     if (e.target.tagName === "BUTTON" || e.target.tagName === "A" || e.target.closest("button")) return;
                     document.querySelectorAll("#tbodyCitas .cita-fila").forEach(r => r.classList.remove("is-selected"));
-                    this.classList.add("is-selected");
-                });
+                    fila.classList.add("is-selected");
             });
 
             // Timer de actualización automática cada 1 minuto
@@ -556,7 +518,7 @@
 
                 // Cada 5 minutos realiza actualización automática según notas de admisión
                 if (minutosDesdeActualizacion >= 5) {
-                    actualizarEnVivo();
+                    actualizarEnVivo(true);
                 }
             }, 60000);
         });
@@ -590,6 +552,7 @@
 
             // Paginación visual
             const totalVisibles = visibles.length;
+            document.getElementById("sinCitasSala").hidden=totalVisibles>0;
             const totalPaginas = Math.max(1, Math.ceil(totalVisibles / filasPorPagina));
             if (paginaActual > totalPaginas) paginaActual = 1;
 
@@ -620,13 +583,14 @@
         }
 
         // Acciones sobre citas
-        function admitirCita(idCita, pacienteNom) {
+        function admitirCita(idCita) {
             document.getElementById("formAdmitirIdCita").value = idCita;
             document.getElementById("formAdmitir").submit();
         }
 
         // Modal de confirmación para anulación crítica
         function abrirModalAnularCita(idCita, pacienteNom, hora, medicoNom) {
+            document.getElementById("motivoAnulacion").value = "";
             document.getElementById("modalAnularIdCita").value = idCita;
             document.getElementById("modalAnularPacienteNombre").textContent = pacienteNom;
             document.getElementById("modalAnularHora").textContent = hora;
@@ -640,34 +604,40 @@
         }
 
         // Actualización en vivo (la tabla no se borra, feedback visual transparente)
-        function actualizarEnVivo(btn) {
-            const widget = document.getElementById("widgetActualizacion");
-            const btnPrincipal = document.getElementById("btnActualizarAhora");
-            
-            if (widget) {
-                widget.innerHTML = '<span class="indicador-actualizando"><i data-lucide="loader-2" class="spin-loader" style="width:14px;height:14px;"></i> Actualizando...</span>';
-                if (window.lucide) lucide.createIcons();
-            }
-            if (btnPrincipal) {
-                btnPrincipal.disabled = true;
-                btnPrincipal.innerHTML = '<i data-lucide="loader-2" class="spin-loader" style="width:15px;height:15px;"></i> Actualizando...';
-                if (window.lucide) lucide.createIcons();
-            }
-
-            setTimeout(() => {
+        let actualizandoSala = false;
+        async function actualizarEnVivo(automatica = false) {
+            if (actualizandoSala || (automatica && document.querySelector("#tbodyCitas details[open]"))) return;
+            actualizandoSala = true;
+            const boton = document.getElementById("btnActualizarAhora");
+            const indicador = document.getElementById("txtActualizadoHace");
+            if (boton) boton.disabled = true;
+            if (indicador) indicador.textContent = "Actualizando sala...";
+            try {
+                const respuesta = await fetch("${pageContext.request.contextPath}/admin/dashboard", {cache: "no-store", headers: {Accept: "text/html", "X-Actualizacion-Automatica": automatica ? "true" : "false"}});
+                if (!respuesta.ok || respuesta.redirected) throw new Error("No se pudo actualizar la sala. Recarga la página para verificar tu sesión.");
+                const documento = new DOMParser().parseFromString(await respuesta.text(), "text/html");
+                const tabla = documento.getElementById("tbodyCitas");
+                if (!tabla) throw new Error("No se pudo actualizar la sala.");
+                document.getElementById("tbodyCitas").replaceChildren(...Array.from(tabla.children, fila => document.importNode(fila, true)));
+                for(const id of ['indicadoresInicio','ultimaActualizacionOperativa','feedOperaciones']) {
+                    const nuevo=documento.getElementById(id);
+                    if(nuevo)document.getElementById(id).replaceChildren(...Array.from(nuevo.childNodes,n=>document.importNode(n,true)));
+                }
+                filtrarCitas();
                 minutosDesdeActualizacion = 0;
-                if (widget) {
-                    widget.innerHTML = '<span id="txtActualizadoHace">Actualizado hace <span id="numMinutos">0</span> min</span>' +
-                                       '<button type="button" class="btn-actualizar-link" onclick="actualizarEnVivo(this)">' +
-                                       '<i data-lucide="refresh-cw" style="width: 13px; height: 13px;"></i> Actualizar</button>';
+                if(window.lucide)window.lucide.createIcons();
+                if (indicador) {
+                    const numero = document.createElement("span");
+                    numero.id = "numMinutos";
+                    numero.textContent = "0";
+                    indicador.replaceChildren("Actualizado hace ", numero, " min");
                 }
-                if (btnPrincipal) {
-                    btnPrincipal.disabled = false;
-                    btnPrincipal.innerHTML = '<i data-lucide="refresh-cw"></i> <span>Actualizar ahora</span>';
-                }
-                if (window.lucide) lucide.createIcons();
-                mostrarBannerTemporal("Tablero operativo sincronizado con la base de datos.");
-            }, 600);
+            } catch {
+                if (indicador) indicador.textContent = "No se pudo actualizar la sala. Inténtalo de nuevo o recarga la página para verificar tu sesión.";
+            } finally {
+                actualizandoSala = false;
+                if (boton) boton.disabled = false;
+            }
         }
 
         function mostrarBannerTemporal(mensaje) {

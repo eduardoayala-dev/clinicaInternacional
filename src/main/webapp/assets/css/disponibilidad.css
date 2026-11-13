@@ -1,0 +1,42 @@
+.estado-disponibilidad {
+    margin: 0.75rem 0;
+    padding: 0.75rem;
+    border: 1px solid #bfdbfe;
+    border-radius: 0.5rem;
+    background: #eff6ff;
+    color: #1e3a8a;
+    font-size: 0.875rem;
+    line-height: 1.5;
+}
+
+.estado-disponibilidad:empty {
+    display: none;
+}
+
+form[aria-busy="true"] button[type="submit"] {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: progress;
+    opacity: 0.75;
+}
+
+.indicador-carga-login {
+    display: inline-block;
+    width: 1em;
+    height: 1em;
+    flex: 0 0 1em;
+    border: 2px solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    animation: giro-carga-login 0.8s linear infinite;
+}
+
+@keyframes giro-carga-login {
+    to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .indicador-carga-login { animation: none; }
+}

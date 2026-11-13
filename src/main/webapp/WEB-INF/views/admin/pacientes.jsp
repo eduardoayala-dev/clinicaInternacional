@@ -1,3 +1,4 @@
+<%@ page import="pe.edu.utp.clinica.util.Html" %>
 <%@ page contentType="text/html;charset=UTF-8" language="java" %>
 <%@ page import="pe.edu.utp.clinica.model.Usuario" %>
 <%@ page import="java.util.List" %>
@@ -9,7 +10,7 @@
         nombrePersonal = usuario.getNombres() + " " + usuario.getApellidos();
     }
     if (nombrePersonal == null || nombrePersonal.trim().isEmpty()) {
-        nombrePersonal = "Lucía Ramírez";
+        nombrePersonal = "Personal de admisión";
     }
 
     String inicialesPersonal = "LR";
@@ -27,13 +28,13 @@
     List<Map<String, Object>> sedes = (List<Map<String, Object>>) request.getAttribute("sedes");
 
     Integer totalPacientes = (Integer) request.getAttribute("totalPacientes");
-    if (totalPacientes == null) totalPacientes = 12480;
+    if (totalPacientes == null) totalPacientes = listaPacientes == null ? 0 : listaPacientes.size();
 
     String totalRegistradosFormat = (String) request.getAttribute("totalRegistradosFormat");
-    if (totalRegistradosFormat == null) totalRegistradosFormat = "12 480";
+    if (totalRegistradosFormat == null) totalRegistradosFormat = String.valueOf(totalPacientes);
 
     String totalVerificadosFormat = (String) request.getAttribute("totalVerificadosFormat");
-    if (totalVerificadosFormat == null) totalVerificadosFormat = "11 905";
+    if (totalVerificadosFormat == null) totalVerificadosFormat = "Sin datos";
 
     String flashMessage = (String) session.getAttribute("flashMessage");
     if (flashMessage != null) {
@@ -48,97 +49,51 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
+    <%@ include file="/WEB-INF/jspf/csrf-head.jspf" %>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Padrón maestro de pacientes — Clínica Internacional</title>
-    <!-- TIPOGRAFÍAS INSTITUCIONALES: Inter + Playfair Display -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:ital,wght@0,600;0,700;0,800;1,600&display=swap" rel="stylesheet">
-    <!-- ICONOS LUCIDE -->
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- ESTILOS INSTITUCIONALES DEL PORTAL Y DE PACIENTES -->
-    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css">
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/fuentes-locales.css?v=20261104-1">
+
+    <script src="${pageContext.request.contextPath}/assets/vendor/lucide-1.68.0.min.js"></script>
+
+    <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-administrativo.css?v=20261102-4">
     <link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admin-pacientes.css">
-</head>
-<body>
+<link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/admision-shell.css?v=20261104-pa"><link rel="stylesheet" href="${pageContext.request.contextPath}/assets/css/portal-forms.css?v=20261104-2"></head>
+<body class="portal-admision">
 
-    <!-- ==========================================================================
-         PANEL LATERAL INSTITUCIONAL (PORTAL ADMINISTRATIVO)
-         ========================================================================== -->
-    <aside class="adm-sidebar">
-        <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-brand">
-            <div class="adm-brand-logo-wrap">
-                <img src="${pageContext.request.contextPath}/assets/images/isotipoClinica.png" alt="Clínica Internacional" class="adm-brand-logo-img" onerror="this.src='${pageContext.request.contextPath}/assets/images/logoClinical.png'">
-            </div>
-            <div>
-                <div class="adm-brand-name">Clínica Internacional</div>
-                <div class="adm-brand-sub">Portal administrativo</div>
-            </div>
-        </a>
 
-        <nav class="adm-nav">
-            <a href="${pageContext.request.contextPath}/admin/dashboard" class="adm-nav-item">
-                <i data-lucide="home" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Inicio</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/medicos" class="adm-nav-item">
-                <i data-lucide="stethoscope" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Médicos y especialidades</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/pacientes" class="adm-nav-item active">
-                <i data-lucide="users" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Pacientes</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/reasignaciones" class="adm-nav-item">
-                <i data-lucide="refresh-cw" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Reasignaciones y excepciones</span>
-            </a>
-            <a href="${pageContext.request.contextPath}/admin/dashboard-operativo" class="adm-nav-item">
-                <i data-lucide="trending-up" style="width: 18px; height: 18px; min-width: 18px; flex-shrink: 0;"></i> <span>Dashboard operativo</span>
-            </a>
-        </nav>
+    <%@ include file="/WEB-INF/jspf/admin-sidebar.jspf" %>
 
-        <div class="adm-user-footer">
-            <div class="adm-user-info-link">
-                <div class="adm-avatar"><%= inicialesPersonal %></div>
-                <div class="adm-user-text">
-                    <div class="adm-user-name" title="<%= nombrePersonal %>"><%= nombrePersonal %></div>
-                    <div class="adm-user-role">Personal administrativo</div>
-                </div>
-            </div>
-            <a href="${pageContext.request.contextPath}/logout" class="adm-logout-btn" title="Cerrar sesión">
-                <i data-lucide="log-out" style="width: 17px; height: 17px; min-width: 17px; flex-shrink: 0;"></i>
-            </a>
-        </div>
-    </aside>
 
-    <!-- ==========================================================================
-         ÁREA DE CONTENIDO Y TOPBAR
-         ========================================================================== -->
     <div class="adm-main-wrapper">
-        <!-- TOPBAR CON BREADCRUMB -->
+
         <header class="adm-topbar">
             <div class="adm-breadcrumb">
                 Personal administrativo / <span>Pacientes</span>
             </div>
         </header>
 
-        <!-- CONTENEDOR CON SCROLL -->
+
         <main class="adm-content-scroll">
 
-            <!-- MENSAJES FLASH -->
+
             <% if (flashMessage != null) { %>
                 <div style="background: #dcfce7; color: #166534; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="check-circle" style="width: 18px; height: 18px; color: #16a34a;"></i>
-                    <span><%= flashMessage %></span>
+                    <span><%= Html.texto(flashMessage) %></span>
                 </div>
             <% } %>
 
             <% if (flashError != null) { %>
                 <div style="background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; padding: 12px 18px; border-radius: 10px; font-weight: 600; margin-bottom: 20px; font-size: 13.5px; display: flex; align-items: center; gap: 10px;">
                     <i data-lucide="alert-triangle" style="width: 18px; height: 18px; color: #dc2626;"></i>
-                    <span><%= flashError %></span>
+                    <span><%= Html.texto(flashError) %></span>
                 </div>
             <% } %>
 
-            <!-- 1. CABECERA CON ACCIONES DE EXPORTACIÓN -->
+
             <div class="pacientes-header">
                 <div>
                     <h1 class="pacientes-title">Padrón maestro de pacientes</h1>
@@ -154,10 +109,10 @@
                 </div>
             </div>
 
-            <!-- 2. PANEL DE FILTROS -->
+
             <div class="pacientes-filter-card">
                 <div class="pacientes-filter-row-top">
-                    <!-- Buscar -->
+
                     <div class="pacientes-field-group">
                         <label class="pacientes-field-label" for="filtroTexto">Buscar</label>
                         <div class="pacientes-input-search-wrap">
@@ -166,7 +121,7 @@
                         </div>
                     </div>
 
-                    <!-- Cobertura -->
+
                     <div class="pacientes-field-group">
                         <label class="pacientes-field-label" for="filtroCobertura">Cobertura</label>
                         <select id="filtroCobertura" class="pacientes-select" onchange="filtrarPacientes()">
@@ -177,16 +132,16 @@
                         </select>
                     </div>
 
-                    <!-- Sede preferida -->
+
                     <div class="pacientes-field-group">
                         <label class="pacientes-field-label" for="filtroSede">Sede preferida</label>
                         <select id="filtroSede" class="pacientes-select" onchange="filtrarPacientes()">
                             <option value="">Todas las sedes</option>
-                            <% if (sedes != null && !sedes.isEmpty()) { 
-                                for (Map<String, Object> s : sedes) { 
+                            <% if (sedes != null && !sedes.isEmpty()) {
+                                for (Map<String, Object> s : sedes) {
                                     String nomSede = (String) s.get("nombre");
                             %>
-                                <option value="<%= nomSede %>"><%= nomSede %></option>
+                                <option value="<%= Html.texto(nomSede) %>"><%= Html.texto(nomSede) %></option>
                             <%  }
                                } else { %>
                                 <option value="Sede Lima Norte">Sede Lima Norte</option>
@@ -208,7 +163,7 @@
                 </div>
             </div>
 
-            <!-- 3. TABLA PADRÓN DE PACIENTES -->
+
             <div class="pacientes-table-card">
                 <div class="pacientes-table-wrap">
                     <table class="pacientes-table" id="tablaPacientes">
@@ -225,8 +180,8 @@
                             </tr>
                         </thead>
                         <tbody id="tbodyPacientes">
-                            <% if (listaPacientes != null && !listaPacientes.isEmpty()) { 
-                                for (Map<String, Object> p : listaPacientes) { 
+                            <% if (listaPacientes != null && !listaPacientes.isEmpty()) {
+                                for (Map<String, Object> p : listaPacientes) {
                                     int idPaciente = (Integer) p.get("idPaciente");
                                     String dni = (String) p.get("dni");
                                     String nombres = (String) p.get("nombres");
@@ -248,47 +203,47 @@
                                     int citasActivas = citasActivasObj != null ? Integer.parseInt(citasActivasObj.toString()) : 0;
                             %>
                             <tr class="paciente-fila"
-                                data-id="<%= idPaciente %>"
-                                data-dni="<%= dni != null ? dni : "" %>"
-                                data-nombres="<%= nombres != null ? nombres : "" %>"
-                                data-apellidos="<%= apellidos != null ? apellidos : "" %>"
-                                data-nombre="<%= nombreCompleto != null ? nombreCompleto.toLowerCase() : "" %>"
-                                data-telefono="<%= telefonoRaw != null ? telefonoRaw : "" %>"
-                                data-email="<%= email != null ? email : "" %>"
-                                data-fnac="<%= fechaNacInput != null ? fechaNacInput : "" %>"
-                                data-direccion="<%= direccion != null ? direccion : "" %>"
-                                data-cobertura="<%= tipoCobertura != null ? tipoCobertura : "EPS" %>"
-                                data-sede="<%= sedePreferida != null ? sedePreferida : "" %>"
-                                data-canal="<%= canalAviso != null ? canalAviso : "WhatsApp" %>">
+                                data-id="<%= Html.texto(idPaciente) %>"
+                                data-dni="<%= Html.texto(dni != null ? dni : "") %>"
+                                data-nombres="<%= Html.texto(nombres != null ? nombres : "") %>"
+                                data-apellidos="<%= Html.texto(apellidos != null ? apellidos : "") %>"
+                                data-nombre="<%= Html.texto(nombreCompleto != null ? nombreCompleto.toLowerCase() : "") %>"
+                                data-telefono="<%= Html.texto(telefonoRaw != null ? telefonoRaw : "") %>"
+                                data-email="<%= Html.texto(email != null ? email : "") %>"
+                                data-fnac="<%= Html.texto(fechaNacInput != null ? fechaNacInput : "") %>"
+                                data-direccion="<%= Html.texto(direccion != null ? direccion : "") %>"
+                                data-cobertura="<%= Html.texto(tipoCobertura != null ? tipoCobertura : "EPS") %>"
+                                data-sede="<%= Html.texto(sedePreferida != null ? sedePreferida : "") %>"
+                                data-canal="<%= Html.texto(canalAviso != null ? canalAviso : "WhatsApp") %>">
                                 <td>
-                                    <span class="td-dni"><%= dni %></span>
+                                    <span class="td-dni"><%= Html.texto(dni) %></span>
                                 </td>
                                 <td>
-                                    <span class="td-nombre"><%= nombreCompleto %></span>
+                                    <span class="td-nombre"><%= Html.texto(nombreCompleto) %></span>
                                 </td>
                                 <td>
                                     <div class="td-edad-box">
-                                        <span class="td-edad-val"><%= edad %></span>
-                                        <span class="td-fnac-val"><%= fechaNac %></span>
+                                        <span class="td-edad-val"><%= Html.texto(edad) %></span>
+                                        <span class="td-fnac-val"><%= Html.texto(fechaNac) %></span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="td-zona"><%= zona %></span>
+                                    <span class="td-zona"><%= Html.texto(zona) %></span>
                                 </td>
                                 <td>
                                     <div class="td-contacto-box">
-                                        <span class="td-tel-val"><%= telefono %></span>
-                                        <span class="td-correo-val"><%= email %></span>
+                                        <span class="td-tel-val"><%= Html.texto(telefono) %></span>
+                                        <span class="td-correo-val"><%= Html.texto(email) %></span>
                                     </div>
                                 </td>
                                 <td>
                                     <div class="td-canal-box">
-                                        <span class="td-canal-val"><%= canalAviso %></span>
-                                        <span class="td-confirma-val"><%= confirmaCanal %></span>
+                                        <span class="td-canal-val"><%= Html.texto(canalAviso) %></span>
+                                        <span class="td-confirma-val"><%= Html.texto(confirmaCanal) %></span>
                                     </div>
                                 </td>
                                 <td>
-                                    <span class="td-citas-activas"><%= citasActivas %></span>
+                                    <span class="td-citas-activas"><%= Html.texto(citasActivas) %></span>
                                 </td>
                                 <td>
                                     <button type="button" class="btn-action-editar" onclick="abrirModalEditar(this)">Editar</button>
@@ -306,20 +261,20 @@
                     </table>
                 </div>
 
-                <!-- Paginación -->
+
                 <div class="pacientes-table-footer">
-                    <span id="pacientesPaginationInfo">Mostrando 5 de 12 480 pacientes</span>
+                    <span id="pacientesPaginationInfo">Mostrando 0 de 0 pacientes</span>
                     <div class="pacientes-pagination-controls">
                         <button type="button" id="btnPrevPage" class="btn-pagination" onclick="cambiarPagina(-1)">&lt; Anterior</button>
-                        <span id="pacientesPageNum" class="pagination-page-indicator">Página 1 de 2 496</span>
+                        <span id="pacientesPageNum" class="pagination-page-indicator">Página 1 de 1</span>
                         <button type="button" id="btnNextPage" class="btn-pagination" onclick="cambiarPagina(1)">Siguiente &gt;</button>
                     </div>
                 </div>
             </div>
 
-            <!-- 4. TARJETAS KPI INFERIORES -->
+
             <div class="pacientes-kpi-grid">
-                <!-- Total Pacientes Registrados -->
+
                 <div class="pacientes-kpi-card">
                     <div class="pacientes-kpi-head">
                         <span class="pacientes-kpi-title">Total de pacientes registrados</span>
@@ -327,11 +282,11 @@
                             <i data-lucide="users"></i>
                         </div>
                     </div>
-                    <div class="pacientes-kpi-number"><%= totalRegistradosFormat %></div>
+                    <div class="pacientes-kpi-number"><%= Html.texto(totalRegistradosFormat) %></div>
                     <div class="pacientes-kpi-sub">En el padrón de la red</div>
                 </div>
 
-                <!-- Con Contacto Verificado -->
+
                 <div class="pacientes-kpi-card">
                     <div class="pacientes-kpi-head">
                         <span class="pacientes-kpi-title">Con contacto verificado</span>
@@ -339,17 +294,15 @@
                             <i data-lucide="check"></i>
                         </div>
                     </div>
-                    <div class="pacientes-kpi-number"><%= totalVerificadosFormat %></div>
-                    <div class="pacientes-kpi-sub">95 % del padrón</div>
+                    <div class="pacientes-kpi-number"><%= Html.texto(totalVerificadosFormat) %></div>
+                    <div class="pacientes-kpi-sub">Sin métricas de verificación disponibles</div>
                 </div>
             </div>
 
         </main>
     </div>
 
-    <!-- ==========================================================================
-         MODAL: REGISTRAR NUEVO PACIENTE
-         ========================================================================== -->
+
     <div id="modalNuevoPaciente" class="adm-modal-backdrop" onclick="cerrarModalFondoNuevo(event)">
         <div class="adm-modal-box">
             <div class="adm-modal-header">
@@ -359,61 +312,57 @@
                 </button>
             </div>
             <form action="${pageContext.request.contextPath}/admin/pacientes" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="registrar_paciente">
                 <input type="hidden" name="redirect" value="/admin/pacientes">
 
                 <div class="adm-modal-body">
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">DNI *</label>
-                            <input type="text" name="dni" class="adm-modal-input" required maxlength="8" placeholder="Ej: 45879632">
+                            <label class="adm-modal-label" for="campoPaciente1">DNI *</label>
+                            <input id="campoPaciente1" type="text" name="dni" class="adm-modal-input" inputmode="numeric" required maxlength="8" placeholder="Ej: 45879632">
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Fecha de nacimiento</label>
-                            <input type="date" name="fecha_nacimiento" class="adm-modal-input" value="1990-01-01">
-                        </div>
-                    </div>
-
-                    <div class="adm-modal-grid-2">
-                        <div class="adm-modal-field">
-                            <label class="adm-modal-label">Nombres *</label>
-                            <input type="text" name="nombres" class="adm-modal-input" required placeholder="Ej: María">
-                        </div>
-                        <div class="adm-modal-field">
-                            <label class="adm-modal-label">Apellidos *</label>
-                            <input type="text" name="apellidos" class="adm-modal-input" required placeholder="Ej: Pérez">
+                            <label class="adm-modal-label" for="campoPaciente2">Fecha de nacimiento</label>
+                            <input id="campoPaciente2" type="date" name="fecha_nacimiento" class="adm-modal-input" value="1990-01-01">
                         </div>
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Teléfono *</label>
-                            <input type="text" name="telefono" class="adm-modal-input" required placeholder="Ej: 987654482">
+                            <label class="adm-modal-label" for="campoPaciente3">Nombres *</label>
+                            <input id="campoPaciente3" type="text" name="nombres" class="adm-modal-input" required placeholder="Ej: María">
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Correo electrónico</label>
-                            <input type="email" name="email" class="adm-modal-input" placeholder="Ej: maria.perez@correo.com">
+                            <label class="adm-modal-label" for="campoPaciente4">Apellidos *</label>
+                            <input id="campoPaciente4" type="text" name="apellidos" class="adm-modal-input" required placeholder="Ej: Pérez">
+                        </div>
+                    </div>
+
+                    <div class="adm-modal-grid-2">
+                        <div class="adm-modal-field">
+                            <label class="adm-modal-label" for="campoPaciente5">Teléfono *</label>
+                            <input id="campoPaciente5" type="text" name="telefono" class="adm-modal-input" required placeholder="Ej: 987654482">
+                        </div>
+                        <div class="adm-modal-field">
+                            <label class="adm-modal-label" for="campoPaciente6">Correo electrónico</label>
+                            <input id="campoPaciente6" type="email" name="email" class="adm-modal-input" placeholder="Ej: maria.perez@correo.com">
                         </div>
                     </div>
 
                     <div class="adm-modal-field">
-                        <label class="adm-modal-label">Zona / Dirección de residencia</label>
-                        <input type="text" name="direccion" class="adm-modal-input" placeholder="Ej: San Borja, Av. Las Begonias 123">
+                        <label class="adm-modal-label" for="campoPaciente7">Zona / Dirección de residencia</label>
+                            <input id="campoPaciente7" type="text" name="direccion" class="adm-modal-input" placeholder="Ej: San Borja, Av. Las Begonias 123">
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Sede preferida</label>
-                            <select name="sede_preferida" class="adm-modal-select">
-                                <option value="Sede San Borja">Sede San Borja</option>
-                                <option value="Sede Lima Norte">Sede Lima Norte</option>
-                                <option value="Sede Surco">Sede Surco</option>
-                                <option value="Sede La Molina">Sede La Molina</option>
-                            </select>
+                            <label class="adm-modal-label" for="campoPaciente8">Sede preferida</label>
+                            <input id="campoPaciente8" name="sede_preferida" class="adm-modal-input" value="<%= Html.texto(request.getAttribute("sedeAdmision")) %>" readonly>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Cobertura</label>
-                            <select name="cobertura" class="adm-modal-select">
+                            <label class="adm-modal-label" for="campoPaciente9">Cobertura</label>
+                            <select id="campoPaciente9" name="cobertura" class="adm-modal-select">
                                 <option value="EPS">EPS Rimac / Pacífico</option>
                                 <option value="Particular">Particular</option>
                                 <option value="Seguro">Seguro Privado</option>
@@ -422,12 +371,8 @@
                     </div>
 
                     <div class="adm-modal-field">
-                        <label class="adm-modal-label">Canal preferido de confirmación</label>
-                        <select name="canal_aviso" class="adm-modal-select">
-                            <option value="WhatsApp">WhatsApp</option>
-                            <option value="SMS">SMS</option>
-                            <option value="Correo">Correo electrónico</option>
-                        </select>
+                        <label class="adm-modal-label" for="campoPaciente10">Canal preferido de confirmación</label>
+                            <select id="campoPaciente10" name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
                     </div>
                 </div>
 
@@ -439,9 +384,7 @@
         </div>
     </div>
 
-    <!-- ==========================================================================
-         MODAL: EDITAR PACIENTE
-         ========================================================================== -->
+
     <div id="modalEditarPaciente" class="adm-modal-backdrop" onclick="cerrarModalFondoEditar(event)">
         <div class="adm-modal-box">
             <div class="adm-modal-header">
@@ -451,6 +394,7 @@
                 </button>
             </div>
             <form action="${pageContext.request.contextPath}/admin/pacientes" method="POST">
+                    <input type="hidden" name="csrfToken" value="${sessionScope.csrfToken}">
                 <input type="hidden" name="action" value="editar_paciente">
                 <input type="hidden" name="redirect" value="/admin/pacientes">
                 <input type="hidden" id="editIdPaciente" name="idPaciente" value="">
@@ -458,11 +402,11 @@
                 <div class="adm-modal-body">
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">DNI</label>
+                            <label class="adm-modal-label" for="editDni">DNI</label>
                             <input type="text" id="editDni" name="dni" class="adm-modal-input" readonly style="background-color: #f8fafc; color: #64748b;">
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Cobertura</label>
+                            <label class="adm-modal-label" for="editCobertura">Cobertura</label>
                             <select id="editCobertura" name="cobertura" class="adm-modal-select">
                                 <option value="EPS">EPS</option>
                                 <option value="Particular">Particular</option>
@@ -473,48 +417,40 @@
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Nombres *</label>
+                            <label class="adm-modal-label" for="editNombres">Nombres *</label>
                             <input type="text" id="editNombres" name="nombres" class="adm-modal-input" required>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Apellidos *</label>
+                            <label class="adm-modal-label" for="editApellidos">Apellidos *</label>
                             <input type="text" id="editApellidos" name="apellidos" class="adm-modal-input" required>
                         </div>
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Teléfono *</label>
+                            <label class="adm-modal-label" for="editTelefono">Teléfono *</label>
                             <input type="text" id="editTelefono" name="telefono" class="adm-modal-input" required>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Correo electrónico</label>
-                            <input type="email" id="editEmail" name="email" class="adm-modal-input">
+                            <label class="adm-modal-label" for="editEmail">Correo electrónico</label>
+                            <input type="email" id="editEmail" name="email" class="adm-modal-input" readonly aria-describedby="avisoCambioCorreoPaciente">
+                            <small id="avisoCambioCorreoPaciente">El paciente cambia su correo desde Seguridad de cuenta, con verificación.</small>
                         </div>
                     </div>
 
                     <div class="adm-modal-field">
-                        <label class="adm-modal-label">Zona / Dirección de residencia</label>
-                        <input type="text" id="editDireccion" name="direccion" class="adm-modal-input">
+                        <label class="adm-modal-label" for="editDireccion">Zona / Dirección de residencia</label>
+                            <input type="text" id="editDireccion" name="direccion" class="adm-modal-input">
                     </div>
 
                     <div class="adm-modal-grid-2">
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Sede preferida</label>
-                            <select id="editSede" name="sede_preferida" class="adm-modal-select">
-                                <option value="Sede San Borja">Sede San Borja</option>
-                                <option value="Sede Lima Norte">Sede Lima Norte</option>
-                                <option value="Sede Surco">Sede Surco</option>
-                                <option value="Sede La Molina">Sede La Molina</option>
-                            </select>
+                            <label class="adm-modal-label" for="editSede">Sede preferida</label>
+                            <input id="editSede" name="sede_preferida" class="adm-modal-input" readonly>
                         </div>
                         <div class="adm-modal-field">
-                            <label class="adm-modal-label">Canal preferido</label>
-                            <select id="editCanal" name="canal_aviso" class="adm-modal-select">
-                                <option value="WhatsApp">WhatsApp</option>
-                                <option value="SMS">SMS</option>
-                                <option value="Correo">Correo</option>
-                            </select>
+                            <label class="adm-modal-label" for="editCanal">Canal preferido</label>
+                            <select id="editCanal" name="canal_aviso" class="adm-modal-select"><option value="Correo">Correo electrónico</option></select>
                         </div>
                     </div>
                 </div>
@@ -631,7 +567,7 @@
             document.getElementById("editTelefono").value = fila.getAttribute("data-telefono") || "";
             document.getElementById("editEmail").value = fila.getAttribute("data-email") || "";
             document.getElementById("editDireccion").value = fila.getAttribute("data-direccion") || "";
-            
+
             const cob = fila.getAttribute("data-cobertura") || "EPS";
             const selectCob = document.getElementById("editCobertura");
             if (selectCob) selectCob.value = cob;
@@ -642,7 +578,7 @@
 
             const canal = fila.getAttribute("data-canal") || "WhatsApp";
             const selectCanal = document.getElementById("editCanal");
-            if (selectCanal) selectCanal.value = canal;
+            if (selectCanal) selectCanal.value = "Correo";
 
             document.getElementById("modalEditarPaciente").style.display = "flex";
             if (window.lucide) lucide.createIcons();

@@ -1,8 +1,9 @@
 -- =============================================================================
 -- ESQUEMA DE BASE DE DATOS - CLÍNICA INTERNACIONAL (MySQL 8.0)
--- Coincidencia 100% con el Diagrama de Clases (17 Tablas / Entidades)
 -- Requisitos: HU003, RNF-01, RNF-02, RNF-03, RNF-04, RNF-05
 -- =============================================================================
+
+SET NAMES utf8mb4;
 
 CREATE DATABASE IF NOT EXISTS clinica_db DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE clinica_db;
@@ -10,15 +11,26 @@ USE clinica_db;
 -- Desactivar temporalmente llaves foráneas para recreación limpia
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS retencion_cupo;
 DROP TABLE IF EXISTS reporte;
 DROP TABLE IF EXISTS indicador;
 DROP TABLE IF EXISTS reasignacion_inteligente;
+DROP TABLE IF EXISTS configuracion_ofertas;
+DROP TABLE IF EXISTS invitacion_personal;
+DROP TABLE IF EXISTS correo_oferta;
+DROP TABLE IF EXISTS correo_cita;
 DROP TABLE IF EXISTS notificacion;
 DROP TABLE IF EXISTS historial_asistencia;
 DROP TABLE IF EXISTS lista_espera;
+DROP TABLE IF EXISTS seguimiento_cita;
+DROP TABLE IF EXISTS consulta_clinica;
+DROP TABLE IF EXISTS atencion_cita;
+DROP TABLE IF EXISTS inasistencia_cita;
+DROP TABLE IF EXISTS admision_cita;
 DROP TABLE IF EXISTS cita;
 DROP TABLE IF EXISTS disponibilidad;
 DROP TABLE IF EXISTS motivo_cita;
+DROP TABLE IF EXISTS propuesta_horario;
 DROP TABLE IF EXISTS medico;
 DROP TABLE IF EXISTS personal_administrativo;
 DROP TABLE IF EXISTS paciente;
@@ -139,7 +151,36 @@ CREATE TABLE motivo_cita (
 -- -----------------------------------------------------------------------------
 -- 9. CLASE/TABLA: disponibilidad
 -- -----------------------------------------------------------------------------
+CREATE TABLE propuesta_horario (
+    id_propuesta INT AUTO_INCREMENT PRIMARY KEY,
+    id_medico INT NOT NULL,
+    id_sede INT NOT NULL,
+    dias_semana INT NOT NULL,
+    vigente_desde DATE NOT NULL,
+    vigente_hasta DATE NOT NULL,
+    hora_inicio TIME NOT NULL,
+    hora_fin TIME NOT NULL,
+    duracion_minutos INT NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    creada_en DATETIME(6) NOT NULL,
+    revisada_en DATETIME(6) NULL,
+    id_revisor INT NULL,
+    motivo_revision VARCHAR(500) NULL,
+    CONSTRAINT fk_propuesta_medico FOREIGN KEY (id_medico) REFERENCES medico(id_medico),
+    CONSTRAINT fk_propuesta_sede FOREIGN KEY (id_sede) REFERENCES sede(id_sede),
+    CONSTRAINT fk_propuesta_revisor FOREIGN KEY (id_revisor) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_propuesta_dias CHECK (dias_semana BETWEEN 1 AND 127),
+    CONSTRAINT ck_propuesta_vigencia CHECK (vigente_hasta >= vigente_desde),
+    CONSTRAINT ck_propuesta_horas CHECK (hora_fin > hora_inicio AND duracion_minutos > 0),
+    CONSTRAINT ck_propuesta_estado CHECK (estado IN ('PENDIENTE','PUBLICADO','RECHAZADO')),
+    INDEX idx_propuesta_medico (id_medico, id_propuesta),
+    INDEX idx_propuesta_revision (id_sede, estado, id_propuesta)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+
 CREATE TABLE disponibilidad (
+    id_propuesta INT NULL,
+    CONSTRAINT fk_disponibilidad_propuesta FOREIGN KEY (id_propuesta) REFERENCES propuesta_horario(id_propuesta),
     id_disponibilidad INT AUTO_INCREMENT PRIMARY KEY,
     id_medico INT NOT NULL,
     id_sede INT NOT NULL,
@@ -162,7 +203,7 @@ CREATE TABLE cita (
     id_disponibilidad INT NOT NULL,
     id_motivo INT DEFAULT NULL,
     fecha_hora DATETIME NOT NULL,
-    estado ENUM('SOLICITADA', 'CONFIRMADA', 'EN_SALA', 'ATENDIDA', 'NO_ASISTIO', 'REPROGRAMADA', 'CANCELADA') DEFAULT 'SOLICITADA',
+    estado ENUM('SOLICITADA', 'CONFIRMADA', 'EN_SALA', 'EN_ATENCION', 'ATENDIDA', 'NO_ATENDIDA', 'NO_ASISTIO', 'REPROGRAMADA', 'CANCELADA') DEFAULT 'SOLICITADA',
     nivel_urgencia ENUM('ALTA', 'MEDIA', 'BAJA') DEFAULT 'BAJA',
     fecha_recomendada_proxima DATE DEFAULT NULL,
     riesgo_cancelacion ENUM('BAJO', 'MEDIO', 'ALTO', 'SIN_HISTORIAL') DEFAULT 'SIN_HISTORIAL',
@@ -173,6 +214,33 @@ CREATE TABLE cita (
     CONSTRAINT fk_cita_motivo FOREIGN KEY (id_motivo) REFERENCES motivo_cita(id_motivo)
 ) ENGINE=InnoDB;
 
+CREATE TABLE confirmacion_asistencia (
+    id_cita INT PRIMARY KEY,
+    creada_en DATETIME(6) NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    confirmada_en DATETIME(6) DEFAULT NULL,
+    canal VARCHAR(16) DEFAULT NULL,
+    id_usuario_confirmo INT DEFAULT NULL,
+    CONSTRAINT fk_confirmacion_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_confirmacion_usuario FOREIGN KEY (id_usuario_confirmo) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_confirmacion_canal CHECK (canal IS NULL OR canal IN ('WEB','ADMISION')),
+    INDEX idx_confirmacion_pendiente (confirmada_en, vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE contacto_admision_cita (
+    id_contacto BIGINT AUTO_INCREMENT PRIMARY KEY,
+    id_cita INT NOT NULL,
+    id_usuario_personal INT NOT NULL,
+    fecha_contacto DATETIME(6) NOT NULL,
+    canal VARCHAR(16) NOT NULL,
+    resultado VARCHAR(24) NOT NULL,
+    CONSTRAINT fk_contacto_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_contacto_usuario FOREIGN KEY (id_usuario_personal) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_contacto_canal CHECK (canal IN ('LLAMADA','CORREO')),
+    CONSTRAINT ck_contacto_resultado CHECK (resultado IN ('SIN_RESPUESTA','CONFIRMA','NO_CONFIRMA')),
+    INDEX idx_contacto_cita_fecha (id_cita, fecha_contacto)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- -----------------------------------------------------------------------------
 -- 11. CLASE/TABLA: lista_espera
 -- -----------------------------------------------------------------------------
@@ -180,20 +248,36 @@ CREATE TABLE lista_espera (
     id_lista_espera INT AUTO_INCREMENT PRIMARY KEY,
     id_paciente INT NOT NULL,
     id_especialidad INT NOT NULL,
-    id_sede INT NOT NULL,
+    id_sede INT DEFAULT NULL,
     id_motivo INT DEFAULT NULL,
     nivel_urgencia ENUM('ALTA', 'MEDIA', 'BAJA') DEFAULT 'BAJA',
     rango_horario ENUM('MANANA', 'TARDE', 'NOCHE', 'INDIFERENTE') DEFAULT 'INDIFERENTE',
-    canal_notificacion ENUM('CORREO', 'SMS', 'WHATSAPP') DEFAULT 'CORREO',
+    canal_notificacion VARCHAR(40) NOT NULL DEFAULT 'CORREO',
     fecha_registro DATETIME DEFAULT CURRENT_TIMESTAMP,
     estado ENUM('ACTIVA', 'OFERTADA', 'ATENDIDA', 'CANCELADA') DEFAULT 'ACTIVA',
     posicion INT DEFAULT 0,
+    anticipacion_minutos INT NOT NULL DEFAULT 180,
+    id_medico_preferido INT DEFAULT NULL,
+    CONSTRAINT fk_lista_medico_preferido FOREIGN KEY (id_medico_preferido) REFERENCES medico(id_medico),
     CONSTRAINT fk_lista_paciente FOREIGN KEY (id_paciente) REFERENCES paciente(id_paciente),
     CONSTRAINT fk_lista_especialidad FOREIGN KEY (id_especialidad) REFERENCES especialidad(id_especialidad),
     CONSTRAINT fk_lista_sede FOREIGN KEY (id_sede) REFERENCES sede(id_sede)
 ) ENGINE=InnoDB;
 
 -- -----------------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS correo_cita (
+    id_cita INT PRIMARY KEY,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    intentos SMALLINT NOT NULL DEFAULT 0,
+    disponible_en DATETIME(6) NOT NULL,
+    iniciada_en DATETIME(6) NULL,
+    finalizada_en DATETIME(6) NULL,
+    CONSTRAINT fk_correo_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT chk_correo_cita_estado CHECK (estado IN ('PENDIENTE','ENVIANDO','ENVIADO','NO_CONFIRMADO','OMITIDO')),
+    CONSTRAINT chk_correo_cita_intentos CHECK (intentos BETWEEN 0 AND 3),
+    INDEX idx_correo_cita_pendiente (estado,disponible_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- 12. CLASE/TABLA: notificacion
 -- -----------------------------------------------------------------------------
 CREATE TABLE notificacion (
@@ -213,6 +297,44 @@ CREATE TABLE notificacion (
 -- -----------------------------------------------------------------------------
 -- 13. CLASE/TABLA: historial (historial_asistencia)
 -- -----------------------------------------------------------------------------
+CREATE TABLE admision_cita (
+    id_cita INT PRIMARY KEY,
+    id_usuario_personal INT NOT NULL,
+    fecha_llegada DATETIME NOT NULL,
+    tolerancia_minutos SMALLINT NOT NULL,
+    llego_tarde BOOLEAN NOT NULL,
+    CONSTRAINT fk_admision_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_admision_usuario FOREIGN KEY (id_usuario_personal) REFERENCES usuario(id_usuario)
+) ENGINE=InnoDB;
+
+CREATE TABLE atencion_cita (
+    id_cita INT PRIMARY KEY,
+    id_medico INT NOT NULL,
+    id_paciente INT NOT NULL,
+    fecha_inicio DATETIME NULL,
+    fecha_fin DATETIME NULL,
+    motivo_no_atencion VARCHAR(200) NULL,
+    medico_activo INT GENERATED ALWAYS AS (CASE WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NULL THEN id_medico ELSE NULL END),
+    paciente_activo INT GENERATED ALWAYS AS (CASE WHEN fecha_inicio IS NOT NULL AND fecha_fin IS NULL THEN id_paciente ELSE NULL END),
+    CONSTRAINT uk_atencion_medico_activo UNIQUE (medico_activo),
+    CONSTRAINT uk_atencion_paciente_activo UNIQUE (paciente_activo),
+    CONSTRAINT fk_atencion_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_atencion_medico FOREIGN KEY (id_medico) REFERENCES medico(id_medico),
+    CONSTRAINT fk_atencion_paciente FOREIGN KEY (id_paciente) REFERENCES paciente(id_paciente),
+    CONSTRAINT ck_atencion_fechas CHECK (fecha_inicio IS NOT NULL OR fecha_fin IS NOT NULL),
+    CONSTRAINT ck_atencion_orden CHECK (fecha_inicio IS NULL OR fecha_fin IS NULL OR fecha_fin >= fecha_inicio)
+) ENGINE=InnoDB;
+
+CREATE TABLE inasistencia_cita (
+    id_cita INT PRIMARY KEY,
+    id_usuario_personal INT NOT NULL,
+    fecha_registro DATETIME NOT NULL,
+    motivo VARCHAR(200) NOT NULL,
+    tolerancia_minutos SMALLINT NOT NULL,
+    CONSTRAINT fk_inasistencia_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_inasistencia_usuario FOREIGN KEY (id_usuario_personal) REFERENCES usuario(id_usuario)
+) ENGINE=InnoDB;
+
 CREATE TABLE historial_asistencia (
     id_historial INT AUTO_INCREMENT PRIMARY KEY,
     id_paciente INT NOT NULL,
@@ -236,6 +358,8 @@ CREATE TABLE reasignacion_inteligente (
     fecha_limite_respuesta DATETIME NOT NULL,
     estado ENUM('PENDIENTE', 'ACEPTADA', 'RECHAZADA', 'EXPIRADA', 'CANCELADA') DEFAULT 'PENDIENTE',
     motivo VARCHAR(255) DEFAULT NULL,
+    id_cita_asignada INT DEFAULT NULL,
+    CONSTRAINT fk_reasig_asignada FOREIGN KEY (id_cita_asignada) REFERENCES cita(id_cita),
     CONSTRAINT fk_reasig_cita FOREIGN KEY (id_cita_original) REFERENCES cita(id_cita),
     CONSTRAINT fk_reasig_lista FOREIGN KEY (id_lista_espera) REFERENCES lista_espera(id_lista_espera),
     CONSTRAINT fk_reasig_disp FOREIGN KEY (id_disponibilidad) REFERENCES disponibilidad(id_disponibilidad)
@@ -291,7 +415,7 @@ CREATE TABLE reporte (
 CREATE TABLE auditoria_seguridad (
     id_auditoria INT AUTO_INCREMENT PRIMARY KEY,
     id_usuario INT,
-    ip_origen VARCHAR(45) NOT NULL,
+    ip_origen VARCHAR(45) NULL DEFAULT NULL,
     evento VARCHAR(100) NOT NULL,
     descripcion TEXT,
     sospechoso TINYINT(1) DEFAULT 0,
@@ -578,3 +702,199 @@ INSERT INTO paciente (id_paciente, id_usuario, dni, fecha_nacimiento, telefono, 
 
 
 
+
+SET NAMES utf8mb4;
+
+CREATE TABLE IF NOT EXISTS consulta_clinica (
+    id_cita INT PRIMARY KEY,
+    motivo VARCHAR(1000) NOT NULL,
+    antecedentes VARCHAR(2000) NOT NULL,
+    hallazgos VARCHAR(2000) NOT NULL,
+    evaluacion VARCHAR(2000) NOT NULL,
+    diagnostico VARCHAR(1000) NOT NULL,
+    plan VARCHAR(2000) NOT NULL,
+    CONSTRAINT fk_consulta_clinica_cita FOREIGN KEY (id_cita) REFERENCES cita(id_cita)
+) ENGINE=InnoDB;
+
+CREATE TABLE IF NOT EXISTS seguimiento_cita (
+    id_cita_origen INT PRIMARY KEY,
+    id_cita_control INT NOT NULL,
+    id_usuario_medico INT NOT NULL,
+    fecha_vinculacion DATETIME NOT NULL,
+    CONSTRAINT fk_seguimiento_origen FOREIGN KEY (id_cita_origen) REFERENCES cita(id_cita),
+    CONSTRAINT fk_seguimiento_control FOREIGN KEY (id_cita_control) REFERENCES cita(id_cita),
+    CONSTRAINT fk_seguimiento_responsable FOREIGN KEY (id_usuario_medico) REFERENCES usuario(id_usuario),
+    CONSTRAINT ck_seguimiento_distinto CHECK (id_cita_origen <> id_cita_control),
+    INDEX idx_seguimiento_control (id_cita_control)
+) ENGINE=InnoDB;
+
+CREATE INDEX idx_cita_medico_paciente_fecha ON cita(id_medico,id_paciente,fecha_hora);
+
+CREATE TABLE IF NOT EXISTS sesion_autenticacion (
+    id_sesion CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    refresh_hash BINARY(32) NOT NULL,
+    csrf_token CHAR(43) CHARACTER SET ascii COLLATE ascii_bin NOT NULL,
+    rol_inicial VARCHAR(32) NOT NULL,
+    credencial_hash BINARY(32) NOT NULL,
+    creada_en DATETIME(6) NOT NULL,
+    ultima_actividad_en DATETIME(6) NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    revocada_en DATETIME(6) NULL,
+    CONSTRAINT fk_sesion_auth_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
+    UNIQUE KEY uk_sesion_refresh (refresh_hash),
+    INDEX idx_sesion_usuario (id_usuario,revocada_en),
+    INDEX idx_sesion_vencimiento (vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS verificacion_cuenta (
+    id_verificacion CHAR(36) CHARACTER SET ascii COLLATE ascii_bin PRIMARY KEY,
+    id_usuario INT NOT NULL,
+    proposito VARCHAR(24) NOT NULL,
+    id_sesion CHAR(36) CHARACTER SET ascii COLLATE ascii_bin NULL,
+    vinculo_hash BINARY(32) NOT NULL,
+    credencial_hash BINARY(32) NOT NULL,
+    correo_hash BINARY(32) NOT NULL,
+    codigo_hash BINARY(32) NULL,
+    etapa VARCHAR(24) NOT NULL,
+    intentos INT NOT NULL DEFAULT 0,
+    correo_nuevo VARCHAR(254) NULL,
+    creada_en DATETIME(6) NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    CONSTRAINT fk_verificacion_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
+    CONSTRAINT chk_verificacion_intentos CHECK (intentos BETWEEN 0 AND 5),
+    CONSTRAINT chk_verificacion_proposito CHECK (proposito IN ('RECUPERAR','CAMBIAR_PASSWORD','CAMBIAR_CORREO')),
+    CONSTRAINT chk_verificacion_etapa CHECK (etapa IN ('CODIGO_ACTUAL','AUTORIZADO','CODIGO_NUEVO','FINALIZADO','BLOQUEADO')),
+    INDEX idx_verificacion_usuario (id_usuario,proposito),
+    INDEX idx_verificacion_vence (vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS limite_recuperacion (
+    clave_hash BINARY(32) PRIMARY KEY,
+    solicitudes INT NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    INDEX idx_limite_recuperacion_vence (vence_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS correo_oferta (
+    id_oferta INT PRIMARY KEY,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    intentos SMALLINT NOT NULL DEFAULT 0,
+    disponible_en DATETIME(6) NOT NULL,
+    iniciada_en DATETIME(6) NULL,
+    finalizada_en DATETIME(6) NULL,
+    CONSTRAINT fk_correo_oferta FOREIGN KEY (id_oferta) REFERENCES reasignacion_inteligente(id_reasignacion),
+    CONSTRAINT chk_correo_oferta_estado CHECK (estado IN ('PENDIENTE','ENVIANDO','ENVIADO','NO_CONFIRMADO','OMITIDO')),
+    CONSTRAINT chk_correo_oferta_intentos CHECK (intentos BETWEEN 0 AND 3),
+    INDEX idx_correo_oferta_pendiente (estado,disponible_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS invitacion_personal (
+    id_usuario INT PRIMARY KEY,
+    id_sede_destino INT NULL,
+    token_hash BINARY(32) NOT NULL UNIQUE,
+    creada_por INT NOT NULL,
+    creada_en DATETIME(6) NOT NULL,
+    vence_en DATETIME(6) NOT NULL,
+    utilizada_en DATETIME(6) NULL,
+    revocada_en DATETIME(6) NULL,
+    estado_envio VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    CONSTRAINT fk_invitacion_usuario FOREIGN KEY (id_usuario) REFERENCES usuario(id_usuario),
+    CONSTRAINT fk_invitacion_actor FOREIGN KEY (creada_por) REFERENCES usuario(id_usuario),
+    CONSTRAINT chk_invitacion_envio CHECK (estado_envio IN ('PENDIENTE','ENVIADO','NO_CONFIRMADO'))
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS configuracion_ofertas (
+    id_configuracion INT PRIMARY KEY,
+    minutos_respuesta INT NOT NULL DEFAULT 15,
+    anticipacion_minima INT NOT NULL DEFAULT 0,
+    version BIGINT NOT NULL DEFAULT 0,
+    actualizado_por INT NULL,
+    actualizado_en DATETIME(6) NULL,
+    CONSTRAINT fk_configuracion_ofertas_actor FOREIGN KEY (actualizado_por) REFERENCES usuario(id_usuario),
+    CONSTRAINT chk_configuracion_unica CHECK (id_configuracion=1),
+    CONSTRAINT chk_configuracion_respuesta CHECK (minutos_respuesta BETWEEN 5 AND 60),
+    CONSTRAINT chk_configuracion_anticipacion CHECK (anticipacion_minima BETWEEN 0 AND 10080),
+    CONSTRAINT chk_configuracion_version CHECK (version>=0)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+INSERT INTO configuracion_ofertas(id_configuracion,minutos_respuesta,anticipacion_minima,version)
+SELECT 1,15,0,0 WHERE NOT EXISTS(SELECT 1 FROM configuracion_ofertas WHERE id_configuracion=1);
+
+ALTER TABLE atencion_cita ADD COLUMN id_especialidad_prioridad INT NULL;
+ALTER TABLE atencion_cita ADD CONSTRAINT fk_atencion_especialidad_prioridad FOREIGN KEY(id_especialidad_prioridad) REFERENCES especialidad(id_especialidad);
+CREATE TABLE retencion_cupo (
+ id_paciente INT PRIMARY KEY,
+ id_medico INT NOT NULL,
+ inicio DATETIME NOT NULL,
+ duracion_minutos INT NOT NULL,
+ identificador VARCHAR(36) NOT NULL UNIQUE,
+ vence DATETIME NOT NULL,
+ UNIQUE KEY uq_retencion_horario(id_medico,inicio),
+ FOREIGN KEY(id_paciente) REFERENCES paciente(id_paciente),
+ FOREIGN KEY(id_medico) REFERENCES medico(id_medico),
+ CHECK(duracion_minutos>0 AND duracion_minutos<=1440)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE configuracion_ofertas ADD COLUMN confirmacion_horas INT NOT NULL DEFAULT 24;
+ALTER TABLE configuracion_ofertas ADD COLUMN tolerancia_llegada INT NOT NULL DEFAULT 10;
+ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_confirmacion CHECK(confirmacion_horas BETWEEN 1 AND 168);
+ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_tolerancia CHECK(tolerancia_llegada BETWEEN 0 AND 120);
+
+CREATE TABLE IF NOT EXISTS correo_cambio_cita (
+    id_aviso INT AUTO_INCREMENT PRIMARY KEY,
+    id_cita INT NOT NULL,
+    id_cita_anterior INT NULL,
+    tipo VARCHAR(20) NOT NULL,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    intentos SMALLINT NOT NULL DEFAULT 0,
+    disponible_en DATETIME(6) NOT NULL,
+    iniciada_en DATETIME(6) NULL,
+    finalizada_en DATETIME(6) NULL,
+    CONSTRAINT fk_aviso_cambio_cita FOREIGN KEY(id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT fk_aviso_cambio_anterior FOREIGN KEY(id_cita_anterior) REFERENCES cita(id_cita),
+    CONSTRAINT uq_aviso_cambio UNIQUE(id_cita,tipo),
+    CONSTRAINT ck_aviso_cambio_tipo CHECK(tipo IN ('CANCELADA','REPROGRAMADA')),
+    CONSTRAINT ck_aviso_cambio_estado CHECK(estado IN ('PENDIENTE','ENVIANDO','ENVIADO','NO_CONFIRMADO','OMITIDO')),
+    CONSTRAINT ck_aviso_cambio_intentos CHECK(intentos BETWEEN 0 AND 3),
+    INDEX idx_aviso_cambio_pendiente(estado,disponible_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS correo_recordatorio (
+    id_cita INT PRIMARY KEY,
+    estado VARCHAR(20) NOT NULL DEFAULT 'PENDIENTE',
+    intentos SMALLINT NOT NULL DEFAULT 0,
+    disponible_en DATETIME(6) NOT NULL,
+    iniciada_en DATETIME(6) NULL,
+    finalizada_en DATETIME(6) NULL,
+    CONSTRAINT fk_correo_recordatorio FOREIGN KEY (id_cita) REFERENCES cita(id_cita),
+    CONSTRAINT chk_correo_recordatorio_estado CHECK (estado IN ('PENDIENTE','ENVIANDO','ENVIADO','NO_CONFIRMADO','OMITIDO')),
+    CONSTRAINT chk_correo_recordatorio_intentos CHECK (intentos BETWEEN 0 AND 3),
+    INDEX idx_correo_recordatorio_pendiente (estado,disponible_en)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE configuracion_ofertas ADD COLUMN recordatorio_horas INT NOT NULL DEFAULT 24;
+ALTER TABLE configuracion_ofertas ADD COLUMN intentos_confirmacion INT NOT NULL DEFAULT 2;
+ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_recordatorio CHECK(recordatorio_horas BETWEEN 1 AND 168);
+ALTER TABLE configuracion_ofertas ADD CONSTRAINT ck_config_intentos CHECK(intentos_confirmacion BETWEEN 1 AND 10);
+
+ALTER TABLE correo_cambio_cita ADD CONSTRAINT ck_aviso_cambio_tipo_v2 CHECK(tipo IN ('CANCELADA','REPROGRAMADA','CONFIRMACION_VENCIDA'));
+ALTER TABLE correo_cambio_cita DROP CONSTRAINT ck_aviso_cambio_tipo;
+
+START TRANSACTION;
+INSERT INTO especialidad(nombre,descripcion,estado)
+SELECT 'Medicina General','Consulta inicial y evaluación general.','ACTIVO'
+WHERE NOT EXISTS(SELECT 1 FROM especialidad WHERE nombre='Medicina General');
+
+INSERT INTO motivo_cita(id_especialidad,descripcion,estado)
+SELECT e.id_especialidad,n.descripcion,'ACTIVO'
+FROM especialidad e
+JOIN (
+    SELECT 'Evaluación general' AS descripcion
+    UNION ALL SELECT 'Dolor de cabeza'
+    UNION ALL SELECT 'Fiebre y malestar general'
+    UNION ALL SELECT 'Control preventivo'
+    UNION ALL SELECT 'Revisión de resultados'
+) n ON 1=1
+WHERE e.nombre='Medicina General' AND e.estado='ACTIVO'
+AND NOT EXISTS(SELECT 1 FROM motivo_cita m WHERE m.id_especialidad=e.id_especialidad AND m.descripcion=n.descripcion);
+COMMIT;
