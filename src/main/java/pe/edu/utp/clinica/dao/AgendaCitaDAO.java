@@ -128,6 +128,11 @@ public final class AgendaCitaDAO {
 
     public boolean reprogramar(int anterior, int paciente, int medico, String fecha, String hora,
                                Integer motivo, String urgencia) {
+        return reprogramarConId(anterior, paciente, medico, fecha, hora, motivo, urgencia) > 0;
+    }
+
+    public int reprogramarConId(int anterior, int paciente, int medico, String fecha, String hora,
+                               Integer motivo, String urgencia) {
         if (anterior <= 0) throw invalida("La cita no es válida.");
         LocalDateTime inicio = futura(fecha, hora);
         validarPrioridad(urgencia);
@@ -145,7 +150,7 @@ public final class AgendaCitaDAO {
             TransaccionJdbc.avisarSede(perfil.sede());
             if(correosActivos)new ReservaCitaRepository(conn).correoCambio(nueva,anterior,"REPROGRAMADA",clock.instant());
             notificar(conn, usuario, nueva, "Cita reprogramada para el " + inicio.toLocalDate() + " a las " + inicio.toLocalTime() + ".",false);
-            return true;
+            return nueva;
         });
     }
 

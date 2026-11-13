@@ -1,0 +1,346 @@
+{
+  "info": {
+    "name": "API de gestión de citas",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080"
+    },
+    {
+      "key": "csrfToken",
+      "value": ""
+    },
+    {
+      "key": "idEspecialidad",
+      "value": ""
+    },
+    {
+      "key": "idMedico",
+      "value": ""
+    },
+    {
+      "key": "idMotivo",
+      "value": ""
+    },
+    {
+      "key": "fecha",
+      "value": ""
+    },
+    {
+      "key": "hora",
+      "value": ""
+    },
+    {
+      "key": "fechaNueva",
+      "value": ""
+    },
+    {
+      "key": "horaNueva",
+      "value": ""
+    },
+    {
+      "key": "retencion",
+      "value": ""
+    },
+    {
+      "key": "idCita",
+      "value": ""
+    },
+    {
+      "key": "idCitaNueva",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Lecturas para carga",
+      "item": [
+        {
+          "name": "Médicos",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/medicos?idEspecialidad={{idEspecialidad}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Horarios",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/horarios?idMedico={{idMedico}}&fecha={{fecha}}"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mis citas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/citas"
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });",
+                  "pm.test(\"Código esperado\", () => pm.expect(body.code).to.eql(\"CITAS_OBTENIDAS\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Flujo de escritura con datos de prueba",
+      "item": [
+        {
+          "name": "Retener",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/citas/retenciones",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "idMedico",
+                  "value": "{{idMedico}}"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                },
+                {
+                  "key": "hora",
+                  "value": "{{hora}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });",
+                  "pm.test(\"Código esperado\", () => pm.expect(body.code).to.eql(\"CUPO_RETENIDO\"));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set(\"retencion\", body.data.identificador); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reservar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/citas",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "idMedico",
+                  "value": "{{idMedico}}"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fecha}}"
+                },
+                {
+                  "key": "hora",
+                  "value": "{{hora}}"
+                },
+                {
+                  "key": "idMotivo",
+                  "value": "{{idMotivo}}"
+                },
+                {
+                  "key": "retencion",
+                  "value": "{{retencion}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 201\", () => pm.response.to.have.status(201));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });",
+                  "pm.test(\"Código esperado\", () => pm.expect(body.code).to.eql(\"CITA_RESERVADA\"));",
+                  "if (pm.response.code === 201) { pm.collectionVariables.set(\"idCita\", body.data.idCita); }"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reprogramar",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/citas/{{idCita}}/reprogramacion",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "idMedico",
+                  "value": "{{idMedico}}"
+                },
+                {
+                  "key": "fecha",
+                  "value": "{{fechaNueva}}"
+                },
+                {
+                  "key": "hora",
+                  "value": "{{horaNueva}}"
+                },
+                {
+                  "key": "idMotivo",
+                  "value": "{{idMotivo}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });",
+                  "pm.test(\"Código esperado\", () => pm.expect(body.code).to.eql(\"CITA_REPROGRAMADA\"));",
+                  "if (pm.response.code === 200) pm.collectionVariables.set(\"idCitaNueva\", body.data.idCita);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cancelar cita reprogramada",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "X-CSRF-Token",
+                "value": "{{csrfToken}}"
+              }
+            ],
+            "url": "{{baseUrl}}/api/v1/citas/{{idCitaNueva}}/cancelacion",
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                {
+                  "key": "motivo",
+                  "value": "Cambio de horario de prueba"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"HTTP 200\", () => pm.response.to.have.status(200));",
+                  "const body = pm.response.json();",
+                  "pm.test(\"Respuesta JSON del sistema\", () => { pm.expect(body).to.have.keys(\"code\",\"message\",\"data\"); });",
+                  "pm.test(\"Código esperado\", () => pm.expect(body.code).to.eql(\"CITA_CANCELADA\"));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
